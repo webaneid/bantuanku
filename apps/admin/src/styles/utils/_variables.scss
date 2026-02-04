@@ -1,0 +1,154 @@
+// ===========================
+// BRAND COLORS - LAZISWAF DARUNNAJAH (Updated)
+// ===========================
+
+// PRIMARY: Hijau Darunnajah
+$primary-50: #e6f2f1;
+$primary-100: #cce3e1;  // Hijau light
+$primary-200: #99c7c3;
+$primary-300: #66aba5;
+$primary-400: #338f87;
+$primary-500: #035a52;  // Base hijau
+$primary-600: #025850;  // Hijau 2
+$primary-700: #024842;
+$primary-800: #023834;
+$primary-900: #012826;
+
+// SECONDARY/ACCENT: Emas
+$secondary-50: #faf7f0;
+$secondary-100: #dccfb4;  // Emas light
+$secondary-200: #d9c49a;
+$secondary-300: #d6b980;
+$secondary-400: #d4af6b;
+$secondary-500: #d2aa55;  // Base emas
+$secondary-600: #a88843;  // Emas 2
+$secondary-700: #8a6f37;
+$secondary-800: #6c562b;
+$secondary-900: #4e3d1f;
+
+// ACCENT: Same as secondary (Emas)
+$accent-50: #faf7f0;
+$accent-100: #dccfb4;
+$accent-200: #d9c49a;
+$accent-300: #d6b980;
+$accent-400: #d4af6b;
+$accent-500: #d2aa55;
+$accent-600: #a88843;
+$accent-700: #8a6f37;
+$accent-800: #6c562b;
+$accent-900: #4e3d1f;
+
+// SUCCESS: Aksen hijau
+$success-50: #f3f7e8;
+$success-100: #e6efd1;
+$success-200: #cddfa3;
+$success-300: #b4cf75;
+$success-400: #9bbf47;
+$success-500: #678f0c;  // Aksen sukses
+$success-600: #52720a;
+$success-700: #3e5508;
+$success-800: #293805;
+$success-900: #151c03;
+
+// DANGER: Merah
+$danger-50: #fceaed;
+$danger-100: #f9d5db;
+$danger-200: #f3abb7;
+$danger-300: #ed8193;
+$danger-400: #e7576f;
+$danger-500: #8f132f;  // Danger red
+$danger-600: #720f26;
+$danger-700: #560b1c;
+$danger-800: #390813;
+$danger-900: #1d0409;
+
+// WARNING: Emas (same as secondary)
+$warning-50: #faf7f0;
+$warning-100: #dccfb4;
+$warning-200: #d9c49a;
+$warning-300: #d6b980;
+$warning-400: #d4af6b;
+$warning-500: #d2aa55;
+$warning-600: #a88843;
+$warning-700: #8a6f37;
+$warning-800: #6c562b;
+$warning-900: #4e3d1f;
+
+// INFO: Biru tua
+$info-50: #e9f1f5;
+$info-100: #d3e3eb;
+$info-200: #a7c7d7;
+$info-300: #7babc3;
+$info-400: #4f8faf;
+$info-500: #296585;  // Biru tua
+$info-600: #21516a;
+$info-700: #193d50;
+$info-800: #102835;
+$info-900: #08141b;
+
+// ===========================
+// COLOR HARMONY GROUPS
+// ===========================
+
+// Monochromatic Hijau
+$mono-green-base: $primary-500;
+$mono-green-light: $primary-100;
+$mono-green-ultra-light: $primary-50;
+$mono-green-dark: $primary-700;
+
+// Complementary
+$complementary-green: $primary-500;
+$complementary-gold: $secondary-500;
+
+// ===========================
+// GRADIENTS
+// ===========================
+$gradient-gold: linear-gradient(135deg, #d2aa55 0%, #a88843 100%);
+$gradient-green: linear-gradient(135deg, #02756b 0%, #035a52 100%);
+$gradient-blue: linear-gradient(135deg, #296585 0%, #21516a 100%);
+
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-600: #4b5563;
+$gray-700: #374151;
+$gray-800: #1f2937;
+$gray-900: #111827;
+
+// Spacing
+$spacing-xs: 0.25rem;   // 4px
+$spacing-sm: 0.5rem;    // 8px
+$spacing-md: 1rem;      // 16px
+$spacing-lg: 1.5rem;    // 24px
+$spacing-xl: 2rem;      // 32px
+$spacing-2xl: 3rem;     // 48px
+
+// Border Radius
+$radius-sm: 0.25rem;    // 4px
+$radius-md: 0.5rem;     // 8px
+$radius-lg: 0.75rem;    // 12px
+$radius-xl: 1rem;       // 16px
+$radius-full: 9999px;
+
+// Shadows
+$shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+$shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+$shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+$shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+
+// Transitions
+$transition-fast: 150ms;
+$transition-base: 200ms;
+$transition-slow: 300ms;
+
+// Z-index
+$z-dropdown: 1000;
+$z-sticky: 1020;
+$z-fixed: 1030;
+$z-modal-backdrop: 1040;
+$z-modal: 1050;
+$z-popover: 1060;
+$z-tooltip: 1070;

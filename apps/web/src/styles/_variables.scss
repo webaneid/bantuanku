@@ -1,0 +1,137 @@
+// Color System (sesuai branding Darunnajah)
+$primary-50: #e6f4f3;
+$primary-100: #b3e0dc;
+$primary-200: #80cdc5;
+$primary-300: #4dbaae;
+$primary-400: #1a8a80;
+$primary-500: #035a52;
+$primary-600: #024741;
+$primary-700: #023831;
+$primary-800: #012920;
+$primary-900: #011a17;
+
+$success-50: #f3f8e6;
+$success-100: #dceab3;
+$success-200: #c5dc80;
+$success-300: #aece4d;
+$success-400: #8aae2c;
+$success-500: #678f0c;
+$success-600: #537309;
+$success-700: #4a6a09;
+$success-800: #3d5707;
+$success-900: #2f4405;
+
+$warning-50: #fdf8ed;
+$warning-100: #f7eacc;
+$warning-200: #f1dcab;
+$warning-300: #ebce8a;
+$warning-400: #dfc06f;
+$warning-500: #d2aa55;
+$warning-600: #b8964b;
+$warning-700: #9e7f3f;
+$warning-800: #846833;
+$warning-900: #6a5127;
+
+$danger-50: #fce8ec;
+$danger-100: #f5bdc7;
+$danger-200: #eb8fa0;
+$danger-300: #e16179;
+$danger-400: #b83752;
+$danger-500: #8f132f;
+$danger-600: #7a1028;
+$danger-700: #6b0e23;
+
+$info-50: #e8f1f5;
+$info-100: #bdd8e4;
+$info-200: #92bed3;
+$info-300: #67a4c2;
+$info-400: #4884a3;
+$info-500: #296585;
+$info-600: #225470;
+$info-700: #1e4b63;
+$info-800: #1a4256;
+$info-900: #16394a;
+
+$accent-50: #fdf8ed;
+$accent-500: #d2aa55;
+$accent-700: #9e7f3f;
+
+// Gray Scale
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-600: #4b5563;
+$gray-700: #374151;
+$gray-800: #1f2937;
+$gray-900: #111827;
+$gray-950: #0a0f1a;
+
+// Font Families
+$font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$font-mono: 'JetBrains Mono', 'Courier New', monospace;
+$font-arabic: 'Scheherazade New', 'Traditional Arabic', serif;
+
+// Font Sizes
+$font-xs: 0.75rem;     // 12px
+$font-sm: 0.875rem;    // 14px
+$font-base: 1rem;      // 16px
+$font-lg: 1.125rem;    // 18px
+$font-xl: 1.25rem;     // 20px
+$font-2xl: 1.5rem;     // 24px
+$font-3xl: 1.875rem;   // 30px
+$font-4xl: 2.25rem;    // 36px
+$font-5xl: 3rem;       // 48px
+$font-6xl: 3.75rem;    // 60px
+
+// Spacing
+$spacing-1: 0.25rem;   // 4px
+$spacing-2: 0.5rem;    // 8px
+$spacing-3: 0.75rem;   // 12px
+$spacing-4: 1rem;      // 16px
+$spacing-5: 1.25rem;   // 20px
+$spacing-6: 1.5rem;    // 24px
+$spacing-8: 2rem;      // 32px
+$spacing-10: 2.5rem;   // 40px
+$spacing-12: 3rem;     // 48px
+$spacing-14: 3.5rem;   // 56px
+$spacing-16: 4rem;     // 64px
+$spacing-20: 5rem;     // 80px
+$spacing-24: 6rem;     // 96px
+
+// Breakpoints
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;
+
+// Border Radius
+$radius-sm: 0.375rem;  // 6px
+$radius-md: 0.5rem;    // 8px
+$radius-lg: 0.75rem;   // 12px
+$radius-xl: 1rem;      // 16px
+$radius-full: 9999px;
+
+// Shadows
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+// Transitions
+$transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+$transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+$transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+// Z-Index
+$z-dropdown: 1000;
+$z-sticky: 1020;
+$z-fixed: 1030;
+$z-modal-backdrop: 1040;
+$z-modal: 1050;
+$z-popover: 1060;
+$z-tooltip: 1070;

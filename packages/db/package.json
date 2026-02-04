@@ -1,0 +1,46 @@
+{
+  "name": "@bantuanku/db",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx src/seed.ts",
+    "migrate:liability": "tsx src/migrations/migrate-to-liability-model.ts",
+    "db:seed:zakat": "tsx src/seed-zakat.ts",
+    "db:seed:zakat-coa": "tsx src/seed-zakat-coa.ts",
+    "migrate:address": "tsx scripts/run-migration.ts migrations/002-indonesia-address.sql",
+    "db:seed:address": "tsx scripts/seed-indonesia-address.ts",
+    "migrate:donatur-address": "tsx scripts/run-migration.ts migrations/016_update_donatur_address.sql",
+    "migrate:employees-address": "tsx scripts/run-migration.ts migrations/017_update_employees_address.sql",
+    "migrate:cleanup-donatur": "tsx scripts/run-migration.ts migrations/018_cleanup_donatur_legacy_address.sql",
+    "migrate:cleanup-employees": "tsx scripts/run-migration.ts migrations/019_cleanup_employees_legacy_address.sql",
+    "migrate:vendors-address": "tsx scripts/run-migration.ts migrations/022_update_vendors_address.sql",
+    "migrate:cleanup-vendors": "tsx scripts/run-migration.ts migrations/023_cleanup_vendors_legacy_address.sql",
+    "migrate:zakat-campaign": "tsx scripts/run-migration.ts migrations/030_add_zakat_campaign.sql",
+    "migrate:zakat-types": "tsx scripts/run-migration.ts migrations/031_update_zakat_types_active.sql"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.38.3",
+    "idn-area-data": "^4.0.0",
+    "pg": "^8.17.1",
+    "postgres": "^3.4.8"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.30.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.3"
+  }
+}

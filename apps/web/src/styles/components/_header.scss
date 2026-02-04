@@ -1,0 +1,373 @@
+@import '../variables';
+@import '../mixins';
+
+.header {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  background: white;
+  border-bottom: 1px solid $gray-200;
+  transition: all $transition-base;
+  z-index: 1000;
+
+  @include mobile {
+    border-bottom: none;
+  }
+
+  &--scrolled {
+    box-shadow: 0 4px 16px rgba(black, 0.08);
+  }
+
+  &__container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: $spacing-4 $spacing-6;
+    display: flex;
+    align-items: center;
+    gap: $spacing-8;
+
+    @include mobile {
+      padding: $spacing-3 $spacing-4;
+      gap: $spacing-2;
+      justify-content: space-between;
+    }
+  }
+
+  &__logo {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    text-decoration: none;
+    height: 100%;
+
+    @include mobile {
+      flex: 0;
+    }
+  }
+
+  &__logo-img {
+    height: 48px;
+    width: auto;
+    min-width: 48px;
+    max-width: 180px;
+    object-fit: contain;
+    display: block;
+
+    @include mobile {
+      height: 32px;
+      min-width: 32px;
+      max-width: 120px;
+    }
+  }
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    gap: $spacing-1;
+    flex: 1;
+
+    @include tablet-down {
+      display: none;
+    }
+  }
+
+  &__nav-link {
+    padding: $spacing-2 $spacing-3;
+    color: $gray-700;
+    font-weight: 600;
+    font-size: $font-sm;
+    text-decoration: none;
+    border-radius: $radius-md;
+    transition: all $transition-base;
+    white-space: nowrap;
+
+    &:hover {
+      color: $primary-600;
+      background: rgba($primary-500, 0.05);
+    }
+
+    &--active {
+      color: $primary-600;
+      background: rgba($primary-500, 0.1);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+    margin-left: auto;
+    height: 100%;
+
+    @include mobile {
+      gap: $spacing-2;
+    }
+  }
+
+  &__search {
+    &--desktop {
+      width: 280px;
+
+      @include tablet-down {
+        display: none;
+      }
+    }
+
+    &--mobile {
+      display: none;
+      padding: 0 $spacing-6 $spacing-4;
+
+      @include tablet-down {
+        display: block;
+      }
+
+      @include mobile {
+        padding: 0 $spacing-4 $spacing-3;
+      }
+    }
+  }
+
+  &__search-toggle {
+    display: none;
+
+    @include tablet-down {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: $radius-lg;
+      border: 1.5px solid $gray-300;
+      background: white;
+      color: $gray-700;
+      transition: all $transition-base;
+      cursor: pointer;
+      padding: 0;
+
+      &:hover {
+        border-color: $primary-500;
+        background: $primary-50;
+        color: $primary-600;
+      }
+
+      svg {
+        flex-shrink: 0;
+        width: 22px;
+        height: 22px;
+      }
+    }
+
+    @include mobile {
+      width: 32px;
+      height: 32px;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  &__cart {
+    position: relative;
+    text-decoration: none;
+  }
+
+  &__cart-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: $radius-lg;
+    border: 1.5px solid $gray-300;
+    background: white;
+    color: $gray-700;
+    transition: all $transition-base;
+    cursor: pointer;
+
+    &:hover {
+      border-color: $primary-500;
+      background: $primary-50;
+      color: $primary-600;
+    }
+
+    svg {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+    }
+
+    @include mobile {
+      width: 32px;
+      height: 32px;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  &__cart-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    background: $danger-500;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: $radius-full;
+    border: 2px solid white;
+    box-shadow: 0 2px 4px rgba(black, 0.1);
+
+    @include mobile {
+      min-width: 16px;
+      height: 16px;
+      font-size: 9px;
+      top: -3px;
+      right: -3px;
+      padding: 0 3px;
+    }
+  }
+
+  &__login {
+    @include tablet-down {
+      display: none;
+    }
+  }
+
+  &__menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    @include tablet-down {
+      display: flex;
+    }
+  }
+
+  &__menu-toggle-line {
+    width: 20px;
+    height: 2px;
+    background: $gray-900;
+    border-radius: $radius-full;
+    transition: all $transition-base;
+
+    .header--menu-open & {
+      &:nth-child(1) {
+        transform: translateY(6px) rotate(45deg);
+      }
+
+      &:nth-child(2) {
+        opacity: 0;
+      }
+
+      &:nth-child(3) {
+        transform: translateY(-6px) rotate(-45deg);
+      }
+    }
+  }
+
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(black, 0.5);
+    z-index: 999;
+    animation: fadeIn 0.3s ease;
+
+    @include desktop {
+      display: none;
+    }
+  }
+
+  &__mobile-menu {
+    position: fixed;
+    top: 65px;
+    right: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    background: white;
+    box-shadow: -4px 0 16px rgba(black, 0.1);
+    z-index: 1001;
+    animation: slideInRight 0.3s ease;
+    overflow-y: auto;
+
+    @include mobile {
+      top: 56px;
+    }
+
+    @include desktop {
+      display: none;
+    }
+  }
+
+  &__mobile-nav {
+    display: flex;
+    flex-direction: column;
+    padding: $spacing-4 0;
+    border-bottom: 1px solid $gray-200;
+  }
+
+  &__mobile-nav-link {
+    padding: $spacing-3 $spacing-6;
+    color: $gray-700;
+    font-weight: 600;
+    font-size: $font-base;
+    text-decoration: none;
+    transition: all $transition-base;
+
+    &:hover {
+      color: $primary-600;
+      background: rgba($primary-500, 0.05);
+    }
+
+    &--active {
+      color: $primary-600;
+      background: rgba($primary-500, 0.1);
+      border-right: 3px solid $primary-600;
+    }
+  }
+
+  &__mobile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-3;
+    padding: $spacing-4 $spacing-6;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

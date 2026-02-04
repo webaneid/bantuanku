@@ -1,0 +1,165 @@
+@import '../utils/variables';
+@import '../utils/mixins';
+
+.autocomplete {
+  position: relative;
+  width: 100%;
+
+  &-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-md;
+    background: white;
+    border: 1px solid $gray-300;
+    border-radius: $radius-md;
+    cursor: pointer;
+    transition: all $transition-fast;
+    min-height: 42px;
+
+    &:hover:not(.disabled) {
+      border-color: $gray-400;
+    }
+
+    &.open {
+      border-color: $primary-500;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    &.disabled {
+      background: $gray-100;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+
+  &-search {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 0.875rem;
+    color: $gray-900;
+    background: transparent;
+    padding: 0;
+
+    &::placeholder {
+      color: $gray-400;
+    }
+  }
+
+  &-display {
+    flex: 1;
+    font-size: 0.875rem;
+    color: $gray-900;
+    @include truncate;
+  }
+
+  &-placeholder {
+    color: $gray-400;
+  }
+
+  &-icons {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    flex-shrink: 0;
+  }
+
+  &-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    background: transparent;
+    border: none;
+    color: $gray-400;
+    cursor: pointer;
+    border-radius: $radius-sm;
+    transition: all $transition-fast;
+
+    &:hover {
+      color: $gray-600;
+      background: $gray-100;
+    }
+  }
+
+  &-arrow {
+    width: 16px;
+    height: 16px;
+    color: $gray-400;
+    transition: transform $transition-fast;
+
+    &.open {
+      transform: rotate(180deg);
+    }
+  }
+
+  &-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid $gray-200;
+    border-radius: $radius-md;
+    box-shadow: $shadow-lg;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    animation: slideDown 0.15s ease-out;
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+
+  &-options {
+    list-style: none;
+    padding: $spacing-xs;
+    margin: 0;
+  }
+
+  &-option {
+    padding: $spacing-sm $spacing-md;
+    font-size: 0.875rem;
+    color: $gray-700;
+    cursor: pointer;
+    border-radius: $radius-sm;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $gray-50;
+      color: $gray-900;
+    }
+
+    &.selected {
+      background: $primary-50;
+      color: $primary-700;
+      font-weight: 500;
+
+      &:hover {
+        background: $primary-100;
+      }
+    }
+  }
+
+  &-empty {
+    padding: $spacing-lg $spacing-md;
+    text-align: center;
+    font-size: 0.875rem;
+    color: $gray-500;
+  }
+
+  // Scrollbar styling
+  &-dropdown {
+    @extend .scrollbar-thin;
+  }
+}

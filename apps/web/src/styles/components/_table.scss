@@ -1,0 +1,100 @@
+@import '../variables';
+@import '../mixins';
+
+.table-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  border: 1px solid rgb(229 231 235);
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  @media (max-width: 1024px) {
+    overflow-x: visible;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    border-radius: 0;
+  }
+}
+
+.table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: separate;
+  border-spacing: 0;
+
+  thead {
+    background: rgb(249 250 251);
+
+    th {
+      padding: 1rem 1.5rem;
+      text-align: left;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: rgb(75 85 99);
+      border-bottom: 1px solid rgb(229 231 235);
+      white-space: nowrap;
+
+      &:first-child {
+        border-top-left-radius: 12px;
+      }
+
+      &:last-child {
+        border-top-right-radius: 12px;
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      background: white;
+      border-bottom: 1px solid rgb(243 244 246);
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: rgb(249 250 251);
+      }
+
+      &:last-child {
+        border-bottom: none;
+
+        td:first-child {
+          border-bottom-left-radius: 12px;
+        }
+
+        td:last-child {
+          border-bottom-right-radius: 12px;
+        }
+      }
+
+      td {
+        padding: 1rem 1.5rem;
+        font-size: 0.875rem;
+        color: rgb(17 24 39);
+        vertical-align: middle;
+
+        // Monospace for numbers
+        &.mono {
+          font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+          font-variant-numeric: tabular-nums;
+        }
+      }
+    }
+  }
+}
+
+// Icon cell
+.table-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  background: rgb(243 244 246);
+  color: rgb(75 85 99);
+}

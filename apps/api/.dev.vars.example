@@ -1,0 +1,8 @@
+# Local Development Environment Variables
+# Copy this file to .dev.vars for local development
+# For production, set these as Cloudflare Workers secrets
+
+DATABASE_URL=postgresql://user@localhost:5432/bantuanku
+JWT_SECRET=change-this-to-32-character-random-string
+JWT_EXPIRES_IN=15m
+API_URL=http://localhost:50245

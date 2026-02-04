@@ -1,0 +1,252 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/lib/auth";
+import api from "@/lib/api";
+import { formatRupiahFull } from "@/lib/format";
+import { Button } from "@/components/atoms";
+import { cn } from "@/lib/cn";
+
+interface Stats {
+  totalDonations: number;
+  totalAmount: number;
+}
+
+interface Donation {
+  id: string;
+  referenceId: string;
+  campaignId: string;
+  amount: number;
+  totalAmount: number;
+  paymentStatus: string;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+const statusConfig = {
+  pending: { label: "Menunggu", color: "bg-warning-50 text-warning-700 border-warning-200" },
+  processing: { label: "Diproses", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  success: { label: "Berhasil", color: "bg-success-50 text-success-700 border-success-200" },
+  failed: { label: "Gagal", color: "bg-danger-50 text-danger-700 border-danger-200" },
+  expired: { label: "Kedaluwarsa", color: "bg-gray-50 text-gray-700 border-gray-200" },
+};
+
+export default function DashboardPage() {
+  const { user, isHydrated } = useAuth();
+  const [stats, setStats] = useState<Stats>({ totalDonations: 0, totalAmount: 0 });
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Wait for hydration and user before fetching data
+    if (!isHydrated || !user) {
+      if (isHydrated && !user) {
+        // Hydration done but no user, stop loading
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const [statsRes, donationsRes] = await Promise.all([
+          api.get("/account/stats"),
+          api.get("/account/donations?limit=5"),
+        ]);
+
+        if (statsRes.data.success) {
+          setStats(statsRes.data.data);
+        }
+
+        if (donationsRes.data.success) {
+          setDonations(donationsRes.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [isHydrated, user]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 max-w-7xl mx-auto">
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+
+        <div className="relative z-10">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+            Assalamu&apos;alaikum, {user?.name}!
+          </h1>
+          <p className="text-primary-50 text-sm sm:text-base">
+            Terima kasih atas kepercayaan dan kebaikan hati Anda dalam membantu sesama
+          </p>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-lg bg-success-100 flex items-center justify-center">
+              <svg className="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-gray-600 text-sm font-medium mb-1">Total Donasi</h3>
+          <p className="text-3xl font-bold text-gray-900">{stats.totalDonations}</p>
+          <p className="text-xs text-gray-500 mt-2">Transaksi berhasil</p>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center">
+              <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-gray-600 text-sm font-medium mb-1">Total Nominal</h3>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-900">{formatRupiahFull(stats.totalAmount)}</p>
+          <p className="text-xs text-gray-500 mt-2">Kontribusi Anda</p>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <Link
+          href="/account/donations"
+          className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500 hover:shadow-md transition-all group"
+        >
+          <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center mb-3 group-hover:bg-primary-100 transition-colors">
+            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-gray-900">Riwayat</p>
+        </Link>
+
+        <Link
+          href="/account/qurban-savings"
+          className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500 hover:shadow-md transition-all group"
+        >
+          <div className="w-10 h-10 rounded-lg bg-success-50 flex items-center justify-center mb-3 group-hover:bg-success-100 transition-colors">
+            <svg className="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-gray-900">Tabungan Qurban</p>
+        </Link>
+
+        <Link
+          href="/qurban"
+          className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500 hover:shadow-md transition-all group"
+        >
+          <div className="w-10 h-10 rounded-lg bg-warning-50 flex items-center justify-center mb-3 group-hover:bg-warning-100 transition-colors">
+            <svg className="w-5 h-5 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-gray-900">Qurban</p>
+        </Link>
+
+        <Link
+          href="/account/profile"
+          className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500 hover:shadow-md transition-all group"
+        >
+          <div className="w-10 h-10 rounded-lg bg-info-50 flex items-center justify-center mb-3 group-hover:bg-info-100 transition-colors">
+            <svg className="w-5 h-5 text-info-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-gray-900">Profil Saya</p>
+        </Link>
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="bg-white rounded-xl border border-gray-200">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">Riwayat Terbaru</h2>
+            <Link
+              href="/account/donations"
+              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+            >
+              Lihat Semua
+            </Link>
+          </div>
+        </div>
+
+        {donations.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 className="text-base font-medium text-gray-900 mb-2">Belum Ada Transaksi</h3>
+            <p className="text-sm text-gray-500 mb-6">Mulai berbagi kebaikan dengan berdonasi sekarang</p>
+            <Link href="/">
+              <Button>Mulai Berdonasi</Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {donations.map((donation) => {
+              const status = statusConfig[donation.paymentStatus as keyof typeof statusConfig] || statusConfig.pending;
+              return (
+                <Link
+                  key={donation.id}
+                  href={`/account/donations/${donation.id}`}
+                  className="block p-4 sm:p-6 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                          {donation.referenceId}
+                        </p>
+                        <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border", status.color)}>
+                          {status.label}
+                        </span>
+                      </div>
+                      <p className="text-lg font-bold text-gray-900 mb-1">
+                        {formatRupiahFull(donation.amount)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(donation.createdAt).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
+                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

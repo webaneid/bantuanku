@@ -1,0 +1,7 @@
+<svg width="180" height="48" viewBox="0 0 180 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Logo placeholder - will be replaced by actual logo from settings API -->
+  <rect width="180" height="48" rx="4" fill="#035a52"/>
+  <text x="90" y="30" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="white" text-anchor="middle">
+    Bantuanku
+  </text>
+</svg>

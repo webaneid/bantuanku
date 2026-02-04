@@ -1,0 +1,163 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+// Import SCSS modules
+@import './variables';
+@import './mixins';
+@import './typography';
+@import './components/buttons';
+@import './components/cards';
+@import './components/forms';
+@import './components/badges';
+@import './components/progress';
+@import './components/amount-selector';
+@import './components/search-box';
+@import './components/share-buttons';
+@import './components/quantity-selector';
+@import './components/program-card';
+@import './components/featured-carousel';
+@import './components/category-grid';
+@import './components/header';
+@import './components/footer';
+@import './components/hero-slider';
+@import './components/table';
+@import './components/table-mobile';
+@import './components/pagination';
+@import './components/category-filter';
+@import './components/programs-grid';
+
+// Global CSS Reset & Base Styles
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-white text-gray-900 antialiased;
+    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    line-height: 1.8;
+  }
+
+  p {
+    margin-bottom: 20px;
+
+    &:last-child,
+    &:last-of-type {
+      margin-bottom: 0;
+    }
+  }
+
+  // Focus visible styles
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  }
+
+  // Selection styles
+  ::selection {
+    @apply bg-primary-100 text-primary-900;
+  }
+
+  // Scrollbar styles (webkit)
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+
+    &:hover {
+      @apply bg-gray-400;
+    }
+  }
+}
+
+// Utility classes
+@layer utilities {
+  .container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8;
+    max-width: 1280px;
+  }
+
+  .container-fluid {
+    @apply mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  // Text utilities
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  // Arabic text utilities
+  .arabic {
+    font-family: var(--font-scheherazade), 'Traditional Arabic', serif;
+    font-size: 1.25em;
+    line-height: 1.8;
+    direction: rtl;
+    text-align: right;
+  }
+
+  // Mono font for numbers
+  .mono {
+    font-family: var(--font-jetbrains), 'Courier New', monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Animation utilities
+  .animate-on-scroll {
+    @apply opacity-0 translate-y-8 transition-all duration-700;
+
+    &.in-view {
+      @apply opacity-100 translate-y-0;
+    }
+  }
+
+  // Skip to content link (accessibility)
+  .skip-to-content {
+    @apply absolute -top-full left-0 z-[9999] bg-primary-500 text-white px-4 py-2 transition-all;
+
+    &:focus {
+      @apply top-0;
+    }
+  }
+
+  // Mobile section spacing overrides
+  @media (max-width: 768px) {
+    section.py-16 {
+      padding-top: 0.7rem !important;
+      padding-bottom: 0.7rem !important;
+    }
+
+    section.py-20 {
+      padding-top: 0.7rem !important;
+      padding-bottom: 0.7rem !important;
+    }
+
+    section.py-12 {
+      padding-top: 0.7rem !important;
+      padding-bottom: 0.7rem !important;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      line-height: 1.3;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-description {
+      font-size: 1rem;
+      line-height: 1.4rem;
+    }
+  }
+}

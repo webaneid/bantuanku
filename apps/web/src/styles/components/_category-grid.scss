@@ -1,0 +1,224 @@
+@import '../variables';
+@import '../mixins';
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $spacing-4;
+
+  @include desktop {
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-5;
+  }
+
+  @include mobile {
+    gap: $spacing-3;
+  }
+}
+
+.category-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  border-radius: $radius-xl;
+  transition: transform $transition-base;
+
+  &:active {
+    transform: scale(0.98);
+  }
+
+  @include tablet {
+    &:hover {
+      transform: translateY(-4px);
+
+      .category-card__arrow {
+        transform: translateX(4px);
+      }
+
+      .category-card__inner.gradient-qurban,
+      .category-card__inner.gradient-infaq,
+      .category-card__inner.gradient-wakaf {
+        box-shadow: 0 8px 24px rgba(black, 0.12);
+        border-color: $primary-200;
+      }
+    }
+  }
+
+  &__inner {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-4;
+    padding: $spacing-6;
+    min-height: 180px;
+    background: white;
+    border: 1px solid $gray-200;
+    border-radius: $radius-xl;
+    overflow: hidden;
+    transition: all $transition-base;
+
+    @include mobile {
+      padding: $spacing-5;
+      min-height: 160px;
+      gap: $spacing-3;
+    }
+
+    // Gradient variants
+    &.gradient-zakat {
+      background: linear-gradient(135deg, $primary-500 0%, $primary-600 100%);
+      border: none;
+    }
+
+    &.gradient-qurban,
+    &.gradient-infaq,
+    &.gradient-wakaf {
+      background: white;
+      border: 1px solid $gray-200;
+      box-shadow: 0 2px 8px rgba(black, 0.04);
+    }
+
+    // Decorative elements - only for zakat
+    &.gradient-zakat::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    &.gradient-zakat::after {
+      content: '';
+      position: absolute;
+      bottom: -30px;
+      right: -30px;
+      width: 100px;
+      height: 100px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+  }
+
+  &__icon {
+    position: relative;
+    z-index: 1;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: $radius-lg;
+    transition: all $transition-base;
+
+    svg {
+      width: 48px;
+      height: 48px;
+    }
+
+    .gradient-qurban &,
+    .gradient-infaq &,
+    .gradient-wakaf & {
+      color: $primary-500;
+      background: $primary-50;
+    }
+
+    @include mobile {
+      width: 40px;
+      height: 40px;
+
+      svg {
+        width: 32px;
+        height: 32px;
+      }
+    }
+  }
+
+  &__content {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-1;
+  }
+
+  &__title {
+    font-size: $font-xl;
+    font-weight: 700;
+    color: white;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    .gradient-qurban &,
+    .gradient-infaq &,
+    .gradient-wakaf & {
+      color: $gray-900;
+      text-shadow: none;
+    }
+
+    @include mobile {
+      font-size: $font-lg;
+    }
+  }
+
+  &__description {
+    font-size: $font-sm;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    line-height: 1.4;
+
+    .gradient-qurban &,
+    .gradient-infaq &,
+    .gradient-wakaf & {
+      color: $gray-600;
+    }
+
+    @include mobile {
+      font-size: $font-xs;
+    }
+  }
+
+  &__arrow {
+    position: absolute;
+    bottom: $spacing-4;
+    right: $spacing-4;
+    z-index: 1;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border-radius: $radius-full;
+    color: white;
+    transition: all $transition-base;
+
+    .gradient-qurban &,
+    .gradient-infaq &,
+    .gradient-wakaf & {
+      background: $gray-100;
+      color: $primary-500;
+    }
+
+    @include mobile {
+      width: 28px;
+      height: 28px;
+      bottom: $spacing-3;
+      right: $spacing-3;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+}

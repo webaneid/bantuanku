@@ -1,0 +1,70 @@
+@import '../utils/variables';
+
+// Headings
+.heading-1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 2.5rem;
+  color: $gray-900;
+}
+
+.heading-2 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 2.25rem;
+  color: $gray-900;
+}
+
+.heading-3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 2rem;
+  color: $gray-900;
+}
+
+.heading-4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+  color: $gray-900;
+}
+
+// Body text
+.text-body {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  color: $gray-700;
+}
+
+.text-small {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: $gray-600;
+}
+
+.text-tiny {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: $gray-500;
+}
+
+// Text utilities
+.text-muted {
+  color: $gray-600;
+}
+
+.text-primary {
+  color: $primary-600;
+}
+
+.text-success {
+  color: $success-600;
+}
+
+.text-danger {
+  color: $danger-600;
+}
+
+.text-warning {
+  color: $warning-600;
+}

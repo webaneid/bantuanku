@@ -1,0 +1,139 @@
+// ============================================================================
+// PAGINATION COMPONENT
+// ============================================================================
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 3rem;
+  flex-wrap: wrap;
+
+  // Navigation buttons (Previous/Next)
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    background-color: var(--color-white);
+    border: 1px solid var(--color-gray-300);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background-color: var(--color-gray-50);
+      border-color: var(--color-gray-400);
+      color: var(--color-gray-900);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    // Hide text on mobile, show on larger screens
+    @media (max-width: 640px) {
+      padding: 0.625rem;
+    }
+  }
+
+  &__text {
+    @media (max-width: 640px) {
+      display: none;
+    }
+  }
+
+  &__icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  // Page numbers container
+  &__numbers {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  // Individual page number
+  &__number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    padding: 0 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    background-color: var(--color-white);
+    border: 1px solid var(--color-gray-300);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: var(--color-gray-50);
+      border-color: var(--color-gray-400);
+      color: var(--color-gray-900);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    // Active page number
+    &--active {
+      color: var(--color-white);
+      background-color: var(--color-primary-600);
+      border-color: var(--color-primary-600);
+
+      &:hover {
+        background-color: var(--color-primary-700);
+        border-color: var(--color-primary-700);
+        color: var(--color-white);
+      }
+    }
+  }
+
+  // Ellipsis for skipped pages
+  &__ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    padding: 0 0.5rem;
+    color: var(--color-gray-500);
+    font-weight: 500;
+  }
+}
+
+// ============================================================================
+// LOADING SPINNER
+// ============================================================================
+
+.loading-spinner {
+  display: inline-block;
+  width: 3rem;
+  height: 3rem;
+  border: 4px solid var(--color-gray-200);
+  border-top-color: var(--color-primary-600);
+  border-radius: 50%;
+  animation: spinner-rotate 0.8s linear infinite;
+}
+
+@keyframes spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,22 @@
+@import '../utils/variables';
+@import '../utils/mixins';
+
+.filter-container {
+  display: flex;
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+  flex-wrap: wrap;
+
+  .filter-group {
+    flex: 1;
+    min-width: 200px;
+
+    @media (max-width: 768px) {
+      min-width: 100%;
+    }
+  }
+
+  .form-input {
+    width: 100%;
+  }
+}

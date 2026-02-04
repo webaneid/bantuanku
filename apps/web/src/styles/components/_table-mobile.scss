@@ -1,0 +1,78 @@
+// Mobile card view for tables
+@media (max-width: 1024px) {
+  .table {
+    display: none;
+  }
+
+  .table-mobile-cards {
+    display: block;
+
+    .table-card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid rgb(229 231 235);
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+
+      &-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid rgb(243 244 246);
+
+        &-left {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        &-title {
+          font-weight: 600;
+          font-size: 0.9375rem;
+          color: rgb(17 24 39);
+          margin-bottom: 0.25rem;
+          line-height: 1.4;
+        }
+
+        &-subtitle {
+          font-size: 0.8125rem;
+          color: rgb(107 114 128);
+        }
+      }
+
+      &-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        font-size: 0.875rem;
+
+        &-label {
+          color: rgb(75 85 99);
+          font-weight: 500;
+        }
+
+        &-value {
+          color: rgb(17 24 39);
+          text-align: right;
+
+          &.mono {
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-variant-numeric: tabular-nums;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Hide mobile cards on desktop
+@media (min-width: 1025px) {
+  .table-mobile-cards {
+    display: none;
+  }
+}

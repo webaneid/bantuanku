@@ -1,0 +1,242 @@
+// Button base
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-2;
+  padding: 0.625rem 1.25rem;
+  border-radius: $radius-md;
+  font-weight: 600;
+  font-size: $font-base;
+  transition: all $transition-base;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  // Variants
+  &-primary {
+    background: $primary-500;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: $primary-600;
+      box-shadow: 0 4px 12px rgba($primary-500, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      background: $primary-700;
+    }
+  }
+
+  &-secondary {
+    background: $gray-100;
+    color: $gray-900;
+
+    &:hover:not(:disabled) {
+      background: $gray-200;
+    }
+
+    &:active:not(:disabled) {
+      background: $gray-300;
+    }
+  }
+
+  &-success {
+    background: $success-500;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: $success-600;
+      box-shadow: 0 4px 12px rgba($success-500, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      background: $success-700;
+    }
+  }
+
+  &-danger {
+    background: $danger-500;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: $danger-600;
+      box-shadow: 0 4px 12px rgba($danger-500, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      background: $danger-700;
+    }
+  }
+
+  &-warning {
+    background: $warning-500;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: $warning-600;
+      box-shadow: 0 4px 12px rgba($warning-500, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      background: $warning-700;
+    }
+  }
+
+  &-outline {
+    background: transparent;
+    border: 2px solid $primary-500;
+    color: $primary-500;
+
+    &:hover:not(:disabled) {
+      background: $primary-50;
+    }
+
+    &:active:not(:disabled) {
+      background: $primary-100;
+    }
+  }
+
+  &-ghost {
+    background: transparent;
+    color: $primary-600;
+
+    &:hover:not(:disabled) {
+      background: $primary-50;
+    }
+
+    &:active:not(:disabled) {
+      background: $primary-100;
+    }
+  }
+
+  // Sizes
+  &-sm {
+    padding: 0.5rem 1rem;
+    font-size: $font-sm;
+  }
+
+  &-md {
+    padding: 0.625rem 1.25rem;
+    font-size: $font-base;
+  }
+
+  &-lg {
+    padding: 0.875rem 1.75rem;
+    font-size: $font-lg;
+
+    @include mobile {
+      font-size: $font-xs;
+      padding: $spacing-2 $spacing-4;
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+
+  // Full width
+  &-full {
+    width: 100%;
+  }
+
+  // Icon button
+  &-icon {
+    padding: 0.625rem;
+    aspect-ratio: 1;
+
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+
+  // Loading state
+  &-loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      width: 1rem;
+      height: 1rem;
+      top: 50%;
+      left: 50%;
+      margin-left: -0.5rem;
+      margin-top: -0.5rem;
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 0.6s linear infinite;
+    }
+  }
+}
+
+// Action buttons (for tables/cards)
+.action-btn {
+  @include button-reset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border-radius: $radius-md;
+  transition: all $transition-fast;
+
+  svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  &:hover {
+    background: $gray-100;
+  }
+
+  &-view {
+    color: $info-600;
+
+    &:hover {
+      background: $info-50;
+      color: $info-700;
+    }
+  }
+
+  &-edit {
+    color: $warning-600;
+
+    &:hover {
+      background: $warning-50;
+      color: $warning-700;
+    }
+  }
+
+  &-delete {
+    color: $danger-600;
+
+    &:hover {
+      background: $danger-50;
+      color: $danger-700;
+    }
+  }
+}
+
+// Spin animation
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

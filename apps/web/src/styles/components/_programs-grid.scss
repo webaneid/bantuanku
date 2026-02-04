@@ -1,0 +1,59 @@
+// ============================================================================
+// PROGRAMS GRID COMPONENT
+// ============================================================================
+
+.programs-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1.25rem;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 768px) {
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+// ============================================================================
+// EMPTY STATE COMPONENT
+// ============================================================================
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  text-align: center;
+
+  &__icon {
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: 1.5rem;
+    color: var(--color-gray-400);
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin-bottom: 0.5rem;
+  }
+
+  &__description {
+    font-size: 1rem;
+    color: var(--color-gray-600);
+    max-width: 28rem;
+    margin: 0 auto;
+  }
+}

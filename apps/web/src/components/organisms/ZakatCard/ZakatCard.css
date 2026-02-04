@@ -1,0 +1,53 @@
+.zakat-card {
+  @apply relative block rounded-xl overflow-hidden transition-all duration-300;
+  @apply hover:shadow-xl hover:-translate-y-1;
+  @apply aspect-[3/4] lg:aspect-[4/3];
+}
+
+.zakat-card__image-wrapper {
+  @apply absolute inset-0 w-full h-full;
+}
+
+.zakat-card__image {
+  @apply w-full h-full object-cover;
+}
+
+.zakat-card__image-placeholder {
+  @apply w-full h-full flex items-center justify-center bg-gray-200 text-gray-400;
+}
+
+.zakat-card__overlay {
+  @apply absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent;
+}
+
+.zakat-card__content {
+  @apply absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white z-10;
+}
+
+.zakat-card__title {
+  @apply text-lg md:text-xl lg:text-2xl font-bold mb-2 md:mb-3;
+}
+
+.zakat-card__stats {
+  @apply flex flex-col gap-1;
+}
+
+.zakat-card__label {
+  @apply text-xs md:text-sm text-white/80;
+}
+
+.zakat-card__amount {
+  @apply text-sm md:text-base font-bold text-white;
+}
+
+.zakat-card__cta {
+  @apply flex items-center gap-2 text-white;
+}
+
+.zakat-card__cta-text {
+  @apply text-sm md:text-base font-semibold;
+}
+
+.zakat-card:hover .zakat-card__cta svg {
+  @apply translate-x-1 transition-transform duration-300;
+}

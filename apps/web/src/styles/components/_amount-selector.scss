@@ -1,0 +1,159 @@
+@import '../variables';
+@import '../mixins';
+
+.amount-selector {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-3;
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-2;
+
+    @include mobile {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @include mobile-sm {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  &__preset {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-3 $spacing-4;
+    border: 2px solid $gray-300;
+    border-radius: $radius-lg;
+    background: white;
+    color: $gray-700;
+    font-weight: 600;
+    font-size: $font-base;
+    cursor: pointer;
+    transition: all $transition-base;
+    position: relative;
+    overflow: hidden;
+
+    @include mobile {
+      padding: $spacing-2 $spacing-3;
+      font-size: $font-sm;
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba($primary-500, 0.05), rgba($primary-600, 0.05));
+      opacity: 0;
+      transition: opacity $transition-base;
+    }
+
+    &:hover:not(&--active) {
+      border-color: $primary-400;
+      color: $primary-600;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba($primary-500, 0.15);
+
+      &::before {
+        opacity: 1;
+      }
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &--active {
+      border-color: $primary-500;
+      background: linear-gradient(135deg, $primary-500, $primary-600);
+      color: white;
+      box-shadow: 0 4px 16px rgba($primary-500, 0.3);
+      position: relative;
+
+      &::after {
+        content: '✓';
+        position: absolute;
+        top: 4px;
+        right: 6px;
+        font-size: 12px;
+        font-weight: bold;
+        opacity: 0.9;
+      }
+    }
+  }
+
+  &__custom {
+    animation: fadeInDown 0.3s ease;
+  }
+
+  &__custom-input {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: $spacing-2;
+
+    input {
+      flex: 1;
+      padding-left: $spacing-10;
+      font-size: $font-lg;
+      font-weight: 600;
+      font-family: $font-mono;
+    }
+  }
+
+  &__prefix {
+    position: absolute;
+    left: $spacing-4;
+    font-size: $font-lg;
+    font-weight: 600;
+    color: $gray-500;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  &__summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing-4;
+    background: linear-gradient(135deg, rgba($primary-500, 0.05), rgba($primary-600, 0.05));
+    border-radius: $radius-lg;
+    border: 1px solid rgba($primary-500, 0.2);
+    animation: fadeInUp 0.3s ease;
+  }
+
+  &__total {
+    font-size: $font-xl;
+    font-weight: 700;
+    color: $primary-600;
+    font-family: $font-mono;
+
+    @include mobile {
+      font-size: $font-lg;
+    }
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

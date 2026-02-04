@@ -1,0 +1,69 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1737269820000,
+      "tag": "0000_fluffy_moira_mactaggert",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1737273720000,
+      "tag": "0001_update_disbursements",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1737277200000,
+      "tag": "0002_add_media_category",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1737288660000,
+      "tag": "0003_broad_slipstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1737354840000,
+      "tag": "0004_rename_disbursements_to_ledger",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1737354840000,
+      "tag": "0005_create_accounting_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1737359580000,
+      "tag": "0006_remove_payment_methods_fk",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1737415260000,
+      "tag": "0007_create_donation_evidences",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1737419100000,
+      "tag": "0008_create_activity_reports",
+      "breakpoints": true
+    }
+  ]
+}

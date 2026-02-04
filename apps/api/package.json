@@ -1,0 +1,33 @@
+{
+  "name": "@bantuanku/api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "dev:node": "tsx watch server-node.ts",
+    "check-media-consistency": "node --import tsx/esm scripts/check-media-consistency.ts",
+    "migrate-shared-orders": "node --import tsx/esm scripts/migrate-shared-orders.ts",
+    "sync-group-slots": "node --import tsx/esm scripts/sync-group-slots.ts",
+    "sync-payment-status": "node --import tsx/esm scripts/sync-payment-status.ts",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@bantuanku/db": "*",
+    "@hono/node-server": "^1.19.9",
+    "@hono/zod-validator": "^0.4.2",
+    "bcryptjs": "^2.4.3",
+    "date-fns-tz": "^3.2.0",
+    "hono": "^4.6.16",
+    "jose": "^5.9.6",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "@types/bcryptjs": "^2.4.6",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.3",
+    "wrangler": "^3.99.0"
+  }
+}

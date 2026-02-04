@@ -1,0 +1,116 @@
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-modal-backdrop;
+  padding: $spacing-lg;
+  overflow-y: auto;
+}
+
+.modal-content {
+  background: white;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-xl;
+  width: 100%;
+  max-height: calc(100vh - 3rem);
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  animation: modalSlideIn 0.2s ease-out;
+  position: relative;
+  overflow: hidden; // Important for fixed header/footer
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-xl;
+  border-bottom: 1px solid $gray-200;
+  background: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0; // Prevent shrinking
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: $gray-900;
+  margin: 0;
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  @include flex-center;
+  border: none;
+  background: transparent;
+  color: $gray-400;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: all $transition-base;
+
+  &:hover {
+    background: $gray-100;
+    color: $gray-600;
+  }
+}
+
+.modal-body {
+  padding: $spacing-xl;
+  overflow-y: auto;
+  flex: 1 1 auto; // Allow grow and shrink
+  min-height: 0; // Important for flex scrolling
+
+  // Scrollbar styling
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $gray-100;
+    border-radius: $radius-full;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $gray-400;
+    border-radius: $radius-full;
+
+    &:hover {
+      background: $gray-500;
+    }
+  }
+}
+
+.modal-footer {
+  display: flex;
+  gap: $spacing-md;
+  justify-content: flex-end;
+  padding: $spacing-xl;
+  border-top: 1px solid $gray-200;
+  background: white;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  flex-shrink: 0; // Prevent shrinking
+}

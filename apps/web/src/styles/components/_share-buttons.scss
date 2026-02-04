@@ -1,0 +1,220 @@
+@import '../variables';
+@import '../mixins';
+
+.share-buttons {
+  display: flex;
+  gap: $spacing-2;
+
+  &--horizontal {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  &--vertical {
+    flex-direction: column;
+  }
+
+  &__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-2;
+    border: none;
+    border-radius: $radius-lg;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all $transition-base;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(white, 0.2), transparent);
+      opacity: 0;
+      transition: opacity $transition-base;
+    }
+
+    &:hover::before {
+      opacity: 1;
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
+  // Sizes
+  &--sm {
+    .share-buttons__button {
+      padding: $spacing-2 $spacing-3;
+      font-size: $font-sm;
+    }
+
+    .share-buttons__icon svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  &--md {
+    .share-buttons__button {
+      padding: $spacing-3 $spacing-4;
+      font-size: $font-base;
+    }
+
+    .share-buttons__icon svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  &--lg {
+    .share-buttons__button {
+      padding: $spacing-4 $spacing-5;
+      font-size: $font-lg;
+    }
+
+    .share-buttons__icon svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  // Variants
+  &--default {
+    .share-buttons__button {
+      background: var(--platform-color, $gray-500);
+      color: white;
+      box-shadow: 0 2px 8px rgba(black, 0.1);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(black, 0.15);
+      }
+    }
+
+    .share-buttons__button--whatsapp {
+      --platform-color: #25D366;
+    }
+
+    .share-buttons__button--facebook {
+      --platform-color: #1877F2;
+    }
+
+    .share-buttons__button--twitter {
+      --platform-color: #1DA1F2;
+    }
+
+    .share-buttons__button--telegram {
+      --platform-color: #0088cc;
+    }
+
+    .share-buttons__button--copy {
+      --platform-color: #{$gray-600};
+    }
+
+    .share-buttons__button--copied {
+      --platform-color: #{$success-500};
+    }
+  }
+
+  &--minimal {
+    .share-buttons__button {
+      background: transparent;
+      color: $gray-600;
+      border: 2px solid $gray-300;
+
+      &:hover {
+        border-color: var(--platform-color, $gray-500);
+        color: var(--platform-color, $gray-700);
+        background: rgba(black, 0.03);
+      }
+    }
+
+    .share-buttons__button--whatsapp:hover {
+      --platform-color: #25D366;
+    }
+
+    .share-buttons__button--facebook:hover {
+      --platform-color: #1877F2;
+    }
+
+    .share-buttons__button--twitter:hover {
+      --platform-color: #1DA1F2;
+    }
+
+    .share-buttons__button--telegram:hover {
+      --platform-color: #0088cc;
+    }
+
+    .share-buttons__button--copy:hover {
+      --platform-color: #{$gray-600};
+    }
+
+    .share-buttons__button--copied {
+      border-color: $success-500;
+      color: $success-600;
+      background: rgba($success-500, 0.1);
+    }
+  }
+
+  &--icon-only {
+    .share-buttons__button {
+      padding: $spacing-3;
+      background: $gray-100;
+      color: $gray-600;
+      aspect-ratio: 1;
+
+      &:hover {
+        background: var(--platform-color, $gray-200);
+        color: white;
+      }
+    }
+
+    &.share-buttons--sm .share-buttons__button {
+      padding: $spacing-2;
+    }
+
+    &.share-buttons--lg .share-buttons__button {
+      padding: $spacing-4;
+    }
+
+    .share-buttons__button--whatsapp:hover {
+      --platform-color: #25D366;
+    }
+
+    .share-buttons__button--facebook:hover {
+      --platform-color: #1877F2;
+    }
+
+    .share-buttons__button--twitter:hover {
+      --platform-color: #1DA1F2;
+    }
+
+    .share-buttons__button--telegram:hover {
+      --platform-color: #0088cc;
+    }
+
+    .share-buttons__button--copy:hover {
+      --platform-color: #{$gray-600};
+    }
+
+    .share-buttons__button--copied {
+      background: $success-500;
+      color: white;
+    }
+  }
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    white-space: nowrap;
+  }
+}

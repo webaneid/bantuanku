@@ -1,0 +1,95 @@
+.qurban-card {
+  @apply relative bg-white rounded-xl border border-gray-200 overflow-hidden transition-all duration-300;
+  @apply hover:shadow-lg hover:border-primary-300 hover:-translate-y-1;
+}
+
+.qurban-card__link {
+  @apply block;
+}
+
+.qurban-card__image-wrapper {
+  @apply relative w-full aspect-video bg-gray-100 overflow-hidden;
+}
+
+.qurban-card__image {
+  @apply object-cover transition-transform duration-300;
+}
+
+.qurban-card:hover .qurban-card__image {
+  @apply scale-110;
+}
+
+.qurban-card__image-placeholder {
+  @apply w-full h-full flex items-center justify-center text-gray-400;
+}
+
+.qurban-card__badge {
+  @apply absolute top-3 left-3 bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded-full;
+}
+
+@media (max-width: 640px) {
+  .qurban-card__badge {
+    font-size: 10px;
+  }
+}
+
+.qurban-card__content {
+  @apply p-3 md:p-4;
+}
+
+.qurban-card__category {
+  @apply inline-block text-xs font-semibold px-3 py-1 rounded-full mb-3;
+}
+
+@media (max-width: 640px) {
+  .qurban-card__category {
+    font-size: 10px;
+  }
+}
+
+.qurban-card__category--sapi {
+  @apply bg-amber-100 text-amber-700;
+}
+
+.qurban-card__category--kambing {
+  @apply bg-emerald-100 text-emerald-700;
+}
+
+.qurban-card__name {
+  @apply text-sm md:text-lg font-bold text-gray-900 mb-2 line-clamp-2;
+}
+
+.qurban-card__description {
+  @apply text-sm text-gray-600 mb-4 line-clamp-2;
+  @apply hidden md:block;
+}
+
+.qurban-card__footer {
+  @apply flex items-center justify-between pt-3 border-t border-gray-100;
+}
+
+.qurban-card__price {
+  @apply flex flex-col;
+}
+
+.qurban-card__price-label {
+  @apply text-xs text-gray-500 mb-1;
+}
+
+.qurban-card__price-value {
+  @apply text-sm md:text-base font-bold text-primary-600;
+}
+
+.qurban-card__add-btn {
+  @apply w-8 h-8 md:w-10 md:h-10 bg-gray-900 text-white rounded-lg flex items-center justify-center;
+  @apply transition-all duration-300 hover:bg-primary-600 hover:scale-110;
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+}
+
+.qurban-card__add-btn svg {
+  @apply w-4 h-4 md:w-5 md:h-5;
+}
+
+.qurban-card__add-btn:active {
+  @apply scale-95;
+}

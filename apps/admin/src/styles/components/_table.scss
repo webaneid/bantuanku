@@ -1,0 +1,225 @@
+@import '../utils/variables';
+@import '../utils/mixins';
+
+.table-container {
+  background: white;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-sm;
+  border: 1px solid $gray-200;
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  @media (max-width: 1024px) {
+    overflow-x: visible;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    border-radius: 0;
+  }
+}
+
+.table {
+  width: 100%;
+  min-width: 1000px;
+  border-collapse: separate;
+  border-spacing: 0;
+
+  thead {
+    background: $gray-50;
+
+    th {
+      padding: $spacing-lg $spacing-xl;
+      text-align: left;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: $gray-600;
+      border-bottom: 1px solid $gray-200;
+      white-space: nowrap;
+
+      &:first-child {
+        border-top-left-radius: $radius-xl;
+      }
+
+      &:last-child {
+        border-top-right-radius: $radius-xl;
+      }
+
+      // Sortable header
+      &.sortable {
+        cursor: pointer;
+        user-select: none;
+
+        &:hover {
+          color: $gray-900;
+        }
+
+        &::after {
+          content: '↑';
+          margin-left: $spacing-xs;
+          color: $gray-400;
+          font-size: 0.75rem;
+        }
+      }
+    }
+  }
+
+  tbody {
+    tr {
+      background: white;
+      border-bottom: 1px solid $gray-100;
+      transition: all $transition-fast;
+
+      &:hover {
+        background: $gray-50;
+      }
+
+      &:last-child {
+        border-bottom: none;
+
+        td:first-child {
+          border-bottom-left-radius: $radius-xl;
+        }
+
+        td:last-child {
+          border-bottom-right-radius: $radius-xl;
+        }
+      }
+
+      td {
+        padding: $spacing-lg $spacing-xl;
+        font-size: 0.875rem;
+        color: $gray-900;
+        vertical-align: middle;
+
+        // Monospace for numbers
+        &.mono {
+          font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+          font-variant-numeric: tabular-nums;
+        }
+      }
+    }
+  }
+
+  // Table variants
+  &.table-striped {
+    tbody tr:nth-child(even) {
+      background: $gray-50;
+    }
+  }
+
+  &.table-bordered {
+    border: 1px solid $gray-200;
+
+    th,
+    td {
+      border: 1px solid $gray-200;
+    }
+  }
+
+  &.table-compact {
+    th,
+    td {
+      padding: $spacing-sm $spacing-md;
+    }
+  }
+}
+
+// Icon cell (like screenshot)
+.table-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: $radius-full;
+  @include flex-center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+
+  &.icon-blue {
+    background: #3b82f6;
+    color: white;
+  }
+
+  &.icon-green {
+    background: #10b981;
+    color: white;
+  }
+
+  &.icon-navy {
+    background: #1e3a8a;
+    color: white;
+  }
+
+  &.icon-purple {
+    background: #8b5cf6;
+    color: white;
+  }
+}
+
+// Cell types
+.table-cell-truncate {
+  max-width: 200px;
+  @include truncate;
+}
+
+.table-cell-center {
+  text-align: center;
+}
+
+.table-cell-right {
+  text-align: right;
+}
+
+// Action buttons
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  justify-content: flex-end;
+
+  .action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: $radius-md;
+    @include flex-center;
+    background: transparent;
+    border: 1px solid $gray-200;
+    color: $gray-600;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $gray-100;
+      color: $gray-900;
+      border-color: $gray-300;
+    }
+
+    &.action-view {
+      &:hover {
+        background: $primary-50;
+        color: $primary-600;
+        border-color: $primary-200;
+      }
+    }
+
+    &.action-edit {
+      &:hover {
+        background: $warning-50;
+        color: $warning-600;
+        border-color: $warning-200;
+      }
+    }
+
+    &.action-delete {
+      &:hover {
+        background: $danger-50;
+        color: $danger-600;
+        border-color: $danger-200;
+      }
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}

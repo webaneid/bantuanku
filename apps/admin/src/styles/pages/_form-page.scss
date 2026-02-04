@@ -1,0 +1,226 @@
+@import '../utils/variables';
+@import '../utils/mixins';
+
+// Form page layout (untuk create/edit pages)
+.form-page {
+  &-header {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-xl;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: $spacing-md;
+    }
+
+    &-content {
+      flex: 1;
+    }
+  }
+
+  &-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: $gray-900;
+    margin-bottom: $spacing-xs;
+    line-height: 1.2;
+
+    @media (max-width: 768px) {
+      font-size: 1.5rem;
+    }
+  }
+
+  &-subtitle {
+    font-size: 0.9375rem;
+    color: $gray-600;
+    line-height: 1.5;
+  }
+
+  &-card {
+    background: white;
+    border-radius: $radius-xl;
+    box-shadow: $shadow-sm;
+    border: 1px solid $gray-200;
+    padding: $spacing-xl;
+
+    @media (max-width: 768px) {
+      padding: $spacing-lg;
+    }
+  }
+
+  &-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $spacing-md;
+    margin-top: $spacing-xl;
+    padding-top: $spacing-xl;
+    border-top: 1px solid $gray-200;
+
+    @media (max-width: 768px) {
+      flex-direction: column-reverse;
+      gap: $spacing-sm;
+
+      .btn {
+        width: 100%;
+      }
+    }
+  }
+}
+
+// Form sections
+.form-section {
+  margin-bottom: $spacing-xl;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: $gray-900;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-sm;
+    border-bottom: 2px solid $gray-200;
+  }
+
+  &-description {
+    font-size: 0.875rem;
+    color: $gray-600;
+    margin-bottom: $spacing-lg;
+  }
+
+  &-divider {
+    height: 1px;
+    background: $gray-200;
+    margin: $spacing-xl 0;
+  }
+}
+
+// Two-column form layout
+.form-layout-two-column {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: $spacing-xl;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-main-content {
+  flex: 1;
+}
+
+.form-sidebar {
+  background: $gray-50;
+  border: 1px solid $gray-200;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  height: fit-content;
+  position: sticky;
+  top: $spacing-lg;
+
+  @media (max-width: 1024px) {
+    position: static;
+    order: -1; // Show sidebar first on mobile
+  }
+}
+
+.form-field {
+  margin-bottom: $spacing-lg;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// Media field in form (WordPress-like)
+.media-field {
+  &-preview {
+    width: 100%;
+  }
+
+  &-image {
+    width: 100%;
+    border-radius: $radius-md;
+    overflow: hidden;
+    border: 1px solid $gray-200;
+    background: $gray-100;
+    margin-bottom: $spacing-sm;
+
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+    }
+  }
+
+  &-meta {
+    margin-bottom: $spacing-md;
+  }
+
+  &-filename {
+    font-size: 0.8125rem;
+    color: $gray-600;
+    margin-bottom: $spacing-xs;
+  }
+
+  &-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8125rem;
+  }
+
+  &-actions {
+    display: flex;
+    gap: $spacing-sm;
+    padding-top: $spacing-sm;
+    border-top: 1px solid $gray-200;
+
+    .btn {
+      flex: 1;
+    }
+
+    .btn-link {
+      flex: initial;
+      padding: 0.5rem 0.75rem;
+    }
+  }
+
+  &-empty {
+    width: 100%;
+  }
+}
+
+.media-status {
+  &-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: $primary-600;
+    font-size: 0.8125rem;
+
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: $primary-600;
+      border: 2px solid white;
+      box-shadow: 0 0 0 1px $primary-600;
+    }
+  }
+
+  &-date {
+    color: $gray-600;
+    font-size: 0.8125rem;
+    text-align: right;
+    line-height: 1.3;
+  }
+}

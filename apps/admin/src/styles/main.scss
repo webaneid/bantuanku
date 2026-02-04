@@ -1,0 +1,116 @@
+// Tailwind directives
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+// Utils (must be first)
+@import 'utils/variables';
+@import 'utils/mixins';
+
+// Base styles
+@import 'base/reset';
+@import 'base/typography';
+
+// Components
+@import 'components/buttons';
+@import 'components/cards';
+@import 'components/forms';
+@import 'components/autocomplete';
+@import 'components/rich-text-editor';
+@import 'components/media-library';
+@import 'components/filters';
+@import 'components/pagination';
+@import 'components/table';
+@import 'components/table-mobile';
+@import 'components/modal';
+@import 'components/feedback-dialog';
+
+// Layouts
+@import 'layouts/sidebar';
+@import 'layouts/dashboard';
+
+// Pages
+@import 'pages/login';
+@import 'pages/form-page';
+@import 'pages/settings';
+
+// Custom Tailwind layer
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+// Utility classes (can mix Tailwind & SCSS)
+@layer utilities {
+  .container-custom {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 $spacing-md;
+  }
+
+  .scrollbar-thin {
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: $gray-100;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: $gray-400;
+      border-radius: $radius-full;
+
+      &:hover {
+        background: $gray-500;
+      }
+    }
+  }
+}
+
+// Print styles for invoice
+@media print {
+  body {
+    @apply bg-white;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+
+  .print\:border-0 {
+    border: 0 !important;
+  }
+
+  @page {
+    margin: 1cm;
+  }
+}
+
+// Mobile top bar
+.mobile-topbar {
+  &__button {
+    @apply p-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50;
+  }
+
+  &__logo {
+    max-width: 120px;
+    width: 30vw;
+    height: auto;
+    object-fit: contain;
+  }
+
+  &__fallback {
+    @apply text-sm font-semibold text-gray-800;
+  }
+}

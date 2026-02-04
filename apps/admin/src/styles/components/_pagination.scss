@@ -1,0 +1,137 @@
+@import '../utils/variables';
+@import '../utils/mixins';
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $spacing-lg 0;
+  gap: $spacing-md;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-md;
+  }
+
+  &-info {
+    font-size: 0.875rem;
+    color: $gray-600;
+    font-weight: 400;
+  }
+
+  &-controls {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid $gray-300;
+    background: white;
+    border-radius: $radius-md;
+    color: $gray-700;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover:not(:disabled) {
+      background: $gray-50;
+      border-color: $gray-400;
+      color: $gray-900;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  &-numbers {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  &-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 $spacing-sm;
+    border: 1px solid $gray-300;
+    background: white;
+    border-radius: $radius-md;
+    color: $gray-700;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover:not(:disabled):not(.active) {
+      background: $gray-50;
+      border-color: $gray-400;
+      color: $gray-900;
+    }
+
+    &.active {
+      background: $primary-500;
+      border-color: $primary-500;
+      color: white;
+      font-weight: 600;
+      cursor: default;
+    }
+
+    &.ellipsis {
+      border: none;
+      background: transparent;
+      cursor: default;
+      color: $gray-400;
+      font-weight: 700;
+      letter-spacing: 1px;
+
+      &:hover {
+        background: transparent;
+      }
+    }
+  }
+
+  // Mobile adjustments
+  @media (max-width: 768px) {
+    &-controls {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    &-numbers {
+      flex: 1;
+      justify-content: center;
+    }
+
+    &-number {
+      min-width: 32px;
+      height: 32px;
+      font-size: 0.8125rem;
+    }
+
+    &-btn {
+      width: 32px;
+      height: 32px;
+
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+}

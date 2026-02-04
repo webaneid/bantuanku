@@ -1,0 +1,66 @@
+@import '../utils/variables';
+@import '../utils/mixins';
+
+.dashboard-layout {
+  display: flex;
+  height: 100vh;
+
+  .dashboard-main {
+    flex: 1;
+    overflow-y: auto;
+    background: $gray-50;
+  }
+}
+
+.dashboard-container {
+  padding: $spacing-2xl;
+
+  @include mobile {
+    padding: $spacing-md;
+  }
+}
+
+.dashboard-header {
+  margin-bottom: $spacing-2xl;
+
+  .dashboard-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $gray-900;
+  }
+
+  .dashboard-subtitle {
+    color: $gray-600;
+    margin-top: $spacing-sm;
+  }
+}
+
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: $spacing-lg;
+  margin-bottom: $spacing-2xl;
+}
+
+.dashboard-content {
+  display: grid;
+  gap: $spacing-lg;
+}
+
+.dashboard-section {
+  @include card;
+  padding: $spacing-lg;
+
+  .dashboard-section-header {
+    @include flex-between;
+    margin-bottom: $spacing-lg;
+    padding-bottom: $spacing-md;
+    border-bottom: 1px solid $gray-200;
+
+    .dashboard-section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: $gray-900;
+    }
+  }
+}

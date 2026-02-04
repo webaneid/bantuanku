@@ -1,0 +1,72 @@
+.qurban-carousel {
+  @apply relative w-full;
+}
+
+.qurban-carousel__container {
+  @apply relative;
+}
+
+.qurban-carousel__track {
+  @apply flex gap-6 overflow-x-auto scroll-smooth;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.qurban-carousel__track::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.qurban-carousel__item {
+  @apply flex-shrink-0;
+  width: calc(100% - 2rem); /* Mobile: full width with padding */
+}
+
+@media (min-width: 640px) {
+  .qurban-carousel__item {
+    width: calc(50% - 1.5rem); /* Small: 2 cards */
+  }
+}
+
+@media (min-width: 768px) {
+  .qurban-carousel__item {
+    width: calc(33.333% - 1rem); /* Medium: 3 cards */
+  }
+}
+
+@media (min-width: 1024px) {
+  .qurban-carousel__item {
+    width: calc(25% - 1.125rem); /* Large: 4 cards */
+  }
+}
+
+.qurban-carousel__nav {
+  @apply absolute top-1/2 -translate-y-1/2 z-10;
+  @apply w-12 h-12 bg-white rounded-full shadow-lg;
+  @apply flex items-center justify-center;
+  @apply text-gray-700 transition-all duration-300;
+  @apply hover:bg-primary-600 hover:text-white hover:scale-110;
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  @apply disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.qurban-carousel__nav--prev {
+  @apply -left-6;
+}
+
+.qurban-carousel__nav--next {
+  @apply -right-6;
+}
+
+@media (max-width: 768px) {
+  .qurban-carousel__nav {
+    @apply w-10 h-10;
+  }
+
+  .qurban-carousel__nav--prev {
+    @apply -left-4;
+  }
+
+  .qurban-carousel__nav--next {
+    @apply -right-4;
+  }
+}

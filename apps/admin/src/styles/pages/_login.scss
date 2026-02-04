@@ -1,0 +1,61 @@
+@import '../utils/variables';
+@import '../utils/mixins';
+
+.login-page {
+  min-height: 100vh;
+  @include flex-center;
+  background: linear-gradient(135deg, $primary-500 0%, $primary-700 100%);
+
+  .login-card {
+    background: white;
+    padding: $spacing-2xl;
+    border-radius: $radius-xl;
+    box-shadow: $shadow-xl;
+    width: 100%;
+    max-width: 450px;
+
+    @include mobile {
+      margin: $spacing-md;
+      padding: $spacing-lg;
+    }
+  }
+
+  .login-header {
+    text-align: center;
+    margin-bottom: $spacing-2xl;
+
+    .login-logo {
+      font-size: 2rem;
+      font-weight: 700;
+      color: $gray-900;
+    }
+
+    .login-subtitle {
+      color: $gray-600;
+      margin-top: $spacing-sm;
+    }
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+  }
+
+  .login-footer {
+    margin-top: $spacing-lg;
+    text-align: center;
+    font-size: 0.875rem;
+    color: $gray-600;
+
+    code {
+      background: $gray-100;
+      padding: $spacing-xs $spacing-sm;
+      border-radius: $radius-sm;
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      margin-top: $spacing-xs;
+      display: inline-block;
+    }
+  }
+}

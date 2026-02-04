@@ -1,0 +1,93 @@
+@import '../utils/variables';
+@import '../utils/mixins';
+
+.card {
+  @include card;
+  padding: $spacing-lg;
+
+  &.card-hover {
+    @include hover-lift;
+  }
+
+  &.card-bordered {
+    border: 2px solid $gray-200;
+  }
+}
+
+.card-header {
+  padding-bottom: $spacing-md;
+  margin-bottom: $spacing-md;
+  border-bottom: 1px solid $gray-200;
+
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: $gray-900;
+    margin: 0;
+  }
+
+  .card-subtitle {
+    font-size: 0.875rem;
+    color: $gray-600;
+    margin-top: $spacing-xs;
+  }
+}
+
+.card-body {
+  // Content area
+}
+
+.card-footer {
+  padding-top: $spacing-md;
+  margin-top: $spacing-md;
+  border-top: 1px solid $gray-200;
+  @include flex-between;
+}
+
+// Stat card
+.stat-card {
+  @include card;
+  padding: $spacing-lg;
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: $radius-lg;
+    @include flex-center;
+    margin-bottom: $spacing-md;
+
+    &.stat-icon-primary {
+      background: $primary-500;
+    }
+
+    &.stat-icon-success {
+      background: $success-500;
+    }
+
+    &.stat-icon-danger {
+      background: $danger-500;
+    }
+
+    &.stat-icon-warning {
+      background: $warning-500;
+    }
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: $gray-600;
+    margin-bottom: $spacing-xs;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $gray-900;
+  }
+
+  .stat-meta {
+    font-size: 0.875rem;
+    color: $gray-500;
+    margin-top: $spacing-xs;
+  }
+}

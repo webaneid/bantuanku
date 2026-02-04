@@ -1,0 +1,126 @@
+@import '../utils/variables';
+@import '../utils/mixins';
+
+.btn {
+  @include button-base;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-xs;
+  justify-content: center;
+
+  // Sizes
+  &.btn-sm {
+    padding: $spacing-xs $spacing-sm;
+    font-size: 0.875rem;
+  }
+
+  &.btn-md {
+    padding: $spacing-sm $spacing-md;
+    font-size: 1rem;
+  }
+
+  &.btn-lg {
+    padding: $spacing-md $spacing-lg;
+    font-size: 1.125rem;
+  }
+
+  // Variants
+  &.btn-primary {
+    background: $primary-500;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: $primary-600;
+    }
+
+    &:active:not(:disabled) {
+      background: $primary-700;
+    }
+
+    &:focus {
+      @include focus-ring($primary-500);
+    }
+  }
+
+  &.btn-secondary {
+    background: transparent;
+    color: $accent-500;
+    border: 2px solid $accent-500;
+
+    &:hover:not(:disabled) {
+      background: $accent-50;
+      border-color: $accent-600;
+    }
+  }
+
+  &.btn-accent {
+    background: $gradient-gold;
+    color: white;
+    border: none;
+
+    &:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+
+    &:active:not(:disabled) {
+      filter: brightness(0.95);
+    }
+  }
+
+  &.btn-success {
+    background: $success-500;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: $success-600;
+    }
+
+    &:active:not(:disabled) {
+      background: $success-700;
+    }
+  }
+
+  &.btn-danger {
+    background: $danger-500;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: $danger-600;
+    }
+
+    &:active:not(:disabled) {
+      background: $danger-700;
+    }
+  }
+
+  &.btn-outline {
+    background: transparent;
+    border: 1px solid $primary-500;
+    color: $primary-500;
+
+    &:hover:not(:disabled) {
+      background: $primary-50;
+      border-color: $primary-600;
+    }
+  }
+
+  &.btn-ghost {
+    background: transparent;
+    color: $gray-700;
+
+    &:hover:not(:disabled) {
+      background: $gray-100;
+    }
+  }
+
+  &.btn-link {
+    background: transparent;
+    color: $primary-500;
+    padding: 0;
+
+    &:hover:not(:disabled) {
+      color: $primary-600;
+      text-decoration: underline;
+    }
+  }
+}
