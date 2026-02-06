@@ -1,9 +1,44 @@
 import { Hono } from "hono";
-import { zakatDonations, zakatTypes, donatur, ledger, chartOfAccounts, media, eq, and, sql, desc } from "@bantuanku/db";
+import { zakatDonations, zakatTypes, donatur, ledger, chartOfAccounts, media, settings, eq, and, sql, desc } from "@bantuanku/db";
 import type { Env, Variables } from "../../types";
 import { createId } from "@bantuanku/db";
 import { requireAuth, requireRoles } from "../../middleware/auth";
 import { paginated } from "../../lib/response";
+import { uploadToGCS, generateGCSPath, type GCSConfig } from "../../lib/gcs";
+
+// Helper to fetch CDN settings from database
+const fetchCDNSettings = async (db: any): Promise<GCSConfig | null> => {
+  try {
+    const settingsData = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.category, "cdn"));
+
+    const cdnEnabled = settingsData.find((s: any) => s.key === "cdn_enabled")?.value === "true";
+
+    if (!cdnEnabled) {
+      return null;
+    }
+
+    const config = {
+      bucketName: settingsData.find((s: any) => s.key === "gcs_bucket_name")?.value || "",
+      projectId: settingsData.find((s: any) => s.key === "gcs_project_id")?.value || "",
+      clientEmail: settingsData.find((s: any) => s.key === "gcs_client_email")?.value || "",
+      privateKey: settingsData.find((s: any) => s.key === "gcs_private_key")?.value || "",
+    };
+
+    // Validate all required fields are present
+    if (!config.bucketName || !config.projectId || !config.clientEmail || !config.privateKey) {
+      console.warn("CDN enabled but missing required configuration");
+      return null;
+    }
+
+    return config;
+  } catch (error) {
+    console.error("Failed to fetch CDN settings:", error);
+    return null;
+  }
+};
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -344,18 +379,56 @@ app.post("/:id/upload-proof", async (c) => {
       return c.json({ error: "Zakat donation not found" }, 404);
     }
 
-    // Upload file to R2
-    const bucket = c.env.BUCKET;
+    // Generate filename
     const timestamp = Date.now();
     const extension = file.name.split('.').pop();
+    const sanitizedName = file.name.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '-');
     const finalFilename = `zakat-payment-${id}-${timestamp}.${extension}`;
-    const path = `/uploads/${finalFilename}`;
 
-    await bucket.put(finalFilename, file.stream(), {
-      httpMetadata: {
-        contentType: file.type,
-      },
-    });
+    // Get buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Check if CDN is enabled
+    const cdnConfig = await fetchCDNSettings(db);
+    let path: string;
+    let fullUrl: string;
+
+    if (cdnConfig) {
+      // CDN Mode: Upload to Google Cloud Storage
+      console.log("CDN enabled, uploading zakat payment proof to GCS...");
+
+      try {
+        const gcsPath = generateGCSPath(finalFilename);
+        fullUrl = await uploadToGCS(cdnConfig, buffer, gcsPath, file.type);
+        path = fullUrl; // Store full GCS URL
+        console.log("Zakat payment proof uploaded to GCS:", fullUrl);
+      } catch (error) {
+        console.error("GCS upload failed, using path only:", error);
+        // If GCS fails, just use path (admin can re-upload)
+        path = `/uploads/${finalFilename}`;
+        fullUrl = path;
+      }
+    } else {
+      // Local Mode: Use R2 bucket or local storage
+      console.log("CDN disabled, using R2 bucket for zakat payment proof");
+      path = `/uploads/${finalFilename}`;
+      fullUrl = path;
+
+      // Upload to R2 if available
+      try {
+        const bucket = c.env.BUCKET;
+        if (bucket) {
+          await bucket.put(finalFilename, file.stream(), {
+            httpMetadata: {
+              contentType: file.type,
+            },
+          });
+        }
+      } catch (error) {
+        console.error("R2 upload error:", error);
+      }
+    }
 
     // Create media record
     const mediaRecord = await db.insert(media).values({
@@ -366,8 +439,8 @@ app.post("/:id/upload-proof", async (c) => {
       size: file.size,
       url: path,
       path: path,
-      folder: "uploads",
-      category: "zakat_payment",
+      folder: cdnConfig ? "gcs" : "uploads",
+      category: "financial",
       uploadedAt: new Date(),
     }).returning();
 

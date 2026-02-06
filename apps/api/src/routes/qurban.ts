@@ -13,12 +13,48 @@ import {
   qurbanSavingsTransactions,
   createId,
   media,
+  settings,
 } from "@bantuanku/db";
 import { getCurrentYearWIB } from "../utils/timezone";
+import { uploadToGCS, generateGCSPath, type GCSConfig } from "../lib/gcs";
 import * as fs from "fs";
 import * as pathModule from "path";
 import { optionalAuthMiddleware } from "../middleware/auth";
 import { success, error } from "../lib/response";
+
+// Helper to fetch CDN settings from database
+const fetchCDNSettings = async (db: any): Promise<GCSConfig | null> => {
+  try {
+    const settingsData = await db
+      .select()
+      .from(settings)
+      .where(eq(settings.category, "cdn"));
+
+    const cdnEnabled = settingsData.find((s: any) => s.key === "cdn_enabled")?.value === "true";
+
+    if (!cdnEnabled) {
+      return null;
+    }
+
+    const config = {
+      bucketName: settingsData.find((s: any) => s.key === "gcs_bucket_name")?.value || "",
+      projectId: settingsData.find((s: any) => s.key === "gcs_project_id")?.value || "",
+      clientEmail: settingsData.find((s: any) => s.key === "gcs_client_email")?.value || "",
+      privateKey: settingsData.find((s: any) => s.key === "gcs_private_key")?.value || "",
+    };
+
+    // Validate all required fields are present
+    if (!config.bucketName || !config.projectId || !config.clientEmail || !config.privateKey) {
+      console.warn("CDN enabled but missing required configuration");
+      return null;
+    }
+
+    return config;
+  } catch (error) {
+    console.error("Failed to fetch CDN settings:", error);
+    return null;
+  }
+};
 
 const app = new Hono();
 
@@ -480,29 +516,66 @@ app.post("/payments", async (c) => {
       // Generate filename
       const sanitizedName = file.name.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '-');
       const finalFilename = `${Date.now()}-${sanitizedName}`;
-      const path = `/uploads/${finalFilename}`;
 
       // Get buffer
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
-      // Store in filesystem
-      try {
-        const uploadsDir = pathModule.join(process.cwd(), "uploads");
-        if (!fs.existsSync(uploadsDir)) {
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-        const filePath = pathModule.join(uploadsDir, finalFilename);
-        fs.writeFileSync(filePath, buffer);
-      } catch (error) {
-        console.error("Filesystem error:", error);
-      }
+      // Check if CDN is enabled
+      const cdnConfig = await fetchCDNSettings(db);
+      let path: string;
+      let fullUrl: string;
 
-      // Store in global map for immediate access
-      if (!global.uploadedFiles) {
-        global.uploadedFiles = new Map();
+      if (cdnConfig) {
+        // CDN Mode: Upload to Google Cloud Storage
+        console.log("CDN enabled, uploading qurban payment proof to GCS...");
+
+        try {
+          const gcsPath = generateGCSPath(finalFilename);
+          fullUrl = await uploadToGCS(cdnConfig, buffer, gcsPath, file.type);
+          path = fullUrl; // Store full GCS URL
+          console.log("Qurban payment proof uploaded to GCS:", fullUrl);
+        } catch (error) {
+          console.error("GCS upload failed, falling back to local storage:", error);
+          // Fallback to local storage if GCS fails
+          path = `/uploads/${finalFilename}`;
+          fullUrl = path;
+
+          // Store locally as fallback
+          try {
+            const uploadsDir = pathModule.join(process.cwd(), "uploads");
+            if (!fs.existsSync(uploadsDir)) {
+              fs.mkdirSync(uploadsDir, { recursive: true });
+            }
+            fs.writeFileSync(pathModule.join(uploadsDir, finalFilename), buffer);
+          } catch (fsError) {
+            console.error("Local storage also failed:", fsError);
+          }
+        }
+      } else {
+        // Local Mode: Store in filesystem
+        console.log("CDN disabled, using local storage for qurban payment proof");
+        path = `/uploads/${finalFilename}`;
+        fullUrl = path;
+
+        // Store in filesystem
+        try {
+          const uploadsDir = pathModule.join(process.cwd(), "uploads");
+          if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+          }
+          const filePath = pathModule.join(uploadsDir, finalFilename);
+          fs.writeFileSync(filePath, buffer);
+        } catch (error) {
+          console.error("Filesystem error:", error);
+        }
+
+        // Store in global map for immediate access (local mode only)
+        if (!global.uploadedFiles) {
+          global.uploadedFiles = new Map();
+        }
+        global.uploadedFiles.set(finalFilename, buffer);
       }
-      global.uploadedFiles.set(finalFilename, buffer);
 
       // Save to media table
       await db.insert(media).values({
@@ -512,8 +585,8 @@ app.post("/payments", async (c) => {
         size: file.size,
         url: path,
         path: path,
-        folder: "uploads",
-        category: "qurban_payment",
+        folder: cdnConfig ? "gcs" : "uploads",
+        category: "financial",
       });
 
       paymentProofUrl = path;
