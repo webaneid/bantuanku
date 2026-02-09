@@ -2,12 +2,13 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import api from "@/lib/api";
 import { formatRupiah } from "@/lib/format";
 import { ArrowLeftIcon, XMarkIcon, PhotoIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 import MediaLibrary from "@/components/MediaLibrary";
+import Autocomplete from "@/components/Autocomplete";
 
 interface BankAccount {
   id: string;
@@ -224,6 +225,32 @@ export default function ZakatDistributionDetailPage() {
 
     approveMutation.mutate(approveForm);
   };
+
+  // Prepare bank account options for Autocomplete with zakat filtering
+  const bankAccountOptions = useMemo(() => {
+    // Filter for zakat-specific accounts
+    const zakatBanks = bankAccounts.filter((bank: any) => {
+      const programs = bank.programs && bank.programs.length > 0 ? bank.programs : ["general"];
+      return programs.includes("zakat");
+    });
+
+    // Check if there are any zakat accounts
+    const hasZakatAccounts = zakatBanks.length > 0;
+
+    // If zakat accounts exist, ONLY show zakat accounts
+    // If not, show general accounts
+    const filteredBanks = hasZakatAccounts
+      ? zakatBanks
+      : bankAccounts.filter((bank: any) => {
+          const programs = bank.programs && bank.programs.length > 0 ? bank.programs : ["general"];
+          return programs.includes("general");
+        });
+
+    return filteredBanks.map((bank) => ({
+      value: bank.id,
+      label: `${bank.bankName} - ${bank.accountNumber} (${bank.accountName})`,
+    }));
+  }, [bankAccounts]);
 
   const handleSourceBankChange = (bankId: string) => {
     const selectedBank = bankAccounts.find(b => b.id === bankId);
@@ -710,19 +737,13 @@ export default function ZakatDistributionDetailPage() {
                 <h3 className="font-semibold text-gray-900 mb-4">Rekening Asal (Yayasan)</h3>
                 <div className="form-group">
                   <label className="form-label">Pilih Rekening Asal *</label>
-                  <select
-                    className="form-input"
+                  <Autocomplete
+                    options={bankAccountOptions}
                     value={approveForm.sourceBankId}
-                    onChange={(e) => handleSourceBankChange(e.target.value)}
-                    required
-                  >
-                    <option value="">-- Pilih Rekening --</option>
-                    {bankAccounts.map((bank) => (
-                      <option key={bank.id} value={bank.id}>
-                        {bank.bankName} - {bank.accountNumber} ({bank.accountName})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={handleSourceBankChange}
+                    placeholder="Pilih rekening asal..."
+                    allowClear={false}
+                  />
                 </div>
               </div>
 

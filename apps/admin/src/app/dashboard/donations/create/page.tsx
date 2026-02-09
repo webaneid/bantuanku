@@ -273,6 +273,19 @@ export default function CreateDonationPage() {
 
   return (
     <div className="dashboard-container">
+      {/* Deprecation Warning */}
+      <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 w-5 h-5 text-yellow-600">⚠️</div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-yellow-800">Form Lama (Deprecated)</h3>
+            <p className="text-sm text-yellow-700 mt-1">
+              Gunakan <a href="/dashboard/transactions/create" className="underline font-medium">Form Transaksi Universal</a> untuk membuat donasi Campaign, Zakat, atau Qurban dalam satu form.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="mb-6">
         <button

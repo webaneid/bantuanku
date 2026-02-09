@@ -98,3 +98,54 @@
   background: rgb(243 244 246);
   color: rgb(75 85 99);
 }
+
+// Table actions
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+// Action buttons
+.action-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid rgb(229 231 235);
+  background: white;
+  color: rgb(75 85 99);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.1);
+  }
+
+  &.action-view {
+    &:hover {
+      background: rgb(239 246 255);
+      border-color: rgb(191 219 254);
+      color: rgb(29 78 216);
+    }
+  }
+
+  &.action-edit {
+    &:hover {
+      background: rgb(254 252 232);
+      border-color: rgb(253 230 138);
+      color: rgb(161 98 7);
+    }
+  }
+
+  &.action-delete {
+    &:hover {
+      background: rgb(254 242 242);
+      border-color: rgb(254 202 202);
+      color: rgb(185 28 28);
+    }
+  }
+}

@@ -107,7 +107,8 @@ donationsAdmin.get("/:id", async (c) => {
           category: true,
         },
       },
-      payment: true, // Include payment records
+      payment: true, // Include payment gateway records
+      manualPayments: true, // Include manual payment proofs (NEW: donation_payments table)
       // paymentMethod tidak ada lagi, sekarang paymentMethodId adalah string code
     },
   });
@@ -116,7 +117,7 @@ donationsAdmin.get("/:id", async (c) => {
     return error(c, "Donation not found", 404);
   }
 
-  // Get evidences (payment proofs) for this donation
+  // Get evidences (payment proofs) for this donation - LEGACY system
   const evidences = await db.query.donationEvidences.findMany({
     where: eq(donationEvidences.donationId, id),
     orderBy: [desc(donationEvidences.uploadedAt)],
@@ -124,7 +125,8 @@ donationsAdmin.get("/:id", async (c) => {
 
   return success(c, {
     ...donation,
-    evidences,
+    evidences, // Legacy evidences from donation_evidences table
+    // manualPayments is already included in donation object from the relation above
   });
 });
 
@@ -370,7 +372,38 @@ donationsAdmin.put(
         updateData.paidAt = new Date();
       }
     }
-    if (body.paymentMethodId !== undefined) updateData.paymentMethodId = body.paymentMethodId;
+    if (body.paymentMethodId !== undefined) {
+      updateData.paymentMethodId = body.paymentMethodId;
+
+      // Add bank details to metadata if payment method is bank transfer
+      if (body.paymentMethodId.startsWith('bank-')) {
+        const allSettings = await db.query.settings.findMany();
+        const paymentSettings = allSettings.filter((s: any) => s.category === "payment");
+        const bankAccountsSetting = paymentSettings.find((s: any) => s.key === "payment_bank_accounts");
+
+        if (bankAccountsSetting?.value) {
+          try {
+            const bankAccounts = JSON.parse(bankAccountsSetting.value);
+            const selectedBank = bankAccounts.find((bank: any) =>
+              bank.id === body.paymentMethodId
+            );
+
+            if (selectedBank) {
+              // Merge with existing metadata
+              const existingMetadata = existingDonation.metadata || {};
+              updateData.metadata = {
+                ...existingMetadata,
+                bankName: selectedBank.bankName,
+                accountNumber: selectedBank.accountNumber,
+                accountName: selectedBank.accountName,
+              };
+            }
+          } catch (e) {
+            console.error("Failed to parse bank accounts:", e);
+          }
+        }
+      }
+    }
 
     await db.update(donations).set(updateData).where(eq(donations.id, id));
 
@@ -637,7 +670,20 @@ donationsAdmin.post(
     }
 
     // Create ledger entry
-    await createDonationLedgerEntry(c, donation, "success");
+    try {
+      await createDonationLedgerEntry(db, {
+        donationId: donation.id,
+        amount: donation.amount,
+        campaignTitle: donation.campaign?.title || 'Unknown Campaign',
+        donorName: donation.donorName,
+        paymentMethod: donation.paymentMethodId || 'Manual Approval',
+        bankAccountCode: donation.paymentMethodId?.startsWith('bank-') ? '1020' : '1010',
+        createdBy: c.get("user")?.id,
+      });
+    } catch (ledgerError) {
+      console.error("Failed to create ledger entry when approving payment:", ledgerError);
+      // Don't fail the approval if ledger entry fails
+    }
 
     return success(c, null, "Payment approved successfully");
   }

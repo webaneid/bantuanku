@@ -151,16 +151,11 @@ export default function PaymentDetailPage() {
   const filterMethodsByPrograms = (methods: PaymentMethod[], programs: string[]) => {
     if (programs.length === 0) return methods;
 
-    // Step 1: Find methods that specifically match the campaign programs (NOT general)
+    // Step 1: Find methods that specifically match the campaign programs
     const specificMatches = methods.filter((method) => {
       const methodPrograms = method.programs && method.programs.length > 0
         ? method.programs
         : ['general'];
-
-      // Skip if method is only general
-      if (methodPrograms.length === 1 && methodPrograms[0] === 'general') {
-        return false;
-      }
 
       // Check if method's programs match any of the campaign programs
       return methodPrograms.some(methodProgram =>
@@ -168,18 +163,19 @@ export default function PaymentDetailPage() {
       );
     });
 
-    // Step 2: If specific matches found, return only those
-    if (specificMatches.length > 0) {
-      return specificMatches;
-    }
-
-    // Step 3: If no specific matches, return general methods as fallback
-    return methods.filter((method) => {
+    // Step 2: Find general methods
+    const generalMethods = methods.filter((method) => {
       const methodPrograms = method.programs && method.programs.length > 0
         ? method.programs
         : ['general'];
       return methodPrograms.includes('general');
     });
+
+    // Step 3: Return specific matches + general methods (remove duplicates)
+    const allMethods = [...specificMatches, ...generalMethods];
+    return allMethods.filter((method, index, self) =>
+      index === self.findIndex((m) => m.code === method.code)
+    );
   };
 
   const getTotalAmount = () => {

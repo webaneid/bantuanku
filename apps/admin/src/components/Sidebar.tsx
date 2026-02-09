@@ -18,6 +18,7 @@ import {
   Database,
   Sparkles,
   Beef,
+  Receipt,
 } from "lucide-react";
 import { X, Menu } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -38,6 +39,7 @@ const allMenuItems = [
     roles: ["super_admin", "admin_campaign", "program_coordinator"],
     submenu: [
       { label: "All Campaigns", href: "/dashboard/campaigns", roles: ["super_admin", "admin_campaign", "program_coordinator"] },
+      { label: "Donations", href: "/dashboard/campaigns/donations", roles: ["super_admin", "admin_campaign", "admin_finance"] },
       { label: "Categories", href: "/dashboard/campaigns/categories", roles: ["super_admin", "admin_campaign"] },
       { label: "Pillars", href: "/dashboard/campaigns/pillars", roles: ["super_admin", "admin_campaign"] },
       { label: "Laporan Kegiatan", href: "/dashboard/campaigns/activity-reports", roles: ["super_admin", "admin_campaign", "program_coordinator"] },
@@ -77,6 +79,12 @@ const allMenuItems = [
     ]
   },
   {
+    icon: Receipt,
+    label: "Transactions",
+    href: "/dashboard/transactions",
+    roles: ["super_admin", "admin_campaign", "admin_finance"]
+  },
+  {
     icon: FileText,
     label: "Ledger",
     href: "/dashboard/ledger",
@@ -87,17 +95,12 @@ const allMenuItems = [
     ]
   },
   {
-    icon: Users,
-    label: "Donatur",
-    href: "/dashboard/donatur",
-    roles: ["super_admin", "admin_campaign", "admin_finance"]
-  },
-  {
     icon: Database,
     label: "Master",
     href: "/dashboard/master",
     roles: ["super_admin"],
     submenu: [
+      { label: "Donatur", href: "/dashboard/donatur", roles: ["super_admin", "admin_campaign", "admin_finance"] },
       { label: "Vendors", href: "/dashboard/master/vendors", roles: ["super_admin"] },
       { label: "Employees", href: "/dashboard/master/employees", roles: ["super_admin"] },
       { label: "Mustahiq Zakat", href: "/dashboard/master/mustahiqs", roles: ["super_admin"] },

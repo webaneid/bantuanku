@@ -25,9 +25,6 @@
 
         &-left {
           flex: 1;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
         }
 
         &-title {
@@ -41,6 +38,16 @@
         &-subtitle {
           font-size: 0.8125rem;
           color: rgb(107 114 128);
+        }
+
+        &-badge {
+          padding: 0.25rem 0.5rem;
+          font-size: 0.75rem;
+          font-weight: 500;
+          border-radius: 9999px;
+          border: 1px solid;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
       }
 
@@ -63,6 +70,58 @@
           &.mono {
             font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
             font-variant-numeric: tabular-nums;
+          }
+        }
+      }
+
+      &-footer {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        padding-top: 0.75rem;
+        margin-top: 0.75rem;
+        border-top: 1px solid rgb(243 244 246);
+
+        .action-btn {
+          width: 36px;
+          height: 36px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 6px;
+          border: 1px solid rgb(229 231 235);
+          background: white;
+          color: rgb(75 85 99);
+          cursor: pointer;
+          transition: all 0.15s ease;
+
+          &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px 0 rgb(0 0 0 / 0.1);
+          }
+
+          &.action-view {
+            &:hover {
+              background: rgb(239 246 255);
+              border-color: rgb(191 219 254);
+              color: rgb(29 78 216);
+            }
+          }
+
+          &.action-edit {
+            &:hover {
+              background: rgb(254 252 232);
+              border-color: rgb(253 230 138);
+              color: rgb(161 98 7);
+            }
+          }
+
+          &.action-delete {
+            &:hover {
+              background: rgb(254 242 242);
+              border-color: rgb(254 202 202);
+              color: rgb(185 28 28);
+            }
           }
         }
       }

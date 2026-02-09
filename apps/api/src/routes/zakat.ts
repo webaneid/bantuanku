@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { zakatCalculatorConfigs, settings, zakatTypes, zakatDonations, media } from "@bantuanku/db";
+import { zakatCalculatorConfigs, settings, zakatTypes, zakatDonations, zakatPayments, media, createId, paymentMethods } from "@bantuanku/db";
 import {
   calculateZakatIncome,
   calculateZakatMaal,
@@ -180,11 +180,12 @@ zakat.post("/calculate/fidyah", optionalAuthMiddleware, zValidator("json", fidya
 // POST /zakat/donations/:id/confirm-payment - Confirm payment method selection
 const confirmPaymentSchema = z.object({
   paymentMethodId: z.string(),
+  metadata: z.record(z.any()).optional(),
 });
 
 zakat.post("/donations/:id/confirm-payment", zValidator("json", confirmPaymentSchema), async (c) => {
   const donationId = c.req.param("id");
-  const { paymentMethodId } = c.req.valid("json");
+  const { paymentMethodId, metadata: providedMetadata } = c.req.valid("json");
   const db = c.get("db");
 
   // Verify zakat donation exists
@@ -202,6 +203,39 @@ zakat.post("/donations/:id/confirm-payment", zValidator("json", confirmPaymentSc
     paymentStatus: "pending", // Pending until proof uploaded
     updatedAt: new Date(),
   };
+
+  // If metadata provided from frontend, use it
+  if (providedMetadata && Object.keys(providedMetadata).length > 0) {
+    const existingMetadata = donation.metadata || {};
+    updateData.metadata = {
+      ...existingMetadata,
+      ...providedMetadata,
+    };
+  }
+  // Otherwise, try to get from payment_methods table
+  else if (paymentMethodId.startsWith('bank-') || paymentMethodId.includes('qris')) {
+    const paymentMethod = await db.query.paymentMethods.findFirst({
+      where: eq(paymentMethods.code, paymentMethodId),
+    });
+
+    if (paymentMethod?.details) {
+      const existingMetadata = donation.metadata || {};
+      const newMetadata: any = { ...existingMetadata };
+
+      if (paymentMethodId.startsWith('bank-')) {
+        newMetadata.bankName = paymentMethod.details.bankName || paymentMethod.name;
+        newMetadata.accountNumber = paymentMethod.details.accountNumber;
+        newMetadata.accountName = paymentMethod.details.accountName;
+      } else if (paymentMethodId.includes('qris')) {
+        newMetadata.qrisName = paymentMethod.details.name || paymentMethod.name;
+        if (paymentMethod.details.nmid) {
+          newMetadata.nmid = paymentMethod.details.nmid;
+        }
+      }
+
+      updateData.metadata = newMetadata;
+    }
+  }
 
   await db
     .update(zakatDonations)
@@ -229,9 +263,15 @@ zakat.post("/donations/:id/upload-proof", async (c) => {
     // Parse multipart form data
     const body = await c.req.parseBody();
     const file = body.file as File;
+    const transferAmount = body.amount ? Number(body.amount) : null;
 
     if (!file) {
       return error(c, "No file provided", 400);
+    }
+
+    // Validate transfer amount
+    if (!transferAmount || transferAmount <= 0) {
+      return error(c, "Invalid transfer amount", 400);
     }
 
     // Validate file type (images and PDFs only)
@@ -287,29 +327,162 @@ zakat.post("/donations/:id/upload-proof", async (c) => {
         category: "financial", // Kategori finansial untuk bukti transfer
       });
 
-    // Update zakat donation status to processing (waiting for admin confirmation)
-    const updateData: any = {
-      paymentStatus: "processing",
-      updatedAt: new Date(),
+    // Construct URL from path
+    const apiUrl = c.env?.API_URL || process.env.API_URL || "http://localhost:50245";
+    const fileUrl = `${apiUrl}${path}`;
+
+    // Determine payment method type and channel
+    let paymentMethodType = "bank_transfer";
+    let paymentChannel = null;
+
+    if (donation.paymentMethodId) {
+      const paymentMethodRecord = await db.query.paymentMethods.findFirst({
+        where: eq(paymentMethods.code, donation.paymentMethodId),
+      });
+
+      if (paymentMethodRecord) {
+        paymentMethodType = paymentMethodRecord.type;
+        paymentChannel = donation.paymentMethodId;
+      } else {
+        // Fallback logic for QRIS/bank detection
+        if (donation.paymentMethodId.includes('qris')) {
+          paymentMethodType = 'qris';
+          paymentChannel = donation.paymentMethodId;
+        }
+      }
+    }
+
+    // Generate notes based on transfer amount
+    let paymentNotes = "Bukti pembayaran dari user";
+    if (transferAmount > donation.amount) {
+      const excess = transferAmount - donation.amount;
+      paymentNotes += ` (Transfer lebih: ${excess})`;
+    } else if (transferAmount < donation.amount) {
+      const shortage = donation.amount - transferAmount;
+      paymentNotes += ` (Transfer kurang: ${shortage}, pembayaran sebagian)`;
+    }
+
+    // Generate payment number
+    const timestamp = Date.now().toString().slice(-6);
+    const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const paymentNumber = `PAY-ZKT-${timestamp}-${randomStr}`;
+
+    // Create payment record
+    const paymentData = {
+      id: createId(),
+      paymentNumber: paymentNumber,
+      zakatDonationId: donationId,
+      amount: transferAmount, // Use actual transfer amount
+      paymentMethod: paymentMethodType,
+      paymentChannel: paymentChannel,
+      paymentProof: fileUrl,
+      status: "pending" as const,
+      notes: paymentNotes,
     };
+
+    await db.insert(zakatPayments).values(paymentData);
+
+    // Update zakat donation with actual transfer amount
+    const newPaidAmount = donation.paidAmount + transferAmount;
 
     await db
       .update(zakatDonations)
-      .set(updateData)
+      .set({
+        paidAmount: newPaidAmount,
+        paymentStatus: "pending", // Keep pending until admin verifies
+        updatedAt: new Date(),
+      })
       .where(eq(zakatDonations.id, donationId));
 
-    // Construct URL from path
-    const apiUrl = c.env?.API_URL || process.env.API_URL || "http://localhost:50245";
-
     return success(c, {
-      url: `${apiUrl}${path}`,
+      url: fileUrl,
       filename: finalFilename,
+      paidAmount: newPaidAmount,
+      paymentStatus: "pending",
     }, "Payment proof uploaded successfully");
 
   } catch (err) {
     console.error("Error uploading payment proof:", err);
     return error(c, "Failed to upload payment proof", 500);
   }
+});
+
+// POST /zakat/donations - Public endpoint to create zakat donation
+const createZakatDonationSchema = z.object({
+  zakatTypeId: z.string(),
+  donorName: z.string().min(2),
+  donorEmail: z.string().email().optional(),
+  donorPhone: z.string().optional(),
+  isAnonymous: z.boolean().optional().default(false),
+  amount: z.number().min(10000),
+  calculatorData: z.any().optional(),
+  message: z.string().optional(),
+});
+
+zakat.post("/donations", optionalAuthMiddleware, zValidator("json", createZakatDonationSchema), async (c) => {
+  const body = c.req.valid("json");
+  const db = c.get("db");
+  const user = c.get("user");
+
+  // Validate zakat type exists
+  const zakatType = await db.query.zakatTypes.findFirst({
+    where: eq(zakatTypes.id, body.zakatTypeId),
+  });
+
+  if (!zakatType) {
+    return error(c, "Zakat type not found", 404);
+  }
+
+  // Generate reference ID
+  const referenceId = `ZKT-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+
+  try {
+    const newDonation = await db.insert(zakatDonations).values({
+      id: createId(),
+      referenceId,
+      zakatTypeId: body.zakatTypeId,
+      donorName: body.donorName,
+      donorEmail: body.donorEmail || null,
+      donorPhone: body.donorPhone || null,
+      isAnonymous: body.isAnonymous ?? false,
+      amount: body.amount,
+      calculatorData: body.calculatorData || null,
+      paymentStatus: 'pending',
+      message: body.message || null,
+      userId: user?.id || null,
+    }).returning();
+
+    return success(c, newDonation[0], "Zakat donation created successfully", 201);
+  } catch (err) {
+    console.error("Error creating zakat donation:", err);
+    return error(c, "Failed to create zakat donation", 500);
+  }
+});
+
+// GET /zakat/donations/invoice/:referenceId - Public endpoint to get zakat donation invoice
+zakat.get("/donations/invoice/:referenceId", async (c) => {
+  const db = c.get("db");
+  const referenceId = c.req.param("referenceId");
+
+  const donation = await db.query.zakatDonations.findFirst({
+    where: eq(zakatDonations.referenceId, referenceId),
+    with: {
+      zakatType: {
+        columns: {
+          id: true,
+          name: true,
+          slug: true,
+          icon: true,
+        },
+      },
+    },
+  });
+
+  if (!donation) {
+    return error(c, "Zakat donation not found", 404);
+  }
+
+  return success(c, donation);
 });
 
 export default zakat;

@@ -14,6 +14,7 @@ import {
   createId,
   media,
   settings,
+  paymentMethods,
 } from "@bantuanku/db";
 import { getCurrentYearWIB } from "../utils/timezone";
 import { uploadToGCS, generateGCSPath, type GCSConfig } from "../lib/gcs";
@@ -173,6 +174,26 @@ app.get("/packages/:packagePeriodId", async (c) => {
     return c.json({ error: "Package not found" }, 404);
   }
 
+  // Fetch all package periods for this package master (for period switcher)
+  const packageMasterId = pkg[0].id;
+  const allPeriods = await db
+    .select({
+      periodId: qurbanPackagePeriods.periodId,
+      packagePeriodId: qurbanPackagePeriods.id,
+      periodName: qurbanPeriods.name,
+      gregorianYear: qurbanPeriods.gregorianYear,
+      price: qurbanPackagePeriods.price,
+    })
+    .from(qurbanPackagePeriods)
+    .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
+    .where(
+      and(
+        eq(qurbanPackagePeriods.packageId, packageMasterId),
+        eq(qurbanPeriods.status, "active")
+      )
+    )
+    .orderBy(desc(qurbanPeriods.gregorianYear));
+
   // Add full image URL
   const enrichedPkg = {
     ...pkg[0],
@@ -181,6 +202,7 @@ app.get("/packages/:packagePeriodId", async (c) => {
         ? pkg[0].imageUrl
         : `${apiUrl}${pkg[0].imageUrl}`
       : null,
+    availablePeriods: allPeriods, // Add all available periods for this package
   };
 
   return c.json({ data: enrichedPkg });
@@ -232,6 +254,139 @@ app.get("/orders/my-orders", async (c) => {
   });
 });
 
+// Get order by order number (public endpoint for invoice)
+app.get("/orders/by-number/:orderNumber", async (c) => {
+  const db = c.get("db");
+  const { orderNumber } = c.req.param();
+
+  try {
+    const order = await db
+      .select({
+        id: qurbanOrders.id,
+        orderNumber: qurbanOrders.orderNumber,
+        donorName: qurbanOrders.donorName,
+        donorEmail: qurbanOrders.donorEmail,
+        donorPhone: qurbanOrders.donorPhone,
+        quantity: qurbanOrders.quantity,
+        unitPrice: qurbanOrders.unitPrice,
+        adminFee: qurbanOrders.adminFee,
+        totalAmount: qurbanOrders.totalAmount,
+        paymentMethod: qurbanOrders.paymentMethod,
+        paymentMethodId: qurbanOrders.paymentMethodId,
+        metadata: qurbanOrders.metadata,
+        paidAmount: qurbanOrders.paidAmount,
+        paymentStatus: qurbanOrders.paymentStatus,
+        orderStatus: qurbanOrders.orderStatus,
+        onBehalfOf: qurbanOrders.onBehalfOf,
+        notes: qurbanOrders.notes,
+        createdAt: qurbanOrders.createdAt,
+        confirmedAt: qurbanOrders.confirmedAt,
+        packageName: qurbanPackages.name,
+        animalType: qurbanPackages.animalType,
+        packageType: qurbanPackages.packageType,
+        periodName: qurbanPeriods.name,
+      })
+      .from(qurbanOrders)
+      .leftJoin(qurbanPackagePeriods, eq(qurbanOrders.packagePeriodId, qurbanPackagePeriods.id))
+      .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+      .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
+      .where(eq(qurbanOrders.orderNumber, orderNumber))
+      .limit(1);
+
+    if (order.length === 0) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+
+    // Parse metadata if exists
+    let parsedMetadata = null;
+    try {
+      if (order[0].metadata && typeof order[0].metadata === 'string') {
+        parsedMetadata = JSON.parse(order[0].metadata);
+      } else if (order[0].metadata && typeof order[0].metadata === 'object') {
+        parsedMetadata = order[0].metadata;
+      }
+    } catch (error) {
+      console.error('Failed to parse metadata:', error);
+      parsedMetadata = null;
+    }
+
+    // Convert snake_case to camelCase for frontend
+    const orderWithMetadata = {
+      id: order[0].id,
+      order_number: order[0].orderNumber,
+      donor_name: order[0].donorName,
+      donor_email: order[0].donorEmail,
+      donor_phone: order[0].donorPhone,
+      quantity: order[0].quantity,
+      unit_price: order[0].unitPrice,
+      admin_fee: order[0].adminFee,
+      total_amount: order[0].totalAmount,
+      payment_method: order[0].paymentMethod,
+      payment_method_id: order[0].paymentMethodId,
+      metadata: parsedMetadata,
+      paid_amount: order[0].paidAmount,
+      payment_status: order[0].paymentStatus,
+      order_status: order[0].orderStatus,
+      on_behalf_of: order[0].onBehalfOf,
+      notes: order[0].notes,
+      created_at: order[0].createdAt,
+      confirmed_at: order[0].confirmedAt,
+      package_name: order[0].packageName,
+      animal_type: order[0].animalType,
+      package_type: order[0].packageType,
+      period_name: order[0].periodName,
+    };
+
+    // Get payments history
+    const payments = await db
+      .select()
+      .from(qurbanPayments)
+      .where(eq(qurbanPayments.orderId, order[0].id))
+      .orderBy(desc(qurbanPayments.createdAt));
+
+    // Construct full URL for payment proofs
+    const apiUrl = (c.env as any)?.API_URL || process.env.API_URL || "http://localhost:50245";
+    const paymentsWithUrls = payments.map((payment: any) => {
+      let proofUrl = null;
+      if (payment.paymentProof) {
+        if (payment.paymentProof.includes("://")) {
+          // Already full URL
+          proofUrl = payment.paymentProof;
+        } else if (payment.paymentProof.includes("cdn.webane.net")) {
+          // GCS path without protocol
+          proofUrl = `https://storage.googleapis.com${payment.paymentProof.startsWith('/') ? '' : '/'}${payment.paymentProof}`;
+        } else {
+          // Local path
+          proofUrl = `${apiUrl}${payment.paymentProof.startsWith('/') ? '' : '/'}${payment.paymentProof}`;
+        }
+      }
+
+      return {
+        id: payment.id,
+        payment_number: payment.paymentNumber,
+        order_id: payment.orderId,
+        amount: payment.amount,
+        payment_method: payment.paymentMethod,
+        payment_channel: payment.paymentChannel,
+        payment_proof_url: proofUrl,
+        status: payment.status,
+        notes: payment.notes,
+        created_at: payment.createdAt,
+        verified_at: payment.verifiedAt,
+        verified_by: payment.verifiedBy,
+      };
+    });
+
+    return c.json({
+      order: orderWithMetadata,
+      payments: paymentsWithUrls,
+    });
+  } catch (error: any) {
+    console.error('Error fetching order:', error);
+    return c.json({ error: "Failed to fetch order", message: error.message }, 500);
+  }
+});
+
 // Get single order by ID
 app.get("/orders/:id", async (c) => {
   const db = c.get("db");
@@ -263,6 +418,7 @@ app.get("/orders/:id", async (c) => {
       donorPhone: qurbanOrders.donorPhone,
       quantity: qurbanOrders.quantity,
       unitPrice: qurbanOrders.unitPrice,
+      adminFee: qurbanOrders.adminFee,
       totalAmount: qurbanOrders.totalAmount,
       paymentMethod: qurbanOrders.paymentMethod,
       paidAmount: qurbanOrders.paidAmount,
@@ -449,6 +605,7 @@ app.post("/orders", async (c) => {
       sharedGroupId,
       quantity: body.quantity || 1,
       unitPrice: pkgPeriod.price,
+      adminFee: adminFee,
       totalAmount: totalAmount,
       paymentMethod: body.paymentMethod,
       installmentFrequency: body.installmentFrequency,
@@ -480,9 +637,26 @@ app.get("/payments/order/:orderId", async (c) => {
     .where(eq(qurbanPayments.orderId, orderId))
     .orderBy(desc(qurbanPayments.createdAt));
 
+  // Construct full URL for payment proofs
+  const apiUrl = (c.env as any)?.API_URL || process.env.API_URL || "http://localhost:50245";
+  const paymentsWithUrls = payments.map((payment: any) => {
+    const fullUrl = payment.paymentProof
+      ? (payment.paymentProof.includes("://")
+          ? payment.paymentProof
+          : `${apiUrl}${payment.paymentProof.startsWith('/') ? '' : '/'}${payment.paymentProof}`)
+      : null;
+
+    return {
+      ...payment,
+      paymentProof: fullUrl,
+      paymentProofUrl: fullUrl, // Add this for frontend compatibility
+      paymentStatus: payment.status, // Map status to paymentStatus for frontend
+    };
+  });
+
   return c.json({
     success: true,
-    data: payments,
+    data: paymentsWithUrls,
   });
 });
 
@@ -949,18 +1123,24 @@ app.post("/savings/:id/convert", async (c) => {
     return c.json({ error: "Savings not completed yet" }, 400);
   }
 
-  // Validate package
-  const pkg = await db
-    .select()
-    .from(qurbanPackages)
-    .where(eq(qurbanPackages.id, body.packageId))
-    .limit(1);
-
-  if (pkg.length === 0) {
-    return c.json({ error: "Package not found" }, 404);
+  // Validate packagePeriodId is required
+  if (!body.packagePeriodId) {
+    return c.json({ error: "Package period ID is required" }, 400);
   }
 
-  if (savings[0].currentAmount < pkg[0].price) {
+  // Validate package period
+  const pkgPeriod = await db.query.qurbanPackagePeriods.findFirst({
+    where: eq(qurbanPackagePeriods.id, body.packagePeriodId),
+    with: {
+      package: true,
+    },
+  });
+
+  if (!pkgPeriod) {
+    return c.json({ error: "Package period not found" }, 404);
+  }
+
+  if (savings[0].currentAmount < pkgPeriod.price) {
     return c.json({ error: "Insufficient savings balance" }, 400);
   }
 
@@ -974,13 +1154,14 @@ app.post("/savings/:id/convert", async (c) => {
   let sharedGroupId = null;
 
   // Handle shared group for sapi patungan
-  if (pkg[0].packageType === "shared") {
+  if (pkgPeriod.packageType === "shared") {
+    // Find open group with available slots for this package-period
     const openGroup = await db
       .select()
       .from(qurbanSharedGroups)
       .where(
         and(
-          eq(qurbanSharedGroups.packageId, body.packageId),
+          eq(qurbanSharedGroups.packagePeriodId, body.packagePeriodId),
           eq(qurbanSharedGroups.status, "open"),
           sql`${qurbanSharedGroups.slotsFilled} < ${qurbanSharedGroups.maxSlots}`
         )
@@ -988,7 +1169,9 @@ app.post("/savings/:id/convert", async (c) => {
       .limit(1);
 
     if (openGroup.length > 0) {
+      // Join existing group
       sharedGroupId = openGroup[0].id;
+
       const newSlotsFilled = openGroup[0].slotsFilled + 1;
       const newStatus = newSlotsFilled >= openGroup[0].maxSlots ? "full" : "open";
 
@@ -1001,10 +1184,11 @@ app.post("/savings/:id/convert", async (c) => {
         })
         .where(eq(qurbanSharedGroups.id, sharedGroupId));
     } else {
+      // Create new group
       const existingGroupsCount = await db
         .select({ count: sql<number>`count(*)` })
         .from(qurbanSharedGroups)
-        .where(eq(qurbanSharedGroups.packageId, body.packageId));
+        .where(eq(qurbanSharedGroups.packagePeriodId, body.packagePeriodId));
 
       const groupNumber = Number(existingGroupsCount[0].count) + 1;
 
@@ -1012,9 +1196,10 @@ app.post("/savings/:id/convert", async (c) => {
         .insert(qurbanSharedGroups)
         .values({
           id: createId(),
-          packageId: body.packageId,
+          packageId: pkgPeriod.packageId,
+          packagePeriodId: body.packagePeriodId,
           groupNumber,
-          maxSlots: pkg[0].maxSlots!,
+          maxSlots: pkgPeriod.maxSlots!,
           slotsFilled: 1,
           status: "open",
         })
@@ -1029,7 +1214,7 @@ app.post("/savings/:id/convert", async (c) => {
         slotsFilled: sql`${qurbanPackages.slotsFilled} + 1`,
         updatedAt: new Date(),
       })
-      .where(eq(qurbanPackages.id, body.packageId));
+      .where(eq(qurbanPackages.id, pkgPeriod.packageId));
   } else {
     await db
       .update(qurbanPackages)
@@ -1037,7 +1222,7 @@ app.post("/savings/:id/convert", async (c) => {
         stockSold: sql`${qurbanPackages.stockSold} + 1`,
         updatedAt: new Date(),
       })
-      .where(eq(qurbanPackages.id, body.packageId));
+      .where(eq(qurbanPackages.id, pkgPeriod.packageId));
   }
 
   // Create order (already paid from savings)
@@ -1050,13 +1235,14 @@ app.post("/savings/:id/convert", async (c) => {
       donorName: savings[0].donorName,
       donorEmail: savings[0].donorEmail,
       donorPhone: savings[0].donorPhone,
-      packageId: body.packageId,
+      packageId: pkgPeriod.packageId,
+      packagePeriodId: body.packagePeriodId,
       sharedGroupId,
       quantity: 1,
-      unitPrice: pkg[0].price,
-      totalAmount: pkg[0].price,
+      unitPrice: pkgPeriod.price,
+      totalAmount: pkgPeriod.price,
       paymentMethod: "full",
-      paidAmount: pkg[0].price, // Already paid from savings
+      paidAmount: pkgPeriod.price, // Already paid from savings
       paymentStatus: "paid",
       onBehalfOf: body.onBehalfOf,
     })
@@ -1073,7 +1259,7 @@ app.post("/savings/:id/convert", async (c) => {
     id: createId(),
     transactionNumber,
     savingsId: id,
-    amount: pkg[0].price,
+    amount: pkgPeriod.price,
     transactionType: "conversion",
     status: "verified",
   });
@@ -1098,11 +1284,12 @@ app.post("/savings/:id/convert", async (c) => {
 // POST /qurban/orders/:id/confirm-payment - Confirm payment method selection
 const confirmPaymentSchema = z.object({
   paymentMethodId: z.string(),
+  metadata: z.record(z.any()).optional(),
 });
 
 app.post("/orders/:id/confirm-payment", zValidator("json", confirmPaymentSchema), async (c) => {
   const orderId = c.req.param("id");
-  const { paymentMethodId } = c.req.valid("json");
+  const { paymentMethodId, metadata: providedMetadata } = c.req.valid("json");
   const db = c.get("db");
 
   // Verify qurban order exists
@@ -1114,11 +1301,45 @@ app.post("/orders/:id/confirm-payment", zValidator("json", confirmPaymentSchema)
     return error(c, "Qurban order not found", 404);
   }
 
-  // Update qurban order status to pending (waiting for proof upload)
+  // Update qurban order with payment method
   const updateData: any = {
+    paymentMethodId,
     paymentStatus: "pending", // Pending until proof uploaded
     updatedAt: new Date(),
   };
+
+  // If metadata provided from frontend, use it
+  if (providedMetadata && Object.keys(providedMetadata).length > 0) {
+    const existingMetadata = order.metadata || {};
+    updateData.metadata = {
+      ...existingMetadata,
+      ...providedMetadata,
+    };
+  }
+  // Otherwise, try to get from payment_methods table
+  else if (paymentMethodId.startsWith('bank-') || paymentMethodId.includes('qris')) {
+    const paymentMethod = await db.query.paymentMethods.findFirst({
+      where: eq(paymentMethods.code, paymentMethodId),
+    });
+
+    if (paymentMethod?.details) {
+      const existingMetadata = order.metadata || {};
+      const newMetadata: any = { ...existingMetadata };
+
+      if (paymentMethodId.startsWith('bank-')) {
+        newMetadata.bankName = paymentMethod.details.bankName || paymentMethod.name;
+        newMetadata.accountNumber = paymentMethod.details.accountNumber;
+        newMetadata.accountName = paymentMethod.details.accountName;
+      } else if (paymentMethodId.includes('qris')) {
+        newMetadata.qrisName = paymentMethod.details.name || paymentMethod.name;
+        if (paymentMethod.details.nmid) {
+          newMetadata.nmid = paymentMethod.details.nmid;
+        }
+      }
+
+      updateData.metadata = newMetadata;
+    }
+  }
 
   await db
     .update(qurbanOrders)
@@ -1146,9 +1367,15 @@ app.post("/orders/:id/upload-proof", async (c) => {
     // Parse multipart form data
     const body = await c.req.parseBody();
     const file = body.file as File;
+    const transferAmount = body.amount ? Number(body.amount) : null;
 
     if (!file) {
       return error(c, "No file provided", 400);
+    }
+
+    // Validate transfer amount
+    if (!transferAmount || transferAmount <= 0) {
+      return error(c, "Invalid transfer amount", 400);
     }
 
     // Validate file type (images and PDFs only)
@@ -1166,66 +1393,149 @@ app.post("/orders/:id/upload-proof", async (c) => {
     // Generate filename
     const sanitizedName = file.name.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '-');
     const finalFilename = `${Date.now()}-${sanitizedName}`;
-    const path = `/uploads/${finalFilename}`;
 
     // Get buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Store in filesystem
-    try {
+    // Check if CDN is enabled
+    console.log("Checking CDN settings...");
+    const cdnConfig = await fetchCDNSettings(db);
+    let fileUrl = "";
+
+    if (cdnConfig) {
+      // Upload to GCS
+      console.log("CDN enabled, uploading to GCS...");
+      try {
+        const gcsPath = generateGCSPath(finalFilename);
+        fileUrl = await uploadToGCS(cdnConfig, buffer, gcsPath, file.type);
+        console.log("GCS upload successful:", fileUrl);
+      } catch (gcsError: any) {
+        console.error("GCS upload failed, falling back to local:", gcsError.message);
+        // Fallback to local storage
+        const uploadsDir = pathModule.join(process.cwd(), "uploads");
+        if (!fs.existsSync(uploadsDir)) {
+          fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+        const filePath = pathModule.join(uploadsDir, finalFilename);
+        fs.writeFileSync(filePath, buffer);
+
+        if (!global.uploadedFiles) {
+          global.uploadedFiles = new Map();
+        }
+        global.uploadedFiles.set(finalFilename, buffer);
+
+        const apiUrl = c.env?.API_URL || process.env.API_URL || "http://localhost:50245";
+        fileUrl = `${apiUrl}/uploads/${finalFilename}`;
+      }
+    } else {
+      // Store locally
+      console.log("CDN disabled, storing locally...");
       const uploadsDir = pathModule.join(process.cwd(), "uploads");
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
       const filePath = pathModule.join(uploadsDir, finalFilename);
       fs.writeFileSync(filePath, buffer);
-    } catch (error) {
-      console.error("Filesystem error:", error);
-    }
 
-    // Store in global map for immediate access
-    if (!global.uploadedFiles) {
-      global.uploadedFiles = new Map();
-    }
-    global.uploadedFiles.set(finalFilename, buffer);
+      if (!global.uploadedFiles) {
+        global.uploadedFiles = new Map();
+      }
+      global.uploadedFiles.set(finalFilename, buffer);
 
-    // Save to media table with financial category
-    await db
-      .insert(media)
-      .values({
-        filename: finalFilename,
-        originalName: file.name,
-        mimeType: file.type,
-        size: file.size,
-        url: path,
-        path: path,
-        folder: "uploads",
-        category: "financial", // Kategori finansial untuk bukti transfer
+      const apiUrl = c.env?.API_URL || process.env.API_URL || "http://localhost:50245";
+      fileUrl = `${apiUrl}/uploads/${finalFilename}`;
+    }
+    console.log("File URL:", fileUrl);
+
+    // Create payment record
+    console.log("Creating payment record...");
+    const timestamp = getCurrentYearWIB();
+    const randomStr = Math.random().toString(36).substring(2, 11).toUpperCase();
+
+    // Determine payment method type
+    let paymentMethodType = "bank_transfer";
+    let paymentChannel = null;
+
+    if (order.paymentMethodId) {
+      // Get payment method details from database to determine type
+      const paymentMethodRecord = await db.query.paymentMethods.findFirst({
+        where: eq(paymentMethods.code, order.paymentMethodId),
       });
 
-    // Update qurban order status to processing (waiting for admin confirmation)
-    const updateData: any = {
-      paymentStatus: "processing",
-      updatedAt: new Date(),
+      if (paymentMethodRecord) {
+        paymentMethodType = paymentMethodRecord.type; // 'bank_transfer', 'qris', 'ewallet', 'va'
+        paymentChannel = order.paymentMethodId; // Use the code directly without prefix
+      } else {
+        // Fallback: if not found in DB, guess from code format
+        if (order.paymentMethodId.includes('qris')) {
+          paymentMethodType = 'qris';
+          paymentChannel = order.paymentMethodId;
+        } else if (order.paymentMethodId.startsWith('bank-')) {
+          paymentMethodType = 'bank_transfer';
+          paymentChannel = order.paymentMethodId;
+        } else {
+          // Default to bank_transfer with bank_ prefix for backward compatibility
+          paymentMethodType = 'bank_transfer';
+          paymentChannel = `bank_${order.paymentMethodId}`;
+        }
+      }
+    }
+
+    // Generate notes based on transfer amount vs order total
+    let paymentNotes = "Bukti pembayaran dari user";
+    if (transferAmount > order.totalAmount) {
+      const excess = transferAmount - order.totalAmount;
+      paymentNotes += ` (Transfer lebih: ${excess})`;
+    } else if (transferAmount < order.totalAmount) {
+      const shortage = order.totalAmount - transferAmount;
+      paymentNotes += ` (Transfer kurang: ${shortage}, pembayaran sebagian)`;
+    }
+
+    const paymentData = {
+      id: createId(),
+      paymentNumber: `PAY-QBN-${timestamp}-${randomStr}`,
+      orderId: orderId,
+      amount: transferAmount, // Use actual transfer amount, not order total
+      paymentMethod: paymentMethodType,
+      paymentChannel: paymentChannel,
+      paymentProof: fileUrl,
+      status: "pending" as const,
+      notes: paymentNotes,
     };
+    console.log("Payment data:", paymentData);
+
+    await db.insert(qurbanPayments).values(paymentData);
+    console.log("Payment record created successfully");
+
+    // Update order: increment paidAmount with actual transfer amount
+    // paidAmount tracks total claimed payments (verified or not)
+    // paymentStatus only changes to "paid" when admin verifies the payment
+    const newPaidAmount = order.paidAmount + transferAmount;
 
     await db
       .update(qurbanOrders)
-      .set(updateData)
+      .set({
+        paidAmount: newPaidAmount,
+        paymentStatus: "pending", // Keep as pending until admin verifies
+        updatedAt: new Date(),
+      })
       .where(eq(qurbanOrders.id, orderId));
 
-    // Construct URL from path
-    const apiUrl = c.env?.API_URL || process.env.API_URL || "http://localhost:50245";
+    console.log(`Order updated: paidAmount=${newPaidAmount}, paymentStatus=pending (waiting verification)`);
 
+    console.log("Upload proof completed successfully");
     return success(c, {
-      url: `${apiUrl}${path}`,
+      url: fileUrl,
       filename: finalFilename,
+      paidAmount: newPaidAmount,
+      paymentStatus: "pending",
     }, "Payment proof uploaded successfully");
 
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error uploading payment proof:", err);
-    return error(c, "Failed to upload payment proof", 500);
+    console.error("Error details:", err.message, err.stack);
+    return error(c, `Failed to upload payment proof: ${err.message}`, 500);
   }
 });
 

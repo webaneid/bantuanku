@@ -306,9 +306,9 @@ export default function PaymentResultPage() {
                   Kembali ke Beranda
                 </Button>
               </Link>
-              <Link href="/account/donations">
+              <Link href="/account">
                 <Button variant="outline" size="lg" className="w-full">
-                  Lihat Status Donasi
+                  Lihat Dashboard
                 </Button>
               </Link>
             </div>

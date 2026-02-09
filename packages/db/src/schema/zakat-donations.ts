@@ -20,6 +20,7 @@ export const zakatDonations = pgTable("zakat_donations", {
 
   // Jumlah
   amount: bigint("amount", { mode: "number" }).notNull(),
+  paidAmount: bigint("paid_amount", { mode: "number" }).default(0).notNull(),
 
   // Kalkulator data (JSON untuk menyimpan input kalkulator)
   calculatorData: jsonb("calculator_data"),
@@ -40,7 +41,7 @@ export const zakatDonations = pgTable("zakat_donations", {
   updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
 });
 
-export const zakatDonationsRelations = relations(zakatDonations, ({ one }) => ({
+export const zakatDonationsRelations = relations(zakatDonations, ({ one, many }) => ({
   zakatType: one(zakatTypes, {
     fields: [zakatDonations.zakatTypeId],
     references: [zakatTypes.id],
@@ -49,7 +50,11 @@ export const zakatDonationsRelations = relations(zakatDonations, ({ one }) => ({
     fields: [zakatDonations.donaturId],
     references: [donatur.id],
   }),
+  manualPayments: many(zakatPayments),
 }));
+
+// Import after declaration
+import { zakatPayments } from "./zakat-payments";
 
 export type ZakatDonation = typeof zakatDonations.$inferSelect;
 export type NewZakatDonation = typeof zakatDonations.$inferInsert;

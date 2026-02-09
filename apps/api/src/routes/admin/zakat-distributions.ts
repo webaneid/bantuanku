@@ -446,54 +446,54 @@ app.post("/:id/disburse", async (c) => {
       .where(eq(zakatDistributions.id, id))
       .returning();
 
-  // Auto-create ledger entry when disbursed
-  const zakatType = await db
-    .select()
-    .from(zakatTypes)
-    .where(eq(zakatTypes.id, existing[0].zakatTypeId))
-    .limit(1);
+    // Auto-create ledger entry when disbursed
+    const zakatType = await db
+      .select()
+      .from(zakatTypes)
+      .where(eq(zakatTypes.id, existing[0].zakatTypeId))
+      .limit(1);
 
-  if (zakatType.length > 0) {
-    // Map zakat type slug to COA code (expense side: 72xx)
-    const coaMapping: Record<string, string> = {
-      "zakat-maal": "7201",
-      "zakat-fitrah": "7202",
-      "zakat-profesi": "7203",
-      "zakat-pertanian": "7204",
-      "zakat-peternakan": "7205",
-    };
+    if (zakatType.length > 0) {
+      // Map zakat type slug to COA code (expense side: 72xx)
+      const coaMapping: Record<string, string> = {
+        "zakat-maal": "7201",
+        "zakat-fitrah": "7202",
+        "zakat-profesi": "7203",
+        "zakat-pertanian": "7204",
+        "zakat-peternakan": "7205",
+      };
 
-    const coaCode = coaMapping[zakatType[0].slug];
+      const coaCode = coaMapping[zakatType[0].slug];
 
-    if (coaCode) {
-      const coaAccount = await db
-        .select()
-        .from(chartOfAccounts)
-        .where(eq(chartOfAccounts.code, coaCode))
-        .limit(1);
+      if (coaCode) {
+        const coaAccount = await db
+          .select()
+          .from(chartOfAccounts)
+          .where(eq(chartOfAccounts.code, coaCode))
+          .limit(1);
 
-      if (coaAccount.length > 0) {
-        await db.insert(ledger).values({
-          id: createId(),
-          date: new Date(),
-          description: `Penyaluran ${zakatType[0].name} kepada ${existing[0].recipientName} (${existing[0].recipientCategory})`,
-          reference: existing[0].referenceId,
-          referenceType: "zakat_distribution",
-          referenceId: existing[0].id,
-          coaId: coaAccount[0].id,
-          debit: existing[0].amount,
-          credit: 0,
-          status: "paid",
-        });
+        if (coaAccount.length > 0) {
+          await db.insert(ledger).values({
+            id: createId(),
+            date: new Date(),
+            description: `Penyaluran ${zakatType[0].name} kepada ${existing[0].recipientName} (${existing[0].recipientCategory})`,
+            reference: existing[0].referenceId,
+            referenceType: "zakat_distribution",
+            referenceId: existing[0].id,
+            coaId: coaAccount[0].id,
+            debit: existing[0].amount,
+            credit: 0,
+            status: "paid",
+          });
+        }
       }
     }
-  }
 
-  return c.json({
-    success: true,
-    data: updated[0],
-    message: "Distribution marked as disbursed successfully",
-  });
+    return c.json({
+      success: true,
+      data: updated[0],
+      message: "Distribution marked as disbursed successfully",
+    });
   } catch (error) {
     console.error("Error in disburse endpoint:", error);
     return c.json({ 

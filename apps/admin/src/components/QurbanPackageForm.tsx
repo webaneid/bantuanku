@@ -42,7 +42,7 @@ interface Period {
 }
 
 export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: QurbanPackageFormProps) {
-  const { register, handleSubmit, formState: { errors }, setValue, watch, control } = useForm<QurbanPackageFormData>({
+  const { register, handleSubmit, formState: { errors }, setValue, watch, control, reset } = useForm<QurbanPackageFormData>({
     defaultValues: initialData || {
       animalType: "cow",
       packageType: "individual",
@@ -84,13 +84,14 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
     (period) => !selectedPeriodIds.includes(period.id)
   );
 
-  // Sync states when initialData changes
+  // Sync form and states when initialData changes (for edit mode)
   useEffect(() => {
     if (initialData) {
+      reset(initialData); // Reset entire form including periods array
       if (initialData.description) setDescription(initialData.description);
       if (initialData.imageUrl) setImageUrl(initialData.imageUrl);
     }
-  }, [initialData]);
+  }, [initialData, reset]);
 
   const handleDescriptionChange = (value: string) => {
     setDescription(value);

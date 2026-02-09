@@ -2,10 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/atoms';
 import { formatRupiah } from '@/lib/format';
 import QurbanConfirmModal from './QurbanConfirmModal';
+
+interface AvailablePeriod {
+  periodId: string;
+  packagePeriodId: string;
+  periodName: string;
+  gregorianYear: number;
+  price: number;
+}
 
 interface QurbanSidebarProps {
   qurbanPackage: {
@@ -21,6 +30,7 @@ interface QurbanSidebarProps {
     slotsFilled: number;
     availableSlots: number;
     periodId: string;
+    availablePeriods: AvailablePeriod[];
   };
   periods: any[];
   adminFeeCow: number;
@@ -35,6 +45,7 @@ export default function QurbanSidebar({
   adminFeeGoat,
   settings,
 }: QurbanSidebarProps) {
+  const router = useRouter();
   const [selectedPeriod, setSelectedPeriod] = useState(qurbanPackage.periodId);
   const [quantity, setQuantity] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,6 +54,18 @@ export default function QurbanSidebar({
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
+
+  // Handle period change - redirect to new packagePeriodId
+  const handlePeriodChange = (newPeriodId: string) => {
+    const selectedPeriodData = qurbanPackage.availablePeriods.find(
+      (p) => p.periodId === newPeriodId
+    );
+
+    if (selectedPeriodData) {
+      // Redirect to new packagePeriodId to reload with correct price and stock
+      router.push(`/qurban/${selectedPeriodData.packagePeriodId}`);
+    }
+  };
 
   // Calculate admin fee based on animal type and package type
   const calculateAdminFee = () => {
@@ -147,19 +170,19 @@ export default function QurbanSidebar({
         {isAvailable ? (
           <div className="space-y-4">
             {/* Period Selection */}
-            {periods.length > 1 && (
+            {qurbanPackage.availablePeriods.length > 1 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Pilih Periode
                 </label>
                 <select
                   value={selectedPeriod}
-                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  onChange={(e) => handlePeriodChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
-                  {periods.map((period) => (
-                    <option key={period.id} value={period.id}>
-                      {period.name}
+                  {qurbanPackage.availablePeriods.map((period) => (
+                    <option key={period.periodId} value={period.periodId}>
+                      {period.periodName} - Rp {formatRupiah(period.price)}
                     </option>
                   ))}
                 </select>

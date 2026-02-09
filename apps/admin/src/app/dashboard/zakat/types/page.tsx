@@ -101,7 +101,19 @@ export default function ZakatTypesPage() {
                     className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
                   >
                     <div className="flex items-start gap-4 flex-1">
-                      <div className="text-3xl">{type.icon || "📦"}</div>
+                      <div className="flex-shrink-0">
+                        {type.imageUrl ? (
+                          <img
+                            src={type.imageUrl}
+                            alt={type.name}
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">
+                            No Img
+                          </div>
+                        )}
+                      </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
                           <h3 className="font-semibold text-gray-900">{type.name}</h3>

@@ -70,19 +70,23 @@ export default function CheckoutPage() {
   const [donaturId, setDonaturId] = useState<string | null>(null);
   const [isAutoFilled, setIsAutoFilled] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
 
-  // Redirect if cart is empty (but not during submission)
+  // Redirect if cart is empty (but not during submission or after successful checkout)
   useEffect(() => {
-    if (items.length === 0 && !isSubmitting) {
+    if (items.length === 0 && !isSubmitting && !checkoutSuccess) {
       router.push('/keranjang-bantuan');
     }
-  }, [items, router, isSubmitting]);
+  }, [items, router, isSubmitting, checkoutSuccess]);
 
   // Auto-fill from logged-in user
   useEffect(() => {
     if (isHydrated && user) {
+      // Find donatur ID for logged-in user first
+      checkExistingDonatur(user.email, user.phone);
+
       setFormData(prev => ({
         ...prev,
         name: user.name || prev.name,
@@ -94,11 +98,8 @@ export default function CheckoutPage() {
     }
   }, [user, isHydrated]);
 
-  // Check if donatur exists based on email or phone (only for guests)
+  // Check if donatur exists based on email or phone
   const checkExistingDonatur = async (email?: string, phone?: string) => {
-    // Skip if user is already logged in
-    if (user) return;
-
     if (!email && !phone) return;
 
     try {
@@ -113,17 +114,20 @@ export default function CheckoutPage() {
         if (data.success && data.data) {
           const donatur: Donatur = data.data;
 
-          // Auto-fill name if found
-          setFormData(prev => ({
-            ...prev,
-            name: donatur.name || prev.name,
-            phone: donatur.phone || prev.phone,
-            whatsapp: donatur.whatsappNumber || prev.whatsapp,
-          }));
-
+          // Set donatur ID
           setDonaturId(donatur.id);
-          setIsAutoFilled(true);
-          toast.success('Data Anda ditemukan! Nama telah diisi otomatis.');
+
+          // Auto-fill name if found (only for guests)
+          if (!user) {
+            setFormData(prev => ({
+              ...prev,
+              name: donatur.name || prev.name,
+              phone: donatur.phone || prev.phone,
+              whatsapp: donatur.whatsappNumber || prev.whatsapp,
+            }));
+            setIsAutoFilled(true);
+            toast.success('Data Anda ditemukan! Nama telah diisi otomatis.');
+          }
         }
       }
     } catch (error) {
@@ -132,13 +136,13 @@ export default function CheckoutPage() {
   };
 
   const handleEmailBlur = () => {
-    if (formData.email && !isAutoFilled && !user) {
+    if (formData.email && !donaturId) {
       checkExistingDonatur(formData.email, undefined);
     }
   };
 
   const handlePhoneBlur = () => {
-    if (formData.phone && !isAutoFilled && !user) {
+    if (formData.phone && !donaturId) {
       checkExistingDonatur(undefined, formData.phone);
     }
   };
@@ -176,12 +180,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Check if there are qurban items and validate onBehalfOf
-    const hasQurbanItems = items.some(item => item.itemType === 'qurban');
-    if (hasQurbanItems && (!formData.onBehalfOf || formData.onBehalfOf.trim().length < 2)) {
-      toast.error('Atas Nama harus diisi untuk pesanan qurban');
-      return;
-    }
 
     // Check minimum donation amount for campaign items
     const invalidCampaignItem = items.find(item => item.itemType === 'campaign' && item.amount < 10000);
@@ -217,25 +215,33 @@ export default function CheckoutPage() {
       // Create donations for campaign items
       if (campaignItems.length > 0) {
         const donationPromises = campaignItems.map(async (item) => {
-          const donationData = {
-            campaignId: item.campaignId,
-            amount: item.amount,
-            donorName: formData.name.trim(),
-            donorEmail: normalizedEmail,
-            donorPhone: normalizedPhone,
-            isAnonymous: formData.hideMyName,
+          const transactionData = {
+            product_type: 'campaign',
+            product_id: item.campaignId,
+            product_name: item.title,
+            donor_name: formData.name.trim(),
+            donor_email: normalizedEmail,
+            donor_phone: normalizedPhone,
+            donatur_id: donaturId || undefined,
+            is_anonymous: formData.hideMyName,
+            quantity: 1,
+            unit_price: item.amount,
+            admin_fee: 0,
+            total_amount: item.amount,
             message: formData.message.trim() || undefined,
-            userId: user?.id || undefined, // Link to user if logged in
-            fidyahPersonCount: item.fidyahData?.personCount,
-            fidyahDayCount: item.fidyahData?.dayCount,
+            user_id: user?.id || undefined,
+            type_specific_data: item.fidyahData ? {
+              fidyah_person_count: item.fidyahData.personCount,
+              fidyah_day_count: item.fidyahData.dayCount,
+            } : undefined,
           };
 
-          const response = await fetch(`${API_URL}/donations`, {
+          const response = await fetch(`${API_URL}/transactions`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(donationData),
+            body: JSON.stringify(transactionData),
           });
 
           if (!response.ok) {
@@ -248,6 +254,7 @@ export default function CheckoutPage() {
             ...result,
             itemType: 'donation',
             programType: item.programType,
+            useUniversalInvoice: true,
           };
         });
 
@@ -258,7 +265,7 @@ export default function CheckoutPage() {
       // Create donations for zakat items
       if (zakatItems.length > 0) {
         // First, fetch zakat types to get zakatTypeId from slug
-        const zakatTypesResponse = await fetch(`${API_URL}/admin/zakat/types?isActive=true&limit=100`);
+        const zakatTypesResponse = await fetch(`${API_URL}/zakat/types`);
         const zakatTypesData = await zakatTypesResponse.json();
         const zakatTypes = zakatTypesData?.data || [];
 
@@ -277,28 +284,34 @@ export default function CheckoutPage() {
             throw new Error(`Zakat type not found for ${item.title}`);
           }
 
-          const donationData = {
-            zakatTypeId,
-            donorName: formData.name.trim(),
-            donorEmail: normalizedEmail,
-            donorPhone: normalizedPhone,
-            isAnonymous: formData.hideMyName,
-            amount: item.amount,
-            calculatorData: item.zakatData ? {
-              zakatType: item.zakatData.zakatType,
-              quantity: item.zakatData.quantity,
-              pricePerUnit: item.zakatData.pricePerUnit,
-            } : null,
+          const transactionData = {
+            product_type: 'zakat',
+            product_id: zakatTypeId,
+            product_name: item.title,
+            donor_name: formData.name.trim(),
+            donor_email: normalizedEmail,
+            donor_phone: normalizedPhone,
+            donatur_id: donaturId || undefined,
+            is_anonymous: formData.hideMyName,
+            quantity: item.zakatData?.quantity || 1,
+            unit_price: item.zakatData?.pricePerUnit || item.amount,
+            admin_fee: 0,
+            total_amount: item.amount,
             message: formData.message.trim() || undefined,
-            paymentStatus: 'pending',
+            user_id: user?.id || undefined,
+            type_specific_data: item.zakatData ? {
+              zakat_type: item.zakatData.zakatType,
+              quantity: item.zakatData.quantity,
+              price_per_unit: item.zakatData.pricePerUnit,
+            } : undefined,
           };
 
-          const response = await fetch(`${API_URL}/admin/zakat/donations`, {
+          const response = await fetch(`${API_URL}/transactions`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(donationData),
+            body: JSON.stringify(transactionData),
           });
 
           if (!response.ok) {
@@ -311,6 +324,7 @@ export default function CheckoutPage() {
             ...result,
             itemType: 'zakat',
             programType: item.programType,
+            useUniversalInvoice: true,
           };
         });
 
@@ -318,37 +332,55 @@ export default function CheckoutPage() {
         allResults.push(...zakatResults);
       }
 
-      // Create qurban orders for qurban items
+      // Create transactions for qurban items
       if (qurbanItems.length > 0) {
         const qurbanPromises = qurbanItems.map(async (item) => {
           if (!item.qurbanData) {
             throw new Error(`Qurban data missing for ${item.title}`);
           }
 
-          const qurbanOrderData = {
-            packagePeriodId: item.qurbanData.packagePeriodId, // Use packagePeriodId
-            quantity: item.qurbanData.quantity,
-            donorName: formData.name.trim(),
-            donorEmail: normalizedEmail,
-            donorPhone: normalizedPhone,
-            onBehalfOf: formData.onBehalfOf.trim(),
-            paymentMethod: 'full', // Default to full payment
+          // Calculate unit price (price per slot/ekor)
+          const unitPrice = item.qurbanData.price;
+          // Admin fee is already calculated per slot/ekor
+          const adminFee = item.qurbanData.adminFee || 0;
+          const quantity = item.qurbanData.quantity;
+          const totalAmount = (unitPrice * quantity) + (adminFee * quantity);
+
+          const transactionData = {
+            product_type: 'qurban',
+            product_id: item.qurbanData.packagePeriodId,
+            product_name: item.title,
+            donor_name: formData.name.trim(),
+            donor_email: normalizedEmail,
+            donor_phone: normalizedPhone,
+            donatur_id: donaturId || undefined,
+            quantity: quantity,
+            unit_price: unitPrice,
+            admin_fee: adminFee,
+            total_amount: totalAmount,
             notes: formData.message.trim() || undefined,
-            userId: user?.id || undefined, // Link to user if logged in
-            adminFee: item.qurbanData.adminFee || 0, // Include admin fee
+            user_id: user?.id || undefined,
+            type_specific_data: {
+              period_id: item.qurbanData.periodId,
+              package_id: item.qurbanData.packageId,
+              package_period_id: item.qurbanData.packagePeriodId,
+              on_behalf_of: formData.onBehalfOf.trim() || formData.name.trim(),
+              animal_type: item.qurbanData.animalType,
+              package_type: item.qurbanData.packageType,
+            },
           };
 
-          const response = await fetch(`${API_URL}/qurban/orders`, {
+          const response = await fetch(`${API_URL}/transactions`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(qurbanOrderData),
+            body: JSON.stringify(transactionData),
           });
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || `Failed to create qurban order for ${item.title}`);
+            throw new Error(errorData.message || `Failed to create qurban transaction for ${item.title}`);
           }
 
           const result = await response.json();
@@ -356,6 +388,7 @@ export default function CheckoutPage() {
             ...result,
             itemType: 'qurban',
             programType: 'qurban',
+            useUniversalInvoice: true,
           };
         });
 
@@ -407,18 +440,28 @@ export default function CheckoutPage() {
       // Store transaction IDs for payment
       const transactionData = allResults.map((r) => ({
         id: r.data.id,
-        type: r.itemType, // 'donation' or 'qurban'
+        type: r.itemType, // 'donation' or 'qurban' or 'zakat'
         program: r.programType.toLowerCase(),
         amount: r.data.amount || r.data.totalAmount || 0, // Include amount for payment pages
+        useUniversalInvoice: r.useUniversalInvoice || false, // Flag for new transaction system
       })).filter(d => d.id);
 
-      // Redirect to payment method selection
-      if (transactionData.length > 0) {
-        // Store in sessionStorage for payment page
-        sessionStorage.setItem('pendingTransactions', JSON.stringify(transactionData));
+      // Mark checkout as successful to prevent redirect to empty cart
+      setCheckoutSuccess(true);
 
-        // Redirect to payment method (don't clear cart yet)
-        router.push('/checkout/payment-method');
+      // Clear cart immediately after successful checkout
+      clearCart();
+
+      // Store pending donations in sessionStorage for payment method page
+      if (transactionData.length > 0) {
+        sessionStorage.setItem('pendingDonations', JSON.stringify(transactionData));
+      }
+
+      // Redirect to payment method page
+      if (transactionData.length > 0) {
+        const firstTransaction = transactionData[0];
+        // All transactions now use Universal Invoice System
+        router.push(`/invoice/${firstTransaction.id}/payment-method`);
       } else {
         router.push('/');
       }
@@ -601,17 +644,16 @@ export default function CheckoutPage() {
                   {items.some(item => item.itemType === 'qurban') && (
                     <div className="form-field">
                       <label className="form-label">
-                        Atas Nama (untuk Qurban) <span className="text-red-600">*</span>
+                        Atas Nama (untuk Qurban)
                       </label>
                       <Input
                         type="text"
                         value={formData.onBehalfOf}
                         onChange={(e) => setFormData({ ...formData, onBehalfOf: e.target.value })}
-                        placeholder="Nama orang yang diwakafkan qurban ini"
-                        required={items.some(item => item.itemType === 'qurban')}
+                        placeholder="Nama orang yang diwakafkan qurban ini (opsional)"
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Atas nama siapa qurban ini disembelih
+                        Atas nama siapa qurban ini disembelih (opsional, bisa diisi kemudian)
                       </p>
                     </div>
                   )}

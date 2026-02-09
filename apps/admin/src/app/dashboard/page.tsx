@@ -63,6 +63,25 @@ export default function DashboardPage() {
         <p className="text-gray-600 mt-2">Welcome to Bantuanku Admin Dashboard</p>
       </div>
 
+      {/* New Feature Highlight */}
+      <div className="mb-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 text-3xl">✨</div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-blue-900 mb-2">Form Transaksi Universal</h3>
+            <p className="text-sm text-blue-800 mb-3">
+              Buat semua tipe transaksi (Campaign, Zakat, Qurban) dalam satu form yang mudah dan cepat.
+            </p>
+            <a
+              href="/dashboard/transactions/create"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+            >
+              Buat Transaksi Baru →
+            </a>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {statCards.map((stat) => {

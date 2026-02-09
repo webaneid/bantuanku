@@ -35,6 +35,7 @@ import publicStatsRoutes from "./routes/public-stats";
 import addressPublicRoutes from "./routes/address-public";
 import activityReportsPublicRoutes from "./routes/activity-reports-public";
 import indonesiaRoutes from "./routes/indonesia";
+import transactionsRoutes from "./routes/transactions";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -155,6 +156,7 @@ app.route("/v1/public-stats", publicStatsRoutes);
 app.route("/v1/address", addressPublicRoutes);
 app.route("/v1/activity-reports", activityReportsPublicRoutes);
 app.route("/v1/indonesia", indonesiaRoutes);
+app.route("/v1/transactions", transactionsRoutes);
 
 app.notFound((c) => {
   return c.json({ success: false, message: "Not found" }, 404);

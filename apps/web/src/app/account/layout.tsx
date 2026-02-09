@@ -18,11 +18,11 @@ const navigation = [
     ),
   },
   {
-    name: "Riwayat Donasi",
-    href: "/account/donations",
+    name: "Riwayat Transaksi",
+    href: "/account/transactions",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
       </svg>
     ),
   },
@@ -70,15 +70,28 @@ export default function DashboardLayout({
   const logo = settings.organization_logo || '/logo.svg';
   const siteName = settings.site_name || 'Bantuanku';
 
+  // Check if current path is a guest-accessible transaction page
+  const isTransactionPage = pathname?.match(/^\/(account\/)?(qurban|donations|zakat)\/[^/]+(\/(payment-method|payment-detail))?$/);
+
   useEffect(() => {
     // Only redirect after hydration is complete
-    if (isHydrated && !user) {
+    // Allow guests to access transaction detail pages
+    if (isHydrated && !user && !isTransactionPage) {
       router.push("/login");
     }
-  }, [user, router, isHydrated]);
+  }, [user, router, isHydrated, isTransactionPage]);
 
-  // Show loading while hydrating or if no user after hydration
-  if (!isHydrated || !user) {
+  // Show loading while hydrating
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // For non-transaction pages, require authentication
+  if (!user && !isTransactionPage) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -104,55 +117,66 @@ export default function DashboardLayout({
               >
                 Kembali ke Beranda
               </Link>
-              <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
+              {user ? (
+                <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </div>
         </div>
       </nav>
 
       <div className="flex pt-16">
-        {/* Sidebar */}
-        <aside className="fixed inset-y-0 left-0 pt-16 w-64 bg-white border-r border-gray-200 hidden lg:block">
-          <nav className="flex-1 px-4 py-6 space-y-1">
-            {navigation.map((item) => {
-              const isActive = pathname === item.href;
+        {/* Sidebar - Only show for logged in users */}
+        {user && (
+          <aside className="fixed inset-y-0 left-0 pt-16 w-64 bg-white border-r border-gray-200 hidden lg:block">
+            <nav className="flex-1 px-4 py-6 space-y-1">
+              {navigation.map((item) => {
+                const isActive = pathname === item.href;
 
-              if (item.isLogout) {
+                if (item.isLogout) {
+                  return (
+                    <button
+                      key={item.name}
+                      onClick={logout}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-danger-700 hover:bg-danger-50"
+                    >
+                      {item.icon}
+                      {item.name}
+                    </button>
+                  );
+                }
+
                 return (
-                  <button
+                  <Link
                     key={item.name}
-                    onClick={logout}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-danger-700 hover:bg-danger-50"
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors",
+                      isActive
+                        ? "bg-primary-50 text-primary-700"
+                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                    )}
                   >
                     {item.icon}
                     {item.name}
-                  </button>
+                  </Link>
                 );
-              }
-
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors",
-                    isActive
-                      ? "bg-primary-50 text-primary-700"
-                      : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                  )}
-                >
-                  {item.icon}
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
-        </aside>
+              })}
+            </nav>
+          </aside>
+        )}
 
         {/* Main Content */}
-        <main className="flex-1 lg:ml-64">
+        <main className={cn("flex-1", user && "lg:ml-64")}>
           <div className="px-4 sm:px-6 lg:px-8 py-8">
             {children}
           </div>

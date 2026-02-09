@@ -212,14 +212,14 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                       Dashboard
                     </Link>
                     <Link
-                      href="/account/donations"
+                      href="/account/transactions"
                       className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
-                      Riwayat Donasi
+                      Riwayat Transaksi
                     </Link>
                     <Link
                       href="/qurban/savings"
@@ -321,8 +321,8 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                     <Link href="/account">
                       <Button fullWidth variant="outline">Dashboard</Button>
                     </Link>
-                    <Link href="/account/donations">
-                      <Button fullWidth variant="outline">Riwayat Donasi</Button>
+                    <Link href="/account/transactions">
+                      <Button fullWidth variant="outline">Riwayat Transaksi</Button>
                     </Link>
                     <Link href="/qurban/savings">
                       <Button fullWidth variant="outline">Tabungan Qurban</Button>

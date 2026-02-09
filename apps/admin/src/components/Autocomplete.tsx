@@ -128,9 +128,9 @@ export default function Autocomplete({
         <div className="autocomplete-dropdown">
           {filteredOptions.length > 0 ? (
             <ul className="autocomplete-options">
-              {filteredOptions.map((option) => (
+              {filteredOptions.map((option, index) => (
                 <li
-                  key={option.value}
+                  key={`${option.value}-${index}`}
                   className={`autocomplete-option ${
                     option.value === value ? "selected" : ""
                   }`}

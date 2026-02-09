@@ -90,43 +90,84 @@ app.get("/periods/:id/detail", async (c) => {
     return c.json({ error: "Period not found" }, 404);
   }
 
-  // Get all orders for this period with package details
-  const orders = await db
+  // Get all package_period_ids for this period
+  const packagePeriods = await db
     .select({
-      order_id: qurbanOrders.id,
-      order_number: qurbanOrders.orderNumber,
-      animal_type: qurbanPackages.animalType,
-      package_name: qurbanPackages.name,
-      package_type: qurbanPackages.packageType,
-      price: qurbanPackagePeriods.price,
-      donor_name: qurbanOrders.donorName,
-      donor_phone: qurbanOrders.donorPhone,
-      on_behalf_of: qurbanOrders.onBehalfOf,
-      quantity: qurbanOrders.quantity,
-      payment_status: qurbanOrders.paymentStatus,
-      order_status: qurbanOrders.orderStatus,
-      shared_group_id: qurbanOrders.sharedGroupId,
-      group_number: qurbanSharedGroups.groupNumber,
-      group_max_slots: qurbanSharedGroups.maxSlots,
-      created_at: qurbanOrders.createdAt,
+      id: qurbanPackagePeriods.id,
+      packageId: qurbanPackagePeriods.packageId,
     })
-    .from(qurbanOrders)
-    .leftJoin(qurbanPackagePeriods, eq(qurbanOrders.packagePeriodId, qurbanPackagePeriods.id))
-    .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
-    .leftJoin(qurbanSharedGroups, eq(qurbanOrders.sharedGroupId, qurbanSharedGroups.id))
-    .where(eq(qurbanPackagePeriods.periodId, id))
-    .orderBy(qurbanPackages.animalType, qurbanOrders.createdAt);
+    .from(qurbanPackagePeriods)
+    .where(eq(qurbanPackagePeriods.periodId, id));
+
+  const packagePeriodIds = packagePeriods.map((pp: any) => pp.id);
+
+  // Get transactions for this period from universal transactions table
+  const { transactions } = await import("@bantuanku/db");
+  const { inArray } = await import("drizzle-orm");
+
+  const rawTransactions = packagePeriodIds.length > 0
+    ? await db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.productType, "qurban"),
+            inArray(transactions.productId, packagePeriodIds)
+          )
+        )
+        .orderBy(transactions.createdAt)
+    : [];
+
+  // Get package details for mapping
+  const packages = await db
+    .select()
+    .from(qurbanPackages)
+    .leftJoin(qurbanPackagePeriods, eq(qurbanPackages.id, qurbanPackagePeriods.packageId))
+    .where(inArray(qurbanPackagePeriods.id, packagePeriodIds.length > 0 ? packagePeriodIds : ['']));
+
+  const packageMap = new Map();
+  packages.forEach((p: any) => {
+    packageMap.set(p.qurban_package_periods.id, {
+      animalType: p.qurban_packages.animalType,
+      packageName: p.qurban_packages.name,
+      packageType: p.qurban_packages.packageType,
+      price: p.qurban_package_periods.price,
+    });
+  });
+
+  // Map transactions to orders format
+  const orders = rawTransactions.map((t: any) => {
+    const pkgInfo = packageMap.get(t.productId) || {};
+    const typeData = t.typeSpecificData || {};
+
+    return {
+      order_id: t.id,
+      order_number: t.transactionNumber,
+      animal_type: typeData.animal_type || pkgInfo.animalType,
+      package_name: t.productName,
+      package_type: typeData.package_type || pkgInfo.packageType,
+      price: t.totalAmount,
+      donor_name: t.donorName,
+      donor_phone: t.donorPhone || '',
+      on_behalf_of: typeData.on_behalf_of || t.donorName,
+      quantity: t.quantity,
+      payment_status: t.paymentStatus,
+      order_status: t.paymentStatus,
+      shared_group_id: typeData.shared_group_id || null,
+      group_number: typeData.group_number || null,
+      group_max_slots: typeData.group_max_slots || null,
+      created_at: t.createdAt,
+    };
+  });
 
   // Calculate stats
   const totalOrders = orders.length;
 
-  // Kambing: sum quantity (bisa pesan lebih dari 1 ekor)
+  // Kambing: sum quantity
   const goatOrders = orders.filter((o: any) => o.animal_type === "goat");
   const totalGoats = goatOrders.reduce((sum: number, o: any) => sum + Number(o.quantity), 0);
 
-  // Sapi:
-  // - Individual: sum quantity (bisa pesan lebih dari 1 ekor)
-  // - Shared: 1 group = 1 ekor (quantity diabaikan)
+  // Sapi
   const cowOrders = orders.filter((o: any) => o.animal_type === "cow");
   const individualCowOrders = cowOrders.filter((o: any) => o.package_type === "individual");
   const individualCows = individualCowOrders.reduce((sum: number, o: any) => sum + Number(o.quantity), 0);
@@ -139,7 +180,7 @@ app.get("/periods/:id/detail", async (c) => {
   const totalCows = individualCows + uniqueSharedGroups;
 
   const paidOrders = orders.filter((o: any) => o.payment_status === "paid").length;
-  const pendingOrders = orders.filter((o: any) => o.payment_status === "pending").length;
+  const pendingOrders = orders.filter((o: any) => o.payment_status === "pending" || o.payment_status === "partial").length;
   const totalRevenue = orders.reduce((sum: number, o: any) => sum + Number(o.price), 0);
 
   return c.json({
@@ -293,37 +334,69 @@ app.get("/packages", async (c) => {
   return c.json({ data: filteredPackages });
 });
 
-// Get single package
+// Get single package (supports both master package ID and package-period ID)
 app.get("/packages/:id", async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const apiUrl = (c.env as any)?.API_URL || "http://localhost:50245";
 
+  // First, try to find as master package ID
   const pkg = await db
     .select()
     .from(qurbanPackages)
     .where(eq(qurbanPackages.id, id))
     .limit(1);
 
-  if (pkg.length === 0) {
-    return c.json({ error: "Package not found" }, 404);
+  if (pkg.length > 0) {
+    // Found as master package - return with periods array (for edit page)
+    const constructUrl = (urlOrPath: string | null | undefined) => {
+      if (!urlOrPath) return urlOrPath;
+      if (urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')) {
+        return urlOrPath;
+      }
+      return `${apiUrl}${urlOrPath}`;
+    };
+
+    const periods = await db
+      .select({
+        packagePeriodId: qurbanPackagePeriods.id,
+        periodId: qurbanPackagePeriods.periodId,
+        periodName: qurbanPeriods.name,
+        hijriYear: qurbanPeriods.hijriYear,
+        gregorianYear: qurbanPeriods.gregorianYear,
+        price: qurbanPackagePeriods.price,
+        stock: qurbanPackagePeriods.stock,
+        stockSold: qurbanPackagePeriods.stockSold,
+        slotsFilled: qurbanPackagePeriods.slotsFilled,
+        isAvailable: qurbanPackagePeriods.isAvailable,
+        createdAt: qurbanPackagePeriods.createdAt,
+      })
+      .from(qurbanPackagePeriods)
+      .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
+      .where(eq(qurbanPackagePeriods.packageId, id));
+
+    const enrichedPackage = {
+      ...pkg[0],
+      imageUrl: constructUrl(pkg[0].imageUrl),
+      periods,
+    };
+
+    return c.json({ data: enrichedPackage });
   }
 
-  // Construct full URL for image (handles both GCS CDN and local paths)
-  const constructUrl = (urlOrPath: string | null | undefined) => {
-    if (!urlOrPath) return urlOrPath;
-    // If already full URL (GCS CDN), return as-is
-    if (urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')) {
-      return urlOrPath;
-    }
-    // If relative path, prepend API URL
-    return `${apiUrl}${urlOrPath}`;
-  };
-
-  // Get periods for this package
-  const periods = await db
+  // If not found as master package, try as package-period ID (for orders form)
+  const packagePeriodData = await db
     .select({
-      packagePeriodId: qurbanPackagePeriods.id,
+      id: qurbanPackagePeriods.id,
+      packageId: qurbanPackages.id,
+      name: qurbanPackages.name,
+      description: qurbanPackages.description,
+      imageUrl: qurbanPackages.imageUrl,
+      animalType: qurbanPackages.animalType,
+      packageType: qurbanPackages.packageType,
+      maxSlots: qurbanPackages.maxSlots,
+      isFeatured: qurbanPackages.isFeatured,
+      isAvailable: sql<boolean>`${qurbanPackages.isAvailable} AND ${qurbanPackagePeriods.isAvailable}`,
       periodId: qurbanPackagePeriods.periodId,
       periodName: qurbanPeriods.name,
       hijriYear: qurbanPeriods.hijriYear,
@@ -332,17 +405,26 @@ app.get("/packages/:id", async (c) => {
       stock: qurbanPackagePeriods.stock,
       stockSold: qurbanPackagePeriods.stockSold,
       slotsFilled: qurbanPackagePeriods.slotsFilled,
-      isAvailable: qurbanPackagePeriods.isAvailable,
       createdAt: qurbanPackagePeriods.createdAt,
     })
     .from(qurbanPackagePeriods)
+    .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
     .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
-    .where(eq(qurbanPackagePeriods.packageId, id));
+    .where(eq(qurbanPackagePeriods.id, id))
+    .limit(1);
 
+  if (packagePeriodData.length === 0) {
+    return c.json({ error: "Package not found" }, 404);
+  }
+
+  const pkgPeriod = packagePeriodData[0];
   const enrichedPackage = {
-    ...pkg[0],
-    imageUrl: constructUrl(pkg[0].imageUrl),
-    periods,
+    ...pkgPeriod,
+    imageUrl: pkgPeriod.imageUrl
+      ? (pkgPeriod.imageUrl.startsWith('http://') || pkgPeriod.imageUrl.startsWith('https://'))
+        ? pkgPeriod.imageUrl
+        : `${apiUrl}${pkgPeriod.imageUrl}`
+      : null,
   };
 
   return c.json({ data: enrichedPackage });
@@ -736,8 +818,9 @@ app.get("/orders/:id", async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
 
-  const order = await db
-    .select({
+  try {
+    const order = await db
+      .select({
       id: qurbanOrders.id,
       order_number: qurbanOrders.orderNumber,
       period_id: qurbanPackagePeriods.periodId,
@@ -748,10 +831,16 @@ app.get("/orders/:id", async (c) => {
       donor_email: qurbanOrders.donorEmail,
       shared_group_id: qurbanOrders.sharedGroupId,
       payment_method: qurbanOrders.paymentMethod,
+      payment_method_id: qurbanOrders.paymentMethodId,
+      metadata: qurbanOrders.metadata,
+      unit_price: qurbanOrders.unitPrice,
+      quantity: qurbanOrders.quantity,
+      admin_fee: qurbanOrders.adminFee,
       total_amount: qurbanOrders.totalAmount,
       paid_amount: qurbanOrders.paidAmount,
       payment_status: qurbanOrders.paymentStatus,
       order_status: qurbanOrders.orderStatus,
+      on_behalf_of: qurbanOrders.onBehalfOf,
       installment_count: qurbanOrders.installmentCount,
       installment_frequency: qurbanOrders.installmentFrequency,
       notes: qurbanOrders.notes,
@@ -773,32 +862,189 @@ app.get("/orders/:id", async (c) => {
     return c.json({ error: "Order not found" }, 404);
   }
 
+  // Parse metadata if exists
+  let parsedMetadata = null;
+  try {
+    if (order[0].metadata && typeof order[0].metadata === 'string') {
+      parsedMetadata = JSON.parse(order[0].metadata);
+    } else if (order[0].metadata && typeof order[0].metadata === 'object') {
+      parsedMetadata = order[0].metadata;
+    }
+  } catch (error) {
+    console.error('Failed to parse metadata:', error);
+    parsedMetadata = null;
+  }
+
+  const orderWithMetadata = {
+    ...order[0],
+    metadata: parsedMetadata,
+  };
+
   // Get payments history
   const payments = await db
     .select()
     .from(qurbanPayments)
     .where(eq(qurbanPayments.orderId, id))
-    .orderBy(desc(qurbanPayments.paymentDate));
+    .orderBy(desc(qurbanPayments.createdAt));
 
   // Construct full URL for payment proofs
   const apiUrl = (c.env as any)?.API_URL || process.env.API_URL || "http://localhost:50245";
-  const paymentsWithUrls = payments.map((payment: any) => ({
-    id: payment.id,
-    order_id: payment.orderId,
-    amount: payment.amount,
-    payment_method: payment.paymentMethod,
-    payment_proof_url: payment.paymentProof ? `${apiUrl}${payment.paymentProof}` : null,
-    status: payment.status,
-    notes: payment.notes,
-    created_at: payment.createdAt,
-    verified_at: payment.verifiedAt,
-    verified_by: payment.verifiedBy,
-  }));
+  const paymentsWithUrls = payments.map((payment: any) => {
+    let proofUrl = null;
+    if (payment.paymentProof) {
+      if (payment.paymentProof.includes("://")) {
+        // Already full URL
+        proofUrl = payment.paymentProof;
+      } else if (payment.paymentProof.includes("cdn.webane.net")) {
+        // GCS path without protocol
+        proofUrl = `https://storage.googleapis.com${payment.paymentProof.startsWith('/') ? '' : '/'}${payment.paymentProof}`;
+      } else {
+        // Local path
+        proofUrl = `${apiUrl}${payment.paymentProof.startsWith('/') ? '' : '/'}${payment.paymentProof}`;
+      }
+    }
 
-  return c.json({
-    order: order[0],
-    payments: paymentsWithUrls,
+    return {
+      id: payment.id,
+      payment_number: payment.paymentNumber,
+      order_id: payment.orderId,
+      amount: payment.amount,
+      payment_method: payment.paymentMethod,
+      payment_channel: payment.paymentChannel,
+      payment_proof_url: proofUrl,
+      status: payment.status,
+      notes: payment.notes,
+      created_at: payment.createdAt,
+      verified_at: payment.verifiedAt,
+      verified_by: payment.verifiedBy,
+    };
   });
+
+    return c.json({
+      order: orderWithMetadata,
+      payments: paymentsWithUrls,
+    });
+  } catch (error: any) {
+    console.error('Error fetching order:', error);
+    return c.json({ error: "Failed to fetch order", message: error.message }, 500);
+  }
+});
+
+// Get order by order number (public endpoint for invoice)
+app.get("/orders/by-number/:orderNumber", async (c) => {
+  const db = c.get("db");
+  const { orderNumber } = c.req.param();
+
+  try {
+    const order = await db
+      .select({
+      id: qurbanOrders.id,
+      order_number: qurbanOrders.orderNumber,
+      period_id: qurbanPackagePeriods.periodId,
+      package_id: qurbanOrders.packageId,
+      package_period_id: qurbanOrders.packagePeriodId,
+      donor_name: qurbanOrders.donorName,
+      donor_phone: qurbanOrders.donorPhone,
+      donor_email: qurbanOrders.donorEmail,
+      shared_group_id: qurbanOrders.sharedGroupId,
+      payment_method: qurbanOrders.paymentMethod,
+      payment_method_id: qurbanOrders.paymentMethodId,
+      metadata: qurbanOrders.metadata,
+      unit_price: qurbanOrders.unitPrice,
+      quantity: qurbanOrders.quantity,
+      admin_fee: qurbanOrders.adminFee,
+      total_amount: qurbanOrders.totalAmount,
+      paid_amount: qurbanOrders.paidAmount,
+      payment_status: qurbanOrders.paymentStatus,
+      order_status: qurbanOrders.orderStatus,
+      on_behalf_of: qurbanOrders.onBehalfOf,
+      installment_count: qurbanOrders.installmentCount,
+      installment_frequency: qurbanOrders.installmentFrequency,
+      notes: qurbanOrders.notes,
+      created_at: qurbanOrders.createdAt,
+      confirmed_at: qurbanOrders.confirmedAt,
+      package_name: qurbanPackages.name,
+      period_name: qurbanPeriods.name,
+      animal_type: qurbanPackages.animalType,
+      package_type: qurbanPackages.packageType,
+    })
+    .from(qurbanOrders)
+    .leftJoin(qurbanPackagePeriods, eq(qurbanOrders.packagePeriodId, qurbanPackagePeriods.id))
+    .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+    .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
+    .where(eq(qurbanOrders.orderNumber, orderNumber))
+    .limit(1);
+
+  if (order.length === 0) {
+    return c.json({ error: "Order not found" }, 404);
+  }
+
+  // Parse metadata if exists
+  let parsedMetadata = null;
+  try {
+    if (order[0].metadata && typeof order[0].metadata === 'string') {
+      parsedMetadata = JSON.parse(order[0].metadata);
+    } else if (order[0].metadata && typeof order[0].metadata === 'object') {
+      parsedMetadata = order[0].metadata;
+    }
+  } catch (error) {
+    console.error('Failed to parse metadata:', error);
+    parsedMetadata = null;
+  }
+
+  const orderWithMetadata = {
+    ...order[0],
+    metadata: parsedMetadata,
+  };
+
+  // Get payments history
+  const payments = await db
+    .select()
+    .from(qurbanPayments)
+    .where(eq(qurbanPayments.orderId, order[0].id))
+    .orderBy(desc(qurbanPayments.createdAt));
+
+  // Construct full URL for payment proofs
+  const apiUrl = (c.env as any)?.API_URL || process.env.API_URL || "http://localhost:50245";
+  const paymentsWithUrls = payments.map((payment: any) => {
+    let proofUrl = null;
+    if (payment.paymentProof) {
+      if (payment.paymentProof.includes("://")) {
+        // Already full URL
+        proofUrl = payment.paymentProof;
+      } else if (payment.paymentProof.includes("cdn.webane.net")) {
+        // GCS path without protocol
+        proofUrl = `https://storage.googleapis.com${payment.paymentProof.startsWith('/') ? '' : '/'}${payment.paymentProof}`;
+      } else {
+        // Local path
+        proofUrl = `${apiUrl}${payment.paymentProof.startsWith('/') ? '' : '/'}${payment.paymentProof}`;
+      }
+    }
+
+    return {
+      id: payment.id,
+      payment_number: payment.paymentNumber,
+      order_id: payment.orderId,
+      amount: payment.amount,
+      payment_method: payment.paymentMethod,
+      payment_channel: payment.paymentChannel,
+      payment_proof_url: proofUrl,
+      status: payment.status,
+      notes: payment.notes,
+      created_at: payment.createdAt,
+      verified_at: payment.verifiedAt,
+      verified_by: payment.verifiedBy,
+    };
+  });
+
+    return c.json({
+      order: orderWithMetadata,
+      payments: paymentsWithUrls,
+    });
+  } catch (error: any) {
+    console.error('Error fetching order:', error);
+    return c.json({ error: "Failed to fetch order", message: error.message }, 500);
+  }
 });
 
 // Create order manually
@@ -806,29 +1052,41 @@ app.post("/orders", async (c) => {
   const db = c.get("db");
   const body = await c.req.json();
 
-  // Get package details to check if it's shared
-  const packageData = await db
-    .select()
-    .from(qurbanPackages)
-    .where(eq(qurbanPackages.id, body.packageId))
+  // Get package-period details (frontend sends packagePeriodId as packageId)
+  const packagePeriodId = body.packageId; // This is actually packagePeriodId from frontend
+
+  const packagePeriodData = await db
+    .select({
+      packagePeriodId: qurbanPackagePeriods.id,
+      packageId: qurbanPackages.id,
+      periodId: qurbanPackagePeriods.periodId,
+      price: qurbanPackagePeriods.price,
+      name: qurbanPackages.name,
+      animalType: qurbanPackages.animalType,
+      packageType: qurbanPackages.packageType,
+      maxSlots: qurbanPackages.maxSlots,
+    })
+    .from(qurbanPackagePeriods)
+    .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+    .where(eq(qurbanPackagePeriods.id, packagePeriodId))
     .limit(1);
 
-  if (packageData.length === 0) {
+  if (packagePeriodData.length === 0) {
     return c.json({ error: "Package not found" }, 404);
   }
 
-  const pkg = packageData[0];
+  const pkgPeriod = packagePeriodData[0];
   let assignedGroupId = body.sharedGroupId || null;
 
   // If package is shared type, find or create a shared group
-  if (pkg.packageType === "shared") {
-    // Find an open group with available slots
+  if (pkgPeriod.packageType === "shared") {
+    // Find an open group with available slots for this package-period
     const availableGroup = await db
       .select()
       .from(qurbanSharedGroups)
       .where(
         and(
-          eq(qurbanSharedGroups.packageId, body.packageId),
+          eq(qurbanSharedGroups.packagePeriodId, packagePeriodId),
           eq(qurbanSharedGroups.status, "open"),
           sql`${qurbanSharedGroups.slotsFilled} < ${qurbanSharedGroups.maxSlots}`
         )
@@ -840,16 +1098,16 @@ app.post("/orders", async (c) => {
       assignedGroupId = availableGroup[0].id;
     } else {
       // Create new group
-      if (!pkg.maxShares) {
-        return c.json({ error: "Package maxShares not configured" }, 400);
+      if (!pkgPeriod.maxSlots) {
+        return c.json({ error: "Package maxSlots not configured" }, 400);
       }
-      const maxSlots = pkg.maxShares;
+      const maxSlots = pkgPeriod.maxSlots;
 
-      // Get next group number for this package
+      // Get next group number for this package-period
       const existingGroups = await db
         .select()
         .from(qurbanSharedGroups)
-        .where(eq(qurbanSharedGroups.packageId, body.packageId))
+        .where(eq(qurbanSharedGroups.packagePeriodId, packagePeriodId))
         .orderBy(desc(qurbanSharedGroups.groupNumber));
 
       const nextGroupNumber = existingGroups.length > 0
@@ -860,7 +1118,8 @@ app.post("/orders", async (c) => {
         .insert(qurbanSharedGroups)
         .values({
           id: createId(),
-          packageId: body.packageId,
+          packageId: pkgPeriod.packageId,
+          packagePeriodId: packagePeriodId,
           groupNumber: nextGroupNumber,
           maxSlots: maxSlots,
           slotsFilled: 0,
@@ -881,7 +1140,8 @@ app.post("/orders", async (c) => {
       donorName: body.donorName,
       donorEmail: body.donorEmail || null,
       donorPhone: body.donorPhone,
-      packageId: body.packageId,
+      packageId: pkgPeriod.packageId, // Store master package ID
+      packagePeriodId: packagePeriodId, // Store package-period junction ID
       sharedGroupId: assignedGroupId,
       quantity: body.quantity || 1,
       unitPrice: body.unitPrice,
@@ -915,7 +1175,7 @@ app.post("/orders", async (c) => {
       amount: body.paidAmount || body.totalAmount,
       paymentMethod: "bank_transfer",
       paymentChannel: body.paymentChannel || null,
-      paymentProof: extractPath(body.paymentProofUrl),
+      paymentProof: body.paymentProofUrl || null,
       status: "pending", // Always pending, needs admin verification
       installmentNumber: body.paymentMethod === "installment" ? 1 : null,
       notes: "Pembayaran awal - menunggu verifikasi",
@@ -988,6 +1248,253 @@ app.post("/orders/:id/cancel", async (c) => {
   return c.json({ data: updated[0], message: "Order cancelled successfully" });
 });
 
+// Update order
+app.put("/orders/:id", async (c) => {
+  const db = c.get("db");
+  const { id } = c.req.param();
+  const body = await c.req.json();
+
+  try {
+    // Get current order data
+    const currentOrder = await db
+      .select()
+      .from(qurbanOrders)
+      .where(eq(qurbanOrders.id, id))
+      .limit(1);
+
+    if (currentOrder.length === 0) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+
+    if (body.payment_status !== undefined) {
+      updateData.paymentStatus = body.payment_status;
+
+      // If marking as paid, update paidAmount to totalAmount
+      if (body.payment_status === "paid") {
+        updateData.paidAmount = currentOrder[0].totalAmount;
+      }
+    }
+
+    if (body.payment_method_id !== undefined) {
+      updateData.paymentMethodId = body.payment_method_id;
+    }
+
+    if (body.metadata !== undefined) {
+      updateData.metadata = typeof body.metadata === 'string' ? body.metadata : JSON.stringify(body.metadata);
+    }
+
+    if (body.order_status !== undefined) {
+      updateData.orderStatus = body.order_status;
+    }
+
+    const updated = await db
+      .update(qurbanOrders)
+      .set(updateData)
+      .where(eq(qurbanOrders.id, id))
+      .returning();
+
+    if (updated.length === 0) {
+      return c.json({ error: "Order not found" }, 404);
+    }
+
+    return c.json({ data: updated[0], message: "Order updated successfully" });
+  } catch (error: any) {
+    console.error('Error updating order:', error);
+    return c.json({ error: "Failed to update order", message: error.message }, 500);
+  }
+});
+
+// Add payment proof
+app.post("/orders/:id/payment-proof", async (c) => {
+  const db = c.get("db");
+  const { id } = c.req.param();
+  const body = await c.req.json();
+
+  // Check if order exists
+  const order = await db
+    .select()
+    .from(qurbanOrders)
+    .where(eq(qurbanOrders.id, id))
+    .limit(1);
+
+  if (order.length === 0) {
+    return c.json({ error: "Order not found" }, 404);
+  }
+
+  // Calculate remaining amount
+  const remainingAmount = order[0].totalAmount - order[0].paidAmount;
+  const user = c.get("user");
+
+  // If admin manually marks as paid (verified flag), auto-verify the payment
+  const isVerified = body.verified === true;
+
+  // Only create payment if there's remaining amount (unless admin manually verifying)
+  if (!isVerified && remainingAmount <= 0) {
+    return c.json({
+      error: "Order already fully paid",
+      message: "Tidak ada sisa pembayaran"
+    }, 400);
+  }
+
+  // Create payment record with proof
+  const paymentId = createId();
+  const timestamp = getCurrentYearWIB();
+  const randomStr = Math.random().toString(36).substring(2, 11).toUpperCase();
+
+  const newPayment = await db.insert(qurbanPayments).values({
+    id: paymentId,
+    paymentNumber: `PAY-QBN-${timestamp}-${randomStr}`,
+    orderId: id,
+    amount: isVerified ? order[0].totalAmount : remainingAmount,
+    paymentMethod: "bank_transfer",
+    paymentChannel: body.payment_channel || null,
+    paymentProof: body.payment_proof_url || null,
+    status: isVerified ? "verified" : "pending",
+    verifiedBy: isVerified ? user.id : null,
+    verifiedAt: isVerified ? new Date() : null,
+    installmentNumber: null,
+    notes: body.notes || "Bukti pembayaran",
+  }).returning();
+
+  return c.json({ data: newPayment[0], message: "Payment proof uploaded successfully" });
+});
+
+// Approve order payment (set status to processing -> paid)
+app.post("/orders/:id/approve-payment", async (c) => {
+  const db = c.get("db");
+  const { id } = c.req.param();
+  const user = c.get("user");
+
+  // Get order
+  const order = await db
+    .select()
+    .from(qurbanOrders)
+    .where(eq(qurbanOrders.id, id))
+    .limit(1);
+
+  if (order.length === 0) {
+    return c.json({ error: "Order not found" }, 404);
+  }
+
+  // Update order to paid
+  await db
+    .update(qurbanOrders)
+    .set({
+      paymentStatus: "paid",
+      paidAmount: order[0].totalAmount,
+      updatedAt: new Date(),
+    })
+    .where(eq(qurbanOrders.id, id));
+
+  // Get pending payments for this order and verify them
+  const pendingPayments = await db
+    .select()
+    .from(qurbanPayments)
+    .where(
+      and(
+        eq(qurbanPayments.orderId, id),
+        eq(qurbanPayments.status, "pending")
+      )
+    );
+
+  // Verify all pending payments
+  for (const payment of pendingPayments) {
+    await db
+      .update(qurbanPayments)
+      .set({
+        status: "verified",
+        verifiedBy: user.id,
+        verifiedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(qurbanPayments.id, payment.id));
+  }
+
+  // If order is in a shared group, increment slots_filled
+  if (order[0].sharedGroupId && order[0].paymentStatus !== "paid") {
+    const currentGroup = await db
+      .select()
+      .from(qurbanSharedGroups)
+      .where(eq(qurbanSharedGroups.id, order[0].sharedGroupId))
+      .limit(1);
+
+    if (currentGroup.length > 0) {
+      const newSlotsFilled = currentGroup[0].slotsFilled + 1;
+      const newStatus = newSlotsFilled >= currentGroup[0].maxSlots ? "full" : "open";
+
+      await db
+        .update(qurbanSharedGroups)
+        .set({
+          slotsFilled: newSlotsFilled,
+          status: newStatus,
+          updatedAt: new Date(),
+        })
+        .where(eq(qurbanSharedGroups.id, order[0].sharedGroupId));
+    }
+  }
+
+  return c.json({ message: "Payment approved successfully" });
+});
+
+// Reject order payment
+app.post("/orders/:id/reject-payment", async (c) => {
+  const db = c.get("db");
+  const { id } = c.req.param();
+  const user = c.get("user");
+  const body = await c.req.json();
+
+  // Get order
+  const order = await db
+    .select()
+    .from(qurbanOrders)
+    .where(eq(qurbanOrders.id, id))
+    .limit(1);
+
+  if (order.length === 0) {
+    return c.json({ error: "Order not found" }, 404);
+  }
+
+  // Update order to pending
+  await db
+    .update(qurbanOrders)
+    .set({
+      paymentStatus: "pending",
+      updatedAt: new Date(),
+    })
+    .where(eq(qurbanOrders.id, id));
+
+  // Get pending payments for this order and reject them
+  const pendingPayments = await db
+    .select()
+    .from(qurbanPayments)
+    .where(
+      and(
+        eq(qurbanPayments.orderId, id),
+        eq(qurbanPayments.status, "pending")
+      )
+    );
+
+  // Reject all pending payments
+  for (const payment of pendingPayments) {
+    await db
+      .update(qurbanPayments)
+      .set({
+        status: "rejected",
+        verifiedBy: user.id,
+        verifiedAt: new Date(),
+        notes: body.reason || "Ditolak oleh admin",
+        updatedAt: new Date(),
+      })
+      .where(eq(qurbanPayments.id, payment.id));
+  }
+
+  return c.json({ message: "Payment rejected" });
+});
+
 // ============================================================
 // PAYMENT VERIFICATION
 // ============================================================
@@ -1031,7 +1538,11 @@ app.get("/payments", async (c) => {
   const apiUrl = (c.env as any)?.API_URL || process.env.API_URL || "http://localhost:50245";
   const paymentsWithUrls = payments.map((payment: any) => ({
     ...payment,
-    payment_proof_url: payment.payment_proof ? `${apiUrl}${payment.payment_proof}` : null,
+    payment_proof_url: payment.payment_proof
+      ? (payment.payment_proof.includes("://")
+          ? payment.payment_proof
+          : `${apiUrl}${payment.payment_proof.startsWith('/') ? '' : '/'}${payment.payment_proof}`)
+      : null,
     payment_proof: undefined, // Remove path field
   }));
 
@@ -1156,6 +1667,54 @@ app.post("/payments/:id/reject", async (c) => {
   return c.json({ message: "Payment rejected" });
 });
 
+// Update payment
+app.put("/payments/:id", async (c) => {
+  const db = c.get("db");
+  const { id } = c.req.param();
+  const body = await c.req.json();
+  const user = c.get("user");
+
+  // Get existing payment
+  const payment = await db
+    .select()
+    .from(qurbanPayments)
+    .where(eq(qurbanPayments.id, id))
+    .limit(1);
+
+  if (payment.length === 0) {
+    return c.json({ error: "Payment not found" }, 404);
+  }
+
+  // Update payment
+  const updateData: any = {
+    updatedAt: new Date(),
+  };
+
+  if (body.payment_channel !== undefined) {
+    updateData.paymentChannel = body.payment_channel;
+  }
+
+  if (body.payment_proof_url !== undefined) {
+    updateData.paymentProof = body.payment_proof_url;
+  }
+
+  if (body.status !== undefined) {
+    updateData.status = body.status;
+    if (body.status === "verified") {
+      updateData.verifiedBy = user.id;
+      updateData.verifiedAt = new Date();
+    }
+  }
+
+  const updated = await db
+    .update(qurbanPayments)
+    .set(updateData)
+    .where(eq(qurbanPayments.id, id))
+    .returning();
+
+  return c.json({ data: updated[0], message: "Payment updated successfully" });
+});
+
 // ============================================================
 // SHARED GROUPS MANAGEMENT
 // ============================================================
@@ -1163,22 +1722,85 @@ app.post("/payments/:id/reject", async (c) => {
 // Get all shared groups with members
 app.get("/shared-groups", async (c) => {
   const db = c.get("db");
+  const { transactions } = await import("@bantuanku/db");
 
-  const groups = await db
+  // Get all paid qurban transactions
+  const paidTransactions = await db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.productType, "qurban"),
+        eq(transactions.paymentStatus, "paid")
+      )
+    )
+    .orderBy(transactions.createdAt);
+
+  // Get package-period details
+  const packagePeriods = await db
     .select({
-      id: qurbanSharedGroups.id,
-      package_id: qurbanSharedGroups.packageId,
-      group_number: qurbanSharedGroups.groupNumber,
-      max_slots: qurbanSharedGroups.maxSlots,
-      slots_filled: qurbanSharedGroups.slotsFilled,
-      status: qurbanSharedGroups.status,
-      created_at: qurbanSharedGroups.createdAt,
-      package_name: qurbanPackages.name,
-      animal_type: qurbanPackages.animalType,
+      id: qurbanPackagePeriods.id,
+      packageId: qurbanPackagePeriods.packageId,
+      periodId: qurbanPackagePeriods.periodId,
+      packageName: qurbanPackages.name,
+      animalType: qurbanPackages.animalType,
+      packageType: qurbanPackages.packageType,
+      periodName: qurbanPeriods.name,
     })
-    .from(qurbanSharedGroups)
-    .leftJoin(qurbanPackages, eq(qurbanSharedGroups.packageId, qurbanPackages.id))
-    .orderBy(desc(qurbanSharedGroups.createdAt));
+    .from(qurbanPackagePeriods)
+    .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+    .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id));
+
+  const packageMap = new Map();
+  packagePeriods.forEach((pp: any) => {
+    packageMap.set(pp.id, pp);
+  });
+
+  // Group transactions by shared group
+  const groupsMap = new Map<string, any>();
+
+  paidTransactions.forEach((t: any) => {
+    const typeData = t.typeSpecificData || {};
+
+    // Only process shared packages
+    if (typeData.package_type !== "shared") return;
+
+    const groupKey = typeData.shared_group_id || `${t.productId}-${typeData.group_number}`;
+    const pkgInfo = packageMap.get(t.productId);
+
+    if (!groupsMap.has(groupKey)) {
+      groupsMap.set(groupKey, {
+        id: groupKey,
+        package_id: t.productId,
+        period_id: pkgInfo?.periodId || null,
+        group_number: typeData.group_number || 0,
+        max_slots: typeData.group_max_slots || 7,
+        slots_filled: 0,
+        package_name: pkgInfo?.packageName || t.productName,
+        period_name: pkgInfo?.periodName || null,
+        animal_type: pkgInfo?.animalType || typeData.animal_type || "cow",
+        members: [],
+        created_at: t.createdAt,
+      });
+    }
+
+    const group = groupsMap.get(groupKey);
+    group.slots_filled++;
+    group.members.push(t);
+  });
+
+  // Calculate status for each group
+  const groups = Array.from(groupsMap.values()).map((group) => {
+    let status = "open";
+    if (group.slots_filled >= group.max_slots) {
+      status = "full";
+    }
+    return {
+      ...group,
+      status,
+      members: undefined, // Don't include members in list view
+    };
+  });
 
   return c.json({ data: groups });
 });
@@ -1187,48 +1809,86 @@ app.get("/shared-groups", async (c) => {
 app.get("/shared-groups/:id", async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
+  const { transactions } = await import("@bantuanku/db");
 
-  // Get group info
-  const group = await db
+  // Get all paid qurban transactions
+  const paidTransactions = await db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.productType, "qurban"),
+        eq(transactions.paymentStatus, "paid")
+      )
+    )
+    .orderBy(transactions.createdAt);
+
+  // Get package-period details
+  const packagePeriods = await db
     .select({
-      id: qurbanSharedGroups.id,
-      package_id: qurbanSharedGroups.packageId,
-      group_number: qurbanSharedGroups.groupNumber,
-      max_slots: qurbanSharedGroups.maxSlots,
-      slots_filled: qurbanSharedGroups.slotsFilled,
-      status: qurbanSharedGroups.status,
-      created_at: qurbanSharedGroups.createdAt,
-      package_name: qurbanPackages.name,
-      animal_type: qurbanPackages.animalType,
+      id: qurbanPackagePeriods.id,
+      packageId: qurbanPackagePeriods.packageId,
+      periodId: qurbanPackagePeriods.periodId,
+      packageName: qurbanPackages.name,
+      animalType: qurbanPackages.animalType,
+      packageType: qurbanPackages.packageType,
+      periodName: qurbanPeriods.name,
     })
-    .from(qurbanSharedGroups)
-    .leftJoin(qurbanPackages, eq(qurbanSharedGroups.packageId, qurbanPackages.id))
-    .where(eq(qurbanSharedGroups.id, id))
-    .limit(1);
+    .from(qurbanPackagePeriods)
+    .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+    .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id));
 
-  if (group.length === 0) {
+  const packageMap = new Map();
+  packagePeriods.forEach((pp: any) => {
+    packageMap.set(pp.id, pp);
+  });
+
+  // Find transactions for this group
+  const groupTransactions = paidTransactions.filter((t: any) => {
+    const typeData = t.typeSpecificData || {};
+    if (typeData.package_type !== "shared") return false;
+
+    const groupKey = typeData.shared_group_id || `${t.productId}-${typeData.group_number}`;
+    return groupKey === id;
+  });
+
+  if (groupTransactions.length === 0) {
     return c.json({ error: "Group not found" }, 404);
   }
 
-  // Get members (orders)
-  const members = await db
-    .select({
-      order_id: qurbanOrders.id,
-      order_number: qurbanOrders.orderNumber,
-      donor_name: qurbanOrders.donorName,
-      donor_phone: qurbanOrders.donorPhone,
-      order_status: qurbanOrders.orderStatus,
-      payment_status: qurbanOrders.paymentStatus,
-      total_amount: qurbanOrders.totalAmount,
-      paid_amount: qurbanOrders.paidAmount,
-      created_at: qurbanOrders.createdAt,
-    })
-    .from(qurbanOrders)
-    .where(eq(qurbanOrders.sharedGroupId, id))
-    .orderBy(qurbanOrders.createdAt);
+  const firstTx = groupTransactions[0];
+  const typeData = firstTx.typeSpecificData || {};
+  const pkgInfo = packageMap.get(firstTx.productId);
+
+  const group = {
+    id: id,
+    package_id: firstTx.productId,
+    period_id: pkgInfo?.periodId || null,
+    group_number: typeData.group_number || 0,
+    max_slots: typeData.group_max_slots || 7,
+    slots_filled: groupTransactions.length,
+    status: groupTransactions.length >= (typeData.group_max_slots || 7) ? "full" : "open",
+    created_at: firstTx.createdAt,
+    package_name: pkgInfo?.packageName || firstTx.productName,
+    period_name: pkgInfo?.periodName || null,
+    animal_type: pkgInfo?.animalType || typeData.animal_type || "cow",
+  };
+
+  // Map transactions to members format
+  const members = groupTransactions.map((t: any) => ({
+    order_id: t.id,
+    order_number: t.transactionNumber,
+    donor_name: t.donorName,
+    donor_phone: t.donorPhone || "",
+    order_status: t.paymentStatus,
+    payment_status: t.paymentStatus,
+    total_amount: t.totalAmount,
+    paid_amount: t.paidAmount,
+    created_at: t.createdAt,
+  }));
 
   return c.json({
-    group: group[0],
+    group: group,
     members: members,
   });
 });

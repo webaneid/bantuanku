@@ -170,11 +170,27 @@ export default function DonationsPage() {
   const resolveCampaignTitle = (donation: any) =>
     donation.campaign?.title || campaignMap[donation.campaignId] || "-";
 
-  const resolvePaymentMethod = (donation: any) =>
-    donation.payment?.method?.name ||
-    donation.paymentMethod?.name ||
-    donation.metadata?.paymentMethod ||
-    "-";
+  const resolvePaymentMethod = (donation: any) => {
+    // Check paymentMethodId
+    if (donation.paymentMethodId) {
+      const methodId = donation.paymentMethodId;
+
+      // Parse common payment method patterns
+      if (methodId.startsWith('bank-')) {
+        return 'Transfer Bank';
+      } else if (methodId.startsWith('qris')) {
+        return 'QRIS';
+      } else if (methodId === 'cash') {
+        return 'Tunai';
+      } else if (methodId.includes('xendit') || methodId.includes('midtrans') || methodId.includes('ipaymu')) {
+        return 'Payment Gateway';
+      }
+
+      return methodId;
+    }
+
+    return "-";
+  };
 
   if (isLoading && !data) {
     return (

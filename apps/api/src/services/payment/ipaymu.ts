@@ -76,13 +76,24 @@ export class IPaymuAdapter implements PaymentGatewayAdapter {
     const { paymentMethod, paymentChannel } =
       this.parseMethodCode(request.methodCode);
 
+    // IMPORTANT: Ensure amount is a number (not string)
+    const amount = Number(request.amount);
+
+    console.log('===== iPay mu Payment Creation Debug =====');
+    console.log('Donation ID:', request.donationId);
+    console.log('Request Amount (original):', request.amount);
+    console.log('Request Amount (type):', typeof request.amount);
+    console.log('Amount (converted to number):', amount);
+    console.log('Payment Method:', paymentMethod);
+    console.log('Payment Channel:', paymentChannel);
+
     // Build request body
     const body = {
       account: this.va,
       name: request.donorName,
       email: request.donorEmail || "donor@bantuanku.org",
       phone: request.donorPhone || "08123456789",
-      amount: request.amount,
+      amount: amount,
       notifyUrl: `${process.env.APP_URL || "http://localhost:50245"}/v1/webhooks/ipaymu`,
       expired: expiryHours,
       referenceId,
@@ -90,8 +101,10 @@ export class IPaymuAdapter implements PaymentGatewayAdapter {
       paymentChannel,
       product: [`Donation #${request.donationId}`],
       qty: [1],
-      price: [request.amount],
+      price: [amount],
     };
+
+    console.log('Request Body to iPay mu:', JSON.stringify(body, null, 2));
 
     try {
       const bodyJson = JSON.stringify(body);
@@ -125,9 +138,15 @@ export class IPaymuAdapter implements PaymentGatewayAdapter {
         Message?: string;
       };
 
+      console.log('iPay mu Response:', JSON.stringify(result, null, 2));
+
       if (result.Success && result.Data) {
         const data = result.Data;
         const expiredAt = data.Expired ? new Date(data.Expired) : undefined;
+
+        console.log('iPay mu Success - Fee:', data.Fee);
+        console.log('iPay mu Success - Total:', data.Total);
+        console.log('===== End iPay mu Debug =====');
 
         return {
           success: true,
@@ -138,6 +157,9 @@ export class IPaymuAdapter implements PaymentGatewayAdapter {
           expiredAt,
         };
       }
+
+      console.log('iPay mu Error:', result.Message);
+      console.log('===== End iPay mu Debug =====');
 
       return {
         success: false,

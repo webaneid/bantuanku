@@ -13,11 +13,11 @@ interface Stats {
   totalAmount: number;
 }
 
-interface Donation {
+interface Transaction {
   id: string;
-  referenceId: string;
-  campaignId: string;
-  amount: number;
+  transactionNumber: string;
+  productType: string;
+  productName: string;
   totalAmount: number;
   paymentStatus: string;
   paidAt: string | null;
@@ -27,15 +27,14 @@ interface Donation {
 const statusConfig = {
   pending: { label: "Menunggu", color: "bg-warning-50 text-warning-700 border-warning-200" },
   processing: { label: "Diproses", color: "bg-blue-50 text-blue-700 border-blue-200" },
-  success: { label: "Berhasil", color: "bg-success-50 text-success-700 border-success-200" },
-  failed: { label: "Gagal", color: "bg-danger-50 text-danger-700 border-danger-200" },
-  expired: { label: "Kedaluwarsa", color: "bg-gray-50 text-gray-700 border-gray-200" },
+  paid: { label: "Berhasil", color: "bg-success-50 text-success-700 border-success-200" },
+  cancelled: { label: "Dibatalkan", color: "bg-danger-50 text-danger-700 border-danger-200" },
 };
 
 export default function DashboardPage() {
   const { user, isHydrated } = useAuth();
   const [stats, setStats] = useState<Stats>({ totalDonations: 0, totalAmount: 0 });
-  const [donations, setDonations] = useState<Donation[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -50,17 +49,17 @@ export default function DashboardPage() {
 
     const fetchData = async () => {
       try {
-        const [statsRes, donationsRes] = await Promise.all([
+        const [statsRes, transactionsRes] = await Promise.all([
           api.get("/account/stats"),
-          api.get("/account/donations?limit=5"),
+          api.get("/transactions/my?limit=5"),
         ]);
 
         if (statsRes.data.success) {
           setStats(statsRes.data.data);
         }
 
-        if (donationsRes.data.success) {
-          setDonations(donationsRes.data.data);
+        if (transactionsRes.data.success) {
+          setTransactions(transactionsRes.data.data);
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -127,9 +126,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <Link
-          href="/account/donations"
+          href="/account/transactions"
           className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500 hover:shadow-md transition-all group"
         >
           <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center mb-3 group-hover:bg-primary-100 transition-colors">
@@ -139,7 +138,6 @@ export default function DashboardPage() {
           </div>
           <p className="text-sm font-medium text-gray-900">Riwayat</p>
         </Link>
-
         <Link
           href="/account/qurban-savings"
           className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500 hover:shadow-md transition-all group"
@@ -182,16 +180,18 @@ export default function DashboardPage() {
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-gray-900">Riwayat Terbaru</h2>
-            <Link
-              href="/account/donations"
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-            >
-              Lihat Semua
-            </Link>
+            {transactions.length > 0 && (
+              <Link
+                href="/account/transactions"
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              >
+                Lihat Semua
+              </Link>
+            )}
           </div>
         </div>
 
-        {donations.length === 0 ? (
+        {transactions.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -206,29 +206,32 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {donations.map((donation) => {
-              const status = statusConfig[donation.paymentStatus as keyof typeof statusConfig] || statusConfig.pending;
+            {transactions.map((transaction) => {
+              const status = statusConfig[transaction.paymentStatus as keyof typeof statusConfig] || statusConfig.pending;
               return (
                 <Link
-                  key={donation.id}
-                  href={`/account/donations/${donation.id}`}
+                  key={transaction.id}
+                  href={`/invoice/${transaction.id}`}
                   className="block p-4 sm:p-6 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="text-sm font-semibold text-gray-900 truncate">
-                          {donation.referenceId}
+                          {transaction.transactionNumber}
                         </p>
                         <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border", status.color)}>
                           {status.label}
                         </span>
                       </div>
+                      <p className="text-sm text-gray-600 mb-1 truncate">
+                        {transaction.productName}
+                      </p>
                       <p className="text-lg font-bold text-gray-900 mb-1">
-                        {formatRupiahFull(donation.amount)}
+                        {formatRupiahFull(transaction.totalAmount)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {new Date(donation.createdAt).toLocaleDateString("id-ID", {
+                        {new Date(transaction.createdAt).toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "long",
                           year: "numeric",

@@ -27,10 +27,12 @@ export const qurbanOrders = pgTable("qurban_orders", {
   // Pricing
   quantity: integer("quantity").default(1).notNull(), // Untuk individual bisa > 1 (misal: beli 2 kambing)
   unitPrice: bigint("unit_price", { mode: "number" }).notNull(), // Harga satuan saat order
-  totalAmount: bigint("total_amount", { mode: "number" }).notNull(), // quantity * unitPrice
+  adminFee: bigint("admin_fee", { mode: "number" }).default(0).notNull(), // Biaya admin penyembelihan
+  totalAmount: bigint("total_amount", { mode: "number" }).notNull(), // quantity * unitPrice + adminFee
 
   // Pembayaran
   paymentMethod: text("payment_method").notNull(), // 'full' (lunas) atau 'installment' (cicilan)
+  paymentMethodId: text("payment_method_id"), // ID metode pembayaran (bank code, dll)
   installmentFrequency: text("installment_frequency"), // 'weekly', 'monthly', 'custom'
   installmentCount: integer("installment_count"), // Berapa kali cicilan
   installmentAmount: bigint("installment_amount", { mode: "number" }), // Nominal per cicilan
@@ -49,6 +51,7 @@ export const qurbanOrders = pgTable("qurban_orders", {
   executedAt: timestamp("executed_at", { precision: 3, mode: "date" }),
 
   notes: text("notes"),
+  metadata: text("metadata"), // JSON metadata untuk menyimpan info tambahan (e.g., bank account details)
   createdBy: text("created_by").references(() => users.id), // Admin yang input (jika manual)
   createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),

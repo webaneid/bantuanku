@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq } from "drizzle-orm";
-import { donations, campaigns, donationEvidences, media, invoices, settings, generateReferenceId, createId } from "@bantuanku/db";
+import { donations, campaigns, donationEvidences, media, invoices, settings, payments, paymentMethods, donationPayments, generateReferenceId, createId } from "@bantuanku/db";
 import { success, error } from "../lib/response";
 import { optionalAuthMiddleware } from "../middleware/auth";
 import { createEmailService } from "../services/email";
@@ -206,10 +206,23 @@ donationsRoute.get("/invoice/:referenceId", async (c) => {
     return error(c, "Donation not found", 404);
   }
 
-  return success(c, donation);
+  // Get evidences
+  const { donationEvidences } = await import("@bantuanku/db");
+  const evidences = await db.query.donationEvidences.findMany({
+    where: eq(donationEvidences.donationId, donation.id),
+  });
+
+  // Format evidence URLs
+  const apiUrl = c.env?.API_URL || process.env.API_URL || "http://localhost:50245";
+  const formattedEvidences = evidences.map((evidence) => ({
+    ...evidence,
+    fileUrl: evidence.fileUrl.startsWith("http") ? evidence.fileUrl : `${apiUrl}${evidence.fileUrl}`,
+  }));
+
+  return success(c, { ...donation, evidences: formattedEvidences });
 });
 
-donationsRoute.get("/:id", async (c) => {
+donationsRoute.get("/:id", optionalAuthMiddleware, async (c) => {
   const db = c.get("db");
   const id = c.req.param("id");
 
@@ -237,6 +250,48 @@ donationsRoute.get("/:id", async (c) => {
   }
 
   return success(c, donation);
+});
+
+// Get payment details for a donation
+donationsRoute.get("/:id/payment", optionalAuthMiddleware, async (c) => {
+  const db = c.get("db");
+  const id = c.req.param("id");
+
+  // First check if donation exists
+  const donation = await db.query.donations.findFirst({
+    where: eq(donations.id, id),
+    columns: {
+      id: true,
+      paymentStatus: true,
+      expiredAt: true,
+    },
+  });
+
+  if (!donation) {
+    return error(c, "Donation not found", 404);
+  }
+
+  // Get payment details
+  const payment = await db.query.payments.findFirst({
+    where: eq(payments.donationId, id),
+    columns: {
+      id: true,
+      methodId: true,
+      paymentCode: true,
+      paymentUrl: true,
+      qrCode: true,
+      status: true,
+      expiredAt: true,
+      paidAt: true,
+      createdAt: true,
+    },
+  });
+
+  if (!payment) {
+    return success(c, null);
+  }
+
+  return success(c, payment);
 });
 
 donationsRoute.get("/check/:referenceId", async (c) => {
@@ -351,9 +406,15 @@ donationsRoute.post("/:id/upload-proof", async (c) => {
     // Parse multipart form data
     const body = await c.req.parseBody();
     const file = body.file as File;
+    const transferAmount = body.amount ? Number(body.amount) : null;
 
     if (!file) {
       return error(c, "No file provided", 400);
+    }
+
+    // Validate transfer amount
+    if (!transferAmount || transferAmount <= 0) {
+      return error(c, "Invalid transfer amount", 400);
     }
 
     // Validate file type (images and PDFs only)
@@ -458,24 +519,79 @@ donationsRoute.post("/:id/upload-proof", async (c) => {
       })
       .returning();
 
-    // Update donation status to processing (waiting for admin confirmation)
-    const updateData: any = {
-      paymentStatus: "processing",
-      updatedAt: new Date(),
+    // Construct URL from path
+    const apiUrl = c.env?.API_URL || process.env.API_URL || "http://localhost:50245";
+    const fileUrl = fullUrl.startsWith('http') ? fullUrl : `${apiUrl}${fullUrl}`;
+
+    // Determine payment method type and channel
+    let paymentMethodType = "bank_transfer";
+    let paymentChannel = null;
+
+    if (donation.paymentMethodId) {
+      const paymentMethodRecord = await db.query.paymentMethods.findFirst({
+        where: eq(paymentMethods.code, donation.paymentMethodId),
+      });
+
+      if (paymentMethodRecord) {
+        paymentMethodType = paymentMethodRecord.type;
+        paymentChannel = donation.paymentMethodId;
+      } else {
+        // Fallback logic for QRIS/bank detection
+        if (donation.paymentMethodId.includes('qris')) {
+          paymentMethodType = 'qris';
+          paymentChannel = donation.paymentMethodId;
+        }
+      }
+    }
+
+    // Generate notes based on transfer amount
+    let paymentNotes = "Bukti pembayaran dari user";
+    if (transferAmount > donation.totalAmount) {
+      const excess = transferAmount - donation.totalAmount;
+      paymentNotes += ` (Transfer lebih: ${excess})`;
+    } else if (transferAmount < donation.totalAmount) {
+      const shortage = donation.totalAmount - transferAmount;
+      paymentNotes += ` (Transfer kurang: ${shortage}, pembayaran sebagian)`;
+    }
+
+    // Generate payment number
+    const timestamp = Date.now().toString().slice(-6);
+    const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const paymentNumber = `PAY-DON-${timestamp}-${randomStr}`;
+
+    // Create payment record
+    const paymentData = {
+      id: createId(),
+      paymentNumber: paymentNumber,
+      donationId: donationId,
+      amount: transferAmount, // Use actual transfer amount
+      paymentMethod: paymentMethodType,
+      paymentChannel: paymentChannel,
+      paymentProof: fileUrl,
+      status: "pending" as const,
+      notes: paymentNotes,
     };
+
+    await db.insert(donationPayments).values(paymentData);
+
+    // Update donation with actual transfer amount
+    const newPaidAmount = donation.paidAmount + transferAmount;
 
     await db
       .update(donations)
-      .set(updateData)
+      .set({
+        paidAmount: newPaidAmount,
+        paymentStatus: "pending", // Keep pending until admin verifies
+        updatedAt: new Date(),
+      })
       .where(eq(donations.id, donationId));
-
-    // Construct URL from path
-    const apiUrl = c.env?.API_URL || process.env.API_URL || "http://localhost:50245";
 
     return success(c, {
       id: evidence.id,
-      url: `${apiUrl}${path}`,
+      url: fileUrl,
       filename: finalFilename,
+      paidAmount: newPaidAmount,
+      paymentStatus: "pending",
     }, "Payment proof uploaded successfully");
 
   } catch (err) {
@@ -487,11 +603,12 @@ donationsRoute.post("/:id/upload-proof", async (c) => {
 // POST /donations/:id/confirm-payment - Confirm payment method selection
 const confirmPaymentSchema = z.object({
   paymentMethodId: z.string(),
+  metadata: z.record(z.any()).optional(),
 });
 
 donationsRoute.post("/:id/confirm-payment", zValidator("json", confirmPaymentSchema), async (c) => {
   const donationId = c.req.param("id");
-  const { paymentMethodId } = c.req.valid("json");
+  const { paymentMethodId, metadata: providedMetadata } = c.req.valid("json");
   const db = c.get("db");
 
   // Verify donation exists
@@ -509,6 +626,39 @@ donationsRoute.post("/:id/confirm-payment", zValidator("json", confirmPaymentSch
     paymentStatus: "pending", // Pending until proof uploaded
     updatedAt: new Date(),
   };
+
+  // If metadata provided from frontend, use it
+  if (providedMetadata && Object.keys(providedMetadata).length > 0) {
+    const existingMetadata = donation.metadata || {};
+    updateData.metadata = {
+      ...existingMetadata,
+      ...providedMetadata,
+    };
+  }
+  // Otherwise, try to get from payment_methods table
+  else if (paymentMethodId.startsWith('bank-') || paymentMethodId.includes('qris')) {
+    const paymentMethod = await db.query.paymentMethods.findFirst({
+      where: eq(paymentMethods.code, paymentMethodId),
+    });
+
+    if (paymentMethod?.details) {
+      const existingMetadata = donation.metadata || {};
+      const newMetadata: any = { ...existingMetadata };
+
+      if (paymentMethodId.startsWith('bank-')) {
+        newMetadata.bankName = paymentMethod.details.bankName || paymentMethod.name;
+        newMetadata.accountNumber = paymentMethod.details.accountNumber;
+        newMetadata.accountName = paymentMethod.details.accountName;
+      } else if (paymentMethodId.includes('qris')) {
+        newMetadata.qrisName = paymentMethod.details.name || paymentMethod.name;
+        if (paymentMethod.details.nmid) {
+          newMetadata.nmid = paymentMethod.details.nmid;
+        }
+      }
+
+      updateData.metadata = newMetadata;
+    }
+  }
 
   await db
     .update(donations)

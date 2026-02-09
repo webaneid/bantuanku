@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo, useState } from "react";
+import { use, useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon, PencilIcon, PrinterIcon, PaperClipIcon, LinkIcon } from "@heroicons/react/24/outline";
@@ -28,6 +28,11 @@ export default function ViewDonationPage({ params }: { params: Promise<{ id: str
   }>({ open: false, type: "error", title: "" });
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
+  const [proofModal, setProofModal] = useState<{ open: boolean; url: string; title: string }>({
+    open: false,
+    url: "",
+    title: "",
+  });
 
   const { data: donation, isLoading } = useQuery({
     queryKey: ["donation", donationId],
@@ -36,6 +41,29 @@ export default function ViewDonationPage({ params }: { params: Promise<{ id: str
       return response.data?.data;
     },
   });
+
+  // Fetch evidences
+  const { data: evidences } = useQuery({
+    queryKey: ["donation-evidences", donationId],
+    queryFn: async () => {
+      const response = await api.get(`/admin/donations/${donationId}/evidence`);
+      return response.data?.data || [];
+    },
+  });
+
+  // Pre-fill payment method and proof if already exists
+  useEffect(() => {
+    if (donation?.paymentMethodId) {
+      setPayMethodId(donation.paymentMethodId);
+    }
+
+    if (evidences && evidences.length > 0) {
+      const proofEvidence = evidences.find((e: any) => e.type === 'proof_of_payment');
+      if (proofEvidence?.fileUrl) {
+        setPayProofUrl(proofEvidence.fileUrl);
+      }
+    }
+  }, [donation, evidences]);
 
   // Payment methods
   const { data: paymentMethodsData } = useQuery({
@@ -113,12 +141,18 @@ export default function ViewDonationPage({ params }: { params: Promise<{ id: str
       });
 
       if (payProofUrl) {
-        const filename = payProofUrl.split("/").pop() || "Bukti Transfer";
-        await api.post(`/admin/donations/${donationId}/evidence`, {
-          type: "proof_of_payment",
-          title: filename,
-          fileUrl: payProofUrl,
-        });
+        // Check if proof_of_payment evidence already exists
+        const existingProof = evidences?.find((e: any) => e.type === 'proof_of_payment');
+
+        // Only post if no existing proof OR URL changed
+        if (!existingProof || existingProof.fileUrl !== payProofUrl) {
+          const filename = payProofUrl.split("/").pop() || "Bukti Transfer";
+          await api.post(`/admin/donations/${donationId}/evidence`, {
+            type: "proof_of_payment",
+            title: filename,
+            fileUrl: payProofUrl,
+          });
+        }
       }
 
       setShowPayModal(false);
@@ -134,15 +168,6 @@ export default function ViewDonationPage({ params }: { params: Promise<{ id: str
       });
     }
   };
-
-  // Fetch evidences
-  const { data: evidences } = useQuery({
-    queryKey: ["donation-evidences", donationId],
-    queryFn: async () => {
-      const response = await api.get(`/admin/donations/${donationId}/evidence`);
-      return response.data?.data || [];
-    },
-  });
 
   const handlePrint = () => {
     window.print();
@@ -317,7 +342,13 @@ export default function ViewDonationPage({ params }: { params: Promise<{ id: str
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-3xl font-bold text-gray-900">INVOICE</h2>
-              <p className="text-sm text-gray-500 mt-1">Tanda Terima Donasi</p>
+              <p className="text-sm text-gray-500 mt-1">
+                {donation.campaign?.pillar === "wakaf"
+                  ? "Tanda Terima Wakaf"
+                  : donation.campaign?.pillar === "fidyah"
+                  ? "Tanda Terima Fidyah"
+                  : "Tanda Terima Donasi"}
+              </p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Nomor Referensi</p>
@@ -473,10 +504,49 @@ export default function ViewDonationPage({ params }: { params: Promise<{ id: str
           </div>
         )}
 
-        {/* Bukti Transfer - Hide on print */}
+        {/* Bukti Transfer - NEW SYSTEM (from donation_payments) - Hide on print */}
+        {donation.manualPayments && donation.manualPayments.length > 0 && (
+          <div className="border-t border-gray-200 pt-6 mb-6 print:hidden">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-4">Bukti Pembayaran</h3>
+            <div className="space-y-2">
+              {donation.manualPayments.map((payment: any) => (
+                <div
+                  key={payment.id}
+                  className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <PaperClipIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {payment.paymentNumber} - Rp {formatRupiah(payment.amount)}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {payment.paymentDate && format(new Date(payment.paymentDate), "dd MMM yyyy HH:mm", {
+                        locale: idLocale,
+                      })} • Status: {payment.status}
+                    </p>
+                  </div>
+                  {payment.paymentProof && (
+                    <button
+                      onClick={() => setProofModal({
+                        open: true,
+                        url: payment.paymentProof,
+                        title: `Bukti ${payment.paymentNumber}`
+                      })}
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium flex-shrink-0"
+                    >
+                      Lihat Bukti
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Bukti Transfer - LEGACY SYSTEM (from donation_evidences) - Hide on print */}
         {evidences && evidences.length > 0 && (
           <div className="border-t border-gray-200 pt-6 mb-6 print:hidden">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-4">Bukti Transfer</h3>
+            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-4">Bukti Transfer (Legacy)</h3>
             <div className="space-y-2">
               {evidences.map((evidence: any) => (
                 <div
@@ -494,14 +564,12 @@ export default function ViewDonationPage({ params }: { params: Promise<{ id: str
                       })}
                     </p>
                   </div>
-                  <a
-                    href={evidence.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => setProofModal({ open: true, url: evidence.fileUrl, title: evidence.title })}
                     className="text-sm text-primary-600 hover:text-primary-700 font-medium flex-shrink-0"
                   >
                     Lihat Bukti
-                  </a>
+                  </button>
                 </div>
               ))}
             </div>
@@ -595,6 +663,48 @@ export default function ViewDonationPage({ params }: { params: Promise<{ id: str
         message={feedback.message}
         onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
       />
+
+      {/* Proof Modal */}
+      {proofModal.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">{proofModal.title}</h3>
+              <button
+                onClick={() => setProofModal({ open: false, url: "", title: "" })}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 overflow-auto max-h-[calc(90vh-80px)]">
+              {proofModal.url.toLowerCase().endsWith('.pdf') ? (
+                <iframe src={proofModal.url} className="w-full h-[70vh]" />
+              ) : (
+                <img src={proofModal.url} alt={proofModal.title} className="w-full h-auto" />
+              )}
+            </div>
+            <div className="flex justify-end gap-3 p-4 border-t border-gray-200">
+              <a
+                href={proofModal.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary btn-sm"
+              >
+                Buka di Tab Baru
+              </a>
+              <button
+                onClick={() => setProofModal({ open: false, url: "", title: "" })}
+                className="btn btn-primary btn-sm"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

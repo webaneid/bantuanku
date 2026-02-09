@@ -100,8 +100,8 @@ app.get("/", async (c) => {
     ...row.donation,
     zakatTypeName: row.zakatType?.name,
     zakatTypeSlug: row.zakatType?.slug,
-    donaturName: row.donatur?.name,
-    donaturEmail: row.donatur?.email,
+    donaturName: row.donation.donorName || row.donatur?.name,
+    donaturEmail: row.donation.donorEmail || row.donatur?.email,
   }));
 
   return paginated(c, enrichedData, {
@@ -248,38 +248,39 @@ app.post("/", async (c) => {
 app.put("/:id", async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
-  const body = await c.req.json();
 
-  const existing = await db
-    .select()
-    .from(zakatDonations)
-    .where(eq(zakatDonations.id, id))
-    .limit(1);
+  try {
+    const body = await c.req.json();
 
-  if (existing.length === 0) {
-    return c.json({ error: "Zakat donation not found" }, 404);
-  }
+    const existing = await db
+      .select()
+      .from(zakatDonations)
+      .where(eq(zakatDonations.id, id))
+      .limit(1);
 
-  const {
-    donorName,
-    donorEmail,
-    donorPhone,
-    isAnonymous,
-    amount,
-    calculatorData,
-    calculatedZakat,
-    paymentMethodId,
-    paymentStatus,
-    paymentGateway,
-    paymentReference,
-    paidAt,
-    notes,
-    message,
-  } = body;
+    if (existing.length === 0) {
+      return c.json({ error: "Zakat donation not found" }, 404);
+    }
 
-  const updated = await db
-    .update(zakatDonations)
-    .set({
+    const {
+      donorName,
+      donorEmail,
+      donorPhone,
+      isAnonymous,
+      amount,
+      calculatorData,
+      calculatedZakat,
+      paymentMethodId,
+      paymentStatus,
+      paymentGateway,
+      paymentReference,
+      paidAt,
+      notes,
+      message,
+    } = body;
+
+    // Prepare update data
+    const updateData: any = {
       donorName: donorName ?? existing[0].donorName,
       donorEmail: donorEmail !== undefined ? donorEmail : existing[0].donorEmail,
       donorPhone: donorPhone !== undefined ? donorPhone : existing[0].donorPhone,
@@ -291,62 +292,87 @@ app.put("/:id", async (c) => {
       paymentStatus: paymentStatus ?? existing[0].paymentStatus,
       paymentGateway: paymentGateway !== undefined ? paymentGateway : existing[0].paymentGateway,
       paymentReference: paymentReference !== undefined ? paymentReference : existing[0].paymentReference,
-      paidAt: paidAt !== undefined ? (paidAt ? new Date(paidAt) : null) : existing[0].paidAt,
       notes: notes !== undefined ? notes : existing[0].notes,
       message: message !== undefined ? message : existing[0].message,
       updatedAt: new Date(),
-    })
-    .where(eq(zakatDonations.id, id))
-    .returning();
+    };
 
-  // Create ledger entry if status changed to success and wasn't success before
-  if (paymentStatus === "success" && existing[0].paymentStatus !== "success") {
-    const zakatType = await db
-      .select()
-      .from(zakatTypes)
-      .where(eq(zakatTypes.id, existing[0].zakatTypeId))
-      .limit(1);
+    // Handle paidAt carefully
+    if (paidAt !== undefined) {
+      if (paidAt === null) {
+        updateData.paidAt = null;
+      } else if (typeof paidAt === 'string') {
+        updateData.paidAt = new Date(paidAt);
+      } else if (paidAt instanceof Date) {
+        updateData.paidAt = paidAt;
+      } else {
+        updateData.paidAt = existing[0].paidAt;
+      }
+    } else {
+      updateData.paidAt = existing[0].paidAt;
+    }
 
-    if (zakatType.length > 0) {
-      const coaMapping: Record<string, string> = {
-        "zakat-maal": "6201",
-        "zakat-fitrah": "6202",
-        "zakat-profesi": "6203",
-        "zakat-pertanian": "6204",
-        "zakat-peternakan": "6205",
-      };
+    const updated = await db
+      .update(zakatDonations)
+      .set(updateData)
+      .where(eq(zakatDonations.id, id))
+      .returning();
 
-      const coaCode = coaMapping[zakatType[0].slug];
+    // Create ledger entry if status changed to success and wasn't success before
+    if (paymentStatus === "success" && existing[0].paymentStatus !== "success") {
+      const zakatType = await db
+        .select()
+        .from(zakatTypes)
+        .where(eq(zakatTypes.id, existing[0].zakatTypeId))
+        .limit(1);
 
-      if (coaCode) {
-        const coaAccount = await db
-          .select()
-          .from(chartOfAccounts)
-          .where(eq(chartOfAccounts.code, coaCode))
-          .limit(1);
+      if (zakatType.length > 0) {
+        const coaMapping: Record<string, string> = {
+          "zakat-maal": "6201",
+          "zakat-fitrah": "6202",
+          "zakat-profesi": "6203",
+          "zakat-pertanian": "6204",
+          "zakat-peternakan": "6205",
+        };
 
-        if (coaAccount.length > 0) {
-          await db.insert(ledger).values({
-            id: createId(),
-            date: new Date(),
-            description: `Donasi ${zakatType[0].name} dari ${updated[0].donorName}`,
-            reference: updated[0].referenceId,
-            referenceType: "zakat_donation",
-            referenceId: updated[0].id,
-            coaId: coaAccount[0].id,
-            debit: 0,
-            credit: updated[0].amount,
-            status: "paid",
-          });
+        const coaCode = coaMapping[zakatType[0].slug];
+
+        if (coaCode) {
+          const coaAccount = await db
+            .select()
+            .from(chartOfAccounts)
+            .where(eq(chartOfAccounts.code, coaCode))
+            .limit(1);
+
+          if (coaAccount.length > 0) {
+            await db.insert(ledger).values({
+              id: createId(),
+              date: new Date(),
+              description: `Donasi ${zakatType[0].name} dari ${updated[0].donorName}`,
+              reference: updated[0].referenceId,
+              referenceType: "zakat_donation",
+              referenceId: updated[0].id,
+              coaId: coaAccount[0].id,
+              debit: 0,
+              credit: updated[0].amount,
+              status: "paid",
+            });
+          }
         }
       }
     }
-  }
 
-  return c.json({
-    success: true,
-    data: updated[0],
-  });
+    return c.json({
+      success: true,
+      data: updated[0],
+    });
+  } catch (error: any) {
+    console.error("Error updating zakat donation:", error);
+    return c.json(
+      { error: error.message || "Failed to update zakat donation" },
+      500
+    );
+  }
 });
 
 /**
@@ -465,6 +491,163 @@ app.post("/:id/upload-proof", async (c) => {
     console.error("Error uploading zakat payment proof:", error);
     return c.json(
       { error: error.message || "Failed to upload payment proof" },
+      500
+    );
+  }
+});
+
+/**
+ * POST /admin/zakat/donations/:id/approve-payment
+ * Approve payment and set status to success
+ */
+app.post("/:id/approve-payment", async (c) => {
+  const db = c.get("db");
+  const { id } = c.req.param();
+
+  try {
+    const existing = await db
+      .select()
+      .from(zakatDonations)
+      .where(eq(zakatDonations.id, id))
+      .limit(1);
+
+    if (existing.length === 0) {
+      return c.json({ error: "Zakat donation not found" }, 404);
+    }
+
+    // Update to success
+    const updated = await db
+      .update(zakatDonations)
+      .set({
+        paymentStatus: "success",
+        paidAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(zakatDonations.id, id))
+      .returning();
+
+    // Create ledger entry if not already success
+    if (existing[0].paymentStatus !== "success" && existing[0].zakatTypeId) {
+      try {
+        const zakatType = await db
+          .select()
+          .from(zakatTypes)
+          .where(eq(zakatTypes.id, existing[0].zakatTypeId))
+          .limit(1);
+
+        if (zakatType.length > 0) {
+          const coaMapping: Record<string, string> = {
+            "zakat-maal": "6201",
+            "zakat-fitrah": "6202",
+            "zakat-profesi": "6203",
+            "zakat-pertanian": "6204",
+            "zakat-peternakan": "6205",
+          };
+
+          const coaCode = coaMapping[zakatType[0].slug];
+
+          if (coaCode) {
+            const coaAccount = await db
+              .select()
+              .from(chartOfAccounts)
+              .where(eq(chartOfAccounts.code, coaCode))
+              .limit(1);
+
+            if (coaAccount.length > 0) {
+              await db.insert(ledger).values({
+                id: createId(),
+                date: new Date(),
+                description: `Donasi ${zakatType[0].name} dari ${updated[0].donorName}`,
+                reference: updated[0].referenceId,
+                referenceType: "zakat_donation",
+                referenceId: updated[0].id,
+                coaId: coaAccount[0].id,
+                debit: 0,
+                credit: updated[0].amount,
+                status: "paid",
+              });
+              console.log("Ledger entry created for zakat donation approval");
+            } else {
+              console.warn(`COA with code ${coaCode} not found, skipping ledger entry`);
+            }
+          } else {
+            console.warn(`No COA mapping for zakat type slug: ${zakatType[0].slug}`);
+          }
+        } else {
+          console.warn(`Zakat type with ID ${existing[0].zakatTypeId} not found`);
+        }
+      } catch (ledgerError: any) {
+        console.error("Error creating ledger entry (continuing anyway):", ledgerError);
+        // Don't fail the approval if ledger creation fails
+      }
+    }
+
+    return c.json({
+      success: true,
+      data: updated[0],
+      message: "Payment approved successfully",
+    });
+  } catch (error: any) {
+    console.error("Error approving payment:", error);
+    return c.json(
+      { error: error.message || "Failed to approve payment" },
+      500
+    );
+  }
+});
+
+/**
+ * POST /admin/zakat/donations/:id/reject-payment
+ * Reject payment and set status to failed
+ */
+app.post("/:id/reject-payment", async (c) => {
+  const db = c.get("db");
+  const { id } = c.req.param();
+
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    const { reason } = body;
+
+    const existing = await db
+      .select()
+      .from(zakatDonations)
+      .where(eq(zakatDonations.id, id))
+      .limit(1);
+
+    if (existing.length === 0) {
+      return c.json({ error: "Zakat donation not found" }, 404);
+    }
+
+    // Update to failed
+    const updateData: any = {
+      paymentStatus: "failed",
+      paidAt: null,
+      updatedAt: new Date(),
+    };
+
+    // Add rejection reason to notes if provided
+    if (reason) {
+      const existingNotes = existing[0].notes || "";
+      updateData.notes = existingNotes
+        ? `${existingNotes}\n\nPembayaran ditolak: ${reason}`
+        : `Pembayaran ditolak: ${reason}`;
+    }
+
+    const updated = await db
+      .update(zakatDonations)
+      .set(updateData)
+      .where(eq(zakatDonations.id, id))
+      .returning();
+
+    return c.json({
+      success: true,
+      data: updated[0],
+      message: "Payment rejected",
+    });
+  } catch (error: any) {
+    console.error("Error rejecting payment:", error);
+    return c.json(
+      { error: error.message || "Failed to reject payment" },
       500
     );
   }

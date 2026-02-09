@@ -9,7 +9,6 @@ import {
   MapPinIcon,
   CalendarIcon,
   CheckCircleIcon,
-  XCircleIcon,
   BanknotesIcon,
   HeartIcon,
   GlobeAltIcon,
@@ -30,11 +29,11 @@ export default function ViewDonaturPage() {
     },
   });
 
-  // Fetch donations history (only success)
-  const { data: donationsData } = useQuery({
-    queryKey: ["donations-by-donatur", donaturId],
+  // Fetch transactions history (universal)
+  const { data: transactionsData } = useQuery({
+    queryKey: ["transactions-by-donatur", donaturId],
     queryFn: async () => {
-      const response = await api.get(`/admin/donations?donaturId=${donaturId}&status=success&limit=1000`);
+      const response = await api.get(`/transactions?donatur_id=${donaturId}&status=paid&limit=1000`);
       return response.data.data || [];
     },
     enabled: !!donaturId,
@@ -57,13 +56,26 @@ export default function ViewDonaturPage() {
     });
   };
 
+  const getProductTypeLabel = (type: string) => {
+    switch (type) {
+      case "campaign":
+        return "Donasi";
+      case "zakat":
+        return "Zakat";
+      case "qurban":
+        return "Qurban";
+      default:
+        return type;
+    }
+  };
+
   // Calculate statistics
-  const totalDonations = donationsData?.length || 0;
-  const totalAmount = donationsData?.reduce(
-    (sum: number, donation: any) => sum + Number(donation.amount || 0),
+  const totalTransactions = transactionsData?.length || 0;
+  const totalAmount = transactionsData?.reduce(
+    (sum: number, transaction: any) => sum + Number(transaction.totalAmount || 0),
     0
   ) || 0;
-  const uniqueCampaigns = new Set(donationsData?.map((d: any) => d.campaignId)).size;
+  const uniqueProducts = new Set(transactionsData?.map((t: any) => t.productId)).size;
 
   if (isLoading) {
     return (
@@ -169,9 +181,9 @@ export default function ViewDonaturPage() {
                   <GlobeAltIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Website</p>
-                    <a 
-                      href={donaturData.website} 
-                      target="_blank" 
+                    <a
+                      href={donaturData.website}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="font-medium text-primary-600 hover:text-primary-700 break-words"
                     >
@@ -224,17 +236,17 @@ export default function ViewDonaturPage() {
             <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg p-4 text-white">
               <div className="flex items-center gap-2 mb-2">
                 <BanknotesIcon className="w-5 h-5" />
-                <span className="text-sm opacity-90">Total Donasi</span>
+                <span className="text-sm opacity-90">Total Transaksi</span>
               </div>
-              <p className="text-2xl font-bold">{totalDonations}x</p>
+              <p className="text-2xl font-bold">{totalTransactions}x</p>
             </div>
 
             <div className="bg-gradient-to-br from-success-500 to-success-600 rounded-lg p-4 text-white">
               <div className="flex items-center gap-2 mb-2">
                 <HeartIcon className="w-5 h-5" />
-                <span className="text-sm opacity-90">Campaign</span>
+                <span className="text-sm opacity-90">Program</span>
               </div>
-              <p className="text-2xl font-bold">{uniqueCampaigns}</p>
+              <p className="text-2xl font-bold">{uniqueProducts}</p>
             </div>
           </div>
 
@@ -247,57 +259,66 @@ export default function ViewDonaturPage() {
           </div>
         </div>
 
-        {/* Right Column - Donation History */}
+        {/* Right Column - Transaction History */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Riwayat Donasi</h2>
+              <h2 className="text-xl font-bold text-gray-900">Riwayat Transaksi</h2>
               <p className="text-sm text-gray-500 mt-1">
-                Semua donasi yang pernah dilakukan
+                Semua transaksi yang pernah dilakukan
               </p>
             </div>
 
             <div className="p-6">
-              {donationsData && donationsData.length > 0 ? (
+              {transactionsData && transactionsData.length > 0 ? (
                 <div className="space-y-4">
-                  {donationsData.map((donation: any) => (
+                  {transactionsData.map((transaction: any) => (
                     <div
-                      key={donation.id}
+                      key={transaction.id}
                       className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-primary-300 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                              {getProductTypeLabel(transaction.productType)}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {transaction.transactionNumber}
+                            </span>
+                          </div>
+
                           <h3 className="font-semibold text-gray-900 truncate mb-2">
-                            {donation.campaignTitle || "Campaign"}
+                            {transaction.productName}
                           </h3>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                             <div>
                               <span className="text-gray-500">Tanggal:</span>
                               <span className="ml-2 text-gray-900">
-                                {formatDate(donation.createdAt)}
+                                {formatDate(transaction.createdAt)}
                               </span>
                             </div>
-                            {donation.paymentMethod && (
+                            {transaction.quantity > 1 && (
                               <div>
-                                <span className="text-gray-500">Metode:</span>
-                                <span className="ml-2 text-gray-900 uppercase">
-                                  {donation.paymentMethod}
+                                <span className="text-gray-500">Qty:</span>
+                                <span className="ml-2 text-gray-900">
+                                  {transaction.quantity}
                                 </span>
                               </div>
                             )}
                           </div>
 
-                          {donation.notes && (
+                          {transaction.message && (
                             <p className="text-xs text-gray-500 mt-2 italic">
-                              "{donation.notes}"
+                              "{transaction.message}"
                             </p>
                           )}
                         </div>
 
                         <div className="text-right flex-shrink-0">
                           <div className="text-xl font-bold text-primary-600">
-                            {formatCurrency(Number(donation.amount))}
+                            {formatCurrency(Number(transaction.totalAmount))}
                           </div>
                         </div>
                       </div>
@@ -309,7 +330,7 @@ export default function ViewDonaturPage() {
                   <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                     <BanknotesIcon className="w-8 h-8 text-gray-400" />
                   </div>
-                  <p className="text-gray-500">Belum ada riwayat donasi</p>
+                  <p className="text-gray-500">Belum ada riwayat transaksi</p>
                 </div>
               )}
             </div>

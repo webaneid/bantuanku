@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
@@ -18,6 +18,7 @@ export default function NewZakatDonationPage() {
   const [donaturId, setDonaturId] = useState("");
   const [zakatTypeId, setZakatTypeId] = useState("");
   const [amount, setAmount] = useState("");
+  const [jumlahJiwa, setJumlahJiwa] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("pending");
   const [paymentMethodId, setPaymentMethodId] = useState("");
   const [evidenceFiles, setEvidenceFiles] = useState<Array<{ url: string; filename: string }>>([]);
@@ -58,6 +59,15 @@ export default function NewZakatDonationPage() {
     },
   });
 
+  // Fetch zakat fitrah amount setting
+  const { data: zakatFitrahAmount } = useQuery({
+    queryKey: ["settings", "zakat_fitrah_amount"],
+    queryFn: async () => {
+      const response = await api.get("/admin/settings/zakat_fitrah_amount");
+      return parseInt(response.data?.data?.value || "45000");
+    },
+  });
+
   // Prepare autocomplete options
   const donaturOptions = donaturData?.map((donatur: any) => ({
     value: donatur.id,
@@ -76,34 +86,75 @@ export default function NewZakatDonationPage() {
     { value: "expired", label: "Kadaluarsa" },
   ];
 
+  // Check if selected zakat type is zakat fitrah
+  const selectedZakatType = zakatTypesData?.find((type: any) => type.id === zakatTypeId);
+  const isZakatFitrah = selectedZakatType?.slug === "zakat-fitrah";
+
+  // Auto-calculate amount for zakat fitrah
+  useEffect(() => {
+    if (isZakatFitrah && jumlahJiwa && zakatFitrahAmount) {
+      const calculatedAmount = parseInt(jumlahJiwa) * zakatFitrahAmount;
+      setAmount(calculatedAmount.toString());
+    }
+  }, [isZakatFitrah, jumlahJiwa, zakatFitrahAmount]);
+
   const paymentMethodOptions = (() => {
     const methods = paymentMethodsData || [];
+
+    // Separate by type
     const bankMethods = methods.filter((m: any) => m.type === "bank_transfer");
-    const hasZakatBanks = bankMethods.some((m: any) => {
+    const qrisMethods = methods.filter((m: any) => m.type === "qris");
+    const otherMethods = methods.filter((m: any) => m.type !== "bank_transfer" && m.type !== "qris");
+
+    // Check if there are banks/qris specifically for zakat
+    const zakatBanks = bankMethods.filter((m: any) => {
       const programs = m.programs && m.programs.length > 0 ? m.programs : ["general"];
       return programs.includes("zakat");
     });
 
-    const allowedBanks = bankMethods.filter((m: any) => {
+    const zakatQris = qrisMethods.filter((m: any) => {
       const programs = m.programs && m.programs.length > 0 ? m.programs : ["general"];
-      if (hasZakatBanks) {
-        return programs.includes("zakat");
-      }
-      return programs.includes("general");
+      return programs.includes("zakat");
     });
 
-    const otherMethods = methods.filter((m: any) => m.type !== "bank_transfer");
-    const filtered = [...allowedBanks, ...otherMethods];
+    const hasZakatAccounts = zakatBanks.length > 0 || zakatQris.length > 0;
+
+    // If zakat accounts exist, ONLY show zakat accounts
+    // If not, show general accounts
+    const allowedBanks = hasZakatAccounts
+      ? zakatBanks
+      : bankMethods.filter((m: any) => {
+          const programs = m.programs && m.programs.length > 0 ? m.programs : ["general"];
+          return programs.includes("general");
+        });
+
+    const allowedQris = hasZakatAccounts
+      ? zakatQris
+      : qrisMethods.filter((m: any) => {
+          const programs = m.programs && m.programs.length > 0 ? m.programs : ["general"];
+          return programs.includes("general");
+        });
+
+    const filtered = [...allowedBanks, ...allowedQris, ...otherMethods];
 
     return filtered.map((method: any) => {
       const programs = method.programs && method.programs.length > 0 ? method.programs : ["general"];
       const programLabel = programs.join(", ");
-      const owner = method.details?.accountName ? ` - a.n ${method.details.accountName}` : "";
+
+      let label = method.name;
+
+      if (method.type === "bank_transfer") {
+        const accountNumber = method.details?.accountNumber || "";
+        const accountName = method.details?.accountName || "";
+        label = `${method.details?.bankName || method.name} - ${accountNumber}${accountName ? ` - a.n ${accountName}` : ""} [${programLabel}]`;
+      } else if (method.type === "qris") {
+        const qrisName = method.details?.name || method.name;
+        label = `${qrisName} [${programLabel}]`;
+      }
+
       return {
         value: method.code,
-        label: method.type === "bank_transfer"
-          ? `${method.name}${owner} [${programLabel}]`
-          : method.name,
+        label,
       };
     });
   })();
@@ -138,11 +189,15 @@ export default function NewZakatDonationPage() {
 
     // Validation
     if (!donaturId) {
-      toast.error("Donatur harus dipilih");
+      toast.error("Muzaki harus dipilih");
       return;
     }
     if (!zakatTypeId) {
       toast.error("Jenis zakat harus dipilih");
+      return;
+    }
+    if (isZakatFitrah && (!jumlahJiwa || parseInt(jumlahJiwa) <= 0)) {
+      toast.error("Jumlah jiwa harus diisi untuk Zakat Fitrah");
       return;
     }
     if (!amount || parseInt(amount) <= 0) {
@@ -186,6 +241,19 @@ export default function NewZakatDonationPage() {
   return (
     <main className="flex-1 overflow-y-auto bg-gray-50">
       <div className="dashboard-container">
+      {/* Deprecation Warning */}
+      <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 w-5 h-5 text-yellow-600">⚠️</div>
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold text-yellow-800">Form Lama (Deprecated)</h3>
+            <p className="text-sm text-yellow-700 mt-1">
+              Gunakan <a href="/dashboard/transactions/create" className="underline font-medium">Form Transaksi Universal</a> untuk membuat donasi Campaign, Zakat, atau Qurban dalam satu form.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="form-page-header">
         <button className="btn btn-secondary btn-md" onClick={handleCancel}>
@@ -218,7 +286,7 @@ export default function NewZakatDonationPage() {
                       options={donaturOptions}
                       value={donaturId}
                       onChange={setDonaturId}
-                      placeholder="Pilih donatur atau ketik untuk mencari..."
+                      placeholder="Pilih muzaki atau ketik untuk mencari..."
                       isLoading={isLoadingDonatur}
                     />
                   </div>
@@ -246,6 +314,31 @@ export default function NewZakatDonationPage() {
                 />
               </div>
 
+              {/* Jumlah Jiwa - only for zakat fitrah */}
+              {isZakatFitrah && (
+                <div className="form-group">
+                  <label htmlFor="jumlahJiwa" className="form-label">
+                    Jumlah Jiwa <span className="text-danger-600">*</span>
+                  </label>
+                  <input
+                    id="jumlahJiwa"
+                    type="number"
+                    className="form-input"
+                    value={jumlahJiwa}
+                    onChange={(e) => setJumlahJiwa(e.target.value)}
+                    placeholder="0"
+                    min="1"
+                    step="1"
+                    required={isZakatFitrah}
+                  />
+                  {zakatFitrahAmount && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Rp {zakatFitrahAmount.toLocaleString("id-ID")} per jiwa
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Amount */}
               <div className="form-group">
                 <label htmlFor="amount" className="form-label">
@@ -261,7 +354,13 @@ export default function NewZakatDonationPage() {
                   min="0"
                   step="1000"
                   required
+                  readOnly={isZakatFitrah}
                 />
+                {isZakatFitrah && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Otomatis dihitung dari jumlah jiwa × harga per jiwa
+                  </p>
+                )}
               </div>
 
               {/* Payment Status */}

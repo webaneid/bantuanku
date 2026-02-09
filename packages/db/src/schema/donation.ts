@@ -22,6 +22,7 @@ export const donations = pgTable("donations", {
   amount: bigint("amount", { mode: "number" }).notNull(),
   feeAmount: bigint("fee_amount", { mode: "number" }).default(0).notNull(),
   totalAmount: bigint("total_amount", { mode: "number" }).notNull(),
+  paidAmount: bigint("paid_amount", { mode: "number" }).default(0).notNull(), // Total yang sudah dibayar
 
   paymentMethodId: text("payment_method_id"), // Simpan sebagai string (code dari settings), bukan foreign key
   paymentStatus: text("payment_status").default("pending").notNull(),
@@ -64,6 +65,9 @@ export const payments = pgTable("payments", {
   updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
 });
 
+// Import after declaration to avoid circular dependency
+import { donationPayments } from "./donation-payments";
+
 // Relations
 export const donationsRelations = relations(donations, ({ one, many }) => ({
   campaign: one(campaigns, {
@@ -79,7 +83,8 @@ export const donationsRelations = relations(donations, ({ one, many }) => ({
     references: [donatur.id],
   }),
   // paymentMethod tidak ada lagi, paymentMethodId sekarang string code dari settings
-  payment: many(payments),
+  payment: many(payments), // For payment gateway transactions
+  manualPayments: many(donationPayments), // For manual transfer/upload proof
 }));
 
 export const paymentsRelations = relations(payments, ({ one }) => ({

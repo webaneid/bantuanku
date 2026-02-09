@@ -153,6 +153,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
                   slotsFilled: qurbanPackage.slotsFilled,
                   availableSlots: qurbanPackage.availableSlots,
                   periodId: qurbanPackage.periodId,
+                  availablePeriods: qurbanPackage.availablePeriods || [],
                 }}
                 periods={periods}
                 adminFeeCow={adminFeeCow}

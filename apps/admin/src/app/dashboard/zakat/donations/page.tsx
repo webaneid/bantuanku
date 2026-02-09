@@ -1,104 +1,145 @@
 "use client";
 
-import { useState } from "react";
+import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { EyeIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
+import Autocomplete from "@/components/Autocomplete";
+import Pagination from "@/components/Pagination";
 import api from "@/lib/api";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
-import { EyeIcon, PlusIcon } from "@heroicons/react/24/outline";
-import Autocomplete from "@/components/Autocomplete";
-import Pagination from "@/components/Pagination";
 import { formatRupiah } from "@/lib/format";
+
+const ITEMS_PER_PAGE = 10;
+
+const statusOptions = [
+  { value: "", label: "Semua Status" },
+  { value: "pending", label: "Pending" },
+  { value: "partial", label: "Partial" },
+  { value: "paid", label: "Paid" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+const statusBadgeMap: Record<string, string> = {
+  pending: "bg-warning-50 text-warning-700",
+  partial: "bg-primary-50 text-primary-700",
+  paid: "bg-success-50 text-success-700",
+  cancelled: "bg-gray-100 text-gray-700",
+};
+
+const getStatusBadgeClass = (status: string) => {
+  const normalized = status?.toLowerCase() || "";
+  return statusBadgeMap[normalized] || "bg-gray-100 text-gray-700";
+};
 
 export default function ZakatDonationsPage() {
   const router = useRouter();
-
-  // Filter states
-  const [searchQuery, setSearchQuery] = useState("");
-  const [zakatTypeFilter, setZakatTypeFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [statusFilter, setStatusFilter] = useState("");
+  const [zakatTypeFilter, setZakatTypeFilter] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
-  // Fetch zakat types for filter
-  const { data: typesData } = useQuery({
-    queryKey: ["zakat-types-active"],
+  const { data: zakatTypesData } = useQuery({
+    queryKey: ["admin-zakat-type-options"],
     queryFn: async () => {
       const response = await api.get("/admin/zakat/types", {
-        params: { isActive: "true", limit: 100 },
+        params: { page: 1, limit: 100 },
       });
       return response.data?.data || [];
     },
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch donations
-  const { data: donationsData, isLoading } = useQuery({
-    queryKey: ["zakat-donations"],
+  const zakatTypeOptions = useMemo(() => {
+    const base = [{ value: "", label: "Semua Jenis Zakat" }];
+    if (!zakatTypesData) {
+      return base;
+    }
+
+    return [
+      ...base,
+      ...zakatTypesData.map((type: any) => ({
+        value: type.id,
+        label: type.name,
+      })),
+    ];
+  }, [zakatTypesData]);
+
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+    queryKey: [
+      "zakat-donations",
+      currentPage,
+      statusFilter,
+      zakatTypeFilter,
+      searchQuery,
+      startDate,
+      endDate,
+    ],
     queryFn: async () => {
-      const response = await api.get("/admin/zakat/donations", {
-        params: { limit: 1000 },
-      });
-      return response.data?.data || [];
+      const params: any = {
+        product_type: "zakat",
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+      };
+
+      if (statusFilter) params.status = statusFilter;
+      if (zakatTypeFilter) params.product_id = zakatTypeFilter;
+      if (searchQuery) params.donor_email = searchQuery;
+
+      const response = await api.get("/transactions", { params });
+      return response.data;
     },
+    keepPreviousData: true,
   });
 
-  // Filter options
-  const zakatTypeOptions = [
-    { value: "", label: "Semua Jenis Zakat" },
-    ...(typesData || []).map((type: any) => ({
-      value: type.id,
-      label: `${type.icon || ""} ${type.name}`,
-    })),
-  ];
+  const transactions = data?.data || [];
+  const pagination = data?.pagination;
+  const totalItems = pagination?.total ?? transactions.length;
+  const totalPages = pagination?.totalPages ?? 0;
 
-  const statusOptions = [
-    { value: "", label: "Semua Status" },
-    { value: "success", label: "Berhasil" },
-    { value: "pending", label: "Pending" },
-    { value: "failed", label: "Gagal" },
-    { value: "expired", label: "Kadaluarsa" },
-  ];
-
-  // Filter donations
-  const filteredDonations = donationsData?.filter((donation: any) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      donation.donaturName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      donation.donaturEmail?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesType = zakatTypeFilter === "" || donation.zakatTypeId === zakatTypeFilter;
-    const matchesStatus = statusFilter === "" || donation.paymentStatus === statusFilter;
-
-    return matchesSearch && matchesType && matchesStatus;
-  });
-
-  // Pagination logic
-  const totalItems = filteredDonations?.length || 0;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedDonations = filteredDonations?.slice(startIndex, endIndex);
-
-  // Reset to page 1 when filters change
   const handleFilterChange = (setter: (value: string) => void) => (value: string) => {
     setter(value);
     setCurrentPage(1);
   };
 
-  const handleView = (donation: any) => {
-    router.push(`/dashboard/zakat/donations/${donation.id}`);
+  const handleDateChange = (setter: (value: string) => void) => (event: ChangeEvent<HTMLInputElement>) => {
+    setter(event.target.value);
+    setCurrentPage(1);
   };
 
-  if (isLoading) {
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSearchQuery(searchInput.trim());
+    setCurrentPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setStatusFilter("");
+    setZakatTypeFilter("");
+    setSearchInput("");
+    setSearchQuery("");
+    setStartDate("");
+    setEndDate("");
+    setCurrentPage(1);
+  };
+
+  const renderStatusBadge = (status: string) => (
+    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeClass(status)}`}>
+      {status || "unknown"}
+    </span>
+  );
+
+  if (isLoading && !data) {
     return (
       <div className="dashboard-container">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
           <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(8)].map((_, i) => (
               <div key={i} className="h-24 bg-gray-200 rounded"></div>
             ))}
           </div>
@@ -107,40 +148,67 @@ export default function ZakatDonationsPage() {
     );
   }
 
-  return (
-    <main className="flex-1 overflow-y-auto bg-gray-50">
+  if (isError) {
+    return (
       <div className="dashboard-container">
+        <div className="card">
+          <div className="text-center py-12 space-y-4">
+            <p className="text-gray-600">Gagal memuat data transaksi.</p>
+            <button className="btn btn-secondary btn-md" onClick={() => refetch()}>
+              Coba lagi
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isFilterApplied = Boolean(
+    statusFilter ||
+      zakatTypeFilter ||
+      searchQuery ||
+      startDate ||
+      endDate
+  );
+
+  const isEmptyState = !isFetching && transactions.length === 0;
+
+  return (
+    <div className="dashboard-container">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Pembayaran Zakat</h1>
-          <p className="text-gray-600 mt-1">Kelola dan pantau pembayaran zakat yang masuk</p>
+          <p className="text-gray-600 mt-1">Semua transaksi pembayaran zakat</p>
         </div>
         <button
           type="button"
           className="btn btn-primary btn-md"
-          onClick={() => router.push("/dashboard/zakat/donations/new")}
+          onClick={() => router.push("/dashboard/transactions/create?product_type=zakat")}
         >
           <PlusIcon className="w-5 h-5" />
           Catat Pembayaran Baru
         </button>
       </div>
 
-      {/* Filters Section */}
-      <div className="filter-container">
-        <div className="filter-group">
+      {/* Search Bar */}
+      <div className="mb-6">
+        <form onSubmit={handleSearchSubmit} className="flex gap-3">
           <input
             type="text"
-            className="form-input"
-            placeholder="Cari nama atau email donatur..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
+            className="form-input flex-1"
+            placeholder="Cari email muzaki..."
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
           />
-        </div>
+          <button type="submit" className="btn btn-primary btn-md">
+            Cari
+          </button>
+        </form>
+      </div>
 
+      {/* Filters */}
+      <div className="filter-container">
         <div className="filter-group">
           <Autocomplete
             options={zakatTypeOptions}
@@ -158,166 +226,184 @@ export default function ZakatDonationsPage() {
             placeholder="Semua Status"
           />
         </div>
+
+        <div className="filter-group">
+          <input
+            type="date"
+            className="form-input"
+            placeholder="Tanggal Mulai"
+            value={startDate}
+            onChange={handleDateChange(setStartDate)}
+            max={endDate || undefined}
+          />
+        </div>
+
+        <div className="filter-group">
+          <input
+            type="date"
+            className="form-input"
+            placeholder="Tanggal Akhir"
+            value={endDate}
+            onChange={handleDateChange(setEndDate)}
+            min={startDate || undefined}
+          />
+        </div>
+
+        <div className="filter-group">
+          <button
+            type="button"
+            className="btn btn-secondary btn-md w-full"
+            onClick={handleResetFilters}
+            disabled={!isFilterApplied && searchInput === ""}
+          >
+            Reset Filter
+          </button>
+        </div>
       </div>
 
+      {/* Desktop Table */}
       <div className="table-container">
-        {/* Desktop Table View */}
         <table className="table">
           <thead>
             <tr>
-              <th className="sortable">Donatur</th>
-              <th className="sortable">Jenis Zakat</th>
-              <th className="sortable">Jumlah</th>
-              <th className="sortable">Status</th>
-              <th className="sortable">Tanggal</th>
-              <th>Action</th>
+              <th>No. Transaksi</th>
+              <th>Muzaki</th>
+              <th>Jenis Zakat</th>
+              <th>Nominal</th>
+              <th>Status</th>
+              <th>Dibuat</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {paginatedDonations?.map((donation: any) => {
-              return (
-                <tr key={donation.id}>
+            {isEmptyState ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12 text-gray-500">
+                  {isFilterApplied
+                    ? "Tidak ada transaksi yang sesuai dengan filter saat ini"
+                    : "Belum ada transaksi"}
+                </td>
+              </tr>
+            ) : (
+              transactions.map((transaction: any) => (
+                <tr key={transaction.id}>
                   <td>
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {donation.donaturName || "N/A"}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {donation.donaturEmail || "-"}
-                      </div>
+                    <div className="font-mono text-sm font-semibold text-gray-900">
+                      {transaction.transactionNumber}
                     </div>
                   </td>
                   <td>
                     <div className="font-medium text-gray-900">
-                      {donation.zakatTypeName || "N/A"}
+                      {transaction.donorName}
+                      {transaction.isAnonymous && (
+                        <span className="ml-2 text-xs text-warning-600 font-normal">(Anonim)</span>
+                      )}
+                    </div>
+                    {transaction.donorEmail && (
+                      <div className="text-xs text-gray-500">{transaction.donorEmail}</div>
+                    )}
+                  </td>
+                  <td>
+                    <div className="text-sm text-gray-900">
+                      {transaction.productName}
                     </div>
                   </td>
-                  <td className="mono text-sm">Rp {formatRupiah(donation.amount)}</td>
-                  <td>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        donation.paymentStatus === "success"
-                          ? "bg-success-50 text-success-700"
-                          : donation.paymentStatus === "pending"
-                          ? "bg-warning-50 text-warning-700"
-                          : donation.paymentStatus === "failed"
-                          ? "bg-danger-50 text-danger-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {donation.paymentStatus === "success"
-                        ? "Berhasil"
-                        : donation.paymentStatus === "pending"
-                        ? "Pending"
-                        : donation.paymentStatus === "failed"
-                        ? "Gagal"
-                        : "Kadaluarsa"}
-                    </span>
+                  <td className="mono text-sm">
+                    Rp {formatRupiah(transaction.totalAmount)}
                   </td>
+                  <td>{renderStatusBadge(transaction.paymentStatus)}</td>
                   <td className="text-gray-600 text-sm">
-                    {format(new Date(donation.createdAt), "EEEE, dd MMM yyyy", {
+                    {format(new Date(transaction.createdAt), "dd MMM yyyy, HH:mm", {
                       locale: idLocale,
                     })}
                   </td>
                   <td>
                     <div className="table-actions">
                       <button
+                        type="button"
                         className="action-btn action-view"
-                        title="View"
-                        onClick={() => handleView(donation)}
+                        onClick={() => router.push(`/dashboard/transactions/${transaction.id}`)}
+                        title="Lihat detail"
                       >
-                        <EyeIcon />
+                        <EyeIcon className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
                 </tr>
-              );
-            })}
+              ))
+            )}
           </tbody>
         </table>
-
-        {filteredDonations?.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">
-              {donationsData?.length === 0
-                ? "Belum ada pembayaran zakat."
-                : "Tidak ada pembayaran yang sesuai dengan filter."}
-            </p>
-          </div>
-        )}
-
-        {/* Mobile Card View */}
-        <div className="table-mobile-cards">
-          {paginatedDonations?.map((donation: any) => {
-            return (
-              <div key={donation.id} className="table-card">
-                <div className="table-card-header">
-                  <div className="table-card-header-left">
-                    <div className="table-card-header-title">
-                      {donation.donaturName || "N/A"}
-                    </div>
-                    <div className="table-card-header-subtitle">
-                      {donation.zakatTypeName || "N/A"}
-                    </div>
-                  </div>
-                  <span
-                    className={`table-card-header-badge ${
-                      donation.paymentStatus === "success"
-                        ? "bg-success-50 text-success-700"
-                        : donation.paymentStatus === "pending"
-                        ? "bg-warning-50 text-warning-700"
-                        : donation.paymentStatus === "failed"
-                        ? "bg-danger-50 text-danger-700"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {donation.paymentStatus === "success"
-                      ? "Berhasil"
-                      : donation.paymentStatus === "pending"
-                      ? "Pending"
-                      : donation.paymentStatus === "failed"
-                      ? "Gagal"
-                      : "Kadaluarsa"}
-                  </span>
-                </div>
-
-                <div className="table-card-row">
-                  <span className="table-card-row-label">Email</span>
-                  <span className="table-card-row-value">{donation.donaturEmail || "-"}</span>
-                </div>
-
-                <div className="table-card-row">
-                  <span className="table-card-row-label">Jumlah</span>
-                  <span className="table-card-row-value mono">
-                    Rp {formatRupiah(donation.amount)}
-                  </span>
-                </div>
-
-                <div className="table-card-row">
-                  <span className="table-card-row-label">Tanggal</span>
-                  <span className="table-card-row-value">
-                    {format(new Date(donation.createdAt), "dd MMM yyyy", {
-                      locale: idLocale,
-                    })}
-                  </span>
-                </div>
-
-                <div className="table-card-footer">
-                  <button
-                    className="action-btn action-view"
-                    title="View"
-                    onClick={() => handleView(donation)}
-                  >
-                    <EyeIcon />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </div>
 
-      {/* Pagination */}
+      {/* Mobile Cards */}
+      <div className="table-mobile-cards">
+        {isEmptyState ? (
+          <div className="text-center py-12 text-gray-500">
+            {isFilterApplied
+              ? "Tidak ada transaksi yang sesuai dengan filter saat ini"
+              : "Belum ada transaksi"}
+          </div>
+        ) : (
+          transactions.map((transaction: any) => (
+            <div key={transaction.id} className="table-card">
+              <div className="table-card-header">
+                <div className="table-card-header-left">
+                  <div className="table-card-header-title">
+                    {transaction.donorName}
+                    {transaction.isAnonymous && (
+                      <span className="ml-1 text-xs text-warning-600 font-normal">(Anonim)</span>
+                    )}
+                  </div>
+                  <div className="table-card-header-subtitle">
+                    {transaction.transactionNumber}
+                  </div>
+                </div>
+                <span
+                  className={`table-card-header-badge ${getStatusBadgeClass(
+                    transaction.paymentStatus
+                  )}`}
+                >
+                  {transaction.paymentStatus || "unknown"}
+                </span>
+              </div>
+
+              <div className="table-card-row">
+                <span className="table-card-row-label">Jenis Zakat</span>
+                <span className="table-card-row-value">{transaction.productName}</span>
+              </div>
+
+              <div className="table-card-row">
+                <span className="table-card-row-label">Nominal</span>
+                <span className="table-card-row-value mono">
+                  Rp {formatRupiah(transaction.totalAmount)}
+                </span>
+              </div>
+
+              <div className="table-card-row">
+                <span className="table-card-row-label">Dibuat</span>
+                <span className="table-card-row-value">
+                  {format(new Date(transaction.createdAt), "dd MMM yyyy, HH:mm", {
+                    locale: idLocale,
+                  })}
+                </span>
+              </div>
+
+              <div className="table-card-footer">
+                <button
+                  type="button"
+                  className="action-btn action-view"
+                  onClick={() => router.push(`/dashboard/transactions/${transaction.id}`)}
+                  title="Lihat detail"
+                >
+                  <EyeIcon className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
       {totalPages > 0 && (
         <Pagination
           currentPage={currentPage}
@@ -326,7 +412,6 @@ export default function ZakatDonationsPage() {
           onPageChange={setCurrentPage}
         />
       )}
-      </div>
-    </main>
+    </div>
   );
 }

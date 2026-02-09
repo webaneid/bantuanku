@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { eq, desc, sql, or } from "drizzle-orm";
-import { donations, invoices, zakatCalculationLogs, notifications, users, qurbanOrders, qurbanPackages, zakatDonations, zakatTypes } from "@bantuanku/db";
+import { donations, invoices, zakatCalculationLogs, notifications, users, qurbanOrders, qurbanPackages, zakatDonations, zakatTypes, transactions } from "@bantuanku/db";
 import { success, error, paginated } from "../lib/response";
 import { authMiddleware } from "../middleware/auth";
 import type { Env, Variables } from "../types";
@@ -72,8 +72,9 @@ account.get("/donations", async (c) => {
   }
   const qurbanWhereClause = or(...qurbanConditions);
 
-  // Build zakat conditions
+  // Build zakat conditions (userId can be null, so we need OR for email/phone matching)
   const zakatConditions = [];
+
   if (userDetails.email) {
     zakatConditions.push(eq(zakatDonations.donorEmail, userDetails.email.toLowerCase().trim()));
   }
@@ -83,10 +84,24 @@ account.get("/donations", async (c) => {
   if (normalizedWhatsapp && normalizedWhatsapp !== normalizedPhone) {
     zakatConditions.push(eq(zakatDonations.donorPhone, normalizedWhatsapp));
   }
+
   const zakatWhereClause = zakatConditions.length > 0 ? or(...zakatConditions) : undefined;
 
-  // Fetch donations, qurban orders, and zakat donations
-  const [donationsData, qurbanData, zakatData, donationsCount, qurbanCount, zakatCount] = await Promise.all([
+  // Build transactions conditions (new unified table - no userId field, match by email/phone only)
+  const transactionConditions = [];
+  if (userDetails.email) {
+    transactionConditions.push(eq(transactions.donorEmail, userDetails.email.toLowerCase().trim()));
+  }
+  if (normalizedPhone) {
+    transactionConditions.push(eq(transactions.donorPhone, normalizedPhone));
+  }
+  if (normalizedWhatsapp && normalizedWhatsapp !== normalizedPhone) {
+    transactionConditions.push(eq(transactions.donorPhone, normalizedWhatsapp));
+  }
+  const transactionsWhereClause = transactionConditions.length > 0 ? or(...transactionConditions) : undefined;
+
+  // Fetch donations, qurban orders, zakat donations, and new transactions
+  const [donationsData, qurbanData, donationsCount, qurbanCount, zakatData, zakatCount, transactionsData, transactionsCount] = await Promise.all([
     db.query.donations.findMany({
       where: whereClause,
       orderBy: [desc(donations.createdAt)],
@@ -161,6 +176,28 @@ account.get("/donations", async (c) => {
           .from(zakatDonations)
           .where(zakatWhereClause)
       : Promise.resolve([{ count: 0 }]),
+    transactionsWhereClause
+      ? db
+          .select({
+            id: transactions.id,
+            transactionNumber: transactions.transactionNumber,
+            productType: transactions.productType,
+            productName: transactions.productName,
+            totalAmount: transactions.totalAmount,
+            paymentStatus: transactions.paymentStatus,
+            paidAt: transactions.paidAt,
+            createdAt: transactions.createdAt,
+          })
+          .from(transactions)
+          .where(transactionsWhereClause)
+          .orderBy(desc(transactions.createdAt))
+      : Promise.resolve([]),
+    transactionsWhereClause
+      ? db
+          .select({ count: sql<number>`count(*)` })
+          .from(transactions)
+          .where(transactionsWhereClause)
+      : Promise.resolve([{ count: 0 }]),
   ]);
 
   // Transform qurban orders to match donations format
@@ -217,6 +254,30 @@ account.get("/donations", async (c) => {
     type: "zakat",
   }));
 
+  // Transform new transactions to match donations format
+  const transactionsTransformed = transactionsData.map((txn: any) => ({
+    id: txn.id,
+    referenceId: txn.transactionNumber,
+    campaignId: null,
+    amount: txn.totalAmount,
+    totalAmount: txn.totalAmount,
+    paymentStatus: txn.paymentStatus,
+    paidAt: txn.paidAt,
+    createdAt: txn.createdAt,
+    campaign: {
+      id: null,
+      title: txn.productName || "Transaksi",
+      pillar: txn.productType || "general",
+      categoryId: null,
+      category: {
+        id: null,
+        name: txn.productType === "qurban" ? "Qurban" : txn.productType === "zakat" ? "Zakat" : "Donasi",
+        slug: txn.productType || "general",
+      },
+    },
+    type: txn.productType || "donation",
+  }));
+
   // Add type to donations
   const donationsWithType = donationsData.map((d: any) => ({
     ...d,
@@ -224,13 +285,13 @@ account.get("/donations", async (c) => {
   }));
 
   // Combine and sort by createdAt
-  const combined = [...donationsWithType, ...qurbanTransformed, ...zakatTransformed].sort(
+  const combined = [...donationsWithType, ...qurbanTransformed, ...zakatTransformed, ...transactionsTransformed].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   // Apply pagination to combined results
   const paginatedData = combined.slice(offset, offset + limit);
-  const totalCount = Number(donationsCount[0]?.count || 0) + Number(qurbanCount[0]?.count || 0) + Number(zakatCount[0]?.count || 0);
+  const totalCount = Number(donationsCount[0]?.count || 0) + Number(qurbanCount[0]?.count || 0) + Number(zakatCount[0]?.count || 0) + Number(transactionsCount[0]?.count || 0);
 
   return paginated(c, paginatedData, {
     page,
@@ -331,6 +392,7 @@ account.get("/donations/:id", async (c) => {
   if (zakatDonation) {
     // Check ownership
     const isOwner =
+      (zakatDonation.userId ? zakatDonation.userId === user!.id : true) ||
       zakatDonation.donorEmail?.toLowerCase().trim() === userDetails.email?.toLowerCase().trim() ||
       (zakatDonation.donorPhone && normalizePhone(zakatDonation.donorPhone) === normalizePhone(userDetails.phone)) ||
       (zakatDonation.donorPhone && normalizePhone(zakatDonation.donorPhone) === normalizePhone(userDetails.whatsappNumber));
@@ -347,6 +409,8 @@ account.get("/donations/:id", async (c) => {
     return success(c, {
       ...zakatDonation,
       type: "zakat",
+      zakatType: zakatType ? { name: zakatType.name } : undefined,
+      zakatTypeName: zakatType?.name,
       campaign: {
         id: null,
         title: zakatType?.name || "Zakat",
