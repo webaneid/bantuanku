@@ -3,25 +3,31 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq, and, desc, sql } from "drizzle-orm";
 import {
-  donations,
-  zakatDonations,
-  qurbanOrders,
   campaigns,
   zakatTypes,
+  zakatPeriods,
   qurbanPackagePeriods,
   qurbanPackages,
   qurbanPeriods,
-  donationPayments,
-  zakatPayments,
-  qurbanPayments,
+  qurbanSavings,
+  qurbanSavingsTransactions,
   settings,
   transactions,
   transactionPayments,
+  revenueShares,
+  mitra,
+  fundraisers,
+  donatur,
+  employees,
 } from "@bantuanku/db/schema";
 import { createId } from "@bantuanku/db";
 import { uploadToGCS, type GCSConfig } from "../lib/gcs";
 import { TransactionService } from "../services/transaction";
+import { RevenueShareService } from "../services/revenue-share";
+import { WhatsAppService } from "../services/whatsapp";
+import { generatePayload, generateQrDataUrl, parseMerchantInfo } from "../services/qris-generator";
 import { requireRole, authMiddleware } from "../middleware/auth";
+import { updateBankBalance } from "../utils/bank-balance";
 import type { Env, Variables } from "../types";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -29,6 +35,15 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 // Note: Authentication is applied selectively per endpoint
 // POST /transactions allows guest checkout (no auth required)
 // GET and admin endpoints require authentication
+
+// Helper to get frontend URL: env first, fallback to organization_website setting
+const getFrontendUrl = async (db: any, env?: Env): Promise<string> => {
+  if (env?.FRONTEND_URL) return env.FRONTEND_URL.replace(/\/+$/, "");
+  const row = await db.query.settings.findFirst({
+    where: eq(settings.key, "organization_website"),
+  });
+  return (row?.value || "").replace(/\/+$/, "");
+};
 
 // Helper to fetch CDN settings from database
 const fetchCDNSettings = async (db: any): Promise<GCSConfig | null> => {
@@ -64,194 +79,67 @@ const fetchCDNSettings = async (db: any): Promise<GCSConfig | null> => {
   }
 };
 
-// Helper: Detect transaction type and fetch data
+const syncQurbanSavingsBalance = async (db: any, savingsId: string) => {
+  const savings = await db.query.qurbanSavings.findFirst({
+    where: eq(qurbanSavings.id, savingsId),
+  });
+  if (!savings) return;
+
+  const legacyVerifiedResult = await db.execute(sql`
+    SELECT COALESCE(SUM(
+      CASE
+        WHEN qst.transaction_type = 'withdrawal' THEN -qst.amount
+        ELSE qst.amount
+      END
+    ), 0)::numeric AS total
+    FROM qurban_savings_transactions qst
+    WHERE qst.savings_id = ${savingsId}
+      AND qst.status = 'verified'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM transactions t
+        WHERE t.category = 'qurban_savings'
+          AND t.product_type = 'qurban'
+          AND t.type_specific_data ->> 'legacy_savings_transaction_id' = qst.id
+      )
+  `);
+  const legacyVerified = Number((legacyVerifiedResult as any).rows?.[0]?.total || 0);
+
+  const [universalAgg] = await db
+    .select({
+      total: sql<number>`COALESCE(SUM(${transactions.totalAmount}), 0)`,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.category, "qurban_savings"),
+        eq(transactions.productType, "qurban"),
+        eq(transactions.paymentStatus, "paid"),
+        sql`${transactions.typeSpecificData} ->> 'savings_id' = ${savingsId}`
+      )
+    );
+
+  const currentAmount = Math.max(0, legacyVerified + Number(universalAgg?.total || 0));
+  const status =
+    savings.status === "cancelled" || savings.status === "converted"
+      ? savings.status
+      : currentAmount >= Number(savings.targetAmount || 0)
+        ? "completed"
+        : "active";
+
+  await db
+    .update(qurbanSavings)
+    .set({
+      currentAmount,
+      status,
+      updatedAt: new Date(),
+    })
+    .where(eq(qurbanSavings.id, savingsId));
+};
+
+// Legacy function - kept for compatibility but returns null
+// All data should now use universal transactions table
 async function detectAndFetchTransaction(db: any, id: string) {
-  // Try donations first
-  const donation = await db
-    .select({
-      id: donations.id,
-      referenceId: donations.referenceId,
-      donorName: donations.donorName,
-      donorEmail: donations.donorEmail,
-      donorPhone: donations.donorPhone,
-      isAnonymous: donations.isAnonymous,
-      amount: donations.amount,
-      totalAmount: donations.totalAmount,
-      paidAmount: donations.paidAmount,
-      paymentMethodId: donations.paymentMethodId,
-      paymentStatus: donations.paymentStatus,
-      paidAt: donations.paidAt,
-      message: donations.message,
-      createdAt: donations.createdAt,
-      campaignId: donations.campaignId,
-      campaign: {
-        id: campaigns.id,
-        title: campaigns.title,
-        pillar: campaigns.pillar,
-        slug: campaigns.slug,
-      },
-    })
-    .from(donations)
-    .leftJoin(campaigns, eq(donations.campaignId, campaigns.id))
-    .where(eq(donations.id, id))
-    .limit(1);
-
-  if (donation[0]) {
-    return {
-      type: "donation" as const,
-      data: {
-        id: donation[0].id,
-        referenceNumber: donation[0].referenceId,
-        donorName: donation[0].donorName,
-        donorEmail: donation[0].donorEmail,
-        donorPhone: donation[0].donorPhone,
-        isAnonymous: donation[0].isAnonymous,
-        amount: donation[0].totalAmount,
-        paidAmount: donation[0].paidAmount,
-        paymentMethodId: donation[0].paymentMethodId,
-        paymentStatus: donation[0].paymentStatus,
-        paidAt: donation[0].paidAt,
-        message: donation[0].message,
-        createdAt: donation[0].createdAt,
-        campaign: donation[0].campaign,
-      },
-    };
-  }
-
-  // Try zakat
-  const zakat = await db
-    .select({
-      id: zakatDonations.id,
-      referenceId: zakatDonations.referenceId,
-      donorName: zakatDonations.donorName,
-      donorEmail: zakatDonations.donorEmail,
-      donorPhone: zakatDonations.donorPhone,
-      isAnonymous: zakatDonations.isAnonymous,
-      amount: zakatDonations.amount,
-      paidAmount: zakatDonations.paidAmount,
-      paymentMethodId: zakatDonations.paymentMethodId,
-      paymentStatus: zakatDonations.paymentStatus,
-      paidAt: zakatDonations.paidAt,
-      message: zakatDonations.message,
-      calculatorData: zakatDonations.calculatorData,
-      calculatedZakat: zakatDonations.calculatedZakat,
-      createdAt: zakatDonations.createdAt,
-      zakatTypeId: zakatDonations.zakatTypeId,
-      zakatType: {
-        id: zakatTypes.id,
-        name: zakatTypes.name,
-        slug: zakatTypes.slug,
-      },
-    })
-    .from(zakatDonations)
-    .leftJoin(zakatTypes, eq(zakatDonations.zakatTypeId, zakatTypes.id))
-    .where(eq(zakatDonations.id, id))
-    .limit(1);
-
-  if (zakat[0]) {
-    return {
-      type: "zakat" as const,
-      data: {
-        id: zakat[0].id,
-        referenceNumber: zakat[0].referenceId,
-        donorName: zakat[0].donorName,
-        donorEmail: zakat[0].donorEmail,
-        donorPhone: zakat[0].donorPhone,
-        isAnonymous: zakat[0].isAnonymous,
-        amount: zakat[0].amount,
-        paidAmount: zakat[0].paidAmount,
-        paymentMethodId: zakat[0].paymentMethodId,
-        paymentStatus: zakat[0].paymentStatus,
-        paidAt: zakat[0].paidAt,
-        message: zakat[0].message,
-        createdAt: zakat[0].createdAt,
-        calculatorData: zakat[0].calculatorData,
-        calculatedZakat: zakat[0].calculatedZakat,
-        zakatType: zakat[0].zakatType,
-      },
-    };
-  }
-
-  // Try qurban
-  const qurban = await db
-    .select({
-      id: qurbanOrders.id,
-      orderNumber: qurbanOrders.orderNumber,
-      donorName: qurbanOrders.donorName,
-      donorEmail: qurbanOrders.donorEmail,
-      donorPhone: qurbanOrders.donorPhone,
-      totalAmount: qurbanOrders.totalAmount,
-      paidAmount: qurbanOrders.paidAmount,
-      paymentMethodId: qurbanOrders.paymentMethodId,
-      paymentStatus: qurbanOrders.paymentStatus,
-      notes: qurbanOrders.notes,
-      onBehalfOf: qurbanOrders.onBehalfOf,
-      quantity: qurbanOrders.quantity,
-      unitPrice: qurbanOrders.unitPrice,
-      adminFee: qurbanOrders.adminFee,
-      createdAt: qurbanOrders.createdAt,
-      orderDate: qurbanOrders.orderDate,
-      packagePeriodId: qurbanOrders.packagePeriodId,
-      packagePeriod: {
-        id: qurbanPackagePeriods.id,
-        price: qurbanPackagePeriods.price,
-        stock: qurbanPackagePeriods.stock,
-        packageId: qurbanPackagePeriods.packageId,
-        periodId: qurbanPackagePeriods.periodId,
-      },
-      package: {
-        id: qurbanPackages.id,
-        name: qurbanPackages.name,
-        description: qurbanPackages.description,
-        animalType: qurbanPackages.animalType,
-        packageType: qurbanPackages.packageType,
-      },
-      period: {
-        id: qurbanPeriods.id,
-        name: qurbanPeriods.name,
-        gregorianYear: qurbanPeriods.gregorianYear,
-        hijriYear: qurbanPeriods.hijriYear,
-      },
-    })
-    .from(qurbanOrders)
-    .leftJoin(
-      qurbanPackagePeriods,
-      eq(qurbanOrders.packagePeriodId, qurbanPackagePeriods.id)
-    )
-    .leftJoin(
-      qurbanPackages,
-      eq(qurbanPackagePeriods.packageId, qurbanPackages.id)
-    )
-    .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
-    .where(eq(qurbanOrders.id, id))
-    .limit(1);
-
-  if (qurban[0]) {
-    return {
-      type: "qurban" as const,
-      data: {
-        id: qurban[0].id,
-        referenceNumber: qurban[0].orderNumber,
-        donorName: qurban[0].donorName,
-        donorEmail: qurban[0].donorEmail,
-        donorPhone: qurban[0].donorPhone,
-        amount: qurban[0].totalAmount,
-        paidAmount: qurban[0].paidAmount,
-        paymentMethodId: qurban[0].paymentMethodId,
-        paymentStatus: qurban[0].paymentStatus,
-        message: qurban[0].notes,
-        createdAt: qurban[0].createdAt,
-        onBehalfOf: qurban[0].onBehalfOf,
-        quantity: qurban[0].quantity,
-        unitPrice: qurban[0].unitPrice,
-        adminFee: qurban[0].adminFee,
-        packagePeriod: qurban[0].packagePeriod,
-        package: qurban[0].package,
-        period: qurban[0].period,
-      },
-    };
-  }
-
   return null;
 }
 
@@ -263,6 +151,91 @@ app.post("/", async (c) => {
   try {
     const service = new TransactionService(db);
     const transaction = await service.create(body);
+
+    // WhatsApp notification: order baru
+    if (transaction.donorPhone) {
+      try {
+        const wa = new WhatsAppService(db, c.env.FRONTEND_URL);
+        const tsd = transaction.typeSpecificData as Record<string, any> | null;
+        const frontendUrl = await getFrontendUrl(db, c.env);
+
+        // Enrich zakat-specific data for WA notification (not stored at create time)
+        let zakatTypeName = "";
+        let zakatPeriodName = "";
+        let zakatHijriYear = "";
+        if (transaction.productType === "zakat" && tsd) {
+          if (tsd.zakat_type_id) {
+            const zt = await db.query.zakatTypes.findFirst({
+              where: eq(zakatTypes.id, tsd.zakat_type_id),
+            });
+            if (zt) zakatTypeName = zt.name;
+          }
+          const periodId = tsd.period_id || transaction.productId;
+          if (periodId) {
+            const zp = await db.query.zakatPeriods.findFirst({
+              where: eq(zakatPeriods.id, periodId),
+            });
+            if (zp) {
+              zakatPeriodName = zp.name;
+              zakatHijriYear = zp.hijriYear || "";
+              if (!zakatTypeName && zp.zakatTypeId) {
+                const zt2 = await db.query.zakatTypes.findFirst({
+                  where: eq(zakatTypes.id, zp.zakatTypeId),
+                });
+                if (zt2) zakatTypeName = zt2.name;
+              }
+            }
+          }
+        }
+
+        // Determine template key based on productType
+        let templateKey = "wa_tpl_order_campaign";
+        if (transaction.productType === "zakat") templateKey = "wa_tpl_order_zakat";
+        else if (transaction.productType === "qurban") templateKey = "wa_tpl_order_qurban";
+
+        const variables: Record<string, string> = {
+          customer_name: transaction.donorName,
+          customer_email: transaction.donorEmail || "",
+          customer_phone: transaction.donorPhone || "",
+          order_number: transaction.transactionNumber,
+          product_type: transaction.productType === "campaign" ? "Campaign" : transaction.productType === "zakat" ? "Zakat" : "Qurban",
+          product_name: transaction.productName,
+          quantity: String(transaction.quantity),
+          unit_price: wa.formatCurrency(transaction.unitPrice),
+          subtotal: wa.formatCurrency(transaction.subtotal),
+          admin_fee: wa.formatCurrency(transaction.adminFee || 0),
+          unique_code: String(transaction.uniqueCode || 0),
+          total_amount: wa.formatCurrency(transaction.totalAmount),
+          transfer_amount: wa.formatCurrency(transaction.totalAmount + (transaction.uniqueCode || 0)),
+          created_date: wa.formatDate(transaction.createdAt),
+          invoice_url: `${frontendUrl}/invoice/${transaction.id}`,
+          customer_message: transaction.message || "",
+          // Zakat specific
+          zakat_type: zakatTypeName || tsd?.zakat_type_name || "",
+          zakat_period: zakatPeriodName || tsd?.zakat_period_name || "",
+          zakat_hijri_year: zakatHijriYear || tsd?.hijri_year || "",
+          // Qurban specific
+          qurban_package: transaction.productName,
+          qurban_period: tsd?.period_name || "",
+          qurban_names: tsd?.participant_names || "",
+        };
+
+        await wa.send({ phone: transaction.donorPhone, templateKey, variables });
+
+        // WhatsApp notification: kirim ke admin
+        await wa.sendToAdmins("wa_tpl_admin_new_transaction", {
+          order_number: transaction.transactionNumber,
+          product_type: transaction.productType === "campaign" ? "Campaign" : transaction.productType === "zakat" ? "Zakat" : "Qurban",
+          product_name: transaction.productName,
+          customer_name: transaction.donorName,
+          transfer_amount: wa.formatCurrency(transaction.totalAmount + (transaction.uniqueCode || 0)),
+          payment_method: transaction.paymentMethodId || "manual",
+          created_date: wa.formatDate(transaction.createdAt),
+        });
+      } catch (err) {
+        console.error("[WA] order notification error:", err);
+      }
+    }
 
     return c.json({
       success: true,
@@ -285,6 +258,7 @@ app.get("/", authMiddleware, async (c) => {
     const service = new TransactionService(db);
     const result = await service.list({
       product_type: query.product_type && query.product_type.trim() !== "" ? query.product_type : undefined,
+      product_id: query.product_id && query.product_id.trim() !== "" ? query.product_id : undefined,
       status: query.status && query.status.trim() !== "" ? query.status : undefined,
       donor_email: query.donor_email && query.donor_email.trim() !== "" ? query.donor_email : undefined,
       donatur_id: query.donatur_id && query.donatur_id.trim() !== "" ? query.donatur_id : undefined,
@@ -374,7 +348,10 @@ app.get("/:id", async (c) => {
       success: true,
       data: {
         type: "transaction",
-        data: newTransaction,
+        data: {
+          ...newTransaction,
+          transferAmount: newTransaction.totalAmount + (newTransaction.uniqueCode || 0),
+        },
       },
     });
   }
@@ -730,6 +707,48 @@ app.post("/:id/upload-proof", async (c) => {
       })
       .where(eq(transactions.id, id));
 
+    // WhatsApp notification: bukti pembayaran diterima
+    try {
+      const wa = new WhatsAppService(db, c.env.FRONTEND_URL);
+
+      // For savings deposits, use savings-specific context
+      let productName = newTransaction.productName;
+      let orderNumber = newTransaction.transactionNumber;
+      const uploadSavingsId = (newTransaction.typeSpecificData as any)?.savings_id;
+      if (newTransaction.category === "qurban_savings" && uploadSavingsId) {
+        const savingsRow = await db.query.qurbanSavings.findFirst({
+          where: eq(qurbanSavings.id, uploadSavingsId),
+        });
+        if (savingsRow) {
+          productName = `Setoran Tabungan Qurban (${savingsRow.savingsNumber})`;
+          orderNumber = savingsRow.savingsNumber;
+        }
+      }
+
+      if (newTransaction.donorPhone) {
+        await wa.send({
+          phone: newTransaction.donorPhone,
+          templateKey: "wa_tpl_payment_uploaded",
+          variables: {
+            customer_name: newTransaction.donorName,
+            order_number: orderNumber,
+            product_name: productName,
+            paid_amount: wa.formatCurrency(amount),
+          },
+        });
+      }
+
+      // WhatsApp notification: kirim ke admin finance
+      await wa.sendToAdmins("wa_tpl_admin_proof_uploaded", {
+        order_number: orderNumber,
+        customer_name: newTransaction.donorName,
+        product_name: productName,
+        paid_amount: wa.formatCurrency(amount),
+      });
+    } catch (err) {
+      console.error("[WA] upload-proof notification error:", err);
+    }
+
     return c.json({
       success: true,
       message: "Payment proof uploaded successfully",
@@ -1029,6 +1048,12 @@ app.post(
         )
       );
 
+    // Update bank balance with actual transfer amount (totalAmount + uniqueCode)
+    if (transaction.bankAccountId) {
+      const actualTransferAmount = transaction.totalAmount + (transaction.uniqueCode || 0);
+      await updateBankBalance(db, transaction.bankAccountId, actualTransferAmount);
+    }
+
     // Update product collected amount based on product type
     if (transaction.productType === "campaign") {
       await db
@@ -1040,6 +1065,197 @@ app.post(
         .where(eq(campaigns.id, transaction.productId));
     }
     // Note: Zakat and Qurban don't have collected amount tracking in their tables
+
+    // Calculate revenue sharing snapshot (amil/developer/fundraiser/mitra) once transaction is paid
+    const revenueShareService = new RevenueShareService(db);
+    await revenueShareService.calculateForPaidTransaction(id);
+
+    // Sync qurban savings balance if this transaction is a savings deposit
+    const savingsId = (transaction.typeSpecificData as any)?.savings_id;
+    if (transaction.category === "qurban_savings" && savingsId) {
+      await syncQurbanSavingsBalance(db, savingsId);
+    }
+
+    // WhatsApp notification: pembayaran dikonfirmasi
+    if (transaction.donorPhone) {
+      try {
+        const wa = new WhatsAppService(db, c.env.FRONTEND_URL);
+
+        // If this is a savings deposit, send savings-specific notification
+        if (transaction.category === "qurban_savings" && savingsId) {
+          const savingsRow = await db.query.qurbanSavings.findFirst({
+            where: eq(qurbanSavings.id, savingsId),
+          });
+          if (savingsRow) {
+            const targetAmount = Number(savingsRow.targetAmount || 0);
+            const newCurrentAmount = Number(savingsRow.currentAmount || 0);
+
+            // Count verified deposits
+            const [legacyCount] = await db
+              .select({ count: sql<number>`COALESCE(COUNT(*), 0)` })
+              .from(qurbanSavingsTransactions)
+              .where(
+                and(
+                  eq(qurbanSavingsTransactions.savingsId, savingsId),
+                  eq(qurbanSavingsTransactions.transactionType, "deposit"),
+                  eq(qurbanSavingsTransactions.status, "verified"),
+                  sql`NOT EXISTS (
+                    SELECT 1 FROM transactions t
+                    WHERE t.category = 'qurban_savings' AND t.product_type = 'qurban'
+                      AND t.type_specific_data ->> 'legacy_savings_transaction_id' = ${qurbanSavingsTransactions.id}
+                  )`
+                )
+              );
+            const [universalCount] = await db
+              .select({ count: sql<number>`COALESCE(COUNT(*), 0)` })
+              .from(transactions)
+              .where(
+                and(
+                  eq(transactions.category, "qurban_savings"),
+                  eq(transactions.productType, "qurban"),
+                  eq(transactions.paymentStatus, "paid"),
+                  sql`${transactions.typeSpecificData} ->> 'savings_id' = ${savingsId}`
+                )
+              );
+            const totalVerified = Number(legacyCount?.count || 0) + Number(universalCount?.count || 0);
+            const progressPct = targetAmount > 0 ? Math.round((newCurrentAmount / targetAmount) * 100) : 0;
+
+            await wa.send({
+              phone: transaction.donorPhone,
+              templateKey: "wa_tpl_savings_deposit",
+              variables: {
+                customer_name: savingsRow.donorName,
+                savings_number: savingsRow.savingsNumber,
+                installment_paid: String(totalVerified),
+                installment_count: String(savingsRow.installmentCount || 0),
+                paid_amount: wa.formatCurrency(transaction.totalAmount),
+                savings_current: wa.formatCurrency(newCurrentAmount),
+                savings_remaining: wa.formatCurrency(Math.max(0, targetAmount - newCurrentAmount)),
+                savings_progress: `${progressPct}%`,
+              },
+            });
+
+            // If completed, also send completed notification
+            if (newCurrentAmount >= targetAmount) {
+              const pkg = savingsRow.targetPackageId
+                ? await db.query.qurbanPackages.findFirst({ where: eq(qurbanPackages.id, savingsRow.targetPackageId) })
+                : null;
+              await wa.send({
+                phone: transaction.donorPhone,
+                templateKey: "wa_tpl_savings_completed",
+                variables: {
+                  customer_name: savingsRow.donorName,
+                  savings_number: savingsRow.savingsNumber,
+                  qurban_package: pkg?.name || "",
+                  savings_current: wa.formatCurrency(newCurrentAmount),
+                },
+              });
+            }
+          }
+        } else {
+          // Generic payment approved notification
+          const frontendUrl = await getFrontendUrl(db, c.env);
+          await wa.send({
+            phone: transaction.donorPhone,
+            templateKey: "wa_tpl_payment_approved",
+            variables: {
+              customer_name: transaction.donorName,
+              order_number: transaction.transactionNumber,
+              product_name: transaction.productName,
+              total_amount: wa.formatCurrency(transaction.totalAmount),
+              paid_date: wa.formatDate(new Date()),
+              invoice_url: `${frontendUrl}/invoice/${transaction.id}`,
+            },
+          });
+        }
+      } catch (err) {
+        console.error("[WA] approve-payment notification error:", err);
+      }
+    }
+
+    // WhatsApp notification: mitra & fundraiser
+    try {
+      const revenueShare = await db.query.revenueShares.findFirst({
+        where: eq(revenueShares.transactionId, id),
+      });
+
+      if (revenueShare) {
+        const wa = new WhatsAppService(db, c.env.FRONTEND_URL);
+
+        // Mitra notification
+        if (revenueShare.mitraId && revenueShare.mitraAmount > 0) {
+          try {
+            const mitraRecord = await db.query.mitra.findFirst({
+              where: eq(mitra.id, revenueShare.mitraId),
+            });
+            const mitraPhone = mitraRecord?.whatsappNumber || mitraRecord?.phone;
+            if (mitraRecord && mitraPhone) {
+              await wa.send({
+                phone: mitraPhone,
+                templateKey: "wa_tpl_mitra_donation_received",
+                variables: {
+                  mitra_name: mitraRecord.name,
+                  product_name: transaction.productName,
+                  donor_name: transaction.donorName,
+                  donation_amount: wa.formatCurrency(transaction.totalAmount),
+                  mitra_amount: wa.formatCurrency(revenueShare.mitraAmount),
+                  paid_date: wa.formatDate(new Date()),
+                  mitra_balance: wa.formatCurrency(mitraRecord.currentBalance || 0),
+                },
+              });
+            }
+          } catch (err) {
+            console.error("[WA] mitra notification error:", err);
+          }
+        }
+
+        // Fundraiser notification
+        if (revenueShare.fundraiserId && revenueShare.fundraiserAmount > 0) {
+          try {
+            const fundraiser = await db.query.fundraisers.findFirst({
+              where: eq(fundraisers.id, revenueShare.fundraiserId),
+              with: {
+                donatur: true,
+                employee: true,
+              },
+            });
+            if (fundraiser) {
+              const fundraiserPhone = fundraiser.employee
+                ? (fundraiser.employee.whatsappNumber || fundraiser.employee.phone)
+                : fundraiser.donatur
+                  ? (fundraiser.donatur.whatsappNumber || fundraiser.donatur.phone)
+                  : null;
+              const fundraiserName = fundraiser.employee
+                ? fundraiser.employee.name
+                : fundraiser.donatur
+                  ? fundraiser.donatur.name
+                  : "";
+
+              if (fundraiserPhone) {
+                await wa.send({
+                  phone: fundraiserPhone,
+                  templateKey: "wa_tpl_fundraiser_referral",
+                  variables: {
+                    fundraiser_name: fundraiserName,
+                    product_name: transaction.productName,
+                    donor_name: transaction.donorName,
+                    donation_amount: wa.formatCurrency(transaction.totalAmount),
+                    commission_percentage: `${revenueShare.fundraiserPercentage}%`,
+                    commission_amount: wa.formatCurrency(revenueShare.fundraiserAmount),
+                    total_referrals: String(fundraiser.totalReferrals || 0),
+                    fundraiser_balance: wa.formatCurrency(fundraiser.currentBalance || 0),
+                  },
+                });
+              }
+            }
+          } catch (err) {
+            console.error("[WA] fundraiser notification error:", err);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[WA] mitra/fundraiser notification error:", err);
+    }
 
     return c.json({
       success: true,
@@ -1118,11 +1334,149 @@ app.post(
         )
       );
 
+    // WhatsApp notification: pembayaran ditolak
+    if (transaction.donorPhone) {
+      try {
+        const wa = new WhatsAppService(db, c.env.FRONTEND_URL);
+        const frontendUrl = await getFrontendUrl(db, c.env);
+
+        // For savings deposits, use savings-specific context
+        let productName = transaction.productName;
+        let orderNumber = transaction.transactionNumber;
+        const txSavingsId = (transaction.typeSpecificData as any)?.savings_id;
+        if (transaction.category === "qurban_savings" && txSavingsId) {
+          const savingsRow = await db.query.qurbanSavings.findFirst({
+            where: eq(qurbanSavings.id, txSavingsId),
+          });
+          if (savingsRow) {
+            productName = `Setoran Tabungan Qurban (${savingsRow.savingsNumber})`;
+            orderNumber = savingsRow.savingsNumber;
+          }
+        }
+
+        await wa.send({
+          phone: transaction.donorPhone,
+          templateKey: "wa_tpl_payment_rejected",
+          variables: {
+            customer_name: transaction.donorName,
+            order_number: orderNumber,
+            product_name: productName,
+            total_amount: wa.formatCurrency(transaction.totalAmount),
+            invoice_url: `${frontendUrl}/invoice/${transaction.id}`,
+          },
+        });
+      } catch (err) {
+        console.error("[WA] reject-payment notification error:", err);
+      }
+    }
+
     return c.json({
       success: true,
       message: "Payment rejected successfully",
     });
   }
 );
+
+// GET /transactions/:id/qris - Generate dynamic QRIS QR code per transaction
+app.get("/:id/qris", async (c) => {
+  const id = c.req.param("id");
+  const db = c.get("db");
+
+  // 1. Load transaction
+  const service = new TransactionService(db);
+  const transaction = await service.getById(id);
+
+  if (!transaction) {
+    return c.json({ success: false, message: "Transaction not found" }, 404);
+  }
+
+  if (transaction.paymentStatus !== "pending" && transaction.paymentStatus !== "partial") {
+    return c.json({ success: false, message: "QRIS only available for pending transactions" }, 400);
+  }
+
+  const paymentMethodId = transaction.paymentMethodId;
+  if (!paymentMethodId) {
+    return c.json({ success: false, message: "No payment method selected" }, 400);
+  }
+
+  // 2. Load QRIS accounts from settings
+  const allSettings = await db.query.settings.findMany();
+  const paymentSettings = allSettings.filter((s: any) => s.category === "payment");
+  const qrisAccountsSetting = paymentSettings.find((s: any) => s.key === "payment_qris_accounts");
+
+  if (!qrisAccountsSetting?.value) {
+    return c.json({ success: false, message: "No QRIS accounts configured" }, 400);
+  }
+
+  let qrisAccounts: any[] = [];
+  try {
+    qrisAccounts = JSON.parse(qrisAccountsSetting.value);
+  } catch {
+    return c.json({ success: false, message: "Invalid QRIS configuration" }, 500);
+  }
+
+  // 3. Find matching QRIS account — by ID first, then by program priority
+  let qrisAccount = qrisAccounts.find((acc: any) => acc.id === paymentMethodId);
+
+  if (!qrisAccount) {
+    // Determine program from transaction
+    let program = 'general';
+    if (transaction.productType === 'zakat') program = 'zakat';
+    else if (transaction.productType === 'qurban') program = 'qurban';
+    else if (transaction.productType === 'campaign') {
+      const tsd = transaction.typeSpecificData as any;
+      program = tsd?.pillar || 'infaq';
+    }
+
+    // Priority: specific program QRIS > general QRIS
+    qrisAccount = qrisAccounts.find((acc: any) => {
+      const programs = Array.isArray(acc.programs) ? acc.programs : ['general'];
+      return programs.some((p: string) => p.toLowerCase() === program.toLowerCase() && p.toLowerCase() !== 'general');
+    });
+
+    if (!qrisAccount) {
+      qrisAccount = qrisAccounts.find((acc: any) => {
+        const programs = Array.isArray(acc.programs) ? acc.programs : ['general'];
+        return programs.some((p: string) => p.toLowerCase() === 'general');
+      });
+    }
+  }
+
+  if (!qrisAccount) {
+    return c.json({ success: false, message: "QRIS account not found for this payment method" }, 400);
+  }
+
+  // 4. Check if dynamic
+  if (qrisAccount.isDynamic && qrisAccount.emvPayload) {
+    const amount = transaction.totalAmount + (transaction.uniqueCode || 0);
+    const payload = generatePayload(qrisAccount.emvPayload, amount, transaction.transactionNumber);
+    const qrDataUrl = await generateQrDataUrl(payload);
+    const merchantInfo = parseMerchantInfo(qrisAccount.emvPayload);
+
+    return c.json({
+      success: true,
+      data: {
+        qrDataUrl,
+        payload,
+        amount,
+        merchantName: qrisAccount.merchantName || merchantInfo.merchantName,
+        isDynamic: true,
+        expiresAt: null,
+      },
+    });
+  }
+
+  // 5. Fallback: return static image
+  return c.json({
+    success: true,
+    data: {
+      imageUrl: qrisAccount.imageUrl || null,
+      amount: transaction.totalAmount + (transaction.uniqueCode || 0),
+      merchantName: qrisAccount.name || "QRIS",
+      isDynamic: false,
+      expiresAt: null,
+    },
+  });
+});
 
 export default app;
