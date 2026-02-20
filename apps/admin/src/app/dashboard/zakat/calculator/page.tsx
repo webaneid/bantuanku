@@ -830,7 +830,6 @@ export default function ZakatCalculatorPage() {
                     handleReset();
                   }}
                   placeholder="Pilih jenis zakat..."
-                  isLoading={isLoading}
                 />
               </div>
             </div>

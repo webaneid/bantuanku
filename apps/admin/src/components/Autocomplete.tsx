@@ -16,6 +16,7 @@ interface AutocompleteProps {
   className?: string;
   disabled?: boolean;
   allowClear?: boolean;
+  isLoading?: boolean;
 }
 
 export default function Autocomplete({
@@ -26,6 +27,7 @@ export default function Autocomplete({
   className = "",
   disabled = false,
   allowClear = true,
+  isLoading = false,
 }: AutocompleteProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -126,7 +128,9 @@ export default function Autocomplete({
 
       {isOpen && !disabled && (
         <div className="autocomplete-dropdown">
-          {filteredOptions.length > 0 ? (
+          {isLoading ? (
+            <div className="autocomplete-empty">Loading...</div>
+          ) : filteredOptions.length > 0 ? (
             <ul className="autocomplete-options">
               {filteredOptions.map((option, index) => (
                 <li

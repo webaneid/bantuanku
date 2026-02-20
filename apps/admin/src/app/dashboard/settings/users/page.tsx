@@ -255,6 +255,7 @@ export default function UsersSettingsPage() {
       password: "",
       roleId: user.roleIds?.[0] || "",
       isActive: user.isActive,
+      employeeId: "",
     });
     setIsModalOpen(true);
   };

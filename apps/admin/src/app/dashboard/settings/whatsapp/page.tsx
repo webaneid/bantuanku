@@ -723,13 +723,11 @@ export default function WhatsAppSettingsPage() {
       {/* Tabs */}
       <div className="mb-6">
         <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-          {(
-            [
-              { key: "config", label: "Konfigurasi GOWA" },
-              { key: "templates", label: "Template Pesan" },
-              ...(isDeveloper ? [{ key: "bot", label: "Bot AI" }] : []),
-            ] as const
-          ).map((tab) => (
+          {([
+            { key: "config", label: "Konfigurasi GOWA" },
+            { key: "templates", label: "Template Pesan" },
+            ...(isDeveloper ? [{ key: "bot", label: "Bot AI" }] : []),
+          ] as Array<{ key: TabType; label: string }>).map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}

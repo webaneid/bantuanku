@@ -229,8 +229,6 @@ export default function MustahiqModal({
     next?.();
   };
 
-  if (!isOpen) return null;
-
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-content max-w-3xl" onClick={(e) => e.stopPropagation()}>

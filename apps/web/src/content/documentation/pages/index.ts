@@ -2,7 +2,7 @@
 import { pengenalanDoc } from "./pengenalan";
 import { loginDanAksesDoc } from "./login-dan-akses";
 import { navigasiDashboardDoc } from "./navigasi-dashboard";
-import { uploadGambarDoc } from "./panduan-upload-gambar";
+import { panduanUploadGambarDoc as uploadGambarDoc } from "./panduan-upload-gambar";
 import { konsepMitraDoc } from "./konsep-mitra";
 import { alurPencairanDoc } from "./alur-pencairan";
 import { caraMembuatCampaignDoc } from "./cara-membuat-campaign";
@@ -15,7 +15,7 @@ import { kodeUnikDoc } from "./kode-unik";
 import { qurbanDoc } from "./qurban";
 import { zakatDoc } from "./zakat";
 import { fundraiserDoc } from "./fundraiser";
-import { bagiHasilAmilDoc } from "./bagi-hasil-amil";
+import { amilRevenueDoc as bagiHasilAmilDoc } from "./bagi-hasil-amil";
 import { whatsappNotificationDoc } from "./whatsapp-notifikasi";
 import { whatsappAiDoc } from "./whatsapp-ai";
 
