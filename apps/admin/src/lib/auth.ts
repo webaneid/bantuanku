@@ -1,5 +1,7 @@
+"use client";
+
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import api from "./api";
 
 interface User {
@@ -59,6 +61,7 @@ export const useAuth = create<AuthState>()(
     }),
     {
       name: "auth-storage",
+      storage: createJSONStorage(() => localStorage),
       // Don't persist isLoading state (Firefox fix)
       partialize: (state) => ({
         user: state.user,

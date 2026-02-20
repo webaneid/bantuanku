@@ -30,6 +30,15 @@ type Setting = {
   category: string;
 };
 
+type ApiSettingType = "string" | "number" | "boolean" | "json";
+
+const normalizeSettingType = (type?: string): ApiSettingType => {
+  if (type === "number" || type === "boolean" || type === "json") {
+    return type;
+  }
+  return "string";
+};
+
 // ---------------------------------------------------------------------------
 // Template definitions — mirrors blueprint exactly
 // ---------------------------------------------------------------------------
@@ -509,7 +518,7 @@ export default function WhatsAppSettingsPage() {
         key,
         value,
         category: "whatsapp",
-        type: existing?.type || "string",
+        type: normalizeSettingType(existing?.type),
         label: existing?.label || key,
         description: existing?.description || "",
       };
@@ -581,7 +590,7 @@ export default function WhatsAppSettingsPage() {
         key,
         value,
         category: "whatsapp",
-        type: existing?.type || "string",
+        type: normalizeSettingType(existing?.type),
         label: existing?.label || key,
         description: existing?.description || "",
       };
