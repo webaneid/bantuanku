@@ -14,8 +14,16 @@ export async function fetchSeoSettings(): Promise<Record<string, any>> {
   }
 
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
-    const response = await fetch(`${apiUrl}/settings`, {
+    const baseApiUrl =
+      process.env.API_INTERNAL_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:50245/v1";
+    const normalizedBaseApiUrl = baseApiUrl.replace(/\/$/, "");
+    const settingsUrl = normalizedBaseApiUrl.endsWith("/v1")
+      ? `${normalizedBaseApiUrl}/settings`
+      : `${normalizedBaseApiUrl}/v1/settings`;
+
+    const response = await fetch(settingsUrl, {
       next: { revalidate: 300 }, // Revalidate every 5 minutes
     });
 
