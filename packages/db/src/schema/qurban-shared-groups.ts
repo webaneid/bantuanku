@@ -36,12 +36,10 @@ export const qurbanSharedGroupsRelations = relations(qurbanSharedGroups, ({ one,
     fields: [qurbanSharedGroups.packageId],
     references: [qurbanPackages.id],
   }),
-  orders: many(qurbanOrders),
   executions: many(qurbanExecutions),
 }));
 
 // Import after declaration
-import { qurbanOrders } from "./qurban-orders";
 import { qurbanExecutions } from "./qurban-executions";
 
 export type QurbanSharedGroup = typeof qurbanSharedGroups.$inferSelect;

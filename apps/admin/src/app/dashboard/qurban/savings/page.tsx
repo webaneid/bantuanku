@@ -12,6 +12,7 @@ import Autocomplete from "@/components/Autocomplete";
 import Pagination from "@/components/Pagination";
 import { formatRupiah } from "@/lib/format";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import { useAuth } from "@/lib/auth";
 
 interface Savings {
   id: string;
@@ -42,6 +43,8 @@ interface BankAccount {
 }
 
 export default function QurbanSavingsPage() {
+  const { user } = useAuth();
+  const isMitra = user?.roles?.includes("mitra") && user.roles.length === 1;
   const queryClient = useQueryClient();
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [filterPeriod, setFilterPeriod] = useState<string>("");
@@ -77,7 +80,8 @@ export default function QurbanSavingsPage() {
     queryKey: ["qurban-periods-list"],
     queryFn: async () => {
       const response = await api.get("/admin/qurban/periods");
-      return response.data.data || response.data;
+      const result = response.data?.data || response.data;
+      return Array.isArray(result) ? result : [];
     },
   });
 
@@ -88,6 +92,7 @@ export default function QurbanSavingsPage() {
       const response = await api.get("/admin/donatur");
       return response.data.data || response.data;
     },
+    enabled: !isMitra && showAddSavingsModal,
   });
 
   // Fetch bank accounts
@@ -106,6 +111,7 @@ export default function QurbanSavingsPage() {
       }
       return [];
     },
+    enabled: !isMitra && showAddSavingsModal,
   });
 
   // Fetch savings
@@ -129,6 +135,7 @@ export default function QurbanSavingsPage() {
       return response.data.data?.length || 0;
     },
     refetchInterval: 30000, // Auto refresh every 30s
+    enabled: !isMitra,
   });
 
   // Fetch settings (amil/admin fees)
@@ -140,6 +147,7 @@ export default function QurbanSavingsPage() {
     },
     refetchOnWindowFocus: false,
     retry: 1,
+    enabled: !isMitra && showAddSavingsModal,
   });
 
   // Autocomplete options
@@ -165,7 +173,7 @@ export default function QurbanSavingsPage() {
       const response = await api.get(`/admin/qurban/packages?period_id=${savingsFormData.targetPeriodId}`);
       return response.data.data || response.data;
     },
-    enabled: !!savingsFormData.targetPeriodId,
+    enabled: !!savingsFormData.targetPeriodId && !isMitra,
   });
 
   // Admin fee settings (amil)
@@ -193,8 +201,13 @@ export default function QurbanSavingsPage() {
     return baseFee / divisor;
   };
 
+  const getPackagePrice = (pkg?: any): number => {
+    if (!pkg) return 0;
+    return Number(pkg.periods?.[0]?.price) || 0;
+  };
+
   const packageAdminFee = calculateAdminFee(selectedPackage);
-  const packageBasePrice = selectedPackage?.price || 0;
+  const packageBasePrice = getPackagePrice(selectedPackage);
   const packageTotalWithAdmin = selectedPackage ? packageBasePrice + packageAdminFee : Number(savingsFormData.targetAmount) || 0;
 
   // Auto-calculate installment amount
@@ -378,26 +391,30 @@ export default function QurbanSavingsPage() {
           <p className="text-sm text-gray-600 mt-1">Kelola tabungan qurban donatur</p>
         </div>
         <div className="flex gap-3 items-center">
-          <Link
-            href="/dashboard/qurban/savings/pending-deposits"
-            className="btn btn-md relative"
-            style={{ backgroundColor: "#d2aa55", color: "white" }}
-          >
-            <CheckCircle className="h-4 w-4" />
-            Verifikasi Setoran
-            {pendingCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-danger-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
-                {pendingCount}
-              </span>
-            )}
-          </Link>
-          <button
-            onClick={() => setShowAddSavingsModal(true)}
-            className="btn btn-primary btn-md"
-          >
-            <Plus className="h-4 w-4" />
-            Tambah Tabungan
-          </button>
+          {!isMitra && (
+            <Link
+              href="/dashboard/qurban/savings/pending-deposits"
+              className="btn btn-md relative"
+              style={{ backgroundColor: "#d2aa55", color: "white" }}
+            >
+              <CheckCircle className="h-4 w-4" />
+              Verifikasi Setoran
+              {pendingCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-danger-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                  {pendingCount}
+                </span>
+              )}
+            </Link>
+          )}
+          {!isMitra && (
+            <button
+              onClick={() => setShowAddSavingsModal(true)}
+              className="btn btn-primary btn-md"
+            >
+              <Plus className="h-4 w-4" />
+              Tambah Tabungan
+            </button>
+          )}
           <div className="bg-info-50 border border-info-200 text-info-700 px-4 py-2 rounded-lg">
             <span className="font-semibold">{savings.filter(s => s.status === "active").length}</span> aktif
           </div>
@@ -489,7 +506,7 @@ export default function QurbanSavingsPage() {
                       <div>
                         <div className="font-medium mono text-sm">Rp {formatRupiah(saving.installmentAmount)}</div>
                         <div className="text-xs text-gray-500">
-                          {saving.installmentCount ? `${saving.installmentCount}x cicilan` : ''} · {getStatusLabel(saving.installmentFrequency)}
+                          {saving.installmentAmount && saving.targetAmount ? `${Math.ceil(saving.targetAmount / saving.installmentAmount)}x cicilan` : ''} · {getStatusLabel(saving.installmentFrequency)}
                         </div>
                       </div>
                     </td>
@@ -581,7 +598,7 @@ export default function QurbanSavingsPage() {
                     <span className="table-card-row-value mono font-semibold">
                       Rp {formatRupiah(saving.installmentAmount)}
                       <div className="text-xs text-gray-500 font-normal">
-                        {saving.installmentCount ? `${saving.installmentCount}x cicilan` : ''} · {getStatusLabel(saving.installmentFrequency)}
+                        {saving.installmentAmount && saving.targetAmount ? `${Math.ceil(saving.targetAmount / saving.installmentAmount)}x cicilan` : ''} · {getStatusLabel(saving.installmentFrequency)}
                       </div>
                     </span>
                   </div>
@@ -704,26 +721,24 @@ export default function QurbanSavingsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">Paket (Opsional)</label>
-                    <select
+                    <Autocomplete
+                      options={packages.map((pkg: any) => ({
+                        value: pkg.id,
+                        label: `${pkg.name} - Rp ${formatRupiah(getPackagePrice(pkg))}`,
+                      }))}
                       value={savingsFormData.targetPackageId}
-                      onChange={(e) => {
-                        const pkg = packages.find((p: any) => p.id === e.target.value);
+                      onChange={(value) => {
+                        const pkg = packages.find((p: any) => p.id === value);
+                        const price = getPackagePrice(pkg);
                         setSavingsFormData({
                           ...savingsFormData,
-                          targetPackageId: e.target.value,
-                          targetAmount: pkg ? String(pkg.price + calculateAdminFee(pkg)) : savingsFormData.targetAmount,
+                          targetPackageId: value,
+                          targetAmount: pkg ? String(price + calculateAdminFee(pkg)) : savingsFormData.targetAmount,
                         });
                       }}
-                      className="w-full px-3 py-2 border rounded-lg"
+                      placeholder="Pilih Paket"
                       disabled={!savingsFormData.targetPeriodId}
-                    >
-                      <option value="">Pilih Paket</option>
-                      {packages.map((pkg: any) => (
-                        <option key={pkg.id} value={pkg.id}>
-                          {pkg.name} - Rp {formatRupiah(pkg.price)}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </div>
                   {selectedPackage && (
                     <>
@@ -824,16 +839,15 @@ export default function QurbanSavingsPage() {
                   {savingsFormData.installmentFrequency === 'monthly' && (
                     <div className="col-span-2">
                       <label className="block text-sm font-medium mb-1">Tanggal Cicilan</label>
-                      <select
+                      <Autocomplete
+                        options={Array.from({ length: 28 }, (_, i) => ({
+                          value: String(i + 1),
+                          label: `Tanggal ${i + 1}`,
+                        }))}
                         value={savingsFormData.installmentDay}
-                        onChange={(e) => setSavingsFormData({ ...savingsFormData, installmentDay: e.target.value })}
-                        className="w-full px-3 py-2 border rounded-lg"
-                      >
-                        <option value="">Pilih tanggal</option>
-                        {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
-                          <option key={day} value={day}>Tanggal {day}</option>
-                        ))}
-                      </select>
+                        onChange={(value) => setSavingsFormData({ ...savingsFormData, installmentDay: value })}
+                        placeholder="Pilih tanggal"
+                      />
                     </div>
                   )}
                   {savingsFormData.installmentFrequency === 'weekly' && (
@@ -885,7 +899,6 @@ export default function QurbanSavingsPage() {
         onClose={() => setShowDonorModal(false)}
         onSuccess={handleDonorSuccess}
         zIndex={1060}
-        disablePassword={true}
       />
 
       <FeedbackDialog

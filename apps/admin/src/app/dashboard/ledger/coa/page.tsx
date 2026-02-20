@@ -29,6 +29,8 @@ export default function COAPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCOA, setSelectedCOA] = useState<COA | null>(null);
   const [isViewMode, setIsViewMode] = useState(false);
+  const [coaToDelete, setCoaToDelete] = useState<COA | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [feedback, setFeedback] = useState<{
     open: boolean;
     type: "success" | "error";
@@ -105,9 +107,15 @@ export default function COAPage() {
       });
       return;
     }
-    if (confirm(`Apakah Anda yakin ingin menghapus akun "${coa.name}"?`)) {
-      deleteMutation.mutate(coa.id);
-    }
+    setCoaToDelete(coa);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!coaToDelete) return;
+    deleteMutation.mutate(coaToDelete.id);
+    setIsDeleteModalOpen(false);
+    setCoaToDelete(null);
   };
 
   const handleModalSuccess = () => {
@@ -344,6 +352,38 @@ export default function COAPage() {
         coa={selectedCOA}
         isViewMode={isViewMode}
       />
+
+      {isDeleteModalOpen && coaToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Hapus Akun</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Apakah Anda yakin ingin menghapus akun &quot;{coaToDelete.name}&quot;?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setCoaToDelete(null);
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-md"
+                onClick={handleConfirmDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <FeedbackDialog
         open={feedback.open}

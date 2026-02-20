@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ProgramCard } from '@/components/organisms';
-import { fetchCampaigns, calculateDaysLeft, getImageUrl } from '@/services/campaigns';
+import { fetchCampaigns, calculateDaysLeft, getImageUrlByVariant } from '@/services/campaigns';
 import { fetchCategories } from '@/services/categories';
 import Autocomplete from '@/components/Autocomplete';
 
@@ -15,7 +15,7 @@ function mapCampaignToCardProps(campaign: any) {
     slug: campaign.slug,
     title: campaign.title,
     description: campaign.description,
-    image: getImageUrl(campaign.imageUrl),
+    image: getImageUrlByVariant(campaign.imageUrl, ['medium', 'thumbnail', 'large']),
     categoryName,
     currentAmount: campaign.collected || 0,
     targetAmount: campaign.goal || 0,

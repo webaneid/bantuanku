@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { EyeIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import Autocomplete from "@/components/Autocomplete";
@@ -93,7 +93,7 @@ export default function QurbanOrdersPage() {
       const response = await api.get("/transactions", { params });
       return response.data;
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   const transactions = data?.data || [];

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, bigint } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, bigint, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { users } from "./user";
@@ -30,6 +30,15 @@ export const transactionPayments = pgTable("transaction_payments", {
   // Status
   status: text("status").default("pending").notNull(), // pending, verified, rejected
   rejectionReason: text("rejection_reason"),
+
+  // Gateway Integration
+  externalId: text("external_id"),
+  paymentCode: text("payment_code"),
+  paymentUrl: text("payment_url"),
+  qrCode: text("qr_code"),
+  expiredAt: timestamp("expired_at", { precision: 3, mode: "date" }),
+  gatewayCode: text("gateway_code"),
+  webhookPayload: jsonb("webhook_payload"),
 
   // Ledger Integration
   ledgerEntryId: text("ledger_entry_id"),

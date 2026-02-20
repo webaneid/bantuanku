@@ -103,10 +103,10 @@ export default function TestComponentsPage() {
             <div>
               <h3 className="text-lg font-semibold mb-3">Program Badges</h3>
               <div className="flex flex-wrap gap-3">
-                <ProgramBadge program="zakat" />
-                <ProgramBadge program="qurban" />
-                <ProgramBadge program="infaq" />
-                <ProgramBadge program="wakaf" />
+                <ProgramBadge label="Zakat" />
+                <ProgramBadge label="Qurban" />
+                <ProgramBadge label="Infaq" />
+                <ProgramBadge label="Wakaf" />
               </div>
             </div>
 

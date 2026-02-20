@@ -1,39 +1,68 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { CogIcon, CreditCardIcon, UsersIcon, ScaleIcon, PaintBrushIcon } from "@heroicons/react/24/outline";
+import { CogIcon, CreditCardIcon, UsersIcon, ScaleIcon, PaintBrushIcon, ChatBubbleLeftRightIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { useAuth } from "@/lib/auth";
 
-const menuItems = [
+const allMenuItems = [
   {
     label: "General Settings",
     icon: CogIcon,
     href: "/dashboard/settings/general",
+    roles: ["super_admin", "admin_finance"],
   },
   {
     label: "Administrasi Amil",
     icon: ScaleIcon,
     href: "/dashboard/settings/amil",
+    roles: ["super_admin", "admin_finance"],
   },
   {
     label: "Payments",
     icon: CreditCardIcon,
     href: "/dashboard/settings/payments",
+    roles: ["super_admin", "admin_finance"],
   },
   {
     label: "Users",
     icon: UsersIcon,
     href: "/dashboard/settings/users",
+    roles: ["super_admin"],
   },
   {
     label: "Front-end",
     icon: PaintBrushIcon,
     href: "/dashboard/settings/frontend",
+    roles: ["super_admin"],
+  },
+  {
+    label: "SEO Halaman",
+    icon: MagnifyingGlassIcon,
+    href: "/dashboard/settings/seo",
+    roles: ["super_admin"],
+  },
+  {
+    label: "Notifikasi WhatsApp",
+    icon: ChatBubbleLeftRightIcon,
+    href: "/dashboard/settings/whatsapp",
+    roles: ["super_admin"],
+  },
+  {
+    label: "Developer",
+    icon: CogIcon,
+    href: "/dashboard/settings/developer",
+    roles: ["super_admin", "admin_campaign", "admin_finance"],
   },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { user } = useAuth();
+  const userRoles = user?.roles || [];
+  const menuItems = allMenuItems.filter((item) =>
+    userRoles.some((role) => item.roles.includes(role))
+  );
 
   const isActive = (href: string) => pathname?.startsWith(href);
 

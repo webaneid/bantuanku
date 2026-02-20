@@ -6,7 +6,7 @@
 export interface URLOption {
   value: string;
   label: string;
-  category: 'Static' | 'Program' | 'Zakat' | 'Qurban' | 'Kategori' | 'Pilar';
+  category: 'Static' | 'Pages' | 'Program' | 'Zakat' | 'Qurban' | 'Kategori' | 'Pilar';
   description?: string;
 }
 
@@ -31,10 +31,22 @@ const STATIC_URLS: URLOption[] = [
     description: 'Halaman daftar jenis zakat',
   },
   {
+    value: '/zakat/laporan',
+    label: 'Laporan Zakat Publik',
+    category: 'Static',
+    description: 'Halaman laporan zakat publik (tabel + filter)',
+  },
+  {
     value: '/qurban',
     label: 'Qurban',
     category: 'Static',
     description: 'Halaman daftar paket qurban',
+  },
+  {
+    value: '/qurban/laporan',
+    label: 'Laporan Qurban Publik',
+    category: 'Static',
+    description: 'Halaman laporan qurban publik (tabel + filter)',
   },
 ];
 
@@ -101,6 +113,24 @@ export async function fetchAllURLs(): Promise<URLOption[]> {
       console.error('Failed to fetch campaigns:', error);
     }
 
+    // Fetch static pages (published)
+    try {
+      const pagesRes = await fetch(`${API_URL}/pages`);
+      const pagesData = await pagesRes.json();
+      if (pagesData.success && pagesData.data) {
+        pagesData.data.forEach((page: any) => {
+          urls.push({
+            value: `/page/${page.slug}`,
+            label: `Page: ${page.title}`,
+            category: 'Pages',
+            description: `Halaman statis ${page.title}`,
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch pages:', error);
+    }
+
     // Fetch zakat types
     try {
       const zakatRes = await fetch(`${API_URL}/zakat/types`);
@@ -150,7 +180,7 @@ export async function fetchAllURLs(): Promise<URLOption[]> {
   // Sort URLs by category and then by label
   return urls.sort((a, b) => {
     if (a.category !== b.category) {
-      const categoryOrder = ['Static', 'Program', 'Kategori', 'Pilar', 'Zakat', 'Qurban'];
+      const categoryOrder = ['Static', 'Pages', 'Program', 'Kategori', 'Pilar', 'Zakat', 'Qurban'];
       return categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category);
     }
     return a.label.localeCompare(b.label, 'id-ID');

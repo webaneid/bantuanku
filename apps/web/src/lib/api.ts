@@ -2,6 +2,29 @@ import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:50245/v1";
 
+function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+
+  const directToken = localStorage.getItem("token");
+  if (directToken) return directToken;
+
+  const persistedAuth = localStorage.getItem("auth-storage");
+  if (!persistedAuth) return null;
+
+  try {
+    const parsed = JSON.parse(persistedAuth);
+    const persistedToken = parsed?.state?.token || parsed?.token;
+    if (typeof persistedToken === "string" && persistedToken) {
+      localStorage.setItem("token", persistedToken);
+      return persistedToken;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 export const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -12,11 +35,9 @@ export const api = axios.create({
 
 // Add token to requests
 api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+  const token = getStoredToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
 
   // If the request data is FormData, remove Content-Type header

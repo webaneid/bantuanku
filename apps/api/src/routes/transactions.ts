@@ -1064,7 +1064,10 @@ app.post(
         })
         .where(eq(campaigns.id, transaction.productId));
     }
-    // Note: Zakat and Qurban don't have collected amount tracking in their tables
+    // Qurban shared group: confirm slot when payment is approved
+    if (transaction.productType === "qurban") {
+      await service.confirmSharedGroupSlot(id);
+    }
 
     // Calculate revenue sharing snapshot (amil/developer/fundraiser/mitra) once transaction is paid
     const revenueShareService = new RevenueShareService(db);
@@ -1363,6 +1366,7 @@ app.post(
             product_name: productName,
             total_amount: wa.formatCurrency(transaction.totalAmount),
             invoice_url: `${frontendUrl}/invoice/${transaction.id}`,
+            rejection_reason: reason || "Bukti pembayaran tidak valid atau tidak sesuai.",
           },
         });
       } catch (err) {

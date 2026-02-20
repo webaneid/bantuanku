@@ -136,7 +136,7 @@ export default function URLAutocomplete({
     }
   };
 
-  const categoryOrder = ['Static', 'Program', 'Kategori', 'Pilar', 'Zakat', 'Qurban'];
+  const categoryOrder = ['Static', 'Pages', 'Program', 'Kategori', 'Pilar', 'Zakat', 'Qurban'];
   const sortedCategories = Object.keys(groupedOptions).sort(
     (a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b)
   );

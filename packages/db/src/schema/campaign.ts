@@ -1,9 +1,10 @@
-import { pgTable, text, timestamp, boolean, bigint, integer, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, bigint, integer, jsonb, varchar } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { categories } from "./category";
 import { users } from "./user";
 import { employees } from "./employee";
+import { mitra } from "./mitra";
 
 export const campaigns = pgTable("campaigns", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -24,10 +25,24 @@ export const campaigns = pgTable("campaigns", {
   endDate: timestamp("end_date", { precision: 3, mode: "date" }),
   isFeatured: boolean("is_featured").default(false).notNull(),
   isUrgent: boolean("is_urgent").default(false).notNull(),
+
+  // SEO fields
+  metaTitle: varchar("meta_title", { length: 70 }),
+  metaDescription: varchar("meta_description", { length: 170 }),
+  focusKeyphrase: varchar("focus_keyphrase", { length: 100 }),
+  canonicalUrl: text("canonical_url"),
+  noIndex: boolean("no_index").default(false),
+  noFollow: boolean("no_follow").default(false),
+  ogTitle: varchar("og_title", { length: 70 }),
+  ogDescription: varchar("og_description", { length: 200 }),
+  ogImageUrl: text("og_image_url"),
+  seoScore: integer("seo_score").default(0),
+
   status: text("status").default("draft").notNull(),
   publishedAt: timestamp("published_at", { precision: 3, mode: "date" }),
   createdBy: text("created_by").references(() => users.id),
   coordinatorId: text("coordinator_id").references(() => employees.id),
+  mitraId: text("mitra_id").references(() => mitra.id),
   createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
 });
@@ -51,6 +66,10 @@ export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
   creator: one(users, {
     fields: [campaigns.createdBy],
     references: [users.id],
+  }),
+  mitra: one(mitra, {
+    fields: [campaigns.mitraId],
+    references: [mitra.id],
   }),
   updates: many(campaignUpdates),
 }));

@@ -6,7 +6,8 @@ import { Dialog, Transition } from '@headlessui/react';
 import { formatRupiahFull } from '@/lib/format';
 import { Button } from '@/components/atoms';
 import { useCart } from '@/contexts/CartContext';
-import toast from 'react-hot-toast';
+import toast from '@/lib/feedback-toast';
+import { useI18n } from '@/lib/i18n/provider';
 
 interface DonationConfirmModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ export default function DonationConfirmModal({
   campaign,
   fidyahData,
 }: DonationConfirmModalProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const { addToCart } = useCart();
 
@@ -54,7 +56,7 @@ export default function DonationConfirmModal({
       fidyahData,
     });
 
-    toast.success('Program berhasil ditambahkan ke keranjang!');
+    toast.success(t('campaignDetail.confirmModal.toasts.addedToCart'));
     onClose();
   };
 
@@ -79,7 +81,7 @@ export default function DonationConfirmModal({
       fidyahData,
     });
 
-    toast.success('Mengarahkan ke checkout...');
+    toast.success(t('campaignDetail.confirmModal.toasts.redirectCheckout'));
     router.push('/checkout');
   };
 
@@ -115,7 +117,9 @@ export default function DonationConfirmModal({
                     as="h3"
                     className="text-lg font-semibold text-gray-900"
                   >
-                    Konfirmasi {programType === 'wakaf' ? 'Wakaf' : 'Donasi'}
+                    {programType === 'wakaf'
+                      ? t('campaignDetail.confirmModal.titleWakaf')
+                      : t('campaignDetail.confirmModal.titleDonation')}
                   </Dialog.Title>
                   <button
                     onClick={onClose}
@@ -129,21 +133,25 @@ export default function DonationConfirmModal({
 
                 <div className="mt-4">
                   <div className="bg-primary-50 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-gray-600 mb-1">Nominal {programType === 'wakaf' ? 'Wakaf' : 'Donasi'}</p>
+                    <p className="text-sm text-gray-600 mb-1">
+                      {programType === 'wakaf'
+                        ? t('campaignDetail.confirmModal.amountLabelWakaf')
+                        : t('campaignDetail.confirmModal.amountLabelDonation')}
+                    </p>
                     <p className="text-2xl font-bold text-primary-600 mono">
                       {formatRupiahFull(amount)}
                     </p>
                   </div>
 
                   <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                    <p className="text-sm text-gray-600 mb-1">Program</p>
+                    <p className="text-sm text-gray-600 mb-1">{t('campaignDetail.confirmModal.programLabel')}</p>
                     <p className="font-semibold text-gray-900" style={{ fontSize: '15px' }}>
                       {campaignTitle}
                     </p>
                   </div>
 
                   <p className="text-gray-600 mb-6" style={{ fontSize: '15px' }}>
-                    Pilih salah satu opsi di bawah untuk melanjutkan:
+                    {t('campaignDetail.confirmModal.chooseAction')}
                   </p>
 
                   <div className="space-y-3">
@@ -156,7 +164,9 @@ export default function DonationConfirmModal({
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
-                      {programType === 'wakaf' ? 'Wakaf' : 'Donasi'} Sekarang
+                      {programType === 'wakaf'
+                        ? t('campaignDetail.confirmModal.actions.wakafNow')
+                        : t('campaignDetail.confirmModal.actions.donateNow')}
                     </Button>
 
                     {/* Add to Cart and Go to Cart */}
@@ -167,7 +177,7 @@ export default function DonationConfirmModal({
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
-                      Tambah ke Keranjang & Lihat
+                      {t('campaignDetail.confirmModal.actions.addToCartAndView')}
                     </button>
 
                     {/* Add to Cart and Continue Shopping */}
@@ -178,7 +188,7 @@ export default function DonationConfirmModal({
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
-                      Tambah ke Keranjang
+                      {t('campaignDetail.confirmModal.actions.addToCart')}
                     </button>
 
                     {/* Browse Other Programs */}
@@ -192,7 +202,7 @@ export default function DonationConfirmModal({
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
-                      Cari Program Lain
+                      {t('campaignDetail.confirmModal.actions.browsePrograms')}
                     </button>
                   </div>
                 </div>

@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/atoms";
 import { formatRupiahFull } from "@/lib/format";
-import toast from "react-hot-toast";
+import toast from "@/lib/feedback-toast";
 import Image from "next/image";
 import api from "@/lib/api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:50245/v1";
+import { useI18n } from "@/lib/i18n/provider";
 
 interface PaymentMethod {
   id: string;
@@ -21,8 +20,8 @@ interface PaymentMethod {
     accountName?: string;
     accountNumber?: string;
     bankName?: string;
-    nmid?: string;
     imageUrl?: string;
+    isDynamic?: boolean;
   };
 }
 
@@ -34,6 +33,7 @@ export default function UniversalPaymentDetailSelector({
   transactionId,
 }: UniversalPaymentDetailSelectorProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const [transaction, setTransaction] = useState<any>(null);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(
     null,
@@ -46,6 +46,8 @@ export default function UniversalPaymentDetailSelector({
   const [transferAmount, setTransferAmount] = useState<number>(0);
   const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [methodType, setMethodType] = useState<string | null>(null);
+  const [qrisData, setQrisData] = useState<any>(null);
+  const [isLoadingQris, setIsLoadingQris] = useState(false);
 
   useEffect(() => {
     loadPaymentData();
@@ -56,7 +58,7 @@ export default function UniversalPaymentDetailSelector({
       const methodTypeValue = sessionStorage.getItem("selectedMethodType");
 
       if (!methodTypeValue) {
-        toast.error("Silakan pilih metode pembayaran terlebih dahulu");
+        toast.error(t("payment.chooseMethodFirst"));
         router.push(`/invoice/${transactionId}/payment-method`);
         return;
       }
@@ -67,7 +69,7 @@ export default function UniversalPaymentDetailSelector({
       const txnResponse = await api.get(`/transactions/${transactionId}`);
 
       if (!txnResponse.data.success) {
-        toast.error("Transaksi tidak ditemukan");
+        toast.error(t("payment.transactionNotFound"));
         router.push("/");
         return;
       }
@@ -75,9 +77,9 @@ export default function UniversalPaymentDetailSelector({
       const txn = txnResponse.data.data;
       setTransaction(txn);
 
-      // Set default transfer amount
+      // Set default transfer amount (include uniqueCode for manual bank transfer)
       const amount = txn.type === 'transaction'
-        ? txn.data.totalAmount
+        ? txn.data.totalAmount + (txn.data.uniqueCode || 0)
         : (txn.data.amount || txn.data.totalAmount);
       setTransferAmount(amount);
 
@@ -109,8 +111,8 @@ export default function UniversalPaymentDetailSelector({
       }
 
       // Fetch payment methods
-      const methodsResponse = await fetch(`${API_URL}/payments/methods`);
-      const data = await methodsResponse.json();
+      const methodsResponse = await api.get(`/payments/methods`);
+      const data = methodsResponse.data;
 
       if (data.success) {
         const methods = data.data || [];
@@ -125,55 +127,80 @@ export default function UniversalPaymentDetailSelector({
 
         setAvailableMethods(filteredByProgram);
 
-        // Auto-select first method if only one available
-        if (filteredByProgram.length === 1) {
+        // Auto-select first available method for smoother flow
+        if (filteredByProgram.length > 0) {
           setSelectedMethod(filteredByProgram[0]);
         }
       }
     } catch (error) {
       console.error("Error loading payment data:", error);
-      toast.error("Gagal memuat data pembayaran");
+      toast.error(t("payment.loadDataFailed"));
       router.push("/");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const filterMethodsByProgram = (methods: PaymentMethod[], program: string): PaymentMethod[] => {
-    // First try to find methods specifically for this program
-    const specificMethods = methods.filter(method => {
-      const methodPrograms = method.programs && method.programs.length > 0
-        ? method.programs
-        : ['general'];
+  // Fetch dynamic QRIS when a dynamic QRIS method is selected
+  useEffect(() => {
+    if (selectedMethod && selectedMethod.type === 'qris' && selectedMethod.details?.isDynamic) {
+      fetchDynamicQris();
+    } else {
+      setQrisData(null);
+    }
+  }, [selectedMethod]);
 
-      return methodPrograms.some(methodProgram =>
-        methodProgram.toLowerCase() === program.toLowerCase()
-      );
+  const fetchDynamicQris = async () => {
+    if (!selectedMethod) return;
+    setIsLoadingQris(true);
+    try {
+      // Confirm payment method first so backend knows which QRIS account
+      await api.post(`/transactions/${transactionId}/confirm-payment`, {
+        paymentMethodId: selectedMethod.code,
+      });
+
+      const response = await api.get(`/transactions/${transactionId}/qris`);
+      if (response.data.success) {
+        setQrisData(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching dynamic QRIS:", error);
+      setQrisData(null);
+    } finally {
+      setIsLoadingQris(false);
+    }
+  };
+
+  const filterMethodsByProgram = (methods: PaymentMethod[], program: string): PaymentMethod[] => {
+    // Priority: specific program match > general fallback
+    // Find methods that specifically match the program (not just general)
+    const specificMatch = methods.filter(method => {
+      const programs = method.programs && method.programs.length > 0 ? method.programs : ['general'];
+      return programs.some(p => p.toLowerCase() === program.toLowerCase() && p.toLowerCase() !== 'general');
     });
 
-    // If found, return specific methods
-    if (specificMethods.length > 0) {
-      return specificMethods;
+    if (specificMatch.length > 0) {
+      return specificMatch;
     }
 
-    // Otherwise, return methods marked as 'general' or 'infaq' as fallback
-    const fallbackMethods = methods.filter(method => {
-      const methodPrograms = method.programs && method.programs.length > 0
-        ? method.programs
-        : ['general'];
-
-      return methodPrograms.some(methodProgram =>
-        methodProgram.toLowerCase() === 'general' || methodProgram.toLowerCase() === 'infaq'
-      );
+    // No specific match — fall back to general
+    const generalMatch = methods.filter(method => {
+      const programs = method.programs && method.programs.length > 0 ? method.programs : ['general'];
+      return programs.some(p => p.toLowerCase() === 'general');
     });
 
-    return fallbackMethods;
+    if (generalMatch.length > 0) {
+      return generalMatch;
+    }
+
+    // Safety fallback: if no specific/general tagging, still show configured methods
+    return methods;
   };
 
   const getTotalAmount = () => {
     if (!transaction) return 0;
     return transaction.type === 'transaction'
-      ? transaction.data.totalAmount
+      ? transaction.data.totalAmount + (transaction.data.uniqueCode || 0)
       : (transaction.data.amount || transaction.data.totalAmount || 0);
   };
 
@@ -189,14 +216,14 @@ export default function UniversalPaymentDetailSelector({
       "application/pdf",
     ];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Hanya file gambar (JPG, PNG) atau PDF yang diperbolehkan");
+      toast.error(t("payment.allowedFiles"));
       return;
     }
 
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error("Ukuran file maksimal 5MB");
+      toast.error(t("payment.maxFileSize"));
       return;
     }
 
@@ -218,27 +245,27 @@ export default function UniversalPaymentDetailSelector({
     // Validate - metode pembayaran harus dipilih
     if (!selectedMethod) {
       if (methodType === "bank_transfer") {
-        toast.error("Silakan pilih rekening bank terlebih dahulu");
+        toast.error(t("payment.chooseBankFirst"));
       } else if (methodType === "qris") {
-        toast.error("Silakan pilih QRIS terlebih dahulu");
+        toast.error(t("payment.chooseQrisFirst"));
       } else {
-        toast.error("Silakan pilih metode pembayaran terlebih dahulu");
+        toast.error(t("payment.chooseMethodFirst"));
       }
       return;
     }
 
     if (!transferAmount || transferAmount <= 0) {
-      toast.error("Jumlah transfer harus lebih dari 0");
+      toast.error(t("payment.amountMustPositive"));
       return;
     }
 
     if (!paymentDate) {
-      toast.error("Tanggal pembayaran harus diisi");
+      toast.error(t("payment.paymentDateRequired"));
       return;
     }
 
     if (!paymentProof) {
-      toast.error("Silakan upload bukti pembayaran");
+      toast.error(t("payment.uploadProofRequired"));
       return;
     }
 
@@ -256,31 +283,30 @@ export default function UniversalPaymentDetailSelector({
       formData.append("amount", transferAmount.toString());
       formData.append("paymentDate", paymentDate);
 
-      const response = await fetch(
-        `${API_URL}/transactions/${transactionId}/upload-proof`,
+      const response = await api.post(
+        `/transactions/${transactionId}/upload-proof`,
+        formData,
         {
-          method: "POST",
-          body: formData,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         },
       );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Failed to upload proof");
+      if (!response.data?.success) {
+        throw new Error(response.data?.message || "Failed to upload proof");
       }
 
       // Clear session storage
       sessionStorage.removeItem("selectedMethodType");
 
-      toast.success(
-        "Bukti pembayaran berhasil dikirim! Menunggu verifikasi admin.",
-      );
+      toast.success(t("payment.proofUploaded"));
 
       // Redirect back to invoice
       router.push(`/invoice/${transactionId}`);
     } catch (error: any) {
       console.error("Error confirming payment:", error);
-      toast.error(error.message || "Gagal mengkonfirmasi pembayaran");
+      toast.error(error.message || t("payment.confirmFailed"));
     } finally {
       setIsConfirming(false);
     }
@@ -310,11 +336,11 @@ export default function UniversalPaymentDetailSelector({
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Detail Pembayaran
+            {t("payment.detailTitle")}
           </h1>
           <p className="text-gray-600">
-            {isBankTransfer && "Silakan transfer ke rekening berikut"}
-            {isQris && "Silakan scan QR Code dengan aplikasi e-wallet Anda"}
+            {isBankTransfer && t("payment.detailBankDesc")}
+            {isQris && t("payment.detailQrisDesc")}
           </p>
         </div>
 
@@ -322,13 +348,13 @@ export default function UniversalPaymentDetailSelector({
         {availableMethods.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
             <p className="text-gray-500">
-              Tidak ada metode pembayaran yang tersedia
+              {t("payment.noDetailMethods")}
             </p>
             <Link
               href={`/invoice/${transactionId}/payment-method`}
               className="mt-4 inline-block"
             >
-              <Button variant="outline">Kembali</Button>
+              <Button variant="outline">{t("invoice.back")}</Button>
             </Link>
           </div>
         ) : (
@@ -337,7 +363,11 @@ export default function UniversalPaymentDetailSelector({
             {availableMethods.length > 1 && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">
-                  Pilih {isBankTransfer ? "Rekening" : "QR Code"}
+                  {t("payment.chooseAccountOrQr", {
+                    label: isBankTransfer
+                      ? t("payment.accountLabel")
+                      : t("payment.qrLabel"),
+                  })}
                 </h3>
                 <div className="space-y-3">
                   {availableMethods.map((method) => (
@@ -353,9 +383,9 @@ export default function UniversalPaymentDetailSelector({
                       <div className="font-semibold text-gray-900">
                         {method.name}
                       </div>
-                      {isBankTransfer && method.details?.accountName && (
-                        <div className="text-sm text-gray-600 mt-1">
-                          a.n {method.details.accountName}
+                          {isBankTransfer && method.details?.accountName && (
+                            <div className="text-sm text-gray-600 mt-1">
+                              a.n {method.details.accountName}
                         </div>
                       )}
                     </button>
@@ -368,21 +398,21 @@ export default function UniversalPaymentDetailSelector({
             {selectedMethod && (
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="font-semibold text-gray-900 mb-4">
-                  Detail {isBankTransfer ? "Rekening" : "QRIS"}
+                  {isBankTransfer
+                    ? t("payment.accountDetail")
+                    : t("payment.qrisDetail")}
                 </h3>
 
                 {isBankTransfer && selectedMethod.details && (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm text-gray-600">Bank</label>
+                      <label className="text-sm text-gray-600">{t("payment.bank")}</label>
                       <p className="font-semibold text-gray-900 text-lg">
                         {selectedMethod.details.bankName || selectedMethod.name}
                       </p>
                     </div>
                     <div>
-                      <label className="text-sm text-gray-600">
-                        Nomor Rekening
-                      </label>
+                      <label className="text-sm text-gray-600">{t("payment.accountNumber")}</label>
                       <div className="flex items-center gap-2">
                         <p className="font-mono font-semibold text-gray-900 text-lg">
                           {selectedMethod.details.accountNumber}
@@ -392,7 +422,7 @@ export default function UniversalPaymentDetailSelector({
                             navigator.clipboard.writeText(
                               selectedMethod.details?.accountNumber || "",
                             );
-                            toast.success("Nomor rekening disalin");
+                            toast.success(t("payment.copiedAccountNumber"));
                           }}
                           className="text-primary-600 hover:text-primary-700"
                         >
@@ -413,7 +443,7 @@ export default function UniversalPaymentDetailSelector({
                       </div>
                     </div>
                     <div>
-                      <label className="text-sm text-gray-600">Atas Nama</label>
+                      <label className="text-sm text-gray-600">{t("payment.accountName")}</label>
                       <p className="font-semibold text-gray-900 text-lg">
                         {selectedMethod.details.accountName}
                       </p>
@@ -421,20 +451,61 @@ export default function UniversalPaymentDetailSelector({
                   </div>
                 )}
 
-                {isQris && selectedMethod.details?.imageUrl && (
+                {isQris && (
                   <div className="text-center">
-                    <div className="inline-block bg-white p-4 rounded-lg border-2 border-gray-200">
-                      <Image
-                        src={selectedMethod.details.imageUrl}
-                        alt="QR Code"
-                        width={256}
-                        height={256}
-                        className="mx-auto"
-                      />
-                    </div>
-                    <p className="text-sm text-gray-600 mt-4">
-                      Scan QR Code dengan aplikasi e-wallet Anda
-                    </p>
+                    {isLoadingQris ? (
+                      <div className="inline-block p-8">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                        <p className="text-sm text-gray-600 mt-4">{t("payment.generatingQr")}</p>
+                      </div>
+                    ) : qrisData?.isDynamic && qrisData?.qrDataUrl ? (
+                      <>
+                        <div className="inline-block bg-white p-4 rounded-lg border-2 border-green-200">
+                          <img
+                            src={qrisData.qrDataUrl}
+                            alt="QRIS Dynamic"
+                            width={256}
+                            height={256}
+                            className="mx-auto"
+                          />
+                        </div>
+                        <div className="mt-4 space-y-1">
+                          <p className="text-sm font-semibold text-green-700">
+                            {t("payment.dynamicAmountLocked", {
+                              amount: formatRupiahFull(qrisData.amount),
+                            })}
+                          </p>
+                          {qrisData.merchantName && (
+                            <p className="text-xs text-gray-500">{qrisData.merchantName}</p>
+                          )}
+                          <p className="text-sm text-gray-600">
+                            {t("payment.scanQrAutoAmount")}
+                          </p>
+                        </div>
+                      </>
+                    ) : (qrisData?.imageUrl || selectedMethod?.details?.imageUrl) ? (
+                      <>
+                        <div className="inline-block bg-white p-4 rounded-lg border-2 border-gray-200">
+                          <Image
+                            src={qrisData?.imageUrl || selectedMethod.details!.imageUrl!}
+                            alt="QR Code"
+                            width={256}
+                            height={256}
+                            className="mx-auto"
+                          />
+                        </div>
+                        <div className="mt-4 space-y-1">
+                          <p className="text-sm font-semibold text-primary-700">
+                            {t("payment.nominal", {
+                              amount: formatRupiahFull(getTotalAmount()),
+                            })}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {t("payment.scanQr")}
+                          </p>
+                        </div>
+                      </>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -442,23 +513,46 @@ export default function UniversalPaymentDetailSelector({
 
             {/* Total Amount */}
             <div className="bg-primary-50 rounded-lg p-6 border-2 border-primary-200">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-700 font-medium">
-                  Total Pembayaran
-                </span>
-                <span className="text-3xl font-bold text-primary-600 mono">
-                  {formatRupiahFull(getTotalAmount())}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600">
-                Transfer tepat sesuai nominal untuk mempercepat verifikasi
+              {transaction?.type === 'transaction' && (transaction.data.uniqueCode || 0) > 0 ? (
+                <>
+                  <div className="flex justify-between items-center text-sm mb-1">
+                    <span className="text-gray-600">{t("payment.totalDonation")}</span>
+                    <span className="font-medium text-gray-900">{formatRupiahFull(transaction.data.totalAmount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm mb-2">
+                    <span className="text-gray-600">{t("payment.uniqueCode")}</span>
+                    <span className="font-medium text-gray-900">+{formatRupiahFull(transaction.data.uniqueCode)}</span>
+                  </div>
+                  <div className="border-t border-primary-200 pt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700 font-semibold">{t("payment.totalTransfer")}</span>
+                      <span className="text-3xl font-bold text-primary-600 mono">
+                        {formatRupiahFull(getTotalAmount())}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-700 font-medium">
+                    {t("payment.totalPayment")}
+                  </span>
+                  <span className="text-3xl font-bold text-primary-600 mono">
+                    {formatRupiahFull(getTotalAmount())}
+                  </span>
+                </div>
+              )}
+              <p className="text-sm text-gray-600 mt-2">
+                {(transaction?.type === 'transaction' && (transaction.data.uniqueCode || 0) > 0)
+                  ? t("payment.uniqueCodeInfo")
+                  : t("payment.exactAmountInfo")}
               </p>
             </div>
 
             {/* Upload Section */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h3 className="font-semibold text-gray-900 mb-4">
-                Konfirmasi Pembayaran
+                {t("payment.confirmPaymentTitle")}
               </h3>
 
               <div className="space-y-4">
@@ -468,7 +562,7 @@ export default function UniversalPaymentDetailSelector({
                     htmlFor="transfer-amount"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    Jumlah Transfer <span className="text-red-500">*</span>
+                    {t("payment.transferAmount")} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
@@ -489,20 +583,20 @@ export default function UniversalPaymentDetailSelector({
                   <p className="mt-2 text-sm text-gray-500">
                     {transferAmount === getTotalAmount() ? (
                       <span className="text-green-600">
-                        ✓ Sesuai dengan total pembayaran
+                        {t("payment.matchAmount")}
                       </span>
                     ) : transferAmount > getTotalAmount() ? (
                       <span className="text-blue-600">
-                        Transfer lebih Rp{" "}
-                        {formatRupiahFull(transferAmount - getTotalAmount())}{" "}
-                        (kelebihan akan dikembalikan)
+                        {t("payment.overAmount", {
+                          amount: formatRupiahFull(transferAmount - getTotalAmount()),
+                        })}
                       </span>
                     ) : transferAmount < getTotalAmount() &&
                       transferAmount > 0 ? (
                       <span className="text-amber-600">
-                        ⚠ Transfer kurang Rp{" "}
-                        {formatRupiahFull(getTotalAmount() - transferAmount)}{" "}
-                        (pembayaran sebagian)
+                        {t("payment.underAmount", {
+                          amount: formatRupiahFull(getTotalAmount() - transferAmount),
+                        })}
                       </span>
                     ) : null}
                   </p>
@@ -514,7 +608,7 @@ export default function UniversalPaymentDetailSelector({
                     htmlFor="payment-date"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    Tanggal Pembayaran <span className="text-red-500">*</span>
+                    {t("payment.paymentDate")} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="date"
@@ -525,14 +619,14 @@ export default function UniversalPaymentDetailSelector({
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                   <p className="mt-2 text-sm text-gray-500">
-                    Tanggal saat Anda melakukan transfer
+                    {t("payment.paymentDateHint")}
                   </p>
                 </div>
 
                 {/* Upload Bukti Transfer */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bukti Transfer <span className="text-red-500">*</span>
+                    {t("payment.proofTransfer")} <span className="text-red-500">*</span>
                   </label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
                     <input
@@ -564,7 +658,7 @@ export default function UniversalPaymentDetailSelector({
                             }}
                             className="text-red-600 hover:text-red-700 text-sm"
                           >
-                            Hapus
+                            {t("payment.remove")}
                           </button>
                         </div>
                       ) : paymentProof ? (
@@ -593,7 +687,7 @@ export default function UniversalPaymentDetailSelector({
                             }}
                             className="text-red-600 hover:text-red-700 text-sm"
                           >
-                            Hapus
+                            {t("payment.remove")}
                           </button>
                         </div>
                       ) : (
@@ -612,10 +706,10 @@ export default function UniversalPaymentDetailSelector({
                             />
                           </svg>
                           <p className="mt-2 text-sm text-gray-600">
-                            Klik untuk upload bukti pembayaran
+                            {t("payment.uploadHint")}
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
-                            JPG, PNG, atau PDF (Maks. 5MB)
+                            {t("payment.uploadFormat")}
                           </p>
                         </div>
                       )}
@@ -637,7 +731,7 @@ export default function UniversalPaymentDetailSelector({
                   className="w-full"
                   disabled={isConfirming}
                 >
-                  Ganti Metode
+                  {t("payment.changeMethod")}
                 </Button>
               </Link>
               <Button
@@ -652,7 +746,7 @@ export default function UniversalPaymentDetailSelector({
                   isConfirming
                 }
               >
-                {isConfirming ? "Mengirim..." : "Konfirmasi Pembayaran"}
+                {isConfirming ? t("payment.sending") : t("payment.confirmPayment")}
               </Button>
             </div>
           </div>

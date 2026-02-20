@@ -96,11 +96,26 @@ export default function QurbanInvoicePage({
     overdue: "bg-rose-50 text-rose-700 border border-rose-200",
   };
 
+  const paymentStatusLabelMap: Record<string, string> = {
+    pending: "Belum Bayar",
+    processing: "Diproses",
+    paid: "Lunas",
+    partial: "Sebagian",
+    overdue: "Terlambat",
+  };
+
   const orderStatusMap: Record<string, string> = {
     pending: "bg-amber-50 text-amber-700 border border-amber-200",
     confirmed: "bg-emerald-50 text-emerald-700 border border-emerald-200",
     cancelled: "bg-rose-50 text-rose-700 border border-rose-200",
     executed: "bg-blue-50 text-blue-700 border border-blue-200",
+  };
+
+  const orderStatusLabelMap: Record<string, string> = {
+    pending: "Menunggu Konfirmasi",
+    confirmed: "Dikonfirmasi",
+    cancelled: "Dibatalkan",
+    executed: "Selesai",
   };
 
 
@@ -198,13 +213,7 @@ export default function QurbanInvoicePage({
                           statusBadgeMap[order.payment_status] || "bg-gray-100 text-gray-700"
                         }`}
                       >
-                        {{
-                          pending: "Belum Bayar",
-                          processing: "Diproses",
-                          paid: "Lunas",
-                          partial: "Sebagian",
-                          overdue: "Terlambat",
-                        }[order.payment_status] || order.payment_status}
+                        {paymentStatusLabelMap[order.payment_status] || order.payment_status}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -214,12 +223,7 @@ export default function QurbanInvoicePage({
                           orderStatusMap[order.order_status] || "bg-gray-100 text-gray-700"
                         }`}
                       >
-                        {{
-                          pending: "Menunggu Konfirmasi",
-                          confirmed: "Dikonfirmasi",
-                          cancelled: "Dibatalkan",
-                          executed: "Selesai",
-                        }[order.order_status] || order.order_status}
+                        {orderStatusLabelMap[order.order_status] || order.order_status}
                       </span>
                     </div>
                   </div>

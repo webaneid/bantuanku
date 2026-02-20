@@ -4,9 +4,10 @@ export interface QurbanSavings {
   id: string;
   savingsNumber: string;
   donorName: string;
+  donorPhone?: string;
   targetPackagePeriodId?: string; // New field for package-period combination
-  targetPeriodId: string; // Legacy field
-  targetPackageId: string; // Legacy field
+  targetPeriodId?: string | null; // Legacy field
+  targetPackageId?: string | null; // Legacy field
   targetAmount: number;
   currentAmount: number;
   installmentFrequency: 'weekly' | 'monthly' | 'custom';
@@ -15,7 +16,6 @@ export interface QurbanSavings {
   installmentDay: number;
   startDate: string;
   status: 'active' | 'completed' | 'converted' | 'cancelled';
-  convertedToOrderId?: string;
   createdAt: string;
   targetPackage?: {
     id: string;
@@ -25,13 +25,14 @@ export interface QurbanSavings {
 
 export interface SavingsTransaction {
   id: string;
+  transactionId?: string;
   savingsId: string;
   transactionNumber: string;
   amount: number;
-  paymentMethod: string;
-  paymentChannel: string;
+  paymentMethod?: string;
+  paymentChannel?: string;
   paymentProof?: string;
-  status: 'pending' | 'verified' | 'rejected';
+  status: 'pending' | 'verified' | 'rejected' | 'draft' | 'processing' | 'paid';
   notes?: string;
   verifiedAt?: string;
   verifiedBy?: string;
@@ -50,6 +51,7 @@ export async function getSavingsDetail(id: string): Promise<QurbanSavings> {
 
 export async function createSavings(data: {
   donorName: string;
+  donorPhone: string;
   targetPeriodId: string;
   targetPackagePeriodId?: string; // New field for package-period combination
   targetPackageId?: string; // Legacy field (optional for backward compatibility)
@@ -66,8 +68,8 @@ export async function createSavings(data: {
 
 export async function depositSavings(savingsId: string, data: {
   amount: number;
-  paymentMethod: string;
-  paymentChannel: string;
+  paymentMethod?: string;
+  paymentChannel?: string;
   paymentProof?: string;
   notes?: string;
 }): Promise<SavingsTransaction> {

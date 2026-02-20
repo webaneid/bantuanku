@@ -18,12 +18,26 @@ import {
 } from "@heroicons/react/24/outline";
 import api from "@/lib/api";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth";
 
 export default function ViewCampaignPage() {
   const router = useRouter();
   const params = useParams();
   const campaignId = params.id as string;
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"keuangan" | "laporan" | "donatur">("keuangan");
+
+  // Fetch current user's employee record if program_coordinator
+  const { data: currentEmployee } = useQuery({
+    queryKey: ["current-employee"],
+    queryFn: async () => {
+      if (!user?.roles?.includes("program_coordinator")) return null;
+      const response = await api.get("/admin/employees");
+      const employees = response.data.data;
+      return employees.find((emp: any) => emp.userId === user.id);
+    },
+    enabled: !!user?.roles?.includes("program_coordinator"),
+  });
 
   // Fetch campaign data
   const { data: campaignData, isLoading } = useQuery({
@@ -44,25 +58,34 @@ export default function ViewCampaignPage() {
     enabled: !!campaignId,
   });
 
-  // Fetch donations for this campaign
-  const { data: donationsData } = useQuery({
-    queryKey: ["donations", campaignId],
+  // Fetch transactions (uang masuk) for this campaign
+  const { data: transactionsData } = useQuery({
+    queryKey: ["transactions", campaignId],
     queryFn: async () => {
-      const response = await api.get(`/admin/donations?campaignId=${campaignId}&limit=100`);
+      const response = await api.get(`/admin/transactions?product_type=campaign&product_id=${campaignId}&limit=1000`);
       return response.data.data || [];
     },
     enabled: !!campaignId,
   });
 
-  // Fetch disbursements (ledger) for this campaign
+  // Fetch disbursements (penyaluran) for this campaign
   const { data: disbursementsData } = useQuery({
     queryKey: ["disbursements", campaignId],
     queryFn: async () => {
-      const response = await api.get(`/admin/ledger?campaignId=${campaignId}&status=paid&limit=1000`);
+      const response = await api.get(`/admin/disbursements?disbursement_type=campaign&reference_id=${campaignId}&status=paid&limit=1000`);
       return response.data.data || [];
     },
     enabled: !!campaignId,
   });
+
+  // Permission check
+  const canEdit = (() => {
+    if (user?.roles?.includes("super_admin") || user?.roles?.includes("admin_campaign")) return true;
+    if (user?.roles?.includes("program_coordinator") && campaignData && currentEmployee) {
+      return campaignData.coordinatorId === currentEmployee.id || campaignData.createdBy === user.id;
+    }
+    return false;
+  })();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -97,6 +120,11 @@ export default function ViewCampaignPage() {
     const collected = Number(campaignData.collected || 0);
     const goal = Number(campaignData.goal || 1);
     return Math.min((collected / goal) * 100, 100);
+  };
+
+  const calculateTotalDisbursed = () => {
+    if (!disbursementsData) return 0;
+    return disbursementsData.reduce((sum: number, d: any) => sum + Number(d.transferredAmount || d.amount || 0), 0);
   };
 
   if (isLoading) {
@@ -149,13 +177,15 @@ export default function ViewCampaignPage() {
             </p>
           </div>
         </div>
-        <Link
-          href={`/dashboard/campaigns/${campaignId}/edit`}
-          className="btn btn-primary btn-md"
-        >
-          <PencilIcon className="w-5 h-5" />
-          Edit Campaign
-        </Link>
+        {canEdit && (
+          <Link
+            href={`/dashboard/campaigns/${campaignId}/edit`}
+            className="btn btn-primary btn-md"
+          >
+            <PencilIcon className="w-5 h-5" />
+            Edit Campaign
+          </Link>
+        )}
       </div>
 
       {/* Main Content */}
@@ -357,19 +387,19 @@ export default function ViewCampaignPage() {
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">Sudah Disalurkan</span>
                       <span className="text-sm font-semibold text-warning-600">
-                        {formatCurrency(Number(campaignData.disbursed || 0))}
+                        {formatCurrency(calculateTotalDisbursed())}
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-10">
                       <div
                         className="h-10 rounded-full flex items-center justify-end pr-4 transition-all duration-300"
                         style={{
-                          width: `${Math.min((Number(campaignData.disbursed || 0) / Number(campaignData.collected || 1)) * 100, 100)}%`,
+                          width: `${Math.min((calculateTotalDisbursed() / (Number(campaignData.collected || 0) || 1)) * 100, 100)}%`,
                           background: 'linear-gradient(to right, #f59e0b, #d97706)',
                         }}
                       >
                         <span className="text-sm font-semibold text-white">
-                          {((Number(campaignData.disbursed || 0) / Number(campaignData.collected || 1)) * 100).toFixed(1)}%
+                          {((calculateTotalDisbursed() / (Number(campaignData.collected || 0) || 1)) * 100).toFixed(1)}%
                         </span>
                       </div>
                     </div>
@@ -487,11 +517,11 @@ export default function ViewCampaignPage() {
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-bold text-gray-900">Daftar Donatur</h3>
                     <span className="text-sm text-gray-500">
-                      Total: {donationsData?.length || 0} donasi
+                      Total: {transactionsData?.length || 0} donasi
                     </span>
                   </div>
 
-                  {donationsData && donationsData.length > 0 ? (
+                  {transactionsData && transactionsData.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -511,7 +541,7 @@ export default function ViewCampaignPage() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {donationsData.map((donation: any) => (
+                          {transactionsData.map((donation: any) => (
                             <tr key={donation.id} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
@@ -527,7 +557,7 @@ export default function ViewCampaignPage() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-semibold text-gray-900">
-                                  {formatCurrency(Number(donation.amount))}
+                                  {formatCurrency(Number(donation.totalAmount || donation.amount || 0))}
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -540,17 +570,17 @@ export default function ViewCampaignPage() {
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                {donation.paymentStatus === "success" && (
+                                {donation.paymentStatus === "paid" && (
                                   <span className="badge badge-success">Berhasil</span>
                                 )}
                                 {donation.paymentStatus === "pending" && (
                                   <span className="badge badge-warning">Pending</span>
                                 )}
-                                {donation.paymentStatus === "failed" && (
-                                  <span className="badge badge-danger">Gagal</span>
+                                {donation.paymentStatus === "partial" && (
+                                  <span className="badge badge-info">Partial</span>
                                 )}
-                                {donation.paymentStatus === "expired" && (
-                                  <span className="badge badge-secondary">Kadaluarsa</span>
+                                {donation.paymentStatus === "cancelled" && (
+                                  <span className="badge badge-danger">Dibatalkan</span>
                                 )}
                               </td>
                             </tr>

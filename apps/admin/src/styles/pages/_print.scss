@@ -1,0 +1,90 @@
+// Print stylesheet for reports
+@media print {
+  // Hide non-essential UI
+  .sidebar,
+  .no-print,
+  .report-filters,
+  .report-nav,
+  .no-print-nav .report-nav,
+  nav,
+  .btn,
+  .export-buttons,
+  .table-mobile-cards {
+    display: none !important;
+  }
+
+  // Show only content area
+  .dashboard-layout {
+    display: block !important;
+  }
+
+  .dashboard-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .dashboard-container {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  // Card styling for print
+  .card {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  // Table styling for print
+  .table-container {
+    display: block !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  table {
+    font-size: 9pt;
+    width: 100%;
+  }
+
+  th, td {
+    padding: 4px 8px !important;
+    border: 1px solid #d1d5db !important;
+  }
+
+  thead {
+    background-color: #f3f4f6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  // Preserve colors
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  // Page setup
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+
+  // Force text colors for print
+  .text-success-600 {
+    color: #678f0c !important;
+  }
+
+  .text-danger-600 {
+    color: #8f132f !important;
+  }
+
+  .text-primary-600 {
+    color: #035a52 !important;
+  }
+
+  .text-warning-600,
+  .text-\[\\#d2aa55\] {
+    color: #d2aa55 !important;
+  }
+}

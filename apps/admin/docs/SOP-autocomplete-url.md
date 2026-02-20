@@ -169,7 +169,9 @@ URL Autocomplete secara otomatis fetch dan menampilkan URLs dari:
    - `/` - Beranda
    - `/program` - Semua Program
    - `/zakat` - Zakat
+  - `/zakat/laporan` - Laporan Zakat Publik
    - `/qurban` - Qurban
+  - `/qurban/laporan` - Laporan Qurban Publik
 
 2. **Category Archives**
    - `/program/kategori/{slug}` - Program by category

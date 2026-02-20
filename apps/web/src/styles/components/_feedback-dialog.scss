@@ -1,0 +1,43 @@
+.feedback-dialog__overlay {
+  @apply fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4;
+}
+
+.feedback-dialog {
+  @apply bg-white rounded-2xl shadow-xl border border-gray-200 p-6 w-full max-w-sm text-center relative;
+}
+
+.feedback-dialog__icon {
+  @apply w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center;
+
+  svg {
+    @apply w-10 h-10;
+  }
+}
+
+.feedback-dialog__icon--success {
+  @apply bg-primary-50 text-primary-600;
+}
+
+.feedback-dialog__icon--error {
+  @apply bg-danger-50 text-danger-600;
+}
+
+.feedback-dialog__title {
+  @apply text-xl font-semibold text-gray-900 mb-2;
+}
+
+.feedback-dialog__message {
+  @apply text-sm text-gray-600 mb-5;
+}
+
+.feedback-dialog__button {
+  @apply inline-flex items-center justify-center w-full py-2.5 px-4 rounded-lg font-semibold transition-colors;
+}
+
+.feedback-dialog__button--success {
+  @apply bg-primary-600 text-white hover:bg-primary-700;
+}
+
+.feedback-dialog__button--error {
+  @apply bg-danger-600 text-white hover:bg-danger-700;
+}

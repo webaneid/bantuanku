@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header, Footer } from '@/components/organisms';
 import { Button } from '@/components/atoms';
-import toast from 'react-hot-toast';
+import toast from '@/lib/feedback-toast';
+import { useI18n } from '@/lib/i18n/provider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
@@ -19,7 +20,6 @@ interface PaymentMethod {
     accountName?: string;
     accountNumber?: string;
     bankName?: string;
-    nmid?: string;
     imageUrl?: string;
   };
 }
@@ -31,6 +31,7 @@ interface DonationData {
 
 export default function PaymentMethodPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [filteredMethods, setFilteredMethods] = useState<PaymentMethod[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,7 +40,7 @@ export default function PaymentMethodPage() {
     // Check if there are pending transactions
     const pendingTransactions = sessionStorage.getItem('pendingTransactions');
     if (!pendingTransactions) {
-      toast.error('Tidak ada transaksi pending');
+      toast.error(t('checkout.common.noPendingTransactions'));
       router.push('/');
       return;
     }
@@ -70,7 +71,7 @@ export default function PaymentMethodPage() {
       }
     } catch (error) {
       console.error('Error loading data:', error);
-      toast.error('Gagal memuat data');
+      toast.error(t('checkout.common.loadDataFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -164,8 +165,8 @@ export default function PaymentMethodPage() {
       ),
       bgColor: 'bg-primary-100',
       hoverBgColor: 'group-hover:bg-primary-200',
-      title: 'Transfer Bank',
-      description: 'Transfer ke rekening bank kami',
+      title: t('checkout.paymentMethod.card.bankTransferTitle'),
+      description: t('checkout.paymentMethod.card.bankTransferDesc'),
     },
     qris: {
       icon: (
@@ -175,8 +176,8 @@ export default function PaymentMethodPage() {
       ),
       bgColor: 'bg-blue-100',
       hoverBgColor: 'group-hover:bg-blue-200',
-      title: 'QRIS',
-      description: 'Scan QR Code dengan aplikasi e-wallet',
+      title: t('checkout.paymentMethod.card.qrisTitle'),
+      description: t('checkout.paymentMethod.card.qrisDesc'),
     },
     payment_gateway: {
       icon: (
@@ -186,8 +187,8 @@ export default function PaymentMethodPage() {
       ),
       bgColor: 'bg-purple-100',
       hoverBgColor: 'group-hover:bg-purple-200',
-      title: 'Pembayaran Cepat',
-      description: 'Virtual Account / E-wallet / QRIS',
+      title: t('checkout.paymentMethod.card.gatewayTitle'),
+      description: t('checkout.paymentMethod.card.gatewayDesc'),
     },
   };
 
@@ -220,10 +221,10 @@ export default function PaymentMethodPage() {
             {/* Header */}
             <div className="mb-8">
               <h1 className="section-title text-gray-900 mb-2">
-                Pilih Metode Pembayaran
+                {t('checkout.paymentMethod.title')}
               </h1>
               <p className="text-gray-600" style={{ fontSize: '15px' }}>
-                Silakan pilih metode pembayaran yang Anda inginkan
+                {t('checkout.paymentMethod.subtitle')}
               </p>
             </div>
 
@@ -263,7 +264,7 @@ export default function PaymentMethodPage() {
 
               {Object.keys(groupedMethods).length === 0 && (
                 <div className="text-center py-12">
-                  <p className="text-gray-500">Belum ada metode pembayaran tersedia</p>
+                  <p className="text-gray-500">{t('checkout.paymentMethod.emptyMethods')}</p>
                 </div>
               )}
             </div>
@@ -272,7 +273,7 @@ export default function PaymentMethodPage() {
             <div className="mt-8">
               <Link href="/keranjang-bantuan">
                 <Button variant="outline" size="lg" className="w-full">
-                  Kembali ke Keranjang
+                  {t('checkout.paymentMethod.backToCart')}
                 </Button>
               </Link>
             </div>

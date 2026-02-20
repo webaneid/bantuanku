@@ -3,15 +3,15 @@ import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { users } from "./user";
 import { qurbanSharedGroups } from "./qurban-shared-groups";
-import { qurbanOrders } from "./qurban-orders";
+import { transactions } from "./transactions";
 
 export const qurbanExecutions = pgTable("qurban_executions", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   executionNumber: text("execution_number").unique().notNull(), // EXE-QBN-2026-00001
 
-  // Grup Info (jika shared) atau Order Info (jika individual)
+  // Grup Info (jika shared) atau Transaction Info (jika individual)
   sharedGroupId: text("shared_group_id").references(() => qurbanSharedGroups.id), // Jika sapi patungan
-  orderId: text("order_id").references(() => qurbanOrders.id), // Jika individual (kambing atau sapi utuh)
+  transactionId: text("transaction_id").references(() => transactions.id), // Jika individual (kambing atau sapi utuh)
 
   // Execution Details
   executionDate: timestamp("execution_date", { precision: 3, mode: "date" }).notNull(),
@@ -45,9 +45,9 @@ export const qurbanExecutionsRelations = relations(qurbanExecutions, ({ one }) =
     fields: [qurbanExecutions.sharedGroupId],
     references: [qurbanSharedGroups.id],
   }),
-  order: one(qurbanOrders, {
-    fields: [qurbanExecutions.orderId],
-    references: [qurbanOrders.id],
+  transaction: one(transactions, {
+    fields: [qurbanExecutions.transactionId],
+    references: [transactions.id],
   }),
   executor: one(users, {
     fields: [qurbanExecutions.executedBy],

@@ -1,0 +1,461 @@
+// ===========================
+// DASHBOARD HOME PAGE
+// ===========================
+
+// KPI Grid: 5 cards responsive
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+
+  @media (max-width: 1280px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+// KPI Card
+.kpi-card {
+  background: white;
+  border: 1px solid $gray-200;
+  border-left: 4px solid $gray-300;
+  border-radius: $radius-lg;
+  padding: 1.25rem;
+  transition: box-shadow $transition-base, transform $transition-base;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    box-shadow: $shadow-md;
+    transform: translateY(-1px);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  &__icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.125rem 0.5rem;
+    border-radius: $radius-full;
+
+    &--up {
+      color: $success-700;
+      background-color: $success-50;
+    }
+
+    &--down {
+      color: $danger-500;
+      background-color: $danger-50;
+    }
+
+    &--neutral {
+      color: $gray-600;
+      background-color: $gray-100;
+    }
+  }
+
+  &__label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: $gray-600;
+    margin-bottom: 0.25rem;
+  }
+
+  &__value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $gray-900;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__sub {
+    font-size: 0.75rem;
+    color: $gray-500;
+    margin-top: 0.25rem;
+  }
+
+  // Modifiers for left border color
+  &--primary {
+    border-left-color: $primary-500;
+    .kpi-card__icon { background-color: $primary-50; color: $primary-600; }
+  }
+  &--info {
+    border-left-color: $info-500;
+    .kpi-card__icon { background-color: $info-50; color: $info-600; }
+  }
+  &--success {
+    border-left-color: $success-500;
+    .kpi-card__icon { background-color: $success-50; color: $success-600; }
+  }
+  &--accent {
+    border-left-color: $accent-500;
+    .kpi-card__icon { background-color: $accent-50; color: $accent-600; }
+  }
+  &--danger {
+    border-left-color: $danger-500;
+    .kpi-card__icon { background-color: $danger-50; color: $danger-600; }
+  }
+
+  @media (max-width: 640px) {
+    padding: 1rem;
+    &__value { font-size: 1.25rem; }
+  }
+}
+
+// Dashboard section card wrapper
+.dashboard-section {
+  background: white;
+  border: 1px solid $gray-200;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid $gray-100;
+  }
+
+  &__title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: $gray-900;
+  }
+
+  &__body {
+    padding: 1.5rem;
+
+    @media (max-width: 640px) {
+      padding: 1rem;
+    }
+  }
+}
+
+// Period selector pills
+.period-selector {
+  display: flex;
+  gap: 0.25rem;
+  background: $gray-100;
+  border-radius: $radius-md;
+  padding: 0.125rem;
+
+  &__btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: calc(#{$radius-md} - 2px);
+    color: $gray-600;
+    transition: all $transition-fast;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    white-space: nowrap;
+
+    &:hover {
+      color: $gray-900;
+    }
+
+    &--active {
+      background: white;
+      color: $primary-700;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+  }
+}
+
+// Chart section
+.dashboard-chart {
+  &__container {
+    width: 100%;
+    height: 300px;
+
+    @media (max-width: 640px) {
+      height: 220px;
+    }
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    color: $gray-400;
+    gap: 0.5rem;
+  }
+}
+
+// Activity feed
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+
+  &__item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 0;
+    border-bottom: 1px solid $gray-100;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: $radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $gray-900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__product {
+    font-size: 0.75rem;
+    color: $gray-500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 0.125rem;
+  }
+
+  &__meta {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  &__amount {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $gray-900;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  &__time {
+    font-size: 0.6875rem;
+    color: $gray-400;
+    margin-top: 0.125rem;
+    white-space: nowrap;
+  }
+
+  &__badge {
+    display: inline-block;
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 0.125rem 0.375rem;
+    border-radius: $radius-full;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-top: 0.25rem;
+  }
+}
+
+// Quick action card
+.quick-action-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid $gray-200;
+  border-radius: $radius-lg;
+  transition: all $transition-base;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    border-color: $primary-300;
+    background-color: $primary-50;
+    box-shadow: $shadow-sm;
+  }
+
+  &__icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: $radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: $gray-900;
+  }
+
+  &__desc {
+    font-size: 0.75rem;
+    color: $gray-500;
+    margin-top: 0.125rem;
+  }
+
+  &__arrow {
+    color: $gray-400;
+    flex-shrink: 0;
+  }
+}
+
+// Dashboard grid layout
+.dashboard-grid {
+  display: grid;
+  gap: 1.5rem;
+
+  &--charts {
+    grid-template-columns: 2fr 1fr;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &--bottom {
+    grid-template-columns: 2fr 1fr;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+// Donut chart center label
+.donut-center-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+
+  &__value {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: $gray-900;
+    line-height: 1.2;
+  }
+
+  &__label {
+    font-size: 0.6875rem;
+    color: $gray-500;
+  }
+}
+
+// Donut legend
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: $radius-full;
+    flex-shrink: 0;
+  }
+
+  &__name {
+    font-size: 0.8125rem;
+    color: $gray-700;
+  }
+
+  &__value {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: $gray-900;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// Skeleton loading
+.dashboard-skeleton {
+  &__kpi {
+    height: 7rem;
+    background: $gray-100;
+    border-radius: $radius-lg;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  &__chart {
+    height: 380px;
+    background: $gray-100;
+    border-radius: $radius-lg;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  &__list {
+    height: 380px;
+    background: $gray-100;
+    border-radius: $radius-lg;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

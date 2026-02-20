@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq, desc, and, like, sql } from "drizzle-orm";
-import { campaigns, campaignUpdates, users, categories, employees, generateSlug, createId, ledger } from "@bantuanku/db";
+import { campaigns, campaignUpdates, users, categories, employees, mitra, generateSlug, createId, ledger } from "@bantuanku/db";
 import { success, error, paginated } from "../../lib/response";
 import { requireRole } from "../../middleware/auth";
 import { coordinatorFilter } from "../../middleware/coordinator-filter";
@@ -30,6 +30,17 @@ const baseCampaignSchema = z.object({
   status: z.enum(["draft", "active", "completed", "cancelled"]).optional(),
   isFeatured: z.boolean().optional(),
   isUrgent: z.boolean().optional(),
+  // SEO fields
+  metaTitle: z.string().trim().max(70).optional().nullable(),
+  metaDescription: z.string().trim().max(170).optional().nullable(),
+  focusKeyphrase: z.string().trim().max(100).optional().nullable(),
+  canonicalUrl: z.string().trim().optional().nullable(),
+  noIndex: z.boolean().optional(),
+  noFollow: z.boolean().optional(),
+  ogTitle: z.string().trim().max(70).optional().nullable(),
+  ogDescription: z.string().trim().max(200).optional().nullable(),
+  ogImageUrl: z.string().trim().optional().nullable(),
+  seoScore: z.number().int().min(0).max(100).optional(),
 });
 
 // Create schema with validation
@@ -67,6 +78,7 @@ const updateCampaignSchema = baseCampaignSchema.partial().refine((data) => {
 
 campaignsAdmin.get("/", coordinatorFilter, async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const page = parseInt(c.req.query("page") || "1");
   const limit = parseInt(c.req.query("limit") || "10");
   const status = c.req.query("status");
@@ -85,6 +97,20 @@ campaignsAdmin.get("/", coordinatorFilter, async (c) => {
   // Filter by coordinator if user is program_coordinator
   if (coordinatorEmployeeId) {
     conditions.push(eq(campaigns.coordinatorId, coordinatorEmployeeId));
+  }
+
+  // Filter by mitra if user has mitra role only
+  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+  if (isMitra && user) {
+    const mitraRecord = await db.query.mitra.findFirst({
+      where: eq(mitra.userId, user.id),
+    });
+    if (mitraRecord) {
+      conditions.push(eq(campaigns.mitraId, mitraRecord.id));
+    } else {
+      // No mitra record found, show nothing
+      conditions.push(eq(campaigns.mitraId, "no-mitra-record"));
+    }
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -138,7 +164,7 @@ campaignsAdmin.get("/", coordinatorFilter, async (c) => {
 
 campaignsAdmin.post(
   "/",
-  requireRole("super_admin", "admin_campaign", "program_coordinator"),
+  requireRole("super_admin", "admin_campaign", "program_coordinator", "mitra"),
   zValidator("json", createCampaignSchema),
   async (c) => {
     const body = c.req.valid("json");
@@ -166,6 +192,22 @@ campaignsAdmin.post(
       }
     }
 
+    // If mitra, auto-assign mitraId (must be verified/approved)
+    let finalMitraId: string | null = null;
+    const isMitra = user?.roles?.length === 1 && user?.roles?.includes("mitra");
+    if (isMitra) {
+      const mitraRecord = await db.query.mitra.findFirst({
+        where: eq(mitra.userId, user!.id),
+      });
+      if (!mitraRecord) {
+        return error(c, "Mitra record not found for this user", 403);
+      }
+      if (mitraRecord.status !== "verified") {
+        return error(c, "Mitra Anda belum diverifikasi. Hanya mitra yang sudah diverifikasi yang dapat membuat campaign.", 403);
+      }
+      finalMitraId = mitraRecord.id;
+    }
+
     // Store GCS URLs as-is, extract path for local uploads
     const cleanImageUrl = body.imageUrl
       ? (body.imageUrl.startsWith('http://') || body.imageUrl.startsWith('https://'))
@@ -190,20 +232,33 @@ campaignsAdmin.post(
       title: body.title,
       description: body.description,
       content: body.content,
-      imageUrl: cleanImageUrl,
+      imageUrl: cleanImageUrl || "",
       images: cleanImages,
       videoUrl: body.videoUrl,
       goal: finalGoal,
+      category: body.category || "",
       categoryId: body.categoryId,
       pillar: body.pillar,
       coordinatorId: finalCoordinatorId,
+      mitraId: finalMitraId,
       slug: finalSlug,
       startDate: body.startDate ? new Date(body.startDate) : undefined,
       endDate: body.endDate ? new Date(body.endDate) : undefined,
       isFeatured: body.isFeatured,
       isUrgent: body.isUrgent,
       createdBy: user!.id,
-      status: body.status || "draft",
+      status: isMitra ? "draft" : (body.status || "draft"),
+      // SEO fields
+      metaTitle: body.metaTitle || null,
+      metaDescription: body.metaDescription || null,
+      focusKeyphrase: body.focusKeyphrase || null,
+      canonicalUrl: body.canonicalUrl || null,
+      noIndex: body.noIndex ?? false,
+      noFollow: body.noFollow ?? false,
+      ogTitle: body.ogTitle || null,
+      ogDescription: body.ogDescription || null,
+      ogImageUrl: body.ogImageUrl || null,
+      seoScore: body.seoScore ?? 0,
     });
 
     return success(c, { id: campaignId, slug: finalSlug }, "Campaign created", 201);
@@ -212,6 +267,7 @@ campaignsAdmin.post(
 
 campaignsAdmin.get("/:id", async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const id = c.req.param("id");
 
   const campaign = await db.query.campaigns.findFirst({
@@ -220,6 +276,32 @@ campaignsAdmin.get("/:id", async (c) => {
 
   if (!campaign) {
     return error(c, "Campaign not found", 404);
+  }
+
+  // Employee-only can only see campaigns where they are coordinator
+  const isEmployeeOnly = user?.roles?.includes("employee") &&
+    !user?.roles?.includes("super_admin") &&
+    !user?.roles?.includes("admin_campaign") &&
+    !user?.roles?.includes("admin_finance") &&
+    !user?.roles?.includes("program_coordinator");
+  if (isEmployeeOnly) {
+    const employee = await db.query.employees.findFirst({
+      where: eq(employees.userId, user!.id),
+    });
+    if (!employee || campaign.coordinatorId !== employee.id) {
+      return error(c, "Campaign not found", 404);
+    }
+  }
+
+  // Mitra can only see their own campaigns
+  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+  if (isMitra) {
+    const mitraRecord = await db.query.mitra.findFirst({
+      where: eq(mitra.userId, user!.id),
+    });
+    if (!mitraRecord || campaign.mitraId !== mitraRecord.id) {
+      return error(c, "Campaign not found", 404);
+    }
   }
 
   // Calculate total disbursed from ledger (only paid status)
@@ -278,6 +360,16 @@ campaignsAdmin.get("/:id", async (c) => {
     }
   }
 
+  // Enrich with mitra name if mitraId exists
+  if (campaign.mitraId) {
+    const mitraRecord = await db.query.mitra.findFirst({
+      where: eq(mitra.id, campaign.mitraId),
+    });
+    if (mitraRecord) {
+      enrichedCampaign.mitraName = mitraRecord.name;
+    }
+  }
+
   return success(c, enrichedCampaign);
 });
 
@@ -296,8 +388,13 @@ const updateCampaign = async (c: any) => {
     return error(c, "Campaign not found", 404);
   }
 
-  // If user is program_coordinator, check ownership
-  if (user?.roles?.includes("program_coordinator")) {
+  // If user is program_coordinator or employee-only, check ownership
+  const isEmployeeRole = user?.roles?.includes("employee") &&
+    !user?.roles?.includes("super_admin") &&
+    !user?.roles?.includes("admin_campaign") &&
+    !user?.roles?.includes("admin_finance");
+
+  if (user?.roles?.includes("program_coordinator") || isEmployeeRole) {
     const employee = await db.query.employees.findFirst({
       where: eq(employees.userId, user.id),
     });
@@ -311,6 +408,15 @@ const updateCampaign = async (c: any) => {
       }
     } else {
       return error(c, "Employee record not found", 403);
+    }
+  }
+  const isMitra = user?.roles?.length === 1 && user?.roles?.includes("mitra");
+  if (isMitra) {
+    const mitraRecord = await db.query.mitra.findFirst({
+      where: eq(mitra.userId, user!.id),
+    });
+    if (!mitraRecord || campaign.mitraId !== mitraRecord.id) {
+      return error(c, "Anda hanya bisa mengedit campaign milik Anda", 403);
     }
   }
 
@@ -349,6 +455,17 @@ const updateCampaign = async (c: any) => {
   if (body.isUrgent !== undefined) updateData.isUrgent = body.isUrgent;
   if (body.startDate !== undefined) updateData.startDate = body.startDate ? new Date(body.startDate) : null;
   if (body.endDate !== undefined) updateData.endDate = body.endDate ? new Date(body.endDate) : null;
+  // SEO fields
+  if (body.metaTitle !== undefined) updateData.metaTitle = body.metaTitle || null;
+  if (body.metaDescription !== undefined) updateData.metaDescription = body.metaDescription || null;
+  if (body.focusKeyphrase !== undefined) updateData.focusKeyphrase = body.focusKeyphrase || null;
+  if (body.canonicalUrl !== undefined) updateData.canonicalUrl = body.canonicalUrl || null;
+  if (body.noIndex !== undefined) updateData.noIndex = body.noIndex;
+  if (body.noFollow !== undefined) updateData.noFollow = body.noFollow;
+  if (body.ogTitle !== undefined) updateData.ogTitle = body.ogTitle || null;
+  if (body.ogDescription !== undefined) updateData.ogDescription = body.ogDescription || null;
+  if (body.ogImageUrl !== undefined) updateData.ogImageUrl = body.ogImageUrl || null;
+  if (body.seoScore !== undefined) updateData.seoScore = body.seoScore;
 
   await db
     .update(campaigns)
@@ -360,14 +477,14 @@ const updateCampaign = async (c: any) => {
 
 campaignsAdmin.patch(
   "/:id",
-  requireRole("super_admin", "admin_campaign", "program_coordinator"),
+  requireRole("super_admin", "admin_campaign", "program_coordinator", "employee", "mitra"),
   zValidator("json", updateCampaignSchema),
   updateCampaign
 );
 
 campaignsAdmin.put(
   "/:id",
-  requireRole("super_admin", "admin_campaign", "program_coordinator"),
+  requireRole("super_admin", "admin_campaign", "program_coordinator", "employee", "mitra"),
   zValidator("json", updateCampaignSchema, (result, c) => {
     if (!result.success) {
       console.log("Validation error:", result.error.flatten());
@@ -377,7 +494,7 @@ campaignsAdmin.put(
   updateCampaign
 );
 
-campaignsAdmin.delete("/:id", requireRole("super_admin"), async (c) => {
+campaignsAdmin.delete("/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const id = c.req.param("id");
 
@@ -450,7 +567,7 @@ campaignsAdmin.patch(
 
 campaignsAdmin.post(
   "/:id/updates",
-  requireRole("super_admin", "admin_campaign", "program_coordinator"),
+  requireRole("super_admin", "admin_campaign", "program_coordinator", "employee", "mitra"),
   async (c) => {
     const db = c.get("db");
     const id = c.req.param("id");
@@ -465,8 +582,13 @@ campaignsAdmin.post(
       return error(c, "Campaign not found", 404);
     }
 
-    // If user is program_coordinator, check ownership
-    if (user?.roles?.includes("program_coordinator")) {
+    // If user is program_coordinator or employee-only, check ownership
+    const isEmployeeRole = user?.roles?.includes("employee") &&
+      !user?.roles?.includes("super_admin") &&
+      !user?.roles?.includes("admin_campaign") &&
+      !user?.roles?.includes("admin_finance");
+
+    if (user?.roles?.includes("program_coordinator") || isEmployeeRole) {
       const employee = await db.query.employees.findFirst({
         where: eq(employees.userId, user.id),
       });
@@ -480,6 +602,17 @@ campaignsAdmin.post(
         }
       } else {
         return error(c, "Employee record not found", 403);
+      }
+    }
+
+    // If user is mitra, check ownership via mitraId
+    const isMitra = user?.roles?.length === 1 && user?.roles?.includes("mitra");
+    if (isMitra) {
+      const mitraRecord = await db.query.mitra.findFirst({
+        where: eq(mitra.userId, user!.id),
+      });
+      if (!mitraRecord || campaign.mitraId !== mitraRecord.id) {
+        return error(c, "Anda hanya bisa membuat update untuk campaign milik Anda", 403);
       }
     }
 

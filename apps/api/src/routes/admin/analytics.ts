@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
-import { campaigns, donations, users } from "@bantuanku/db";
+import { campaigns, transactions, users } from "@bantuanku/db";
 import { success } from "../../lib/response";
 import { requireRole } from "../../middleware/auth";
 import type { Env, Variables } from "../../types";
@@ -41,10 +41,10 @@ analyticsAdmin.get("/overview", requireRole("super_admin", "admin_finance", "adm
   const [totalDonations] = await db
     .select({
       count: sql<number>`count(*)`,
-      amount: sql<number>`sum(${donations.amount})`,
+      amount: sql<number>`coalesce(sum(${transactions.totalAmount}), 0)`,
     })
-    .from(donations)
-    .where(and(eq(donations.paymentStatus, "success"), gte(donations.createdAt, startDate)));
+    .from(transactions)
+    .where(and(eq(transactions.paymentStatus, "paid"), gte(transactions.paidAt, startDate)));
 
   const [totalUsers] = await db.select({ count: sql<number>`count(*)` }).from(users);
 
@@ -55,14 +55,14 @@ analyticsAdmin.get("/overview", requireRole("super_admin", "admin_finance", "adm
 
   const donationTrend = await db
     .select({
-      date: sql<string>`date(${donations.createdAt})`,
+      date: sql<string>`date(${transactions.paidAt})`,
       count: sql<number>`count(*)`,
-      amount: sql<number>`sum(${donations.amount})`,
+      amount: sql<number>`coalesce(sum(${transactions.totalAmount}), 0)`,
     })
-    .from(donations)
-    .where(and(eq(donations.paymentStatus, "success"), gte(donations.createdAt, startDate)))
-    .groupBy(sql`date(${donations.createdAt})`)
-    .orderBy(sql`date(${donations.createdAt})`);
+    .from(transactions)
+    .where(and(eq(transactions.paymentStatus, "paid"), gte(transactions.paidAt, startDate)))
+    .groupBy(sql`date(${transactions.paidAt})`)
+    .orderBy(sql`date(${transactions.paidAt})`);
 
   return success(c, {
     totalCampaigns: Number(totalCampaigns.count),
@@ -80,14 +80,12 @@ analyticsAdmin.get("/conversion", requireRole("super_admin", "admin_finance", "a
   const startDate = c.req.query("startDate");
   const endDate = c.req.query("endDate");
 
-  const conditions = [];
-
+  const conditions: any[] = [];
   if (startDate) {
-    conditions.push(gte(donations.createdAt, new Date(startDate)));
+    conditions.push(gte(transactions.createdAt, new Date(startDate)));
   }
-
   if (endDate) {
-    conditions.push(lte(donations.createdAt, new Date(endDate)));
+    conditions.push(lte(transactions.createdAt, new Date(endDate)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -95,29 +93,29 @@ analyticsAdmin.get("/conversion", requireRole("super_admin", "admin_finance", "a
   const [conversionStats] = await db
     .select({
       totalCreated: sql<number>`count(*)`,
-      totalPending: sql<number>`count(*) filter (where ${donations.paymentStatus} = 'pending')`,
-      totalProcessing: sql<number>`count(*) filter (where ${donations.paymentStatus} = 'processing')`,
-      totalSuccess: sql<number>`count(*) filter (where ${donations.paymentStatus} = 'success')`,
-      totalFailed: sql<number>`count(*) filter (where ${donations.paymentStatus} = 'failed')`,
-      totalExpired: sql<number>`count(*) filter (where ${donations.paymentStatus} = 'expired')`,
-      conversionRate: sql<number>`(count(*) filter (where ${donations.paymentStatus} = 'success')::float / count(*)::float * 100)`,
+      totalPending: sql<number>`count(*) filter (where ${transactions.paymentStatus} = 'pending')`,
+      totalPartial: sql<number>`count(*) filter (where ${transactions.paymentStatus} = 'partial')`,
+      totalPaid: sql<number>`count(*) filter (where ${transactions.paymentStatus} = 'paid')`,
+      totalFailed: sql<number>`count(*) filter (where ${transactions.paymentStatus} = 'failed')`,
+      totalExpired: sql<number>`count(*) filter (where ${transactions.paymentStatus} = 'expired')`,
+      conversionRate: sql<number>`case when count(*) > 0 then (count(*) filter (where ${transactions.paymentStatus} = 'paid')::float / count(*)::float * 100) else 0 end`,
     })
-    .from(donations)
+    .from(transactions)
     .where(whereClause);
 
   const byCampaign = await db
     .select({
-      campaignId: donations.campaignId,
+      campaignId: transactions.productId,
       campaignTitle: campaigns.title,
       totalCreated: sql<number>`count(*)`,
-      totalSuccess: sql<number>`count(*) filter (where ${donations.paymentStatus} = 'success')`,
-      conversionRate: sql<number>`(count(*) filter (where ${donations.paymentStatus} = 'success')::float / count(*)::float * 100)`,
+      totalPaid: sql<number>`count(*) filter (where ${transactions.paymentStatus} = 'paid')`,
+      conversionRate: sql<number>`case when count(*) > 0 then (count(*) filter (where ${transactions.paymentStatus} = 'paid')::float / count(*)::float * 100) else 0 end`,
     })
-    .from(donations)
-    .innerJoin(campaigns, eq(donations.campaignId, campaigns.id))
-    .where(whereClause)
-    .groupBy(donations.campaignId, campaigns.title)
-    .orderBy(sql<number>`(count(*) filter (where ${donations.paymentStatus} = 'success')::float / count(*)::float * 100) desc`)
+    .from(transactions)
+    .innerJoin(campaigns, eq(transactions.productId, campaigns.id))
+    .where(whereClause ? and(eq(transactions.productType, "campaign"), whereClause) : eq(transactions.productType, "campaign"))
+    .groupBy(transactions.productId, campaigns.title)
+    .orderBy(sql`case when count(*) > 0 then (count(*) filter (where ${transactions.paymentStatus} = 'paid')::float / count(*)::float * 100) else 0 end desc`)
     .limit(10);
 
   return success(c, {
@@ -141,15 +139,15 @@ analyticsAdmin.get("/growth", requireRole("super_admin", "admin_finance", "admin
 
   const donationGrowth = await db
     .select({
-      period: sql<string>`to_char(${donations.createdAt}, ${dateFormat})`,
+      period: sql<string>`to_char(${transactions.paidAt}, ${dateFormat})`,
       totalDonations: sql<number>`count(*)`,
-      totalAmount: sql<number>`sum(${donations.amount})`,
-      uniqueDonors: sql<number>`count(distinct ${donations.userId})`,
+      totalAmount: sql<number>`coalesce(sum(${transactions.totalAmount}), 0)`,
+      uniqueDonors: sql<number>`count(distinct ${transactions.donorName})`,
     })
-    .from(donations)
-    .where(eq(donations.paymentStatus, "success"))
-    .groupBy(sql`to_char(${donations.createdAt}, ${dateFormat})`)
-    .orderBy(sql`to_char(${donations.createdAt}, ${dateFormat})`);
+    .from(transactions)
+    .where(eq(transactions.paymentStatus, "paid"))
+    .groupBy(sql`to_char(${transactions.paidAt}, ${dateFormat})`)
+    .orderBy(sql`to_char(${transactions.paidAt}, ${dateFormat})`);
 
   const campaignGrowth = await db
     .select({

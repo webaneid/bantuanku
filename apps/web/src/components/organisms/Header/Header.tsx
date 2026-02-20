@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/cn';
 import { Button, IconButton } from '@/components/atoms';
 import { SearchBox } from '@/components/molecules';
@@ -10,21 +10,13 @@ import { useSettings } from '@/hooks/useSettings';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/lib/auth';
 import type { MenuItem } from '@/services/settings';
+import { useI18n } from '@/lib/i18n/provider';
+import type { Locale } from '@/lib/i18n/types';
 
 export interface HeaderProps extends React.HTMLAttributes<HTMLElement> {
   logo?: string;
   showSearch?: boolean;
 }
-
-// Fallback menu items jika API gagal
-const FALLBACK_MENU_ITEMS = [
-  { label: 'Beranda', href: '/' },
-  { label: 'Zakat', href: '/zakat' },
-  { label: 'Qurban', href: '/qurban' },
-  { label: 'Infaq/Sedekah', href: '/infaq' },
-  { label: 'Wakaf', href: '/wakaf' },
-  { label: 'Tentang', href: '/tentang' },
-];
 
 export const Header = React.forwardRef<HTMLElement, HeaderProps>(
   ({ logo: logoProp, showSearch = true, className, ...props }, ref) => {
@@ -34,11 +26,13 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
+    const router = useRouter();
     const { settings, isLoading, error } = useSettings();
     const { getCartCount } = useCart();
     const { user, logout } = useAuth();
+    const { t, locale, setLocale } = useI18n();
 
-    // Use logo from settings or fallback to prop or default
+    // Use application logo from settings
     const logo = settings.organization_logo || logoProp || '/logo.svg';
     const siteName = settings.site_name || 'Bantuanku';
 
@@ -58,8 +52,15 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
           console.error('Failed to parse header menu:', error);
         }
       }
-      return FALLBACK_MENU_ITEMS;
-    }, [settings.frontend_header_menu]);
+      return [
+        { label: t('common.menuHome'), href: '/' },
+        { label: t('common.menuZakat'), href: '/zakat' },
+        { label: t('common.menuQurban'), href: '/qurban' },
+        { label: t('common.menuInfaq'), href: '/infaq' },
+        { label: t('common.menuWakaf'), href: '/wakaf' },
+        { label: t('common.menuAbout'), href: '/tentang' },
+      ];
+    }, [settings.frontend_header_menu, t]);
 
     useEffect(() => {
       const handleScroll = () => {
@@ -75,6 +76,13 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
       setMobileMenuOpen(false);
       setSearchOpen(false);
     }, [pathname]);
+
+    const handleLocaleChange = (nextLocale: Locale) => {
+      if (nextLocale === locale) return;
+      setLocale(nextLocale);
+      document.cookie = `locale=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
+      router.refresh();
+    };
 
     useEffect(() => {
       // Prevent scroll when mobile menu is open
@@ -147,7 +155,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                 <div className="header__search header__search--desktop">
                   <SearchBox
                     size="sm"
-                    placeholder="Cari program..."
+                    placeholder={t('common.searchProgram')}
                     variant="filled"
                   />
                 </div>
@@ -164,6 +172,19 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                 </button>
               </>
             )}
+
+            {/* Language Selector */}
+            <div className="hidden md:flex items-center">
+              <select
+                aria-label={t('common.language')}
+                value={locale}
+                onChange={(e) => handleLocaleChange(e.target.value as Locale)}
+                className="h-9 px-2 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="id">{t('common.languageIndonesia')}</option>
+                <option value="en">{t('common.languageEnglish')}</option>
+              </select>
+            </div>
 
             {/* Cart */}
             <Link href="/keranjang-bantuan" className="header__cart">
@@ -209,7 +230,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                       </svg>
-                      Dashboard
+                      {t('common.dashboard')}
                     </Link>
                     <Link
                       href="/account/transactions"
@@ -219,7 +240,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
-                      Riwayat Transaksi
+                      {t('common.transactionHistory')}
                     </Link>
                     <Link
                       href="/qurban/savings"
@@ -229,7 +250,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
-                      Tabungan Qurban
+                      {t('common.qurbanSavings')}
                     </Link>
                     <Link
                       href="/account/profile"
@@ -239,7 +260,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
-                      Profil
+                      {t('common.profile')}
                     </Link>
                     <div className="border-t border-gray-200 mt-1"></div>
                     <button
@@ -252,7 +273,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                       </svg>
-                      Keluar
+                      {t('common.logout')}
                     </button>
                   </div>
                 )}
@@ -260,7 +281,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
             ) : (
               <Link href="/login">
                 <Button size="sm" className="header__login">
-                  Masuk
+                  {t('common.login')}
                 </Button>
               </Link>
             )}
@@ -269,7 +290,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
             <button
               className="header__menu-toggle"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label="Toggle menu"
+              aria-label={t('common.toggleMenu')}
             >
               <span className="header__menu-toggle-line" />
               <span className="header__menu-toggle-line" />
@@ -282,7 +303,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
         {searchOpen && (
           <div className="header__search header__search--mobile">
             <SearchBox
-              placeholder="Cari program..."
+              placeholder={t('common.searchProgram')}
               variant="filled"
               autoFocus
             />
@@ -312,6 +333,33 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                 ))}
               </nav>
               <div className="header__mobile-actions">
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="text-sm text-gray-600">{t('common.language')}:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleLocaleChange('id')}
+                    className={cn(
+                      'px-3 py-1.5 text-xs rounded-md border',
+                      locale === 'id'
+                        ? 'bg-primary-50 border-primary-500 text-primary-700'
+                        : 'bg-white border-gray-200 text-gray-700'
+                    )}
+                  >
+                    {t('common.languageIndonesia')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleLocaleChange('en')}
+                    className={cn(
+                      'px-3 py-1.5 text-xs rounded-md border',
+                      locale === 'en'
+                        ? 'bg-primary-50 border-primary-500 text-primary-700'
+                        : 'bg-white border-gray-200 text-gray-700'
+                    )}
+                  >
+                    {t('common.languageEnglish')}
+                  </button>
+                </div>
                 {user ? (
                   <>
                     <div className="px-4 py-3 bg-gray-50 rounded-lg mb-3">
@@ -319,28 +367,28 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                       <p className="text-xs text-gray-500 truncate">{user.email}</p>
                     </div>
                     <Link href="/account">
-                      <Button fullWidth variant="outline">Dashboard</Button>
+                      <Button fullWidth variant="outline">{t('common.dashboard')}</Button>
                     </Link>
                     <Link href="/account/transactions">
-                      <Button fullWidth variant="outline">Riwayat Transaksi</Button>
+                      <Button fullWidth variant="outline">{t('common.transactionHistory')}</Button>
                     </Link>
                     <Link href="/qurban/savings">
-                      <Button fullWidth variant="outline">Tabungan Qurban</Button>
+                      <Button fullWidth variant="outline">{t('common.qurbanSavings')}</Button>
                     </Link>
                     <Link href="/account/profile">
-                      <Button fullWidth variant="outline">Profil</Button>
+                      <Button fullWidth variant="outline">{t('common.profile')}</Button>
                     </Link>
                     <Button variant="outline" fullWidth onClick={logout} className="text-danger-600 border-danger-300 hover:bg-danger-50">
-                      Keluar
+                      {t('common.logout')}
                     </Button>
                   </>
                 ) : (
                   <>
                     <Link href="/login">
-                      <Button fullWidth>Masuk</Button>
+                      <Button fullWidth>{t('common.login')}</Button>
                     </Link>
                     <Link href="/register">
-                      <Button variant="outline" fullWidth>Daftar</Button>
+                      <Button variant="outline" fullWidth>{t('common.register')}</Button>
                     </Link>
                   </>
                 )}

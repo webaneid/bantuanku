@@ -59,7 +59,7 @@ export const ProgramCard = React.forwardRef<HTMLDivElement, ProgramCardProps>(
         <Link href={`/program/${slug}`} className="program-card__link">
           {/* Image */}
           <div className="program-card__image-wrapper">
-            {image ? (
+            {image && !image.startsWith('data:') ? (
               <Image
                 src={image}
                 alt={title}

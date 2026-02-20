@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header, Footer } from '@/components/organisms';
 import { Button } from '@/components/atoms';
-import toast from 'react-hot-toast';
+import toast from '@/lib/feedback-toast';
+import { useI18n } from '@/lib/i18n/provider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
@@ -34,12 +35,14 @@ interface DonationData {
 
 export default function IPaymuChannelsPage() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [donationData, setDonationData] = useState<DonationData[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  const activeLocale = locale === 'id' ? 'id-ID' : 'en-US';
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -47,7 +50,7 @@ export default function IPaymuChannelsPage() {
     // Check if there are pending transactions
     const pendingTransactions = sessionStorage.getItem('pendingTransactions');
     if (!pendingTransactions) {
-      toast.error('Tidak ada transaksi pending');
+      toast.error(t('checkout.common.noPendingTransactions'));
       router.push('/');
       return;
     }
@@ -58,10 +61,10 @@ export default function IPaymuChannelsPage() {
       loadPaymentChannels();
     } catch (error) {
       console.error('Error parsing donation data:', error);
-      toast.error('Data transaksi tidak valid');
+      toast.error(t('checkout.common.invalidTransactionData'));
       router.push('/');
     }
-  }, [router]);
+  }, [router, t]);
 
   const loadPaymentChannels = async () => {
     try {
@@ -211,7 +214,7 @@ export default function IPaymuChannelsPage() {
       setPaymentMethods(mockData);
     } catch (error) {
       console.error('Error loading payment channels:', error);
-      toast.error('Gagal memuat metode pembayaran');
+      toast.error(t('checkout.common.loadDataFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -220,14 +223,14 @@ export default function IPaymuChannelsPage() {
   const formatFee = (fee?: { ActualFee: number; ActualFeeType: string }) => {
     if (!fee) return '';
     if (fee.ActualFeeType === 'PERCENT') {
-      return `Fee: ${fee.ActualFee}%`;
+      return t('checkout.ipaymu.feePercent', { fee: fee.ActualFee });
     }
-    return `Fee: Rp ${fee.ActualFee.toLocaleString('id-ID')}`;
+    return t('checkout.ipaymu.feeFlat', { fee: fee.ActualFee.toLocaleString(activeLocale) });
   };
 
   const handleSubmit = async () => {
     if (!selectedChannel) {
-      toast.error('Silakan pilih metode pembayaran');
+      toast.error(t('checkout.common.choosePaymentMethodFirst'));
       return;
     }
 
@@ -260,11 +263,11 @@ export default function IPaymuChannelsPage() {
         }));
         router.push('/checkout/payment-result');
       } else {
-        throw new Error(result.message || 'Gagal membuat pembayaran');
+        throw new Error(result.message || t('checkout.ipaymu.submitFailed'));
       }
     } catch (error) {
       console.error('Error creating payment:', error);
-      toast.error(error instanceof Error ? error.message : 'Gagal membuat pembayaran');
+      toast.error(error instanceof Error ? error.message : t('checkout.ipaymu.submitFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -301,21 +304,21 @@ export default function IPaymuChannelsPage() {
             {/* Header */}
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Pembayaran iPaymu
+                {t('checkout.ipaymu.title')}
               </h1>
               <p className="text-gray-600" style={{ fontSize: '15px' }}>
-                Pilih metode pembayaran yang Anda inginkan
+                {t('checkout.ipaymu.subtitle')}
               </p>
             </div>
 
             {/* Amount Summary */}
             <div className="bg-gradient-to-r from-orange-500 to-orange-400 rounded-lg p-6 mb-6 text-white">
-              <div className="text-sm mb-2">JUMLAH YANG HARUS DIBAYAR</div>
+              <div className="text-sm mb-2">{t('checkout.ipaymu.amountDue')}</div>
               <div className="text-3xl font-bold mb-2">
-                Rp {totalAmount.toLocaleString('id-ID')}
+                Rp {totalAmount.toLocaleString(activeLocale)}
               </div>
               <div className="text-sm opacity-90">
-                Pembayaran untuk pesanan {donationData.map(d => d.id).join(', ')}
+                {t('checkout.common.paymentForOrders', { orders: donationData.map(d => d.id).join(', ') })}
               </div>
             </div>
 
@@ -327,10 +330,10 @@ export default function IPaymuChannelsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">Pembayaran iPaymu</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t('checkout.ipaymu.sectionTitle')}</h2>
               </div>
               <p className="text-sm text-gray-600 mb-4">
-                Pilih metode pembayaran yang Anda inginkan:
+                {t('checkout.ipaymu.sectionDesc')}
               </p>
             </div>
 
@@ -391,16 +394,16 @@ export default function IPaymuChannelsPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Memproses...
+                    {t('checkout.common.processing')}
                   </span>
                 ) : (
-                  'Lanjutkan Pembayaran'
+                  t('checkout.ipaymu.continuePayment')
                 )}
               </Button>
 
               <Link href="/checkout/payment-method">
                 <Button variant="outline" size="lg" className="w-full">
-                  Kembali ke Pilih Metode
+                  {t('checkout.ipaymu.backToMethod')}
                 </Button>
               </Link>
             </div>
@@ -414,7 +417,7 @@ export default function IPaymuChannelsPage() {
           <div className="flex gap-2">
             <Link href="/checkout/payment-method" className="flex-1">
               <Button variant="outline" size="lg" className="w-full">
-                Kembali
+                {t('checkout.common.back')}
               </Button>
             </Link>
             <Button
@@ -424,7 +427,7 @@ export default function IPaymuChannelsPage() {
               onClick={handleSubmit}
               disabled={!selectedChannel || isSubmitting}
             >
-              {isSubmitting ? 'Memproses...' : 'Lanjutkan Pembayaran'}
+              {isSubmitting ? t('checkout.common.processing') : t('checkout.ipaymu.continuePayment')}
             </Button>
           </div>
         </div>,

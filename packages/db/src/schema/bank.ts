@@ -1,5 +1,6 @@
-import { pgTable, text, timestamp, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, bigint } from "drizzle-orm/pg-core";
 import { createId } from "../utils";
+import { chartOfAccounts } from "./coa";
 
 export const bankAccounts = pgTable("bank_accounts", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -9,6 +10,9 @@ export const bankAccounts = pgTable("bank_accounts", {
   accountName: text("account_name").notNull(),
   branch: text("branch"),
   coaCode: text("coa_code").default("1020"),
+  coaAccountId: text("coa_account_id").references(() => chartOfAccounts.id),
+  balance: bigint("balance", { mode: "number" }).default(0).notNull(),
+  isForZakat: boolean("is_for_zakat").default(false).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   isDefault: boolean("is_default").default(false).notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),

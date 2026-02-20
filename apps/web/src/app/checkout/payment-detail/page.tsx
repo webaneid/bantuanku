@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header, Footer } from '@/components/organisms';
 import { Button } from '@/components/atoms';
-import { formatRupiahFull } from '@/lib/format';
 import { useCart } from '@/contexts/CartContext';
-import toast from 'react-hot-toast';
+import toast from '@/lib/feedback-toast';
 import Image from 'next/image';
+import { useI18n } from '@/lib/i18n/provider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
@@ -24,7 +24,6 @@ interface PaymentMethod {
     accountNumber?: string;
     bankName?: string;
     name?: string;
-    nmid?: string;
     imageUrl?: string;
   };
 }
@@ -49,6 +48,7 @@ interface Transaction {
 
 export default function PaymentDetailPage() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const { clearCart } = useCart();
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
   const [availableMethods, setAvailableMethods] = useState<PaymentMethod[]>([]);
@@ -58,6 +58,13 @@ export default function PaymentDetailPage() {
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const activeLocale = locale === 'id' ? 'id-ID' : 'en-US';
+  const formatAmount = (amount: number | null | undefined) =>
+    new Intl.NumberFormat(activeLocale, {
+      style: 'currency',
+      currency: 'IDR',
+      maximumFractionDigits: 0,
+    }).format(Number(amount || 0));
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -66,13 +73,13 @@ export default function PaymentDetailPage() {
     const pendingTransactionsStr = sessionStorage.getItem('pendingTransactions');
 
     if (!methodType || !pendingTransactionsStr) {
-      toast.error('Data pembayaran tidak ditemukan');
+      toast.error(t('checkout.common.dataNotFound'));
       router.push('/');
       return;
     }
 
     loadPaymentData(methodType, JSON.parse(pendingTransactionsStr));
-  }, [router]);
+  }, [router, t]);
 
   const loadPaymentData = async (methodType: string, transactionData: Array<{id: string, type: string, program: string}>) => {
     try {
@@ -142,7 +149,7 @@ export default function PaymentDetailPage() {
       }
     } catch (error) {
       console.error('Error loading payment data:', error);
-      toast.error('Gagal memuat data pembayaran');
+      toast.error(t('checkout.common.loadDataFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -203,10 +210,10 @@ export default function PaymentDetailPage() {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-      toast.success('QR Code berhasil diunduh');
+      toast.success(t('checkout.paymentDetail.downloadQrisSuccess'));
     } catch (error) {
       console.error('Error downloading QR code:', error);
-      toast.error('Gagal mengunduh QR Code');
+      toast.error(t('checkout.paymentDetail.downloadQrisFailed'));
     }
   };
 
@@ -217,14 +224,14 @@ export default function PaymentDetailPage() {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Hanya file gambar (JPG, PNG) atau PDF yang diperbolehkan');
+      toast.error(t('checkout.paymentDetail.allowedFiles'));
       return;
     }
 
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error('Ukuran file maksimal 5MB');
+      toast.error(t('checkout.paymentDetail.maxFileSize'));
       return;
     }
 
@@ -244,12 +251,12 @@ export default function PaymentDetailPage() {
 
   const handleConfirmPayment = async () => {
     if (!selectedMethod) {
-      toast.error('Silakan pilih metode pembayaran');
+      toast.error(t('checkout.paymentDetail.chooseMethod'));
       return;
     }
 
     if (!paymentProof) {
-      toast.error('Silakan upload bukti pembayaran');
+      toast.error(t('checkout.paymentDetail.uploadProof'));
       return;
     }
 
@@ -290,7 +297,10 @@ export default function PaymentDetailPage() {
           formData.append('paymentMethod', selectedMethod.type);
           formData.append('paymentChannel', selectedMethod.name);
           formData.append('file', paymentProof);
-          formData.append('notes', `Pembayaran via ${selectedMethod.name}`);
+          formData.append(
+            'notes',
+            t('checkout.paymentDetail.paymentMethodLabel') + `: ${selectedMethod.name}`
+          );
 
           const response = await fetch(`${API_URL}/qurban/payments`, {
             method: 'POST',
@@ -333,13 +343,13 @@ export default function PaymentDetailPage() {
       // Clear cart since user has committed to payment
       clearCart();
 
-      toast.success('Bukti pembayaran berhasil dikirim! Menunggu verifikasi admin.');
+      toast.success(t('checkout.paymentDetail.proofSubmitted'));
 
       // Redirect to home or thank you page
       router.push('/');
     } catch (error) {
       console.error('Error confirming payment:', error);
-      toast.error('Gagal mengkonfirmasi pembayaran');
+      toast.error(t('checkout.paymentDetail.confirmFailed'));
     } finally {
       setIsConfirming(false);
     }
@@ -377,20 +387,20 @@ export default function PaymentDetailPage() {
             {/* Header */}
             <div className="mb-8">
               <h1 className="section-title text-gray-900 mb-2">
-                Detail Pembayaran
+                {t('checkout.paymentDetail.title')}
               </h1>
               <p className="text-gray-600" style={{ fontSize: '15px' }}>
-                {isBankTransfer && 'Silakan transfer ke rekening berikut'}
-                {isQris && 'Silakan scan QR Code dengan aplikasi e-wallet Anda'}
+                {isBankTransfer && t('checkout.paymentDetail.bankSubtitle')}
+                {isQris && t('checkout.paymentDetail.qrisSubtitle')}
               </p>
             </div>
 
             {/* Payment Methods */}
             {availableMethods.length === 0 ? (
               <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-                <p className="text-gray-500">Tidak ada metode pembayaran yang tersedia untuk program ini</p>
+                <p className="text-gray-500">{t('checkout.paymentDetail.noMethodForProgram')}</p>
                 <Link href="/checkout/payment-method" className="mt-4 inline-block">
-                  <Button variant="outline">Kembali</Button>
+                  <Button variant="outline">{t('checkout.paymentDetail.back')}</Button>
                 </Link>
               </div>
             ) : (
@@ -399,7 +409,9 @@ export default function PaymentDetailPage() {
                 {availableMethods.length > 1 && (
                   <div className="bg-white rounded-lg shadow-sm p-6">
                     <h3 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>
-                      Pilih {isBankTransfer ? 'Rekening' : 'QR Code'}
+                      {isBankTransfer
+                        ? t('checkout.paymentDetail.selectAccount')
+                        : t('checkout.paymentDetail.selectQr')}
                     </h3>
                     <div className="space-y-3">
                       {availableMethods.map((method) => (
@@ -415,7 +427,7 @@ export default function PaymentDetailPage() {
                           <div className="font-semibold text-gray-900">{method.name}</div>
                           {isBankTransfer && method.details?.accountName && (
                             <div className="text-sm text-gray-600 mt-1">
-                              a.n {method.details.accountName}
+                              {t('checkout.paymentDetail.accountName')}: {method.details.accountName}
                             </div>
                           )}
                           {method.programs && method.programs.length > 0 && (
@@ -433,19 +445,21 @@ export default function PaymentDetailPage() {
                 {selectedMethod && (
                   <div className="bg-white rounded-lg shadow-sm p-6">
                     <h3 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>
-                      Detail {isBankTransfer ? 'Rekening' : 'QRIS'}
+                      {isBankTransfer
+                        ? t('checkout.paymentDetail.bankAccountDetail')
+                        : t('checkout.paymentDetail.qrisDetail')}
                     </h3>
 
                     {isBankTransfer && selectedMethod.details && (
                       <div className="space-y-4">
                         <div>
-                          <label className="text-sm text-gray-600">Bank</label>
+                          <label className="text-sm text-gray-600">{t('checkout.paymentDetail.bank')}</label>
                           <p className="font-semibold text-gray-900 text-lg">
                             {selectedMethod.details.bankName || selectedMethod.name}
                           </p>
                         </div>
                         <div>
-                          <label className="text-sm text-gray-600">Nomor Rekening</label>
+                          <label className="text-sm text-gray-600">{t('checkout.paymentDetail.accountNumber')}</label>
                           <div className="flex items-center gap-2">
                             <p className="font-mono font-semibold text-gray-900 text-lg">
                               {selectedMethod.details.accountNumber}
@@ -453,7 +467,7 @@ export default function PaymentDetailPage() {
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(selectedMethod.details?.accountNumber || '');
-                                toast.success('Nomor rekening disalin');
+                                toast.success(t('checkout.paymentDetail.copyAccountSuccess'));
                               }}
                               className="text-primary-600 hover:text-primary-700"
                             >
@@ -464,7 +478,7 @@ export default function PaymentDetailPage() {
                           </div>
                         </div>
                         <div>
-                          <label className="text-sm text-gray-600">Atas Nama</label>
+                          <label className="text-sm text-gray-600">{t('checkout.paymentDetail.accountName')}</label>
                           <p className="font-semibold text-gray-900 text-lg">
                             {selectedMethod.details.accountName}
                           </p>
@@ -492,17 +506,12 @@ export default function PaymentDetailPage() {
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                           </svg>
-                          Simpan QR Code
+                          {t('checkout.paymentDetail.saveQris')}
                         </button>
 
                         <p className="text-sm text-gray-600 mt-4">
-                          Scan QR Code dengan aplikasi e-wallet Anda
+                          {t('checkout.paymentDetail.scanQris')}
                         </p>
-                        {selectedMethod.details.nmid && (
-                          <p className="text-xs text-gray-500 mt-2">
-                            NMID: {selectedMethod.details.nmid}
-                          </p>
-                        )}
                       </div>
                     )}
                   </div>
@@ -511,34 +520,34 @@ export default function PaymentDetailPage() {
                 {/* Total Amount */}
                 <div className="bg-primary-50 rounded-lg p-6 border-2 border-primary-200">
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-700 font-medium">Total Pembayaran</span>
+                    <span className="text-gray-700 font-medium">{t('checkout.paymentDetail.totalPayment')}</span>
                     <span className="text-3xl font-bold text-primary-600 mono">
-                      {formatRupiahFull(getTotalAmount())}
+                      {formatAmount(getTotalAmount())}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">
-                    Transfer tepat sesuai nominal untuk mempercepat verifikasi
+                    {t('checkout.paymentDetail.exactAmountInfo')}
                   </p>
                 </div>
 
                 {/* Instructions */}
                 <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
-                  <h4 className="font-semibold text-blue-900 mb-3" style={{ fontSize: '1.1rem' }}>Instruksi Pembayaran</h4>
+                  <h4 className="font-semibold text-blue-900 mb-3" style={{ fontSize: '1.1rem' }}>{t('checkout.paymentDetail.instructionTitle')}</h4>
                   <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
                     {isBankTransfer && (
                       <>
-                        <li>Transfer ke rekening di atas sesuai total pembayaran</li>
-                        <li>Simpan bukti transfer Anda</li>
-                        <li>Upload bukti transfer di bawah ini</li>
-                        <li>Pembayaran akan diverifikasi dalam 1x24 jam</li>
+                        <li>{t('checkout.paymentDetail.instructionBank1')}</li>
+                        <li>{t('checkout.paymentDetail.instructionBank2')}</li>
+                        <li>{t('checkout.paymentDetail.instructionBank3')}</li>
+                        <li>{t('checkout.paymentDetail.instructionBank4')}</li>
                       </>
                     )}
                     {isQris && (
                       <>
-                        <li>Buka aplikasi e-wallet Anda (GoPay, OVO, Dana, dll)</li>
-                        <li>Scan QR Code di atas</li>
-                        <li>Pastikan nominal sesuai dengan total pembayaran</li>
-                        <li>Upload screenshot bukti pembayaran di bawah ini</li>
+                        <li>{t('checkout.paymentDetail.instructionQris1')}</li>
+                        <li>{t('checkout.paymentDetail.instructionQris2')}</li>
+                        <li>{t('checkout.paymentDetail.instructionQris3')}</li>
+                        <li>{t('checkout.paymentDetail.instructionQris4')}</li>
                       </>
                     )}
                   </ol>
@@ -546,7 +555,7 @@ export default function PaymentDetailPage() {
 
                 {/* Upload Bukti Pembayaran - Desktop */}
                 <div className="hidden lg:block bg-white rounded-lg shadow-sm p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>Upload Bukti Pembayaran</h3>
+                  <h3 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>{t('checkout.paymentDetail.uploadTitle')}</h3>
 
                   <div className="space-y-4">
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
@@ -577,7 +586,7 @@ export default function PaymentDetailPage() {
                               }}
                               className="text-red-600 hover:text-red-700 text-sm"
                             >
-                              Hapus
+                              {t('checkout.paymentDetail.remove')}
                             </button>
                           </div>
                         ) : paymentProof ? (
@@ -594,7 +603,7 @@ export default function PaymentDetailPage() {
                               }}
                               className="text-red-600 hover:text-red-700 text-sm"
                             >
-                              Hapus
+                              {t('checkout.paymentDetail.remove')}
                             </button>
                           </div>
                         ) : (
@@ -603,10 +612,10 @@ export default function PaymentDetailPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
                             <p className="mt-2 text-sm text-gray-600">
-                              Klik untuk upload bukti pembayaran
+                              {t('checkout.paymentDetail.uploadClick')}
                             </p>
                             <p className="text-xs text-gray-500 mt-1">
-                              JPG, PNG, atau PDF (Maks. 5MB)
+                              {t('checkout.paymentDetail.uploadFormat')}
                             </p>
                           </div>
                         )}
@@ -620,7 +629,7 @@ export default function PaymentDetailPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                           <p className="text-sm text-green-800">
-                            File siap diupload. Klik &quot;Konfirmasi Pembayaran&quot; untuk mengirim.
+                            {t('checkout.paymentDetail.fileReady')}
                           </p>
                         </div>
                       </div>
@@ -632,7 +641,7 @@ export default function PaymentDetailPage() {
                 <div className="hidden lg:flex gap-3">
                   <Link href="/checkout/payment-method" className="flex-1">
                     <Button variant="outline" size="lg" className="w-full" disabled={isConfirming}>
-                      Ganti Metode
+                      {t('checkout.paymentDetail.changeMethod')}
                     </Button>
                   </Link>
                   <Button
@@ -641,7 +650,7 @@ export default function PaymentDetailPage() {
                     className="flex-1"
                     disabled={!selectedMethod || !paymentProof || isConfirming}
                   >
-                    {isConfirming ? 'Mengirim...' : 'Kirim Bukti Transfer'}
+                    {isConfirming ? t('checkout.paymentDetail.sending') : t('checkout.paymentDetail.sendProof')}
                   </Button>
                 </div>
               </div>
@@ -653,7 +662,7 @@ export default function PaymentDetailPage() {
       {/* Mobile Sticky Bottom Bar */}
       {isMounted && createPortal(
         <div className="fixed bottom-0 left-0 right-0 z-[1030] bg-white rounded-t-[20px] shadow-[0_-4px_12px_rgba(0,0,0,0.1)] p-4 lg:hidden">
-          <h3 className="font-semibold text-gray-900 mb-3" style={{ fontSize: '1.1rem' }}>Upload Bukti Pembayaran</h3>
+          <h3 className="font-semibold text-gray-900 mb-3" style={{ fontSize: '1.1rem' }}>{t('checkout.paymentDetail.uploadTitle')}</h3>
 
           <div className="mb-3">
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-primary-500 transition-colors">
@@ -689,10 +698,10 @@ export default function PaymentDetailPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
                     <p className="mt-1 text-xs text-gray-600">
-                      Klik untuk upload bukti pembayaran
+                      {t('checkout.paymentDetail.uploadClick')}
                     </p>
                     <p className="text-[10px] text-gray-500 mt-0.5">
-                      JPG, PNG, atau PDF (Maks. 5MB)
+                      {t('checkout.paymentDetail.uploadFormat')}
                     </p>
                   </div>
                 )}
@@ -703,7 +712,7 @@ export default function PaymentDetailPage() {
           <div className="flex gap-2">
             <Link href="/checkout/payment-method" className="flex-1">
               <Button variant="outline" size="lg" className="w-full" disabled={isConfirming}>
-                Ganti Metode
+                {t('checkout.paymentDetail.changeMethod')}
               </Button>
             </Link>
             <Button
@@ -712,7 +721,7 @@ export default function PaymentDetailPage() {
               className="flex-1"
               disabled={!selectedMethod || !paymentProof || isConfirming}
             >
-              {isConfirming ? 'Mengirim...' : 'Kirim Bukti Transfer'}
+              {isConfirming ? t('checkout.paymentDetail.sending') : t('checkout.paymentDetail.sendProof')}
             </Button>
           </div>
         </div>,

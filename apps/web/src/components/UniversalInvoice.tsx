@@ -1,14 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import Link from 'next/link';
 import { Button } from '@/components/atoms';
 import { formatRupiahFull } from '@/lib/format';
-import toast from 'react-hot-toast';
+import toast from '@/lib/feedback-toast';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useSettings } from '@/hooks/useSettings';
+import { getImageUrl } from '@/lib/image';
+import { useI18n } from '@/lib/i18n/provider';
 
 interface UniversalInvoiceProps {
   transactionId: string;
@@ -18,8 +22,68 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
   const router = useRouter();
   const { user } = useAuth();
   const { settings } = useSettings();
+  const { t } = useI18n();
   const [transaction, setTransaction] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const invoiceRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadPdf = useCallback(async () => {
+    if (!invoiceRef.current || isGeneratingPdf) return;
+
+    setIsGeneratingPdf(true);
+    try {
+      const element = invoiceRef.current;
+
+      // Hide action buttons during capture
+      const actionButtons = element.querySelectorAll('[data-hide-pdf]');
+      actionButtons.forEach((el) => (el as HTMLElement).style.display = 'none');
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+
+      // Restore hidden elements
+      actionButtons.forEach((el) => (el as HTMLElement).style.display = '');
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+
+      // If content is taller than one page, add multiple pages
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const txNumber = transaction?.data?.transactionNumber
+        || transaction?.data?.referenceNumber
+        || transactionId;
+      const fileName = `Invoice-${txNumber}.pdf`;
+      pdf.save(fileName);
+      toast.success(t('invoice.downloadPdfSuccess') || 'PDF berhasil diunduh');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error(t('invoice.downloadPdfFailed') || 'Gagal mengunduh PDF');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  }, [isGeneratingPdf, transactionId, transaction]);
 
   useEffect(() => {
     loadTransaction();
@@ -30,7 +94,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
       const response = await api.get(`/transactions/${transactionId}`);
       
       if (!response.data.success) {
-        toast.error('Transaksi tidak ditemukan');
+        toast.error(t('invoice.transactionNotFound'));
         router.push('/');
         return;
       }
@@ -38,7 +102,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
       setTransaction(response.data.data);
     } catch (error) {
       console.error('Error loading transaction:', error);
-      toast.error('Gagal memuat transaksi');
+      toast.error(t('invoice.loadTransactionFailed'));
       router.push('/');
     } finally {
       setIsLoading(false);
@@ -80,19 +144,27 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
   const adminFee = isNewTransaction ? data.adminFee : null;
   const typeSpecificData = isNewTransaction ? data.typeSpecificData : null;
   const productType = isNewTransaction ? data.productType : null;
+  const uniqueCode = isNewTransaction ? (data.uniqueCode || 0) : 0;
+  const transferAmount = isNewTransaction ? (data.transferAmount || totalAmount) : totalAmount;
 
   // Payment status mapping
   const statusConfig = {
-    pending: { label: 'Menunggu Pembayaran', color: 'bg-yellow-100 text-yellow-800' },
-    processing: { label: 'Sedang Diverifikasi', color: 'bg-blue-100 text-blue-800' },
-    paid: { label: 'Lunas', color: 'bg-green-100 text-green-800' },
-    verified: { label: 'Terverifikasi', color: 'bg-green-100 text-green-800' },
-    partial: { label: 'Pembayaran Sebagian', color: 'bg-amber-100 text-amber-800' },
-    expired: { label: 'Kadaluarsa', color: 'bg-red-100 text-red-800' },
-    cancelled: { label: 'Dibatalkan', color: 'bg-gray-100 text-gray-800' },
+    pending: { label: t('invoice.statusPending'), color: 'bg-yellow-100 text-yellow-800' },
+    processing: { label: t('invoice.statusProcessing'), color: 'bg-blue-100 text-blue-800' },
+    paid: { label: t('invoice.statusPaid'), color: 'bg-green-100 text-green-800' },
+    verified: { label: t('invoice.statusVerified'), color: 'bg-green-100 text-green-800' },
+    partial: { label: t('invoice.statusPartial'), color: 'bg-amber-100 text-amber-800' },
+    expired: { label: t('invoice.statusExpired'), color: 'bg-red-100 text-red-800' },
+    cancelled: { label: t('invoice.statusCancelled'), color: 'bg-gray-100 text-gray-800' },
   };
 
   const currentStatus = statusConfig[displayData.paymentStatus as keyof typeof statusConfig] || statusConfig.pending;
+  const invoiceLogoUrl =
+    settings.organization_institution_logo ||
+    settings.organization_logo ||
+    '/logo.svg';
+  const invoiceLogoSrc = getImageUrl(invoiceLogoUrl, '/logo.svg');
+  const invoiceFooterHtml = settings.utilities_invoice_footer?.trim();
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -107,24 +179,33 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    Kembali
+                    {t('invoice.back')}
                   </Button>
                 </Link>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Invoice {transactionNumber}
+                  {t('invoice.title', { number: transactionNumber })}
                 </h1>
               </div>
-              <Button size="sm" className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Download PDF
+              <Button
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={handleDownloadPdf}
+                disabled={isGeneratingPdf}
+              >
+                {isGeneratingPdf ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                )}
+                {isGeneratingPdf ? (t('invoice.generatingPdf') || 'Generating...') : t('invoice.downloadPdf')}
               </Button>
             </div>
           </div>
 
           {/* Main Invoice */}
-          <div className="bg-white rounded-lg shadow-sm p-8 relative overflow-hidden">
+          <div ref={invoiceRef} className="bg-white rounded-lg shadow-sm p-8 relative overflow-hidden">
             {/* PAID Stamp Overlay */}
             {(displayData.paymentStatus === 'paid' || displayData.paymentStatus === 'verified') && (
               <div className="absolute top-40 left-1/2 transform -translate-x-1/2 -rotate-12 pointer-events-none z-10">
@@ -141,18 +222,11 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
               {/* From: Organization */}
               <div>
                 <div className="mb-4">
-                  {settings.organization_logo ? (
-                    <img
-                      src={settings.organization_logo}
-                      alt={settings.site_name || 'Bantuanku'}
-                      className="h-12 w-auto mb-2"
-                    />
-                  ) : (
-                    <>
-                      <div className="text-2xl font-bold text-primary-600 mb-2">Bantuanku</div>
-                      <p className="text-sm text-gray-600">Platform Donasi Digital</p>
-                    </>
-                  )}
+                  <img
+                    src={invoiceLogoSrc}
+                    alt={settings.site_name || 'Bantuanku'}
+                    className="h-12 w-auto mb-2 object-contain"
+                  />
                 </div>
                 <div className="text-sm text-gray-700 space-y-1">
                   <p>Jl. Contoh Alamat No. 123</p>
@@ -164,11 +238,11 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
 
               {/* To: Donor */}
               <div className="text-right">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">Donatur</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-3">{t('invoice.donor')}</h3>
                 <div className="text-sm text-gray-700 space-y-1">
                   <p className="font-semibold text-gray-900">{displayData.donorName}</p>
                   {typeSpecificData?.on_behalf_of && typeSpecificData.on_behalf_of !== displayData.donorName && (
-                    <p className="text-xs text-gray-600">Atas nama: {typeSpecificData.on_behalf_of}</p>
+                    <p className="text-xs text-gray-600">{t('invoice.onBehalfOf', { name: typeSpecificData.on_behalf_of })}</p>
                   )}
                   <p>{displayData.donorEmail || '-'}</p>
                   {displayData.donorPhone && <p>{displayData.donorPhone}</p>}
@@ -179,7 +253,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
             {/* Invoice Metadata */}
             <div className="grid grid-cols-3 gap-4 mb-8 pb-6 border-b-2 border-gray-200">
               <div>
-                <label className="text-xs text-gray-500 uppercase tracking-wide">Tanggal Invoice</label>
+                <label className="text-xs text-gray-500 uppercase tracking-wide">{t('invoice.invoiceDate')}</label>
                 <p className="font-semibold text-gray-900 mt-1">
                   {displayData.createdAt
                     ? new Date(displayData.createdAt).toLocaleDateString('id-ID', {
@@ -191,7 +265,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                 </p>
               </div>
               <div>
-                <label className="text-xs text-gray-500 uppercase tracking-wide">Status</label>
+                <label className="text-xs text-gray-500 uppercase tracking-wide">{t('invoice.status')}</label>
                 <div className="mt-1">
                   <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${currentStatus.color}`}>
                     {currentStatus.label}
@@ -199,8 +273,8 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                 </div>
               </div>
               <div className="text-right">
-                <label className="text-xs text-gray-500 uppercase tracking-wide">Total Tagihan</label>
-                <p className="text-xl font-bold text-gray-900 mt-1">{formatRupiahFull(totalAmount)}</p>
+                <label className="text-xs text-gray-500 uppercase tracking-wide">{uniqueCode > 0 ? t('invoice.totalTransfer') : t('invoice.totalBill')}</label>
+                <p className="text-xl font-bold text-gray-900 mt-1">{formatRupiahFull(uniqueCode > 0 ? transferAmount : totalAmount)}</p>
               </div>
             </div>
 
@@ -209,11 +283,11 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
               <table className="w-full">
                 <thead>
                   <tr className="border-b-2 border-gray-200">
-                    <th className="text-left py-3 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">Item</th>
-                    <th className="text-left py-3 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">Deskripsi</th>
-                    <th className="text-center py-3 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">Qty</th>
-                    <th className="text-right py-3 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">Harga</th>
-                    <th className="text-right py-3 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">Total</th>
+                    <th className="text-left py-3 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">{t('invoice.item')}</th>
+                    <th className="text-left py-3 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">{t('invoice.description')}</th>
+                    <th className="text-center py-3 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">{t('invoice.qty')}</th>
+                    <th className="text-right py-3 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">{t('invoice.price')}</th>
+                    <th className="text-right py-3 px-2 text-xs font-semibold text-gray-600 uppercase tracking-wide">{t('invoice.total')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -222,17 +296,23 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                       {/* Main Product */}
                       <tr className="border-b border-gray-100">
                         <td className="py-4 px-2 text-sm font-medium text-gray-900">
-                          {productName || 'Donasi'}
+                          {productName || t('invoice.donation')}
                         </td>
                         <td className="py-4 px-2 text-sm text-gray-600">
                           {productType === 'qurban' && typeSpecificData?.animal_type && (
                             <span className="capitalize">
-                              {typeSpecificData.animal_type === 'cow' ? 'Sapi' : 'Kambing'}
-                              {typeSpecificData.package_type === 'shared' ? ' - Patungan' : ' - Individual'}
+                              {typeSpecificData.animal_type === 'cow' ? t('invoice.qurbanAnimalCow') : t('invoice.qurbanAnimalGoat')}
+                              {typeSpecificData.package_type === 'shared' ? t('invoice.qurbanShared') : t('invoice.qurbanIndividual')}
                             </span>
                           )}
-                          {productType === 'zakat' && 'Zakat'}
-                          {productType === 'campaign' && 'Donasi Kampanye'}
+                          {productType === 'zakat' && t('invoice.zakat')}
+                          {productType === 'campaign' && t('invoice.campaignDonation')}
+                          {(productType === 'qurban' || productType === 'zakat') &&
+                            (typeSpecificData?.onBehalfOf || typeSpecificData?.on_behalf_of) && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {t('invoice.onBehalfOf', { name: typeSpecificData?.onBehalfOf || typeSpecificData?.on_behalf_of })}
+                              </div>
+                            )}
                         </td>
                         <td className="py-4 px-2 text-sm text-gray-900 text-center">
                           {quantity || 1}
@@ -249,10 +329,10 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                       {adminFee !== null && adminFee !== undefined && adminFee > 0 && (
                         <tr className="border-b border-gray-100">
                           <td className="py-4 px-2 text-sm font-medium text-gray-900">
-                            Biaya Administrasi
+                            {t('invoice.adminFee')}
                           </td>
                           <td className="py-4 px-2 text-sm text-gray-600">
-                            Biaya admin pengelolaan
+                            {t('invoice.adminFeeDesc')}
                           </td>
                           <td className="py-4 px-2 text-sm text-gray-900 text-center">
                             {quantity || 1}
@@ -269,10 +349,10 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                   ) : (
                     <tr className="border-b border-gray-100">
                       <td className="py-4 px-2 text-sm font-medium text-gray-900">
-                        {type === 'qurban' ? 'Qurban' : type === 'zakat' ? 'Zakat' : 'Donasi'}
+                        {type === 'qurban' ? t('invoice.qurban') : type === 'zakat' ? t('invoice.zakat') : t('invoice.donation')}
                       </td>
                       <td className="py-4 px-2 text-sm text-gray-600">
-                        Transaksi {type}
+                        {t('invoice.transactionType', { type })}
                       </td>
                       <td className="py-4 px-2 text-sm text-gray-900 text-center">1</td>
                       <td className="py-4 px-2 text-sm text-gray-900 text-right">
@@ -293,33 +373,44 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                 <div className="space-y-2">
                   {isNewTransaction && (
                     <>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Subtotal:</span>
-                        <span className="font-medium text-gray-900">{formatRupiahFull(subtotal || unitPrice || 0)}</span>
-                      </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">{t('invoice.subtotal')}</span>
+                          <span className="font-medium text-gray-900">{formatRupiahFull(subtotal || unitPrice || 0)}</span>
+                        </div>
                       {adminFee !== null && adminFee !== undefined && adminFee > 0 && (
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Biaya Admin:</span>
+                          <span className="text-gray-600">{t('invoice.adminFee')}:</span>
                           <span className="font-medium text-gray-900">{formatRupiahFull(adminFee)}</span>
                         </div>
                       )}
                     </>
                   )}
+                  {uniqueCode > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">{t('invoice.uniqueCode')}</span>
+                        <span className="font-medium text-gray-900">{formatRupiahFull(uniqueCode)}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 italic">
+                        {t('invoice.uniqueCodeNote')}
+                      </p>
+                    </>
+                  )}
                   <div className="flex justify-between pt-3 border-t-2 border-gray-200">
-                    <span className="text-base font-semibold text-gray-900">Total:</span>
-                    <span className="text-xl font-bold text-gray-900">{formatRupiahFull(totalAmount)}</span>
+                    <span className="text-base font-semibold text-gray-900">{uniqueCode > 0 ? t('invoice.totalTransferLabel') : t('invoice.totalLabel')}</span>
+                    <span className="text-xl font-bold text-gray-900">{formatRupiahFull(uniqueCode > 0 ? transferAmount : totalAmount)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Terbayar:</span>
+                    <span className="text-gray-600">{t('invoice.paid')}</span>
                     <span className="font-medium text-green-600">
                       {displayData.paidAmount ? formatRupiahFull(displayData.paidAmount) : formatRupiahFull(0)}
                     </span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-gray-200">
-                    <span className="text-base font-semibold text-gray-900">Saldo:</span>
+                    <span className="text-base font-semibold text-gray-900">{t('invoice.balance')}</span>
                     <span className="text-lg font-bold text-primary-600">
                       {formatRupiahFull(
-                        totalAmount - (displayData.paidAmount || 0)
+                        (totalAmount + uniqueCode) - (displayData.paidAmount || 0)
                       )}
                     </span>
                   </div>
@@ -330,31 +421,32 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
             {/* Notes */}
             {displayData.message && (
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h4 className="text-sm font-semibold text-gray-700 mb-1">Catatan:</h4>
+                <h4 className="text-sm font-semibold text-gray-700 mb-1">{t('invoice.notes')}</h4>
                 <p className="text-sm text-gray-600">{displayData.message}</p>
               </div>
             )}
 
             {/* Action Buttons */}
-            {displayData.paymentStatus === 'pending' && (
-              <div className="mt-8 pt-6 border-t-2 border-gray-200">
+            {(displayData.paymentStatus === 'pending' || displayData.paymentStatus === 'failed') && (
+              <div data-hide-pdf className="mt-8 pt-6 border-t-2 border-gray-200">
                 <Link href={`/invoice/${transactionId}/payment-method`}>
                   <Button size="lg" className="w-full">
-                    Pilih Metode Pembayaran
+                    {displayData.paymentStatus === 'failed'
+                      ? t('invoice.reconfirmPayment')
+                      : t('invoice.selectPaymentMethod')}
                   </Button>
                 </Link>
               </div>
             )}
 
             {displayData.paymentStatus === 'processing' && (
-              <div className="mt-8 pt-6 border-t-2 border-gray-200">
+              <div data-hide-pdf className="mt-8 pt-6 border-t-2 border-gray-200">
                 <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
                   <p className="text-blue-800 text-center font-bold mb-1">
-                    Bukti Pembayaran Sedang Diverifikasi
+                    {t('invoice.paymentProofProcessingTitle')}
                   </p>
                   <p className="text-blue-700 text-sm text-center">
-                    Terima kasih telah mengirim bukti pembayaran. Tim kami sedang memverifikasi pembayaran Anda.
-                    Anda akan menerima notifikasi setelah pembayaran diverifikasi.
+                    {t('invoice.paymentProofProcessingDesc')}
                   </p>
                 </div>
               </div>
@@ -364,23 +456,30 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
               <div className="mt-8 pt-6 border-t-2 border-gray-200">
                 <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
                   <p className="text-green-800 text-center font-bold text-lg mb-1">
-                    Pembayaran Terverifikasi
+                    {t('invoice.paymentVerifiedTitle')}
                   </p>
                   <p className="text-green-700 text-sm text-center">
-                    Transaksi Anda telah dikonfirmasi dan pembayaran telah diterima. Terima kasih atas kontribusi Anda!
+                    {t('invoice.paymentVerifiedDesc')}
                   </p>
                 </div>
               </div>
             )}
 
             {/* Footer / Terms */}
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <h4 className="text-sm font-bold text-gray-900 mb-2">Ketentuan</h4>
-              <div className="text-xs text-gray-600 space-y-1">
-                <p>Terima kasih atas donasi Anda melalui platform Bantuanku.</p>
-                <p>Invoice ini adalah bukti transaksi yang sah dan dapat digunakan untuk keperluan administrasi.</p>
-                <p>Untuk pertanyaan lebih lanjut, silakan hubungi kami di info@bantuanku.id</p>
-              </div>
+            <div className="mt-8 pt-6 border-t border-gray-200 mb-5">
+              <h4 className="text-sm font-bold text-gray-900 mb-2">{t('invoice.terms')}</h4>
+              {invoiceFooterHtml ? (
+                <div
+                  className="text-sm text-gray-600 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:ml-4"
+                  dangerouslySetInnerHTML={{ __html: invoiceFooterHtml }}
+                />
+              ) : (
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p>{t('invoice.fallbackTerms1')}</p>
+                  <p>{t('invoice.fallbackTerms2')}</p>
+                  <p>{t('invoice.fallbackTerms3')}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

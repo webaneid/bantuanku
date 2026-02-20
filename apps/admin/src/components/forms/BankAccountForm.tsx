@@ -15,7 +15,7 @@
  * ```
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 export interface BankAccountValue {
@@ -41,19 +41,16 @@ export function BankAccountForm({
   className = "",
 }: BankAccountFormProps) {
   const [accounts, setAccounts] = useState<BankAccountValue[]>(value);
+  const lastValueRef = useRef<string>(JSON.stringify(value));
 
   // Sync with external value changes
   useEffect(() => {
-    setAccounts(value);
-  }, [value]);
-
-  // Notify parent of changes
-  useEffect(() => {
-    if (onChange) {
-      onChange(accounts);
+    const nextSerialized = JSON.stringify(value);
+    if (nextSerialized !== lastValueRef.current) {
+      lastValueRef.current = nextSerialized;
+      setAccounts(value);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accounts]);
+  }, [value]);
 
   const handleAddAccount = () => {
     const newAccount: BankAccountValue = {
@@ -61,12 +58,17 @@ export function BankAccountForm({
       accountNumber: "",
       accountHolderName: "",
     };
-    setAccounts([...accounts, newAccount]);
+    const updatedAccounts = [...accounts, newAccount];
+    lastValueRef.current = JSON.stringify(updatedAccounts);
+    setAccounts(updatedAccounts);
+    onChange?.(updatedAccounts);
   };
 
   const handleRemoveAccount = (index: number) => {
     const updatedAccounts = accounts.filter((_, i) => i !== index);
+    lastValueRef.current = JSON.stringify(updatedAccounts);
     setAccounts(updatedAccounts);
+    onChange?.(updatedAccounts);
   };
 
   const handleAccountChange = (index: number, field: keyof BankAccountValue, value: string) => {
@@ -75,7 +77,9 @@ export function BankAccountForm({
       ...updatedAccounts[index],
       [field]: value,
     };
+    lastValueRef.current = JSON.stringify(updatedAccounts);
     setAccounts(updatedAccounts);
+    onChange?.(updatedAccounts);
   };
 
   return (

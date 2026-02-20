@@ -7,10 +7,12 @@ import api from "@/lib/api";
 import { formatRupiahFull } from "@/lib/format";
 import { Button } from "@/components/atoms";
 import { cn } from "@/lib/cn";
+import { useI18n } from "@/lib/i18n/provider";
 
 interface Stats {
   totalDonations: number;
   totalAmount: number;
+  pendingDonations: number;
 }
 
 interface Transaction {
@@ -24,18 +26,19 @@ interface Transaction {
   createdAt: string;
 }
 
-const statusConfig = {
-  pending: { label: "Menunggu", color: "bg-warning-50 text-warning-700 border-warning-200" },
-  processing: { label: "Diproses", color: "bg-blue-50 text-blue-700 border-blue-200" },
-  paid: { label: "Berhasil", color: "bg-success-50 text-success-700 border-success-200" },
-  cancelled: { label: "Dibatalkan", color: "bg-danger-50 text-danger-700 border-danger-200" },
-};
-
 export default function DashboardPage() {
   const { user, isHydrated } = useAuth();
-  const [stats, setStats] = useState<Stats>({ totalDonations: 0, totalAmount: 0 });
+  const { t, locale } = useI18n();
+  const localeTag = locale === "id" ? "id-ID" : "en-US";
+  const [stats, setStats] = useState<Stats>({ totalDonations: 0, totalAmount: 0, pendingDonations: 0 });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const statusConfig = {
+    pending: { label: t("account.dashboard.status.pending"), color: "bg-warning-50 text-warning-700 border-warning-200" },
+    processing: { label: t("account.dashboard.status.processing"), color: "bg-blue-50 text-blue-700 border-blue-200" },
+    paid: { label: t("account.dashboard.status.paid"), color: "bg-success-50 text-success-700 border-success-200" },
+    cancelled: { label: t("account.dashboard.status.cancelled"), color: "bg-danger-50 text-danger-700 border-danger-200" },
+  };
 
   useEffect(() => {
     // Wait for hydration and user before fetching data
@@ -55,7 +58,12 @@ export default function DashboardPage() {
         ]);
 
         if (statsRes.data.success) {
-          setStats(statsRes.data.data);
+          setStats({
+            totalDonations: 0,
+            totalAmount: 0,
+            pendingDonations: 0,
+            ...statsRes.data.data,
+          });
         }
 
         if (transactionsRes.data.success) {
@@ -88,16 +96,16 @@ export default function DashboardPage() {
 
         <div className="relative z-10">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-            Assalamu&apos;alaikum, {user?.name}!
+            {t("account.dashboard.greeting", { name: user?.name || "" })}
           </h1>
           <p className="text-primary-50 text-sm sm:text-base">
-            Terima kasih atas kepercayaan dan kebaikan hati Anda dalam membantu sesama
+            {t("account.dashboard.subtitle")}
           </p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 rounded-lg bg-success-100 flex items-center justify-center">
@@ -106,9 +114,9 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-          <h3 className="text-gray-600 text-sm font-medium mb-1">Total Donasi</h3>
+          <h3 className="text-gray-600 text-sm font-medium mb-1">{t("account.dashboard.stats.totalDonations")}</h3>
           <p className="text-3xl font-bold text-gray-900">{stats.totalDonations}</p>
-          <p className="text-xs text-gray-500 mt-2">Transaksi berhasil</p>
+          <p className="text-xs text-gray-500 mt-2">{t("account.dashboard.stats.successTransactions")}</p>
         </div>
 
         <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
@@ -119,9 +127,22 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-          <h3 className="text-gray-600 text-sm font-medium mb-1">Total Nominal</h3>
+          <h3 className="text-gray-600 text-sm font-medium mb-1">{t("account.dashboard.stats.totalAmount")}</h3>
           <p className="text-2xl sm:text-3xl font-bold text-gray-900">{formatRupiahFull(stats.totalAmount)}</p>
-          <p className="text-xs text-gray-500 mt-2">Kontribusi Anda</p>
+          <p className="text-xs text-gray-500 mt-2">{t("account.dashboard.stats.yourContribution")}</p>
+        </div>
+
+        <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-lg bg-warning-100 flex items-center justify-center">
+              <svg className="w-6 h-6 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z" />
+              </svg>
+            </div>
+          </div>
+          <h3 className="text-gray-600 text-sm font-medium mb-1">{t("account.dashboard.stats.pendingDonations")}</h3>
+          <p className="text-3xl font-bold text-gray-900">{stats.pendingDonations}</p>
+          <p className="text-xs text-gray-500 mt-2">{t("account.dashboard.stats.waitingPayment")}</p>
         </div>
       </div>
 
@@ -136,7 +157,7 @@ export default function DashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <p className="text-sm font-medium text-gray-900">Riwayat</p>
+          <p className="text-sm font-medium text-gray-900">{t("account.dashboard.quickActions.history")}</p>
         </Link>
         <Link
           href="/account/qurban-savings"
@@ -147,7 +168,7 @@ export default function DashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
-          <p className="text-sm font-medium text-gray-900">Tabungan Qurban</p>
+          <p className="text-sm font-medium text-gray-900">{t("account.dashboard.quickActions.qurbanSavings")}</p>
         </Link>
 
         <Link
@@ -159,7 +180,7 @@ export default function DashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
             </svg>
           </div>
-          <p className="text-sm font-medium text-gray-900">Qurban</p>
+          <p className="text-sm font-medium text-gray-900">{t("account.dashboard.quickActions.qurban")}</p>
         </Link>
 
         <Link
@@ -171,7 +192,7 @@ export default function DashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <p className="text-sm font-medium text-gray-900">Profil Saya</p>
+          <p className="text-sm font-medium text-gray-900">{t("account.dashboard.quickActions.profile")}</p>
         </Link>
       </div>
 
@@ -179,13 +200,13 @@ export default function DashboardPage() {
       <div className="bg-white rounded-xl border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">Riwayat Terbaru</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t("account.dashboard.recent.title")}</h2>
             {transactions.length > 0 && (
               <Link
                 href="/account/transactions"
                 className="text-sm text-primary-600 hover:text-primary-700 font-medium"
               >
-                Lihat Semua
+                {t("account.dashboard.recent.viewAll")}
               </Link>
             )}
           </div>
@@ -198,10 +219,10 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <h3 className="text-base font-medium text-gray-900 mb-2">Belum Ada Transaksi</h3>
-            <p className="text-sm text-gray-500 mb-6">Mulai berbagi kebaikan dengan berdonasi sekarang</p>
+            <h3 className="text-base font-medium text-gray-900 mb-2">{t("account.dashboard.recent.emptyTitle")}</h3>
+            <p className="text-sm text-gray-500 mb-6">{t("account.dashboard.recent.emptyDesc")}</p>
             <Link href="/">
-              <Button>Mulai Berdonasi</Button>
+              <Button>{t("account.dashboard.recent.startDonating")}</Button>
             </Link>
           </div>
         ) : (
@@ -231,7 +252,7 @@ export default function DashboardPage() {
                         {formatRupiahFull(transaction.totalAmount)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {new Date(transaction.createdAt).toLocaleDateString("id-ID", {
+                        {new Date(transaction.createdAt).toLocaleDateString(localeTag, {
                           day: "numeric",
                           month: "long",
                           year: "numeric",

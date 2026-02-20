@@ -2,6 +2,20 @@ import { eq, sql } from "drizzle-orm";
 import { ledgerAccounts, ledgerEntries, ledgerLines, createId } from "@bantuanku/db";
 import type { Database } from "@bantuanku/db";
 
+const DEFAULT_BANK_ACCOUNT_CODE = "6206"; // Payment Gateway
+const DEFAULT_INCOME_ACCOUNT_CODE = "4300"; // Pendapatan Qurban (default income bucket)
+
+function mapCategoryToIncomeAccount(category?: string): string {
+  if (!category) return DEFAULT_INCOME_ACCOUNT_CODE;
+
+  if (category === "qurban_admin_fee") return "4310";
+  if (category === "wakaf") return "4311";
+  if (category === "fidyah") return "4312";
+  if (category.startsWith("qurban_")) return "4300";
+
+  return DEFAULT_INCOME_ACCOUNT_CODE;
+}
+
 interface LedgerLineInput {
   accountCode: string;
   debit?: number;
@@ -74,10 +88,15 @@ export async function createDonationLedgerEntry(
     donorName: string;
     paymentMethod?: string;
     bankAccountCode?: string;
+    incomeAccountCode?: string;
+    category?: string;
     createdBy?: string;
   }
 ) {
-  const bankCode = params.bankAccountCode || "1020";
+  const bankCode = params.bankAccountCode || DEFAULT_BANK_ACCOUNT_CODE;
+  const incomeCode =
+    params.incomeAccountCode ||
+    mapCategoryToIncomeAccount(params.category);
 
   return createLedgerEntry(db, {
     refType: "donation",
@@ -91,9 +110,9 @@ export async function createDonationLedgerEntry(
         description: `Terima donasi via ${params.paymentMethod || 'Transfer Bank'}`
       },
       {
-        accountCode: "2010",
+        accountCode: incomeCode,
         credit: params.amount,
-        description: `Titipan donasi untuk ${params.campaignTitle}`
+        description: `Pendapatan donasi untuk ${params.campaignTitle}`
       },
     ],
   });
@@ -109,10 +128,15 @@ export async function createDisbursementLedgerEntry(
     campaignTitle: string;
     paymentMethod?: string;
     bankAccountCode?: string;
+    expenseAccountCode?: string;
+    category?: string;
     createdBy?: string;
   }
 ) {
-  const bankCode = params.bankAccountCode || "1020";
+  const bankCode = params.bankAccountCode || DEFAULT_BANK_ACCOUNT_CODE;
+  const expenseCode =
+    params.expenseAccountCode ||
+    mapCategoryToIncomeAccount(params.category);
 
   return createLedgerEntry(db, {
     refType: "disbursement",
@@ -121,9 +145,9 @@ export async function createDisbursementLedgerEntry(
     createdBy: params.createdBy,
     lines: [
       {
-        accountCode: "2010",
+        accountCode: expenseCode,
         debit: params.amount,
-        description: `Penyaluran titipan untuk ${params.campaignTitle}`
+        description: `Beban/penyaluran untuk ${params.campaignTitle}`
       },
       {
         accountCode: bankCode,
@@ -152,7 +176,7 @@ export async function getAccountBalance(db: Database, accountCode: string) {
   const totalDebit = Number(result[0]?.totalDebit || 0);
   const totalCredit = Number(result[0]?.totalCredit || 0);
 
-  const balance = account.normalSide === "debit"
+  const balance = account.normalBalance === "debit"
     ? totalDebit - totalCredit
     : totalCredit - totalDebit;
 

@@ -45,6 +45,8 @@ export default function VendorsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [isViewMode, setIsViewMode] = useState(false);
+  const [vendorToDelete, setVendorToDelete] = useState<Vendor | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [feedback, setFeedback] = useState<{
     open: boolean;
     type: "success" | "error";
@@ -106,9 +108,15 @@ export default function VendorsPage() {
   };
 
   const handleDelete = (vendor: Vendor) => {
-    if (confirm(`Yakin ingin menghapus vendor "${vendor.name}"?`)) {
-      deleteMutation.mutate(vendor.id);
-    }
+    setVendorToDelete(vendor);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!vendorToDelete) return;
+    deleteMutation.mutate(vendorToDelete.id);
+    setIsDeleteModalOpen(false);
+    setVendorToDelete(null);
   };
 
   const handleModalClose = () => {
@@ -382,6 +390,38 @@ export default function VendorsPage() {
         vendor={selectedVendor}
         isViewMode={isViewMode}
       />
+
+      {isDeleteModalOpen && vendorToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Hapus Vendor</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Yakin ingin menghapus vendor &quot;{vendorToDelete.name}&quot;?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setVendorToDelete(null);
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-md"
+                onClick={handleConfirmDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <FeedbackDialog
         open={feedback.open}

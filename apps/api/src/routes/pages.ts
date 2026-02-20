@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { eq } from "drizzle-orm";
-import { pages, settings } from "@bantuanku/db";
+import { and, eq } from "drizzle-orm";
+import { pages } from "@bantuanku/db";
 import { success, error } from "../lib/response";
 import type { Env, Variables } from "../types";
 
@@ -11,20 +11,31 @@ pagesRoute.get("/:slug", async (c) => {
   const slug = c.req.param("slug");
 
   const page = await db.query.pages.findFirst({
-    where: eq(pages.slug, slug),
+    where: and(eq(pages.slug, slug), eq(pages.isPublished, true)),
     columns: {
       id: true,
       slug: true,
       title: true,
+      featureImageUrl: true,
       content: true,
       excerpt: true,
+      publishedAt: true,
+      updatedAt: true,
+      // SEO fields
       metaTitle: true,
       metaDescription: true,
-      publishedAt: true,
+      focusKeyphrase: true,
+      canonicalUrl: true,
+      noIndex: true,
+      noFollow: true,
+      ogTitle: true,
+      ogDescription: true,
+      ogImageUrl: true,
+      seoScore: true,
     },
   });
 
-  if (!page || !page.publishedAt) {
+  if (!page) {
     return error(c, "Page not found", 404);
   }
 
@@ -40,6 +51,7 @@ pagesRoute.get("/", async (c) => {
       id: true,
       slug: true,
       title: true,
+      featureImageUrl: true,
       excerpt: true,
     },
   });

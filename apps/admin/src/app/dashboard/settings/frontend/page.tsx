@@ -8,6 +8,7 @@ import api from "@/lib/api";
 import MediaLibrary from "@/components/MediaLibrary";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import URLAutocomplete from "@/components/URLAutocomplete";
+import RichTextEditor from "@/components/RichTextEditor";
 
 type MenuItem = {
   id: string;
@@ -357,6 +358,7 @@ export default function FrontendSettingsPage() {
   const [columnForm, setColumnForm] = useState({ title: "", items: [] as MenuItem[] });
   const [editingFooterItemId, setEditingFooterItemId] = useState<string | null>(null);
   const [footerItemForm, setFooterItemForm] = useState({ label: "", url: "" });
+  const [deleteColumnId, setDeleteColumnId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState({
     open: false,
     type: "success" as "success" | "error",
@@ -435,6 +437,9 @@ export default function FrontendSettingsPage() {
   // Utilities state
   const [campaignAmounts, setCampaignAmounts] = useState<number[]>([50000, 100000, 200000]);
   const [wakafAmounts, setWakafAmounts] = useState<number[]>([100000, 500000, 1000000]);
+  const [invoiceFooter, setInvoiceFooter] = useState<string>(
+    "<p>Terima kasih atas donasi Anda melalui platform Bantuanku.</p><p>Invoice ini adalah bukti transaksi yang sah dan dapat digunakan untuk keperluan administrasi.</p><p>Untuk pertanyaan lebih lanjut, silakan hubungi kami di info@bantuanku.id</p>"
+  );
 
   // Fetch settings to load menu items
   const { data: groupedSettings } = useQuery({
@@ -650,6 +655,12 @@ export default function FrontendSettingsPage() {
         } catch (error) {
           console.error("Failed to parse wakaf amounts:", error);
         }
+      }
+
+      // Load utilities - invoice footer
+      const invoiceFooterSetting = frontendSettings.find((s: any) => s.key === "utilities_invoice_footer");
+      if (invoiceFooterSetting?.value) {
+        setInvoiceFooter(invoiceFooterSetting.value);
       }
     }
   }, [groupedSettings]);
@@ -1232,6 +1243,16 @@ export default function FrontendSettingsPage() {
           type: "json" as const,
           label: "Rekomendasi Nominal Wakaf",
           description: "Nominal rekomendasi untuk wakaf",
+          isPublic: true,
+        });
+
+        payload.push({
+          key: "utilities_invoice_footer",
+          value: invoiceFooter,
+          category: "frontend",
+          type: "string" as const,
+          label: "Footer Invoice",
+          description: "Konten footer untuk halaman invoice",
           isPublic: true,
         });
       }
@@ -2605,11 +2626,7 @@ export default function FrontendSettingsPage() {
                                 <PencilIcon className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => {
-                                  if (confirm('Hapus kolom ini?')) {
-                                    setFooterColumns(footerColumns.filter(col => col.id !== column.id));
-                                  }
-                                }}
+                                onClick={() => setDeleteColumnId(column.id)}
                                 className="btn btn-ghost btn-sm text-red-600 hover:text-red-700"
                               >
                                 <TrashIcon className="w-4 h-4" />
@@ -3118,6 +3135,22 @@ export default function FrontendSettingsPage() {
                 </div>
               </div>
 
+              {/* Invoice Footer */}
+              <div className="pt-8 border-t border-gray-200">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Footer Invoice</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Konten footer yang ditampilkan di bagian bawah kwitansi/invoice
+                  </p>
+                </div>
+
+                <RichTextEditor
+                  value={invoiceFooter}
+                  onChange={setInvoiceFooter}
+                  placeholder="Tulis ketentuan atau informasi tambahan untuk footer invoice..."
+                />
+              </div>
+
               {/* Save Button */}
               <div className="flex justify-end pt-4 border-t border-gray-200">
                 <button onClick={handleSaveAll} className="btn btn-primary btn-md">
@@ -3141,6 +3174,38 @@ export default function FrontendSettingsPage() {
         accept="image/*"
         category="activity"
       />
+
+      {deleteColumnId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Hapus Kolom</h2>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-700">Hapus kolom ini?</p>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={() => setDeleteColumnId(null)}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-md"
+                onClick={() => {
+                  setFooterColumns(footerColumns.filter(col => col.id !== deleteColumnId));
+                  setDeleteColumnId(null);
+                }}
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </SettingsLayout>
 
     <FeedbackDialog

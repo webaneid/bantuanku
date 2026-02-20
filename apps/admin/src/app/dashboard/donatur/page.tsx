@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon, PencilIcon, EyeIcon } from "@heroicons/react/24/outline";
 import api from "@/lib/api";
-import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import DonorModal from "@/components/modals/DonorModal";
+import FeedbackDialog from "@/components/FeedbackDialog";
 
 interface Donatur {
   id: string;
@@ -29,6 +29,12 @@ export default function DonaturPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDonatur, setEditingDonatur] = useState<Donatur | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
 
   // Fetch donatur from donatur table
   const { data: donaturData, isLoading } = useQuery({
@@ -56,8 +62,13 @@ export default function DonaturPage() {
     setEditingDonatur(null);
   };
 
-  const handleSuccess = (createdId?: string) => {
-    toast.success(editingDonatur ? "Donatur berhasil diperbarui!" : "Donatur berhasil dibuat!");
+  const handleSuccess = () => {
+    setFeedback({
+      open: true,
+      type: "success",
+      title: "Berhasil",
+      message: editingDonatur ? "Donatur berhasil diperbarui!" : "Donatur berhasil dibuat!",
+    });
     queryClient.invalidateQueries({ queryKey: ["donatur"] });
     closeModal();
   };
@@ -254,7 +265,22 @@ export default function DonaturPage() {
         isOpen={isModalOpen}
         onClose={closeModal}
         onSuccess={handleSuccess}
-        donatur={editingDonatur}
+        donatur={editingDonatur
+          ? {
+              ...editingDonatur,
+              phone: editingDonatur.phone ?? undefined,
+              whatsappNumber: editingDonatur.whatsappNumber ?? undefined,
+              website: editingDonatur.website ?? undefined,
+            }
+          : null}
+      />
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
       />
     </div>
   );

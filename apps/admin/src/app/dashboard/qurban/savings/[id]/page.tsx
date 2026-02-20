@@ -10,6 +10,7 @@ import api from "@/lib/api";
 import Autocomplete from "@/components/Autocomplete";
 import MediaLibrary from "@/components/MediaLibrary";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import { useAuth } from "@/lib/auth";
 
 interface Savings {
   id: string;
@@ -55,7 +56,9 @@ interface BankAccount {
   accountName: string;
 }
 
-export default function SavingsDetailPage({ params }: { params: { id: string } }) {
+export default function SavingsDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { user } = useAuth();
+  const isMitra = user?.roles?.includes("mitra") && user.roles.length === 1;
   const resolvedParams = React.use(params);
   const savingsId = resolvedParams.id;
   const router = useRouter();
@@ -74,6 +77,17 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
     type: "success" as "success" | "error",
     title: "",
     message: "",
+  });
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    action: null | { type: "verify"; transactionId: string } | { type: "reject"; transactionId: string } | { type: "convert" };
+  }>({
+    open: false,
+    title: "",
+    message: "",
+    action: null,
   });
 
   // Fetch savings detail
@@ -116,6 +130,7 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
       }
       return [];
     },
+    enabled: !isMitra && showAddDepositModal,
   });
 
   const paymentChannelOptions = [
@@ -166,9 +181,17 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
   };
 
   // Verify deposit
-  const handleVerifyDeposit = async (transactionId: string) => {
+  const handleVerifyDeposit = async (transactionId: string, confirmed = false) => {
     if (!savings) return;
-    if (!confirm("Verifikasi setoran ini?")) return;
+    if (!confirmed) {
+      setConfirmDialog({
+        open: true,
+        title: "Verifikasi Setoran",
+        message: "Verifikasi setoran ini?",
+        action: { type: "verify", transactionId },
+      });
+      return;
+    }
     try {
       await api.post(`/admin/qurban/savings/${savings.id}/transactions/${transactionId}/verify`, {});
       queryClient.invalidateQueries({ queryKey: ["qurban-savings-detail", savingsId] });
@@ -190,9 +213,17 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
   };
 
   // Reject deposit
-  const handleRejectDeposit = async (transactionId: string) => {
+  const handleRejectDeposit = async (transactionId: string, confirmed = false) => {
     if (!savings) return;
-    if (!confirm("Tolak setoran ini?")) return;
+    if (!confirmed) {
+      setConfirmDialog({
+        open: true,
+        title: "Tolak Setoran",
+        message: "Tolak setoran ini?",
+        action: { type: "reject", transactionId },
+      });
+      return;
+    }
     try {
       await api.post(`/admin/qurban/savings/${savings.id}/transactions/${transactionId}/reject`, {});
       queryClient.invalidateQueries({ queryKey: ["qurban-savings-detail", savingsId] });
@@ -214,9 +245,17 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
   };
 
   // Convert savings to order
-  const handleConvertToOrder = async () => {
+  const handleConvertToOrder = async (confirmed = false) => {
     if (!savings) return;
-    if (!confirm("Konversi tabungan ini menjadi order? Pastikan tabungan sudah lunas.")) return;
+    if (!confirmed) {
+      setConfirmDialog({
+        open: true,
+        title: "Konversi Tabungan",
+        message: "Konversi tabungan ini menjadi order? Pastikan tabungan sudah lunas.",
+        action: { type: "convert" },
+      });
+      return;
+    }
     try {
       const response = await api.post(`/admin/qurban/savings/${savings.id}/convert`, {});
       queryClient.invalidateQueries({ queryKey: ["qurban-savings-detail", savingsId] });
@@ -235,6 +274,23 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
       });
       console.error(error);
     }
+  };
+
+  const handleConfirmAction = async () => {
+    if (!confirmDialog.action) return;
+    if (confirmDialog.action.type === "verify") {
+      await handleVerifyDeposit(confirmDialog.action.transactionId, true);
+    } else if (confirmDialog.action.type === "reject") {
+      await handleRejectDeposit(confirmDialog.action.transactionId, true);
+    } else if (confirmDialog.action.type === "convert") {
+      await handleConvertToOrder(true);
+    }
+    setConfirmDialog({
+      open: false,
+      title: "",
+      message: "",
+      action: null,
+    });
   };
 
   const formatPrice = (price: number) => {
@@ -375,8 +431,8 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
                 <div>
                   <p className="text-xs text-gray-500">Cicilan</p>
                   <p className="font-medium">{formatPrice(savings.installmentAmount)}</p>
-                  {savings.installmentCount && (
-                    <p className="text-xs text-gray-500">{savings.installmentCount}x cicilan</p>
+                  {savings.installmentAmount && savings.targetAmount && (
+                    <p className="text-xs text-gray-500">{Math.ceil(savings.targetAmount / savings.installmentAmount)}x cicilan</p>
                   )}
                 </div>
                 <div>
@@ -391,7 +447,7 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold">Riwayat Transaksi</h3>
-              {savings.status === "active" && (
+              {!isMitra && savings.status === "active" && (
                 <button
                   onClick={() => setShowAddDepositModal(true)}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
@@ -441,7 +497,7 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
                     {trx.notes && (
                       <p className="text-sm text-gray-600 mt-2 pt-2 border-t">{trx.notes}</p>
                     )}
-                    {trx.status === "pending" && trx.transactionType === "deposit" && (
+                    {!isMitra && trx.status === "pending" && trx.transactionType === "deposit" && (
                       <div className="flex gap-2 mt-3">
                         <button
                           onClick={() => handleVerifyDeposit(trx.id)}
@@ -501,9 +557,9 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
           )}
 
           {/* Action Buttons */}
-          {savings.status === "completed" && !savings.convertedOrderId && (
+          {!isMitra && savings.status === "completed" && !savings.convertedOrderId && (
             <button
-              onClick={handleConvertToOrder}
+              onClick={() => handleConvertToOrder()}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2"
             >
               <ArrowRight className="h-5 w-5" />
@@ -659,6 +715,42 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {confirmDialog.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="px-6 py-4 border-b">
+              <h2 className="text-lg font-semibold">{confirmDialog.title}</h2>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-sm text-gray-700">{confirmDialog.message}</p>
+            </div>
+            <div className="flex gap-3 justify-end px-6 py-4 border-t bg-gray-50">
+              <button
+                type="button"
+                onClick={() =>
+                  setConfirmDialog({
+                    open: false,
+                    title: "",
+                    message: "",
+                    action: null,
+                  })
+                }
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50 bg-white"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAction}
+                className="px-4 py-2 bg-danger-600 text-white rounded-lg hover:bg-danger-700"
+              >
+                Lanjutkan
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -4,14 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "dev:node": "tsx watch server-node.ts",
+    "dev": "tsx watch server-node.ts",
+    "start": "tsx server-node.ts",
     "check-media-consistency": "node --import tsx/esm scripts/check-media-consistency.ts",
+    "cleanup-local-originals": "node --import tsx/esm scripts/cleanup-local-originals.ts",
+    "backfill-qurban-savings-universal": "node --import tsx/esm scripts/backfill-qurban-savings-universal.ts",
     "migrate-shared-orders": "node --import tsx/esm scripts/migrate-shared-orders.ts",
     "sync-group-slots": "node --import tsx/esm scripts/sync-group-slots.ts",
-    "sync-payment-status": "node --import tsx/esm scripts/sync-payment-status.ts",
-    "deploy": "wrangler deploy --minify",
-    "cf-typegen": "wrangler types"
+    "sync-payment-status": "node --import tsx/esm scripts/sync-payment-status.ts"
   },
   "dependencies": {
     "@bantuanku/db": "*",
@@ -19,15 +19,18 @@
     "@hono/zod-validator": "^0.4.2",
     "bcryptjs": "^2.4.3",
     "date-fns-tz": "^3.2.0",
+    "dotenv": "^16.4.7",
     "hono": "^4.6.16",
     "jose": "^5.9.6",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.34.5",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250109.0",
     "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^22.13.4",
+    "@types/qrcode": "^1.5.6",
     "tsx": "^4.21.0",
-    "typescript": "^5.7.3",
-    "wrangler": "^3.99.0"
+    "typescript": "^5.7.3"
   }
 }

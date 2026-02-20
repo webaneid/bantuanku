@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import Autocomplete from "@/components/Autocomplete";
@@ -107,7 +107,7 @@ export default function DonationsPage() {
 
       return response.data;
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   const donations = data?.data || [];

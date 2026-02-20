@@ -9,8 +9,13 @@ import FeedbackDialog from "@/components/FeedbackDialog";
 type AmilForm = {
   qurbanPerEkor: string;
   qurbanSapi: string;
+  qurbanOwnerPercentage: string;
   zakatPercentage: string;
   donationPercentage: string;
+  fundraiserPercentage: string;
+  mitraPercentage: string;
+  mitraDonationPercentage: string;
+  developerPercentage: string;
 };
 
 export default function AmilSettingsPage() {
@@ -18,8 +23,13 @@ export default function AmilSettingsPage() {
   const [form, setForm] = useState<AmilForm>({
     qurbanPerEkor: "",
     qurbanSapi: "",
+    qurbanOwnerPercentage: "0",
     zakatPercentage: "12.5",
     donationPercentage: "20",
+    fundraiserPercentage: "",
+    mitraPercentage: "",
+    mitraDonationPercentage: "",
+    developerPercentage: "",
   });
 
   const { data: groupedSettings, isLoading } = useQuery({
@@ -51,15 +61,25 @@ export default function AmilSettingsPage() {
     const nextForm: AmilForm = {
       qurbanPerEkor: "0",
       qurbanSapi: "0",
+      qurbanOwnerPercentage: "0",
       zakatPercentage: "12.5",
       donationPercentage: "20",
+      fundraiserPercentage: "",
+      mitraPercentage: "",
+      mitraDonationPercentage: "",
+      developerPercentage: "",
     };
 
     amilSettings.forEach((setting: any) => {
       if (setting.key === "amil_qurban_perekor_fee") nextForm.qurbanPerEkor = setting.value || "0";
       if (setting.key === "amil_qurban_sapi_fee") nextForm.qurbanSapi = setting.value || "0";
+      if (setting.key === "amil_qurban_owner_percentage") nextForm.qurbanOwnerPercentage = setting.value || "0";
       if (setting.key === "amil_zakat_percentage") nextForm.zakatPercentage = setting.value || "12.5";
       if (setting.key === "amil_donation_percentage") nextForm.donationPercentage = setting.value || "20";
+      if (setting.key === "amil_fundraiser_percentage") nextForm.fundraiserPercentage = setting.value || "";
+      if (setting.key === "amil_mitra_percentage") nextForm.mitraPercentage = setting.value || "";
+      if (setting.key === "amil_mitra_donation_percentage") nextForm.mitraDonationPercentage = setting.value || "";
+      if (setting.key === "amil_developer_percentage") nextForm.developerPercentage = setting.value || "";
     });
 
     setForm(nextForm);
@@ -98,6 +118,16 @@ export default function AmilSettingsPage() {
       });
       return;
     }
+    const qurbanOwnerValue = parseFloat(form.qurbanOwnerPercentage || "0");
+    if (qurbanOwnerValue < 0 || qurbanOwnerValue > 100) {
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Batas terlewati",
+        message: "Prosentasi Biaya Admin Qurban (Pemilik Aplikasi) harus antara 0% sampai 100%.",
+      });
+      return;
+    }
 
     const payload = [
       {
@@ -105,8 +135,8 @@ export default function AmilSettingsPage() {
         value: form.qurbanPerEkor || "0",
         category: "amil",
         type: "number" as const,
-        label: "Administrasi Qurban per ekor",
-        description: "Biaya administrasi per ekor qurban",
+        label: "Administrasi Qurban Kambing",
+        description: "Biaya administrasi qurban kambing per ekor",
         isPublic: true,
       },
       {
@@ -117,6 +147,14 @@ export default function AmilSettingsPage() {
         label: "Administrasi Qurban sapi",
         description: "Biaya administrasi qurban sapi",
         isPublic: true,
+      },
+      {
+        key: "amil_qurban_owner_percentage",
+        value: form.qurbanOwnerPercentage || "0",
+        category: "amil",
+        type: "number" as const,
+        label: "Prosentasi Biaya Admin Qurban (Pemilik Aplikasi)",
+        description: "Persentase hak pemilik aplikasi dari biaya admin qurban",
       },
       {
         key: "amil_zakat_percentage",
@@ -133,6 +171,38 @@ export default function AmilSettingsPage() {
         type: "number" as const,
         label: "Prosentase Amil Shodaqoh & Donasi",
         description: "Persentase alokasi amil untuk shodaqoh/donasi",
+      },
+      {
+        key: "amil_fundraiser_percentage",
+        value: form.fundraiserPercentage || "",
+        category: "amil",
+        type: "number" as const,
+        label: "Prosentase Fundraiser",
+        description: "Persentase alokasi untuk fundraiser",
+      },
+      {
+        key: "amil_mitra_percentage",
+        value: form.mitraPercentage || "",
+        category: "amil",
+        type: "number" as const,
+        label: "Prosentase Mitra Untuk Zakat",
+        description: "Persentase alokasi mitra untuk program zakat",
+      },
+      {
+        key: "amil_mitra_donation_percentage",
+        value: form.mitraDonationPercentage || "",
+        category: "amil",
+        type: "number" as const,
+        label: "Prosentase Mitra Untuk Shodaqoh",
+        description: "Persentase alokasi mitra untuk campaign/shodaqoh",
+      },
+      {
+        key: "amil_developer_percentage",
+        value: form.developerPercentage || "",
+        category: "amil",
+        type: "number" as const,
+        label: "Prosentase Developer",
+        description: "Persentase alokasi untuk developer",
       },
     ];
 
@@ -158,7 +228,7 @@ export default function AmilSettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                Administrasi Qurban perekor (Rp)
+                Administrasi Qurban Kambing (Rp)
               </label>
               <input
                 type="number"
@@ -182,6 +252,24 @@ export default function AmilSettingsPage() {
                 onChange={(e) => setForm({ ...form, qurbanSapi: e.target.value })}
               />
               <p className="text-xs text-gray-500">Biaya administrasi untuk qurban sapi.</p>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Prosentasi Biaya Admin Qurban (Pemilik Aplikasi) (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                className="form-input"
+                value={form.qurbanOwnerPercentage}
+                onChange={(e) => setForm({ ...form, qurbanOwnerPercentage: e.target.value })}
+              />
+              <p className="text-xs text-gray-500">
+                Khusus qurban mitra: sisa admin fee otomatis menjadi hak mitra.
+              </p>
             </div>
           </div>
 
@@ -217,6 +305,72 @@ export default function AmilSettingsPage() {
                 onChange={(e) => setForm({ ...form, donationPercentage: e.target.value })}
               />
               <p className="text-xs text-gray-500">Default 20% dan bisa disesuaikan.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Prosentase Fundraiser (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                className="form-input"
+                value={form.fundraiserPercentage}
+                onChange={(e) => setForm({ ...form, fundraiserPercentage: e.target.value })}
+                placeholder="0"
+              />
+              <p className="text-xs text-gray-500">Kosongkan jika tidak digunakan.</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Prosentase Mitra Untuk Zakat (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                className="form-input"
+                value={form.mitraPercentage}
+                onChange={(e) => setForm({ ...form, mitraPercentage: e.target.value })}
+                placeholder="0"
+              />
+              <p className="text-xs text-gray-500">Kosongkan jika tidak digunakan.</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Prosentase Mitra Untuk Shodaqoh (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                className="form-input"
+                value={form.mitraDonationPercentage}
+                onChange={(e) => setForm({ ...form, mitraDonationPercentage: e.target.value })}
+                placeholder="0"
+              />
+              <p className="text-xs text-gray-500">Kosongkan jika tidak digunakan.</p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Prosentase Developer (%)
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                className="form-input"
+                value={form.developerPercentage}
+                onChange={(e) => setForm({ ...form, developerPercentage: e.target.value })}
+                placeholder="0"
+              />
+              <p className="text-xs text-gray-500">Kosongkan jika tidak digunakan.</p>
             </div>
           </div>
 

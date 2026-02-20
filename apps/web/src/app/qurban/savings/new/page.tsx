@@ -3,25 +3,27 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createSavings } from '@/services/qurban-savings';
-import { fetchPackageDetail, fetchActivePeriods, type QurbanPackage, type QurbanPeriod, getAnimalTypeLabel, getPackageTypeLabel } from '@/services/qurban';
+import { fetchPackageDetail, type QurbanPackage } from '@/services/qurban';
 import { fetchPublicSettings, type PublicSettings } from '@/services/settings';
 import { useAuth } from '@/lib/auth';
 import { formatRupiahFull } from '@/lib/format';
+import { useI18n } from '@/lib/i18n/provider';
 
 export default function NewSavingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isHydrated } = useAuth();
-  const packagePeriodId = searchParams.get('packagePeriodId'); // Changed to packagePeriodId
-  const periodIdFromQuery = searchParams.get('periodId');
+  const { t } = useI18n();
+  const packagePeriodIdFromQuery = searchParams.get('packagePeriodId');
 
   const [qurbanPackage, setQurbanPackage] = useState<QurbanPackage | null>(null);
-  const [periods, setPeriods] = useState<QurbanPeriod[]>([]);
   const [settings, setSettings] = useState<PublicSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    selectedPeriodId: periodIdFromQuery || '',
+    selectedPeriodId: '',
+    selectedPackagePeriodId: '',
+    selectedPackagePrice: 0,
     installmentFrequency: 'monthly' as 'weekly' | 'monthly',
     installmentCount: 6, // Berapa kali cicilan
     installmentDay: 5, // Untuk bulanan: tanggal, untuk mingguan: hari (1=Senin)
@@ -47,7 +49,8 @@ export default function NewSavingsPage() {
   };
 
   const adminFee = calculateAdminFee();
-  const totalTarget = qurbanPackage ? qurbanPackage.price + adminFee : 0;
+  const packagePrice = formData.selectedPackagePrice || qurbanPackage?.price || 0;
+  const totalTarget = qurbanPackage ? packagePrice + adminFee : 0;
   const installmentAmount = formData.installmentCount > 0
     ? Math.ceil(totalTarget / formData.installmentCount)
     : 0;
@@ -60,43 +63,44 @@ export default function NewSavingsPage() {
       return;
     }
 
-    if (!packagePeriodId) {
+    if (!packagePeriodIdFromQuery) {
       router.push('/qurban');
       return;
     }
 
     loadPackage();
-  }, [isHydrated, user, packagePeriodId, router]);
+  }, [isHydrated, user, packagePeriodIdFromQuery, router]);
 
   const loadPackage = async () => {
-    if (!packagePeriodId) return;
+    if (!packagePeriodIdFromQuery) return;
 
     try {
       setIsLoading(true);
-      const [packageResponse, periodsResponse, settingsData] = await Promise.all([
-        fetchPackageDetail(packagePeriodId),
-        fetchActivePeriods(),
+      const [packageResponse, settingsData] = await Promise.all([
+        fetchPackageDetail(packagePeriodIdFromQuery),
         fetchPublicSettings(),
       ]);
 
       const packageData = packageResponse.data || packageResponse;
-      const periodsData = periodsResponse.data || periodsResponse;
+      const availablePeriods = Array.isArray(packageData.availablePeriods)
+        ? packageData.availablePeriods
+        : [];
 
       setQurbanPackage(packageData);
-      setPeriods(periodsData);
       setSettings(settingsData);
+      const defaultSelectedPeriod = availablePeriods.find(
+        (period: any) => period.packagePeriodId === packagePeriodIdFromQuery
+      );
 
-      // Set default period: prioritas dari query, lalu dari package, lalu periode pertama
-      if (periodIdFromQuery) {
-        setFormData(prev => ({ ...prev, selectedPeriodId: periodIdFromQuery }));
-      } else if (packageData.periodId) {
-        setFormData(prev => ({ ...prev, selectedPeriodId: packageData.periodId }));
-      } else if (periodsData.length > 0) {
-        setFormData(prev => ({ ...prev, selectedPeriodId: periodsData[0].id }));
-      }
+      setFormData((prev) => ({
+        ...prev,
+        selectedPeriodId: defaultSelectedPeriod?.periodId || packageData.periodId || '',
+        selectedPackagePeriodId: defaultSelectedPeriod?.packagePeriodId || packageData.packagePeriodId || packagePeriodIdFromQuery,
+        selectedPackagePrice: Number(defaultSelectedPeriod?.price ?? packageData.price ?? 0),
+      }));
     } catch (error) {
       console.error('Error loading data:', error);
-      alert('Gagal memuat data paket qurban');
+      alert(t('qurbanSavingsCreate.alerts.loadFailed'));
       router.push('/qurban');
     } finally {
       setIsLoading(false);
@@ -105,14 +109,19 @@ export default function NewSavingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !qurbanPackage || !packagePeriodId || !formData.selectedPeriodId) return;
+    if (!user || !qurbanPackage || !formData.selectedPeriodId || !formData.selectedPackagePeriodId) return;
+    if (!user.phone) {
+      alert(t('qurbanSavingsCreate.alerts.phoneRequired'));
+      return;
+    }
 
     try {
       setIsSubmitting(true);
       const savings = await createSavings({
         donorName: user.name,
+        donorPhone: user.phone,
         targetPeriodId: formData.selectedPeriodId,
-        targetPackagePeriodId: packagePeriodId, // Use packagePeriodId
+        targetPackagePeriodId: formData.selectedPackagePeriodId,
         targetAmount: totalTarget, // Harga paket + admin
         installmentFrequency: formData.installmentFrequency,
         installmentCount: formData.installmentCount, // Jumlah cicilan
@@ -123,7 +132,7 @@ export default function NewSavingsPage() {
       router.push(`/account/qurban-savings/${savings.id}`);
     } catch (error) {
       console.error('Failed to create savings:', error);
-      alert('Gagal membuat tabungan. Silakan coba lagi.');
+      alert(t('qurbanSavingsCreate.alerts.createFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -137,21 +146,37 @@ export default function NewSavingsPage() {
     );
   }
 
-  if (!qurbanPackage || periods.length === 0) {
+  if (!qurbanPackage) {
     return null;
   }
+
+  const packagePeriodOptions = (qurbanPackage.availablePeriods && qurbanPackage.availablePeriods.length > 0)
+    ? qurbanPackage.availablePeriods
+    : [{
+        periodId: qurbanPackage.periodId,
+        packagePeriodId: qurbanPackage.packagePeriodId,
+        periodName: qurbanPackage.periodName || t('qurbanSavingsCreate.periodFallback'),
+        gregorianYear: 0,
+        price: Number(qurbanPackage.price || 0),
+      }];
+  const animalTypeLabel = qurbanPackage.animalType === 'cow'
+    ? t('qurbanDetail.confirmModal.animalType.cow')
+    : t('qurbanDetail.confirmModal.animalType.goat');
+  const packageTypeLabel = qurbanPackage.packageType === 'individual'
+    ? t('qurbanDetail.confirmModal.packageType.individual')
+    : t('qurbanDetail.confirmModal.packageType.shared');
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-2xl">
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Buat Tabungan Qurban</h1>
-          <p className="text-sm text-gray-600 mt-1">Atur rencana cicilan Anda</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('qurbanSavingsCreate.title')}</h1>
+          <p className="text-sm text-gray-600 mt-1">{t('qurbanSavingsCreate.subtitle')}</p>
         </div>
 
         {/* Package Info */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Paket yang Dipilih</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('qurbanSavingsCreate.packageInfo.title')}</h2>
           <div className="flex items-start gap-4">
             {qurbanPackage.imageUrl && (
               <img
@@ -163,24 +188,24 @@ export default function NewSavingsPage() {
             <div className="flex-1">
               <h3 className="font-semibold text-gray-900">{qurbanPackage.name}</h3>
               <p className="text-sm text-gray-600">
-                {getAnimalTypeLabel(qurbanPackage.animalType)} - {getPackageTypeLabel(qurbanPackage.packageType)}
+                {animalTypeLabel} - {packageTypeLabel}
               </p>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Harga Paket:</span>
-                  <span className="font-semibold text-gray-900">{formatRupiahFull(qurbanPackage.price)}</span>
+                  <span className="text-gray-600">{t('qurbanSavingsCreate.packageInfo.packagePrice')}</span>
+                  <span className="font-semibold text-gray-900">{formatRupiahFull(packagePrice)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Biaya Admin:</span>
+                  <span className="text-gray-600">{t('qurbanSavingsCreate.packageInfo.adminFee')}</span>
                   <span className="font-semibold text-gray-900">{formatRupiahFull(adminFee)}</span>
                 </div>
                 {qurbanPackage.packageType === 'shared' && qurbanPackage.maxSlots && (
                   <p className="text-xs text-gray-500">
-                    Dibagi {qurbanPackage.maxSlots} slot (paket patungan)
+                    {t('qurbanSavingsCreate.packageInfo.sharedInfo', { maxSlots: qurbanPackage.maxSlots })}
                   </p>
                 )}
                 <div className="flex justify-between text-base border-t pt-2 mt-2">
-                  <span className="font-semibold text-gray-900">Total Target:</span>
+                  <span className="font-semibold text-gray-900">{t('qurbanSavingsCreate.packageInfo.totalTarget')}</span>
                   <span className="font-bold text-primary-600">{formatRupiahFull(totalTarget)}</span>
                 </div>
               </div>
@@ -193,7 +218,7 @@ export default function NewSavingsPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Atas Nama
+                {t('qurbanSavingsCreate.form.onBehalfOf')}
               </label>
               <input
                 type="text"
@@ -205,42 +230,52 @@ export default function NewSavingsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Periode Qurban
+                {t('qurbanSavingsCreate.form.period')}
               </label>
               <select
                 value={formData.selectedPeriodId}
-                onChange={(e) => setFormData({ ...formData, selectedPeriodId: e.target.value })}
+                onChange={(e) => {
+                  const selectedPeriod = packagePeriodOptions.find(
+                    (period) => period.periodId === e.target.value
+                  );
+                  setFormData({
+                    ...formData,
+                    selectedPeriodId: e.target.value,
+                    selectedPackagePeriodId: selectedPeriod?.packagePeriodId || '',
+                    selectedPackagePrice: Number(selectedPeriod?.price || 0),
+                  });
+                }}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               >
-                {periods.map((period) => (
-                  <option key={period.id} value={period.id}>
-                    {period.name}
+                {packagePeriodOptions.map((period) => (
+                  <option key={period.packagePeriodId} value={period.periodId}>
+                    {period.periodName} - {formatRupiahFull(period.price)}
                   </option>
                 ))}
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Pilih kapan Anda ingin qurban disembelih
+                {t('qurbanSavingsCreate.form.periodHint')}
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Frekuensi Cicilan
+                {t('qurbanSavingsCreate.form.frequency')}
               </label>
               <select
                 value={formData.installmentFrequency}
                 onChange={(e) => setFormData({ ...formData, installmentFrequency: e.target.value as any, installmentDay: e.target.value === 'weekly' ? 1 : 5 })}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
-                <option value="monthly">Bulanan</option>
-                <option value="weekly">Mingguan</option>
+                <option value="monthly">{t('qurbanSavingsCreate.form.frequencyMonthly')}</option>
+                <option value="weekly">{t('qurbanSavingsCreate.form.frequencyWeekly')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Jumlah Cicilan
+                {t('qurbanSavingsCreate.form.installmentCount')}
               </label>
               <select
                 value={formData.installmentCount}
@@ -248,19 +283,19 @@ export default function NewSavingsPage() {
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 required
               >
-                <option value={3}>3 kali</option>
-                <option value={6}>6 kali</option>
-                <option value={12}>12 kali</option>
-                <option value={24}>24 kali</option>
+                <option value={3}>{t('qurbanSavingsCreate.form.installmentCountOption', { count: 3 })}</option>
+                <option value={6}>{t('qurbanSavingsCreate.form.installmentCountOption', { count: 6 })}</option>
+                <option value={12}>{t('qurbanSavingsCreate.form.installmentCountOption', { count: 12 })}</option>
+                <option value={24}>{t('qurbanSavingsCreate.form.installmentCountOption', { count: 24 })}</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Tentukan berapa kali Anda ingin mencicil
+                {t('qurbanSavingsCreate.form.installmentCountHint')}
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nominal per Cicilan
+                {t('qurbanSavingsCreate.form.installmentAmount')}
               </label>
               <input
                 type="text"
@@ -269,14 +304,18 @@ export default function NewSavingsPage() {
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 text-gray-900 font-semibold"
               />
               <p className="text-xs text-gray-500 mt-1">
-                {formatRupiahFull(totalTarget)} ÷ {formData.installmentCount} kali = {formatRupiahFull(installmentAmount)}/cicilan
+                {t('qurbanSavingsCreate.form.installmentAmountHelp', {
+                  total: formatRupiahFull(totalTarget),
+                  count: formData.installmentCount,
+                  amount: formatRupiahFull(installmentAmount),
+                })}
               </p>
             </div>
 
             {formData.installmentFrequency === 'monthly' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tanggal Cicilan
+                  {t('qurbanSavingsCreate.form.installmentDate')}
                 </label>
                 <select
                   value={formData.installmentDay}
@@ -285,11 +324,11 @@ export default function NewSavingsPage() {
                   required
                 >
                   {Array.from({ length: 28 }, (_, i) => i + 1).map(day => (
-                    <option key={day} value={day}>Tanggal {day}</option>
+                    <option key={day} value={day}>{t('qurbanSavingsCreate.form.installmentDateOption', { day })}</option>
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Notifikasi cicilan akan dikirim setiap tanggal {formData.installmentDay}
+                  {t('qurbanSavingsCreate.form.installmentDateHelp', { day: formData.installmentDay })}
                 </p>
               </div>
             )}
@@ -297,14 +336,17 @@ export default function NewSavingsPage() {
             {formData.installmentFrequency === 'weekly' && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-blue-800">
-                  <strong>Cicilan Mingguan:</strong> Notifikasi akan dikirim setiap hari <strong>Senin</strong>
+                  <strong>{t('qurbanSavingsCreate.form.weeklyInfoTitle')}</strong>{' '}
+                  {t('qurbanSavingsCreate.form.weeklyInfoText')}{' '}
+                  <strong>{t('qurbanSavingsCreate.form.weeklyInfoDay')}</strong>
                 </p>
               </div>
             )}
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <p className="text-xs text-yellow-800">
-                <strong>Catatan:</strong> Nominal cicilan di atas hanya sebagai panduan. Anda dapat melunasi kapan saja tanpa terikat jadwal cicilan.
+                <strong>{t('qurbanSavingsCreate.form.noteTitle')}</strong>{' '}
+                {t('qurbanSavingsCreate.form.noteText')}
               </p>
             </div>
 
@@ -314,14 +356,14 @@ export default function NewSavingsPage() {
                 onClick={() => router.back()}
                 className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg hover:bg-gray-200 font-medium"
               >
-                Batal
+                {t('qurbanSavingsCreate.actions.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="flex-1 bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Membuat...' : 'Buat Tabungan'}
+                {isSubmitting ? t('qurbanSavingsCreate.actions.creating') : t('qurbanSavingsCreate.actions.create')}
               </button>
             </div>
           </form>

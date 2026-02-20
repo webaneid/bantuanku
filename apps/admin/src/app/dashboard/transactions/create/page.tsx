@@ -5,9 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftIcon, PlusIcon } from "@heroicons/react/24/outline";
 import api from "@/lib/api";
-import { toast } from "react-hot-toast";
 import Autocomplete from "@/components/Autocomplete";
+import AdminPaymentMethodList from "@/components/AdminPaymentMethodList";
 import DonorModal from "@/components/modals/DonorModal";
+import FeedbackDialog from "@/components/FeedbackDialog";
 
 export default function CreateTransactionPage() {
   const router = useRouter();
@@ -15,6 +16,13 @@ export default function CreateTransactionPage() {
   const queryClient = useQueryClient();
   const [donorId, setDonorId] = useState("");
   const [isDonorModalOpen, setIsDonorModalOpen] = useState(false);
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
+  const [redirectTransactionId, setRedirectTransactionId] = useState<string | null>(null);
   const [formData, setFormData] = useState<any>({
     product_type: "",
     product_id: "",
@@ -28,6 +36,7 @@ export default function CreateTransactionPage() {
     message: "",
     payment_method_id: null,
     type_specific_data: {},
+    include_unique_code: false,
   });
 
   useEffect(() => {
@@ -57,11 +66,28 @@ export default function CreateTransactionPage() {
     enabled: formData.product_type === "zakat",
   });
 
+  // Fetch zakat periods based on selected type
+  const { data: zakatPeriods } = useQuery({
+    queryKey: ["zakat-periods", formData.type_specific_data?.zakat_type_id],
+    queryFn: async () => {
+      if (!formData.type_specific_data?.zakat_type_id) return [];
+      const response = await api.get("/admin/zakat/periods", {
+        params: {
+          zakatTypeId: formData.type_specific_data.zakat_type_id,
+          status: "active",
+          limit: 100
+        }
+      });
+      return response.data?.data || [];
+    },
+    enabled: formData.product_type === "zakat" && !!formData.type_specific_data?.zakat_type_id,
+  });
+
   // Fetch qurban periods
   const { data: qurbanPeriods } = useQuery({
     queryKey: ["qurban-periods"],
     queryFn: async () => {
-      const response = await api.get("/admin/qurban/periods", { params: { isActive: "true", limit: 100 } });
+      const response = await api.get("/admin/qurban/periods", { params: { status: "active", limit: 100 } });
       return response.data?.data || [];
     },
     enabled: formData.product_type === "qurban",
@@ -87,14 +113,6 @@ export default function CreateTransactionPage() {
     },
   });
 
-  // Fetch payment methods
-  const { data: paymentMethods } = useQuery({
-    queryKey: ["payment-methods"],
-    queryFn: async () => {
-      const response = await api.get("/payments/methods");
-      return response.data?.data || [];
-    },
-  });
 
   // Fetch zakat fitrah amount setting
   const { data: zakatFitrahAmount } = useQuery({
@@ -104,6 +122,16 @@ export default function CreateTransactionPage() {
       return parseInt(response.data?.data?.value || "45000");
     },
     enabled: formData.product_type === "zakat",
+  });
+
+  // Fetch fidyah amount setting
+  const { data: fidyahAmount } = useQuery({
+    queryKey: ["settings", "fidyah_amount_per_day"],
+    queryFn: async () => {
+      const response = await api.get("/admin/settings/fidyah_amount_per_day");
+      return parseInt(response.data?.data?.value || "0");
+    },
+    enabled: formData.product_type === "campaign",
   });
 
   // Fetch qurban admin fees
@@ -131,15 +159,20 @@ export default function CreateTransactionPage() {
     { value: "qurban", label: "Qurban" },
   ];
 
-  const campaignOptions = campaigns?.map((c: any) => ({
+  const campaignOptions = Array.isArray(campaigns) ? campaigns.map((c: any) => ({
     value: c.id,
     label: c.title,
-  })) || [];
+  })) : [];
 
-  const zakatTypeOptions = zakatTypes?.map((z: any) => ({
-    value: z.id,
-    label: z.name,
-  })) || [];
+  const zakatTypeOptions = Array.isArray(zakatTypes) ? zakatTypes.map((t: any) => ({
+    value: t.id,
+    label: t.name,
+  })) : [];
+
+  const zakatPeriodOptions = Array.isArray(zakatPeriods) ? zakatPeriods.map((p: any) => ({
+    value: p.id,
+    label: p.name,
+  })) : [];
 
   const qurbanPeriodOptions = qurbanPeriods?.map((p: any) => ({
     value: p.id,
@@ -157,71 +190,29 @@ export default function CreateTransactionPage() {
   })) || [];
 
   // Check if selected zakat type is zakat fitrah
-  const selectedZakatType = zakatTypes?.find((z: any) => z.id === formData.product_id);
-  const isZakatFitrah = formData.product_type === "zakat" && selectedZakatType?.slug === "zakat-fitrah";
+  const isZakatFitrah = formData.product_type === "zakat" && formData.type_specific_data?.zakat_type_slug === "zakat-fitrah";
 
-  const paymentMethodOptions = (() => {
-    const methods = paymentMethods || [];
+  // Check if selected campaign is fidyah
+  const isFidyah = formData.product_type === "campaign" && formData.type_specific_data?.pillar === "fidyah";
 
-    // Determine target program based on product type and pillar
-    let targetProgram = "general";
-
+  // Determine program filter based on product type and campaign pillar
+  const programFilter = (() => {
     if (formData.product_type === "campaign") {
       const pillar = formData.type_specific_data?.pillar;
       if (pillar === "wakaf") {
-        targetProgram = "wakaf";
+        return "wakaf";
+      } else if (pillar === "fidyah") {
+        return "infaq";
       } else {
-        targetProgram = "infaq";
+        return "infaq";
       }
     } else if (formData.product_type === "zakat") {
-      targetProgram = "zakat";
+      return "zakat";
     } else if (formData.product_type === "qurban") {
-      targetProgram = "qurban";
+      return "qurban";
     } else {
-      targetProgram = "infaq";
+      return "general";
     }
-
-    // Filter methods: bank_transfer and qris only
-    const bankAndQris = methods.filter((m: any) =>
-      m.type === "bank_transfer" || m.type === "qris"
-    );
-
-    // Check if there are accounts for target program
-    const hasTargetProgram = bankAndQris.some((m: any) => {
-      const programs = m.programs && m.programs.length > 0 ? m.programs : ["general"];
-      return programs.includes(targetProgram);
-    });
-
-    // Filter based on availability
-    const filtered = bankAndQris.filter((m: any) => {
-      const programs = m.programs && m.programs.length > 0 ? m.programs : ["general"];
-
-      if (hasTargetProgram) {
-        return programs.includes(targetProgram);
-      } else {
-        return programs.includes("general");
-      }
-    });
-
-    return filtered.map((method: any) => {
-      const programs = method.programs && method.programs.length > 0 ? method.programs : ["general"];
-      const programLabel = programs.join(", ");
-
-      let label = method.name;
-      if (method.type === "bank_transfer") {
-        const accountNumber = method.details?.accountNumber || "";
-        const accountName = method.details?.accountName || "";
-        label = `${method.details?.bankName || method.name} - ${accountNumber}${accountName ? ` - a.n ${accountName}` : ""} [${programLabel}]`;
-      } else if (method.type === "qris") {
-        const qrisName = method.details?.name || method.name;
-        label = `${qrisName} [${programLabel}]`;
-      }
-
-      return {
-        value: method.code,
-        label,
-      };
-    });
   })();
 
   const handleDonorChange = (value: string) => {
@@ -238,7 +229,12 @@ export default function CreateTransactionPage() {
   };
 
   const handleDonorModalSuccess = (createdId?: string) => {
-    toast.success("Donatur berhasil dibuat");
+    setFeedback({
+      open: true,
+      type: "success",
+      title: "Berhasil",
+      message: "Donatur berhasil dibuat",
+    });
     queryClient.invalidateQueries({ queryKey: ["donatur-list"] });
     if (createdId) {
       setDonorId(createdId);
@@ -256,12 +252,26 @@ export default function CreateTransactionPage() {
     });
   };
 
+  const handleZakatTypeChange = (value: string) => {
+    const selectedType = zakatTypes?.find((t: any) => t.id === value);
+    setFormData({
+      ...formData,
+      product_id: "",
+      unit_price: 0,
+      type_specific_data: {
+        zakat_type_id: value,
+        zakat_type_name: selectedType?.name,
+        zakat_type_slug: selectedType?.slug,
+      },
+    });
+  };
+
   const handleQurbanPeriodChange = (value: string) => {
     setFormData({
       ...formData,
       product_id: "",
       unit_price: 0,
-      type_specific_data: { period_id: value },
+      type_specific_data: { ...formData.type_specific_data, period_id: value },
     });
   };
 
@@ -274,23 +284,40 @@ export default function CreateTransactionPage() {
       const campaign = campaigns?.find((c: any) => c.id === value);
       productName = campaign?.title || "";
       typeSpecificData = { campaign_id: value, pillar: campaign?.pillar };
+      if (campaign?.pillar === "fidyah" && fidyahAmount) {
+        unitPrice = fidyahAmount;
+      }
     } else if (formData.product_type === "zakat") {
-      const zakatType = zakatTypes?.find((z: any) => z.id === value);
-      productName = zakatType?.name || "";
-      typeSpecificData = { zakat_type_id: value };
+      const period = zakatPeriods?.find((p: any) => p.id === value);
+      const zakatTypeName = formData.type_specific_data?.zakat_type_name || "";
+      const periodInfo = period?.hijriYear
+        ? `${period.year}/${period.hijriYear}`
+        : period?.year?.toString() || "";
+      productName = `${zakatTypeName}${periodInfo ? ` - Periode ${periodInfo}` : ""}`;
+      typeSpecificData = {
+        ...formData.type_specific_data, // Keep zakat type data
+        zakat_period_id: value,
+        zakat_period_name: period?.name,
+        year: period?.year,
+        hijri_year: period?.hijriYear,
+      };
       // Set unit price from zakat fitrah amount if it's zakat fitrah
-      if (zakatType?.slug === "zakat-fitrah" && zakatFitrahAmount) {
+      if (formData.type_specific_data?.zakat_type_slug === "zakat-fitrah" && zakatFitrahAmount) {
         unitPrice = zakatFitrahAmount;
       }
     } else if (formData.product_type === "qurban") {
       const qurbanPackage = qurbanPackages?.find((q: any) => q.packagePeriodId === value);
       const selectedPeriod = qurbanPeriods?.find((p: any) => p.id === formData.type_specific_data?.period_id);
       unitPrice = qurbanPackage?.price || 0;
-      productName = `${qurbanPackage?.name} - ${selectedPeriod?.name || selectedPeriod?.hijriYear + 'H'}`;
+      const periodInfo = selectedPeriod?.hijriYear && selectedPeriod?.gregorianYear
+        ? `${selectedPeriod.hijriYear}/${selectedPeriod.gregorianYear}`
+        : selectedPeriod?.hijriYear || selectedPeriod?.gregorianYear || "";
+      productName = `${qurbanPackage?.name}${periodInfo ? ` - Periode ${periodInfo}` : ""}`;
       typeSpecificData = {
         period_id: formData.type_specific_data?.period_id,
         package_id: qurbanPackage?.packageId,
         package_period_id: value,
+        onBehalfOf: formData.type_specific_data?.onBehalfOf,
       };
     }
 
@@ -332,11 +359,21 @@ export default function CreateTransactionPage() {
       return response.data;
     },
     onSuccess: (data) => {
-      toast.success("Transaksi berhasil dibuat");
-      router.push(`/dashboard/transactions/${data.data.id}`);
+      setRedirectTransactionId(data?.data?.id || null);
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Transaksi berhasil dibuat",
+      });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal membuat transaksi");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: error.response?.data?.message || "Gagal membuat transaksi",
+      });
     },
   });
 
@@ -344,19 +381,39 @@ export default function CreateTransactionPage() {
     e.preventDefault();
 
     if (!formData.product_type) {
-      toast.error("Pilih tipe produk");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Validasi",
+        message: "Pilih tipe produk",
+      });
       return;
     }
     if (!formData.product_id) {
-      toast.error("Pilih produk");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Validasi",
+        message: "Pilih produk",
+      });
       return;
     }
     if (!formData.donor_name) {
-      toast.error("Nama donatur wajib diisi");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Validasi",
+        message: "Nama donatur wajib diisi",
+      });
       return;
     }
     if (!formData.donor_phone) {
-      toast.error("Nomor telepon donatur wajib diisi");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Validasi",
+        message: "Nomor telepon donatur wajib diisi",
+      });
       return;
     }
 
@@ -374,6 +431,7 @@ export default function CreateTransactionPage() {
       message: formData.message || undefined,
       payment_method_id: formData.payment_method_id || undefined,
       type_specific_data: formData.type_specific_data,
+      include_unique_code: formData.include_unique_code,
     };
 
     createMutation.mutate(payload);
@@ -412,6 +470,22 @@ export default function CreateTransactionPage() {
             />
           </div>
 
+          {/* Zakat Type Selection */}
+          {formData.product_type === "zakat" && (
+            <div>
+              <label className="form-label">
+                Jenis Zakat <span className="text-danger-500">*</span>
+              </label>
+              <Autocomplete
+                options={zakatTypeOptions}
+                value={formData.type_specific_data?.zakat_type_id || ""}
+                onChange={handleZakatTypeChange}
+                placeholder="Pilih jenis zakat"
+                allowClear={false}
+              />
+            </div>
+          )}
+
           {/* Qurban Period Selection */}
           {formData.product_type === "qurban" && (
             <div>
@@ -429,22 +503,33 @@ export default function CreateTransactionPage() {
           )}
 
           {/* Product Selection */}
-          {formData.product_type && formData.product_type !== "qurban" && (
+          {formData.product_type === "campaign" && (
             <div>
               <label className="form-label">
-                {formData.product_type === "campaign" && "Campaign"}
-                {formData.product_type === "zakat" && "Jenis Zakat"}
+                Campaign
                 <span className="text-danger-500"> *</span>
               </label>
               <Autocomplete
-                options={
-                  formData.product_type === "campaign"
-                    ? campaignOptions
-                    : zakatTypeOptions
-                }
+                options={campaignOptions}
                 value={formData.product_id}
                 onChange={handleProductChange}
-                placeholder={`Pilih ${formData.product_type === "campaign" ? "campaign" : "jenis zakat"}`}
+                placeholder="Pilih campaign"
+                allowClear={false}
+              />
+            </div>
+          )}
+
+          {/* Zakat Period Selection */}
+          {formData.product_type === "zakat" && formData.type_specific_data?.zakat_type_id && (
+            <div>
+              <label className="form-label">
+                Periode Zakat <span className="text-danger-500">*</span>
+              </label>
+              <Autocomplete
+                options={zakatPeriodOptions}
+                value={formData.product_id}
+                onChange={handleProductChange}
+                placeholder="Pilih periode zakat"
                 allowClear={false}
               />
             </div>
@@ -469,6 +554,25 @@ export default function CreateTransactionPage() {
           {/* Order Details */}
           {formData.product_id && (
             <>
+              {/* Unique Code Option */}
+              <div className="border-t pt-6">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="include_unique_code"
+                    checked={formData.include_unique_code}
+                    onChange={(e) => setFormData({ ...formData, include_unique_code: e.target.checked })}
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor="include_unique_code" className="text-sm font-medium">
+                    Sertakan Kode Unik
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-1 ml-7">
+                  Centang jika donatur akan melakukan transfer bank dan membutuhkan kode unik untuk verifikasi.
+                </p>
+              </div>
+
               <div className="border-t pt-6">
                 <h3 className="text-lg font-semibold mb-4">Detail Order</h3>
                 <div className="grid grid-cols-2 gap-4">
@@ -480,11 +584,16 @@ export default function CreateTransactionPage() {
                       value={formData.quantity}
                       onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                       min="1"
-                      disabled={formData.product_type !== "qurban" && !isZakatFitrah}
+                      disabled={formData.product_type !== "qurban" && !isZakatFitrah && !isFidyah}
                     />
                     {isZakatFitrah && (
                       <p className="text-xs text-gray-500 mt-1">
                         Jumlah jiwa yang akan dibayarkan zakat fitrah
+                      </p>
+                    )}
+                    {isFidyah && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Jumlah hari × jumlah orang
                       </p>
                     )}
                   </div>
@@ -493,6 +602,7 @@ export default function CreateTransactionPage() {
                     <label className="form-label">
                       Harga Satuan (Rp)
                       {isZakatFitrah && <span className="text-xs text-gray-500 ml-2">(Nominal Zakat Fitrah/jiwa)</span>}
+                      {isFidyah && <span className="text-xs text-gray-500 ml-2">(Nominal Fidyah/hari)</span>}
                     </label>
                     <input
                       type="number"
@@ -500,7 +610,7 @@ export default function CreateTransactionPage() {
                       value={formData.unit_price}
                       onChange={(e) => setFormData({ ...formData, unit_price: e.target.value })}
                       min="0"
-                      disabled={formData.product_type === "qurban" || isZakatFitrah}
+                      disabled={formData.product_type === "qurban" || isZakatFitrah || isFidyah}
                     />
                   </div>
 
@@ -640,6 +750,25 @@ export default function CreateTransactionPage() {
                       placeholder="Tulis pesan atau doa..."
                     />
                   </div>
+
+                  {(formData.product_type === "qurban" || formData.product_type === "zakat") && (
+                    <div>
+                      <label className="form-label">Atas Nama (Opsional)</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={formData.type_specific_data?.onBehalfOf || ""}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          type_specific_data: {
+                            ...formData.type_specific_data,
+                            onBehalfOf: e.target.value
+                          }
+                        })}
+                        placeholder="Contoh: Keluarga Ahmad"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -648,10 +777,11 @@ export default function CreateTransactionPage() {
                 <h3 className="text-lg font-semibold mb-4">Opsi Pembayaran</h3>
                 <div>
                   <label className="form-label">Metode Pembayaran (Opsional)</label>
-                  <Autocomplete
-                    options={paymentMethodOptions}
+                  <AdminPaymentMethodList
                     value={formData.payment_method_id || ""}
                     onChange={(value) => setFormData({ ...formData, payment_method_id: value || null })}
+                    types={["cash", "bank_transfer", "qris"]}
+                    programFilter={programFilter}
                     placeholder="Pilih metode pembayaran"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -687,7 +817,21 @@ export default function CreateTransactionPage() {
           isOpen={isDonorModalOpen}
           onClose={() => setIsDonorModalOpen(false)}
           onSuccess={handleDonorModalSuccess}
-          disablePassword={true}
+        />
+
+        <FeedbackDialog
+          open={feedback.open}
+          type={feedback.type}
+          title={feedback.title}
+          message={feedback.message}
+          onClose={() => {
+            setFeedback((prev) => ({ ...prev, open: false }));
+            if (redirectTransactionId) {
+              const id = redirectTransactionId;
+              setRedirectTransactionId(null);
+              router.push(`/dashboard/transactions/${id}`);
+            }
+          }}
         />
       </div>
     </div>

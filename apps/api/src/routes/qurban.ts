@@ -11,8 +11,12 @@ import {
   qurbanSharedGroups,
   qurbanSavings,
   qurbanSavingsTransactions,
+  qurbanSavingsConversions,
+  transactions,
+  transactionPayments,
   createId,
   media,
+  mitra,
   settings,
   paymentMethods,
 } from "@bantuanku/db";
@@ -22,6 +26,7 @@ import * as fs from "fs";
 import * as pathModule from "path";
 import { optionalAuthMiddleware } from "../middleware/auth";
 import { success, error } from "../lib/response";
+import { TransactionService } from "../services/transaction";
 
 // Helper to fetch CDN settings from database
 const fetchCDNSettings = async (db: any): Promise<GCSConfig | null> => {
@@ -55,6 +60,15 @@ const fetchCDNSettings = async (db: any): Promise<GCSConfig | null> => {
     console.error("Failed to fetch CDN settings:", error);
     return null;
   }
+};
+
+const generateSavingsConversionTxNumber = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  const suffix = Date.now().toString().slice(-6);
+  return `TRX-SAV-CONV-${y}${m}${d}-${suffix}`;
 };
 
 const app = new Hono();
@@ -100,6 +114,19 @@ app.get("/periods/:periodId/packages", async (c) => {
       stock: qurbanPackagePeriods.stock,
       stockSold: qurbanPackagePeriods.stockSold,
       isFeatured: qurbanPackages.isFeatured,
+      ownerType: sql<"organization" | "mitra">`
+        CASE
+          WHEN ${mitra.id} IS NOT NULL THEN 'mitra'
+          ELSE 'organization'
+        END
+      `,
+      ownerName: mitra.name,
+      ownerSlug: mitra.slug,
+      ownerLogoUrl: mitra.logoUrl,
+      executionDateOverride: qurbanPackagePeriods.executionDateOverride,
+      executionTimeNote: qurbanPackagePeriods.executionTimeNote,
+      executionLocation: qurbanPackagePeriods.executionLocation,
+      executionNotes: qurbanPackagePeriods.executionNotes,
       availableSlots: sql<number>`
         CASE
           WHEN ${qurbanPackages.packageType} = 'shared'
@@ -110,6 +137,7 @@ app.get("/periods/:periodId/packages", async (c) => {
     })
     .from(qurbanPackagePeriods)
     .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+    .leftJoin(mitra, eq(qurbanPackages.createdBy, mitra.userId))
     .where(
       and(
         eq(qurbanPackagePeriods.periodId, periodId),
@@ -146,6 +174,10 @@ app.get("/packages/:packagePeriodId", async (c) => {
       periodName: qurbanPeriods.name,
       periodEndDate: qurbanPeriods.endDate,
       periodExecutionDate: qurbanPeriods.executionDate,
+      executionDateOverride: qurbanPackagePeriods.executionDateOverride,
+      executionTimeNote: qurbanPackagePeriods.executionTimeNote,
+      executionLocation: qurbanPackagePeriods.executionLocation,
+      executionNotes: qurbanPackagePeriods.executionNotes,
       animalType: qurbanPackages.animalType,
       packageType: qurbanPackages.packageType,
       name: qurbanPackages.name,
@@ -156,6 +188,27 @@ app.get("/packages/:packagePeriodId", async (c) => {
       slotsFilled: qurbanPackagePeriods.slotsFilled,
       stock: qurbanPackagePeriods.stock,
       stockSold: qurbanPackagePeriods.stockSold,
+      ownerType: sql<"organization" | "mitra">`
+        CASE
+          WHEN ${mitra.id} IS NOT NULL THEN 'mitra'
+          ELSE 'organization'
+        END
+      `,
+      ownerName: mitra.name,
+      ownerSlug: mitra.slug,
+      ownerLogoUrl: mitra.logoUrl,
+      isFeatured: qurbanPackages.isFeatured,
+      // SEO fields
+      metaTitle: qurbanPackages.metaTitle,
+      metaDescription: qurbanPackages.metaDescription,
+      focusKeyphrase: qurbanPackages.focusKeyphrase,
+      canonicalUrl: qurbanPackages.canonicalUrl,
+      noIndex: qurbanPackages.noIndex,
+      noFollow: qurbanPackages.noFollow,
+      ogTitle: qurbanPackages.ogTitle,
+      ogDescription: qurbanPackages.ogDescription,
+      ogImageUrl: qurbanPackages.ogImageUrl,
+      seoScore: qurbanPackages.seoScore,
       availableSlots: sql<number>`
         CASE
           WHEN ${qurbanPackages.packageType} = 'shared'
@@ -167,6 +220,7 @@ app.get("/packages/:packagePeriodId", async (c) => {
     .from(qurbanPackagePeriods)
     .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
     .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
+    .leftJoin(mitra, eq(qurbanPackages.createdBy, mitra.userId))
     .where(eq(qurbanPackagePeriods.id, packagePeriodId))
     .limit(1);
 
@@ -505,7 +559,7 @@ app.post("/orders", async (c) => {
   let sharedGroupId = null;
 
   // Handle shared group assignment
-  if (pkgPeriod.packageType === "shared") {
+  if (pkgPeriod.package.packageType === "shared") {
     // Find open group with available slots for this package-period
     const openGroup = await db
       .select()
@@ -550,7 +604,7 @@ app.post("/orders", async (c) => {
           packageId: pkgPeriod.packageId, // Legacy field
           packagePeriodId: body.packagePeriodId, // New field
           groupNumber,
-          maxSlots: pkgPeriod.maxSlots!,
+          maxSlots: pkgPeriod.package.maxSlots || 1,
           slotsFilled: 1,
           status: "open",
         })
@@ -840,7 +894,7 @@ app.get("/savings", async (c) => {
       return c.json({ error: "Unauthorized" }, 401);
     }
 
-    const savings = await db.query.qurbanSavings.findMany({
+    const savingsRows = await db.query.qurbanSavings.findMany({
       where: eq(qurbanSavings.userId, user.id),
       orderBy: [desc(qurbanSavings.createdAt)],
       with: {
@@ -859,8 +913,41 @@ app.get("/savings", async (c) => {
             endDate: true,
           },
         },
+        targetPackagePeriod: {
+          columns: {
+            id: true,
+            periodId: true,
+            packageId: true,
+            price: true,
+          },
+          with: {
+            package: {
+              columns: {
+                id: true,
+                name: true,
+                animalType: true,
+                price: true,
+              },
+            },
+            period: {
+              columns: {
+                id: true,
+                name: true,
+                endDate: true,
+              },
+            },
+          },
+        },
       },
     });
+
+    const savings = savingsRows.map((item: any) => ({
+      ...item,
+      targetPackage: item.targetPackage || item.targetPackagePeriod?.package || null,
+      targetPeriod: item.targetPeriod || item.targetPackagePeriod?.period || null,
+      targetPackageId: item.targetPackageId || item.targetPackagePeriod?.packageId || null,
+      targetPeriodId: item.targetPeriodId || item.targetPackagePeriod?.periodId || null,
+    }));
 
     return c.json({
       success: true,
@@ -882,77 +969,44 @@ app.get("/savings/:id", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const results = await db
-    .select({
-      id: qurbanSavings.id,
-      savingsNumber: qurbanSavings.savingsNumber,
-      donorName: qurbanSavings.donorName,
-      donorEmail: qurbanSavings.donorEmail,
-      donorPhone: qurbanSavings.donorPhone,
-      targetPeriodId: qurbanSavings.targetPeriodId,
-      targetPackageId: qurbanSavings.targetPackageId,
-      targetAmount: qurbanSavings.targetAmount,
-      currentAmount: qurbanSavings.currentAmount,
-      installmentFrequency: qurbanSavings.installmentFrequency,
-      installmentAmount: qurbanSavings.installmentAmount,
-      installmentDay: qurbanSavings.installmentDay,
-      status: qurbanSavings.status,
-      startDate: qurbanSavings.startDate,
-      completedAt: qurbanSavings.completedAt,
-      convertedAt: qurbanSavings.convertedAt,
-      convertedToOrderId: qurbanSavings.convertedToOrderId,
-      notes: qurbanSavings.notes,
-      createdAt: qurbanSavings.createdAt,
-      periodId: qurbanPeriods.id,
-      periodName: qurbanPeriods.name,
-      periodEndDate: qurbanPeriods.endDate,
-      packageId: qurbanPackages.id,
-      packageName: qurbanPackages.name,
-      packageAnimalType: qurbanPackages.animalType,
-      packagePrice: qurbanPackages.price,
-    })
-    .from(qurbanSavings)
-    .leftJoin(qurbanPeriods, eq(qurbanSavings.targetPeriodId, qurbanPeriods.id))
-    .leftJoin(qurbanPackages, eq(qurbanSavings.targetPackageId, qurbanPackages.id))
-    .where(and(eq(qurbanSavings.id, id), eq(qurbanSavings.userId, user.id)))
-    .limit(1);
+  const row = await db.query.qurbanSavings.findFirst({
+    where: and(eq(qurbanSavings.id, id), eq(qurbanSavings.userId, user.id)),
+    with: {
+      targetPackage: true,
+      targetPeriod: true,
+      targetPackagePeriod: {
+        with: {
+          package: true,
+          period: true,
+        },
+      },
+    },
+  });
 
-  if (results.length === 0) {
+  if (!row) {
     return c.json({ error: "Savings not found" }, 404);
   }
-
-  const row = results[0];
   const savings = {
     id: row.id,
     savingsNumber: row.savingsNumber,
     donorName: row.donorName,
     donorEmail: row.donorEmail,
     donorPhone: row.donorPhone,
-    targetPeriodId: row.targetPeriodId,
-    targetPackageId: row.targetPackageId,
+    targetPackagePeriodId: row.targetPackagePeriodId,
+    targetPeriodId: row.targetPeriodId || row.targetPackagePeriod?.periodId || null,
+    targetPackageId: row.targetPackageId || row.targetPackagePeriod?.packageId || null,
     targetAmount: row.targetAmount,
     currentAmount: row.currentAmount,
     installmentFrequency: row.installmentFrequency,
+    installmentCount: row.installmentCount,
     installmentAmount: row.installmentAmount,
     installmentDay: row.installmentDay,
     status: row.status,
     startDate: row.startDate,
-    completedAt: row.completedAt,
-    convertedAt: row.convertedAt,
-    convertedToOrderId: row.convertedToOrderId,
     notes: row.notes,
     createdAt: row.createdAt,
-    targetPeriod: row.periodId ? {
-      id: row.periodId,
-      name: row.periodName,
-      endDate: row.periodEndDate,
-    } : null,
-    targetPackage: row.packageId ? {
-      id: row.packageId,
-      name: row.packageName,
-      animalType: row.packageAnimalType,
-      price: row.packagePrice,
-    } : null,
+    targetPeriod: row.targetPeriod || row.targetPackagePeriod?.period || null,
+    targetPackage: row.targetPackage || row.targetPackagePeriod?.package || null,
   };
 
   return c.json({
@@ -982,15 +1036,72 @@ app.get("/savings/:id/transactions", async (c) => {
     return c.json({ error: "Savings not found" }, 404);
   }
 
-  const transactions = await db
+  const legacyTransactions = await db
     .select()
     .from(qurbanSavingsTransactions)
     .where(eq(qurbanSavingsTransactions.savingsId, id))
     .orderBy(desc(qurbanSavingsTransactions.createdAt));
 
+  const universalSavingsTransactions = await db.query.transactions.findMany({
+    where: and(
+      eq(transactions.category, "qurban_savings"),
+      eq(transactions.productType, "qurban"),
+      sql`${transactions.typeSpecificData} ->> 'savings_id' = ${id}`
+    ),
+    with: {
+      payments: true,
+    },
+    orderBy: [desc(transactions.createdAt)],
+  });
+
+  const normalizedUniversal = universalSavingsTransactions.flatMap((tx: any) => {
+    const payments = Array.isArray(tx.payments) ? tx.payments : [];
+    if (payments.length === 0) {
+      return [{
+        id: tx.id,
+        transactionId: tx.id,
+        savingsId: id,
+        transactionNumber: tx.transactionNumber,
+        amount: Number(tx.totalAmount || 0),
+        transactionType: "deposit",
+        transactionDate: tx.createdAt,
+        paymentMethod: tx.paymentMethodId || null,
+        paymentChannel: null,
+        paymentProof: null,
+        status: tx.paymentStatus === "paid" ? "verified" : "pending",
+        notes: tx.notes || null,
+        createdAt: tx.createdAt,
+      }];
+    }
+
+    return payments.map((payment: any) => ({
+      id: payment.id,
+      transactionId: tx.id,
+      savingsId: id,
+      transactionNumber: payment.paymentNumber || tx.transactionNumber,
+      amount: Number(payment.amount || tx.totalAmount || 0),
+      transactionType: "deposit",
+      transactionDate: payment.paymentDate || tx.createdAt,
+      paymentMethod: payment.paymentMethod || tx.paymentMethodId || null,
+      paymentChannel: payment.paymentChannel || null,
+      paymentProof: payment.paymentProof || null,
+      status: payment.status === "verified" ? "verified" : payment.status === "rejected" ? "rejected" : "pending",
+      notes: payment.notes || tx.notes || null,
+      createdAt: payment.createdAt || tx.createdAt,
+      verifiedAt: payment.verifiedAt || null,
+      verifiedBy: payment.verifiedBy || null,
+    }));
+  });
+
+  const merged = [...legacyTransactions, ...normalizedUniversal].sort((a: any, b: any) => {
+    const aTime = new Date(a.createdAt || a.transactionDate || 0).getTime();
+    const bTime = new Date(b.createdAt || b.transactionDate || 0).getTime();
+    return bTime - aTime;
+  });
+
   return c.json({
     success: true,
-    data: transactions,
+    data: merged,
   });
 });
 
@@ -1004,11 +1115,34 @@ app.post("/savings", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
+  if (!body.donorName || !body.donorPhone) {
+    return c.json({ error: "Nama dan nomor HP wajib diisi" }, 400);
+  }
+
+  let resolvedPeriodId = body.targetPeriodId as string | undefined;
+  let resolvedPackageId = body.targetPackageId as string | undefined;
+  let resolvedPackagePeriodId = body.targetPackagePeriodId as string | undefined;
+
+  if (resolvedPackagePeriodId) {
+    const packagePeriod = await db.query.qurbanPackagePeriods.findFirst({
+      where: eq(qurbanPackagePeriods.id, resolvedPackagePeriodId),
+    });
+    if (!packagePeriod) {
+      return c.json({ error: "Package period not found" }, 404);
+    }
+    resolvedPeriodId = resolvedPeriodId || packagePeriod.periodId;
+    resolvedPackageId = resolvedPackageId || packagePeriod.packageId;
+  }
+
+  if (!resolvedPeriodId) {
+    return c.json({ error: "Target period is required" }, 400);
+  }
+
   // Validate period
   const period = await db
     .select()
     .from(qurbanPeriods)
-    .where(eq(qurbanPeriods.id, body.targetPeriodId))
+    .where(eq(qurbanPeriods.id, resolvedPeriodId))
     .limit(1);
 
   if (period.length === 0) {
@@ -1032,9 +1166,9 @@ app.post("/savings", async (c) => {
       donorName: body.donorName,
       donorEmail: body.donorEmail,
       donorPhone: body.donorPhone,
-      targetPeriodId: body.targetPeriodId,
-      targetPackagePeriodId: body.targetPackagePeriodId, // New field for package-period junction
-      targetPackageId: body.targetPackageId, // Legacy field for backward compatibility
+      targetPeriodId: resolvedPeriodId,
+      targetPackagePeriodId: resolvedPackagePeriodId, // New field for package-period junction
+      targetPackageId: resolvedPackageId, // Legacy field for backward compatibility
       targetAmount: body.targetAmount,
       installmentFrequency: body.installmentFrequency,
       installmentCount: body.installmentCount,
@@ -1057,12 +1191,17 @@ app.post("/savings/:id/deposit", async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const body = await c.req.json();
+  const user = c.get("user");
+
+  if (!user || !user.id) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
 
   // Validate savings
   const savings = await db
     .select()
     .from(qurbanSavings)
-    .where(eq(qurbanSavings.id, id))
+    .where(and(eq(qurbanSavings.id, id), eq(qurbanSavings.userId, user.id)))
     .limit(1);
 
   if (savings.length === 0) {
@@ -1073,32 +1212,57 @@ app.post("/savings/:id/deposit", async (c) => {
     return c.json({ error: "Savings is not active" }, 400);
   }
 
-  // Generate transaction number
-  const trxCount = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(qurbanSavingsTransactions);
+  const depositAmount = Number(body.amount || 0);
+  if (!Number.isFinite(depositAmount) || depositAmount <= 0) {
+    return c.json({ error: "Amount must be greater than 0" }, 400);
+  }
 
-  const transactionNumber = `TRX-SAV-QBN-${getCurrentYearWIB()}-${String(Number(trxCount[0].count) + 1).padStart(5, "0")}`;
+  let targetPackagePeriodId = savings[0].targetPackagePeriodId;
+  if (!targetPackagePeriodId && savings[0].targetPackageId && savings[0].targetPeriodId) {
+    const packagePeriod = await db.query.qurbanPackagePeriods.findFirst({
+      where: and(
+        eq(qurbanPackagePeriods.packageId, savings[0].targetPackageId),
+        eq(qurbanPackagePeriods.periodId, savings[0].targetPeriodId)
+      ),
+    });
+    targetPackagePeriodId = packagePeriod?.id;
+  }
 
-  // Create transaction
-  const newTransaction = await db
-    .insert(qurbanSavingsTransactions)
-    .values({
-      id: createId(),
-      transactionNumber,
-      savingsId: id,
-      amount: body.amount,
-      transactionType: "deposit",
-      paymentMethod: body.paymentMethod,
-      paymentChannel: body.paymentChannel,
-      paymentProof: body.paymentProof,
-      status: "pending", // Needs verification
-    })
-    .returning();
+  if (!targetPackagePeriodId) {
+    return c.json({ error: "Target package period for savings not found" }, 400);
+  }
+
+  const txService = new TransactionService(db);
+  const created = await txService.create({
+    product_type: "qurban",
+    product_id: targetPackagePeriodId,
+    quantity: 1,
+    unit_price: depositAmount,
+    admin_fee: 0,
+    donor_name: savings[0].donorName,
+    donor_email: savings[0].donorEmail || undefined,
+    donor_phone: savings[0].donorPhone || undefined,
+    user_id: savings[0].userId || undefined,
+    include_unique_code: false,
+    type_specific_data: {
+      payment_type: "savings",
+      savings_id: id,
+      savings_number: savings[0].savingsNumber,
+      target_package_period_id: targetPackagePeriodId,
+      installment_sequence: null,
+    },
+    payment_method_id: undefined,
+    message: body.notes || undefined,
+  });
 
   return c.json({
-    data: newTransaction[0],
-    message: "Deposit submitted successfully. Waiting for verification.",
+    data: {
+      transactionId: created.id,
+      transactionNumber: created.transactionNumber,
+      amount: created.totalAmount,
+      status: created.paymentStatus,
+    },
+    message: "Deposit draft created. Continue to payment method.",
   });
 });
 
@@ -1107,30 +1271,62 @@ app.post("/savings/:id/convert", async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const body = await c.req.json();
+  const user = c.get("user");
+
+  if (!user || !user.id) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
 
   // Validate savings
-  const savings = await db
-    .select()
-    .from(qurbanSavings)
-    .where(eq(qurbanSavings.id, id))
-    .limit(1);
+  const savings = await db.query.qurbanSavings.findFirst({
+    where: and(eq(qurbanSavings.id, id), eq(qurbanSavings.userId, user.id)),
+  });
 
-  if (savings.length === 0) {
+  if (!savings) {
     return c.json({ error: "Savings not found" }, 404);
   }
 
-  if (savings[0].status !== "completed") {
+  if (savings.status === "converted") {
+    const existingConversion = await db.query.qurbanSavingsConversions.findFirst({
+      where: eq(qurbanSavingsConversions.savingsId, id),
+      orderBy: [desc(qurbanSavingsConversions.convertedAt)],
+    });
+    return c.json({
+      message: "Savings already converted",
+      data: {
+        order: existingConversion
+          ? {
+              id: existingConversion.orderId,
+              orderNumber: existingConversion.orderNumber,
+            }
+          : null,
+        conversion: existingConversion || null,
+      },
+    });
+  }
+
+  if (savings.status !== "completed") {
     return c.json({ error: "Savings not completed yet" }, 400);
   }
 
-  // Validate packagePeriodId is required
-  if (!body.packagePeriodId) {
-    return c.json({ error: "Package period ID is required" }, 400);
+  let targetPackagePeriodId = body.packagePeriodId || savings.targetPackagePeriodId;
+  if (!targetPackagePeriodId && savings.targetPackageId && savings.targetPeriodId) {
+    const packagePeriod = await db.query.qurbanPackagePeriods.findFirst({
+      where: and(
+        eq(qurbanPackagePeriods.packageId, savings.targetPackageId),
+        eq(qurbanPackagePeriods.periodId, savings.targetPeriodId)
+      ),
+    });
+    targetPackagePeriodId = packagePeriod?.id;
+  }
+
+  if (!targetPackagePeriodId) {
+    return c.json({ error: "Target package period for savings not found" }, 400);
   }
 
   // Validate package period
   const pkgPeriod = await db.query.qurbanPackagePeriods.findFirst({
-    where: eq(qurbanPackagePeriods.id, body.packagePeriodId),
+    where: eq(qurbanPackagePeriods.id, targetPackagePeriodId),
     with: {
       package: true,
     },
@@ -1140,7 +1336,8 @@ app.post("/savings/:id/convert", async (c) => {
     return c.json({ error: "Package period not found" }, 404);
   }
 
-  if (savings[0].currentAmount < pkgPeriod.price) {
+  const packagePrice = Number(pkgPeriod.price || 0);
+  if (Number(savings.currentAmount || 0) < packagePrice) {
     return c.json({ error: "Insufficient savings balance" }, 400);
   }
 
@@ -1152,16 +1349,17 @@ app.post("/savings/:id/convert", async (c) => {
   const orderNumber = `QBN-${getCurrentYearWIB()}-${String(Number(orderCount[0].count) + 1).padStart(5, "0")}`;
 
   let sharedGroupId = null;
+  const now = new Date();
 
   // Handle shared group for sapi patungan
-  if (pkgPeriod.packageType === "shared") {
+  if (pkgPeriod.package.packageType === "shared") {
     // Find open group with available slots for this package-period
     const openGroup = await db
       .select()
       .from(qurbanSharedGroups)
       .where(
         and(
-          eq(qurbanSharedGroups.packagePeriodId, body.packagePeriodId),
+          eq(qurbanSharedGroups.packagePeriodId, targetPackagePeriodId),
           eq(qurbanSharedGroups.status, "open"),
           sql`${qurbanSharedGroups.slotsFilled} < ${qurbanSharedGroups.maxSlots}`
         )
@@ -1188,7 +1386,7 @@ app.post("/savings/:id/convert", async (c) => {
       const existingGroupsCount = await db
         .select({ count: sql<number>`count(*)` })
         .from(qurbanSharedGroups)
-        .where(eq(qurbanSharedGroups.packagePeriodId, body.packagePeriodId));
+        .where(eq(qurbanSharedGroups.packagePeriodId, targetPackagePeriodId));
 
       const groupNumber = Number(existingGroupsCount[0].count) + 1;
 
@@ -1197,9 +1395,9 @@ app.post("/savings/:id/convert", async (c) => {
         .values({
           id: createId(),
           packageId: pkgPeriod.packageId,
-          packagePeriodId: body.packagePeriodId,
+          packagePeriodId: targetPackagePeriodId,
           groupNumber,
-          maxSlots: pkgPeriod.maxSlots!,
+          maxSlots: pkgPeriod.package.maxSlots || 1,
           slotsFilled: 1,
           status: "open",
         })
@@ -1209,20 +1407,20 @@ app.post("/savings/:id/convert", async (c) => {
     }
 
     await db
-      .update(qurbanPackages)
+      .update(qurbanPackagePeriods)
       .set({
-        slotsFilled: sql`${qurbanPackages.slotsFilled} + 1`,
-        updatedAt: new Date(),
+        slotsFilled: sql`${qurbanPackagePeriods.slotsFilled} + 1`,
+        updatedAt: now,
       })
-      .where(eq(qurbanPackages.id, pkgPeriod.packageId));
+      .where(eq(qurbanPackagePeriods.id, targetPackagePeriodId));
   } else {
     await db
-      .update(qurbanPackages)
+      .update(qurbanPackagePeriods)
       .set({
-        stockSold: sql`${qurbanPackages.stockSold} + 1`,
-        updatedAt: new Date(),
+        stockSold: sql`${qurbanPackagePeriods.stockSold} + 1`,
+        updatedAt: now,
       })
-      .where(eq(qurbanPackages.id, pkgPeriod.packageId));
+      .where(eq(qurbanPackagePeriods.id, targetPackagePeriodId));
   }
 
   // Create order (already paid from savings)
@@ -1231,53 +1429,99 @@ app.post("/savings/:id/convert", async (c) => {
     .values({
       id: createId(),
       orderNumber,
-      userId: savings[0].userId,
-      donorName: savings[0].donorName,
-      donorEmail: savings[0].donorEmail,
-      donorPhone: savings[0].donorPhone,
+      userId: savings.userId,
+      donorName: savings.donorName,
+      donorEmail: savings.donorEmail,
+      donorPhone: savings.donorPhone,
       packageId: pkgPeriod.packageId,
-      packagePeriodId: body.packagePeriodId,
+      packagePeriodId: targetPackagePeriodId,
       sharedGroupId,
       quantity: 1,
-      unitPrice: pkgPeriod.price,
-      totalAmount: pkgPeriod.price,
-      paymentMethod: "full",
-      paidAmount: pkgPeriod.price, // Already paid from savings
+      unitPrice: packagePrice,
+      totalAmount: packagePrice,
+      paymentMethod: "savings_conversion",
+      paidAmount: packagePrice, // Covered by savings allocation
       paymentStatus: "paid",
-      onBehalfOf: body.onBehalfOf,
+      orderStatus: "confirmed",
+      onBehalfOf: body.onBehalfOf || savings.donorName,
+      confirmedAt: now,
+      notes: body.notes || "Konversi tabungan (non-cash)",
     })
     .returning();
 
-  // Create conversion transaction
-  const trxCount = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(qurbanSavingsTransactions);
+  const [allocationTx] = await db
+    .insert(transactions)
+    .values({
+      id: createId(),
+      transactionNumber: generateSavingsConversionTxNumber(),
+      productType: "qurban",
+      productId: targetPackagePeriodId,
+      productName: pkgPeriod.package.name,
+      productDescription: pkgPeriod.package.description,
+      productImage: pkgPeriod.package.imageUrl,
+      quantity: 1,
+      unitPrice: 0,
+      subtotal: 0,
+      adminFee: 0,
+      totalAmount: 0,
+      uniqueCode: 0,
+      donorName: savings.donorName,
+      donorEmail: savings.donorEmail,
+      donorPhone: savings.donorPhone,
+      userId: savings.userId,
+      paymentMethodId: "internal_savings",
+      paymentStatus: "paid",
+      paidAmount: 0,
+      paidAt: now,
+      typeSpecificData: {
+        payment_type: "savings_conversion",
+        funding_source: "savings",
+        is_non_cash: true,
+        savings_id: savings.id,
+        savings_number: savings.savingsNumber,
+        converted_amount: packagePrice,
+        order_id: newOrder[0].id,
+        order_number: newOrder[0].orderNumber,
+      },
+      category: "qurban_savings",
+      transactionType: "allocation",
+      notes: body.notes || "Alokasi non-cash tabungan qurban ke order",
+      createdAt: now,
+      updatedAt: now,
+    } as any)
+    .returning();
 
-  const transactionNumber = `TRX-SAV-QBN-${getCurrentYearWIB()}-${String(Number(trxCount[0].count) + 1).padStart(5, "0")}`;
-
-  await db.insert(qurbanSavingsTransactions).values({
-    id: createId(),
-    transactionNumber,
-    savingsId: id,
-    amount: pkgPeriod.price,
-    transactionType: "conversion",
-    status: "verified",
-  });
+  const [conversion] = await db
+    .insert(qurbanSavingsConversions)
+    .values({
+      id: createId(),
+      savingsId: savings.id,
+      convertedAmount: packagePrice,
+      orderId: newOrder[0].id,
+      orderNumber: newOrder[0].orderNumber,
+      orderTransactionId: allocationTx.id,
+      notes: body.notes || null,
+      convertedBy: user.id,
+      convertedAt: now,
+      createdAt: now,
+    })
+    .returning();
 
   // Update savings status
   await db
     .update(qurbanSavings)
     .set({
       status: "converted",
-      convertedToOrderId: newOrder[0].id,
-      convertedAt: new Date(),
-      updatedAt: new Date(),
+      updatedAt: now,
     })
     .where(eq(qurbanSavings.id, id));
 
   return c.json({
-    data: newOrder[0],
-    message: "Savings converted to order successfully",
+    data: {
+      order: newOrder[0],
+      conversion,
+    },
+    message: "Savings converted to order successfully (non-cash)",
   });
 });
 
@@ -1332,9 +1576,6 @@ app.post("/orders/:id/confirm-payment", zValidator("json", confirmPaymentSchema)
         newMetadata.accountName = paymentMethod.details.accountName;
       } else if (paymentMethodId.includes('qris')) {
         newMetadata.qrisName = paymentMethod.details.name || paymentMethod.name;
-        if (paymentMethod.details.nmid) {
-          newMetadata.nmid = paymentMethod.details.nmid;
-        }
       }
 
       updateData.metadata = newMetadata;

@@ -1,10 +1,13 @@
+/**
+ * @deprecated This legacy ledger create form is deprecated. Use /dashboard/disbursements/create instead.
+ */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { ArrowLeftIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, PlusIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import Autocomplete, { type AutocompleteOption } from "@/components/Autocomplete";
 import VendorModal from "@/components/modals/VendorModal";
 import EmployeeModal from "@/components/modals/EmployeeModal";
@@ -13,6 +16,18 @@ import ExpenseAccountModal from "@/components/modals/ExpenseAccountModal";
 export default function CreateDisbursementPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  // Redirect to new disbursement form
+  useEffect(() => {
+    const confirmed = confirm(
+      "Halaman ini adalah sistem lama yang sudah tidak digunakan.\n\n" +
+      "Gunakan sistem Disbursement terbaru untuk membuat pengeluaran baru.\n\n" +
+      "Klik OK untuk dialihkan ke halaman baru, atau Cancel untuk tetap di sini (read-only)."
+    );
+    if (confirmed) {
+      router.push("/dashboard/disbursements/create");
+    }
+  }, [router]);
   const [formData, setFormData] = useState({
     campaignId: "",
     amount: "",

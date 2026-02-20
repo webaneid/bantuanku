@@ -36,7 +36,7 @@ export async function fetchPublicStats(): Promise<PublicStats> {
       totalDonors: 0,
       totalCampaigns: 0,
       totalDisbursed: 0,
-      totalPartners: 50, // Dummy data
+      totalPartners: 0,
     };
   }
 }

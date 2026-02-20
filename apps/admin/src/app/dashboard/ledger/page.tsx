@@ -1,3 +1,7 @@
+/**
+ * @deprecated This ledger system is deprecated. Use /dashboard/disbursements instead.
+ * This page is read-only for historical data only.
+ */
 "use client";
 
 import { useState } from "react";
@@ -15,6 +19,7 @@ import {
   XMarkIcon,
   BanknotesIcon,
   PlusIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 
 type StatusFilter = "all" | "draft" | "submitted" | "approved" | "rejected" | "paid";
@@ -92,6 +97,23 @@ export default function LedgerPage() {
           <PlusIcon className="w-5 h-5" />
           Buat Pengajuan
         </button>
+      </div>
+
+      {/* Deprecation Warning */}
+      <div className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6">
+        <div className="flex">
+          <ExclamationTriangleIcon className="h-5 w-5 text-warning-600 mr-3 flex-shrink-0" />
+          <div className="flex-1">
+            <h3 className="text-sm font-medium text-warning-800">Sistem Lama - Data Read-Only</h3>
+            <p className="text-sm text-warning-700 mt-1">
+              Halaman ini menampilkan data historis ledger lama. Untuk membuat pengeluaran baru, gunakan{" "}
+              <a href="/dashboard/disbursements" className="font-medium underline">
+                Sistem Disbursement Terbaru
+              </a>
+              .
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Status Filter Tabs */}

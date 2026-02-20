@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { Input, Button, Label } from "@/components/atoms";
-import toast from "react-hot-toast";
+import toast from "@/lib/feedback-toast";
+import { useI18n } from "@/lib/i18n/provider";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:50245/v1";
 
@@ -26,6 +27,7 @@ function normalizePhone(input: string | null | undefined): string {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const { register, user, isHydrated } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
@@ -62,21 +64,30 @@ export default function RegisterPage() {
       const response = await fetch(`${API_URL}/auth/check-registration?${params.toString()}`);
       const data = await response.json();
 
-      if (data.success && data.data.exists) {
+        if (data.success && data.data.exists) {
         if (data.data.registered) {
           // User already registered with password
           setShowLoginPrompt(true);
-          toast.error("Email atau nomor telepon sudah terdaftar");
+          toast.error(t("auth.register.toastAlreadyRegistered"));
         } else {
-          // User exists from checkout but hasn't registered yet
-          // Auto-fill the name
-          if (data.data.name && !isAutoFilled) {
-            setFormData((prev) => ({
-              ...prev,
-              name: data.data.name,
-            }));
-            setIsAutoFilled(true);
-            toast.success("Data Anda ditemukan! Nama telah diisi otomatis");
+          // User exists from checkout/WA bot but hasn't registered yet
+          // Auto-fill available fields so user only needs to enter password
+          if (!isAutoFilled) {
+            const updates: Partial<typeof formData> = {};
+            if (data.data.name) updates.name = data.data.name;
+            if (data.data.whatsappNumber) {
+              updates.whatsappNumber = data.data.whatsappNumber;
+              // If WA number matches phone, also check the "same as phone" box
+              if (normalizePhone(data.data.whatsappNumber) === normalizePhone(phone)) {
+                setSameAsPhone(true);
+              }
+            }
+
+            if (Object.keys(updates).length > 0) {
+              setFormData((prev) => ({ ...prev, ...updates }));
+              setIsAutoFilled(true);
+              toast.success(t("auth.register.toastDataFound"));
+            }
           }
         }
       }
@@ -85,7 +96,7 @@ export default function RegisterPage() {
     } finally {
       setIsChecking(false);
     }
-  }, [isAutoFilled]);
+  }, [isAutoFilled, t]);
 
   // Debounced check - trigger when both email and phone are filled
   useEffect(() => {
@@ -130,7 +141,7 @@ export default function RegisterPage() {
     const checked = e.target.checked;
 
     if (checked && !formData.phone) {
-      toast.error("Isi nomor telepon terlebih dahulu");
+      toast.error(t("auth.register.toastFillPhoneFirst"));
       return;
     }
 
@@ -152,19 +163,19 @@ export default function RegisterPage() {
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      toast.error("Password tidak cocok");
+      toast.error(t("auth.register.toastPasswordMismatch"));
       return;
     }
 
     // Validate password length
     if (formData.password.length < 8) {
-      toast.error("Password minimal 8 karakter");
+      toast.error(t("auth.register.toastPasswordMin"));
       return;
     }
 
     // Validate whatsapp number
     if (!formData.whatsappNumber || formData.whatsappNumber.length < 10) {
-      toast.error("Nomor WhatsApp tidak valid (minimal 10 digit)");
+      toast.error(t("auth.register.toastInvalidWhatsapp"));
       return;
     }
 
@@ -177,10 +188,10 @@ export default function RegisterPage() {
         whatsappNumber: formData.whatsappNumber,
         password: formData.password,
       });
-      toast.success("Registrasi berhasil! Anda akan diarahkan ke beranda");
+      toast.success(t("auth.register.toastSuccess"));
       router.push("/");
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Registrasi gagal";
+      const errorMessage = error.response?.data?.message || t("auth.register.toastFailed");
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -191,8 +202,8 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700 px-4 py-8">
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Daftar</h1>
-          <p className="text-gray-600 mt-2">Buat akun baru untuk mulai berdonasi</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t("auth.register.title")}</h1>
+          <p className="text-gray-600 mt-2">{t("auth.register.subtitle")}</p>
         </div>
 
         {showLoginPrompt && (
@@ -203,13 +214,13 @@ export default function RegisterPage() {
               </svg>
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-yellow-800 mb-1">
-                  Akun Sudah Terdaftar
+                  {t("auth.register.accountExistsTitle")}
                 </h3>
                 <p className="text-sm text-yellow-700 mb-3">
-                  Email atau nomor telepon Anda sudah terdaftar. Silahkan login untuk melanjutkan.
+                  {t("auth.register.accountExistsDesc")}
                 </p>
                 <Link href="/login" className="inline-block text-sm font-medium text-primary-600 hover:text-primary-700">
-                  Login sekarang →
+                  {t("auth.register.loginNow")}
                 </Link>
               </div>
             </div>
@@ -219,7 +230,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <Label htmlFor="email">
-              Email <span className="text-red-500">*</span>
+              {t("auth.register.email")} <span className="text-red-500">*</span>
             </Label>
             <Input
               id="email"
@@ -227,16 +238,16 @@ export default function RegisterPage() {
               type="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="nama@email.com"
+              placeholder={t("auth.register.emailPlaceholder")}
               required
               disabled={showLoginPrompt}
             />
-            <p className="text-xs text-gray-500 mt-1">Email akan digunakan sebagai username</p>
+            <p className="text-xs text-gray-500 mt-1">{t("auth.register.emailHint")}</p>
           </div>
 
           <div>
             <Label htmlFor="phone">
-              Nomor Telepon <span className="text-red-500">*</span>
+              {t("auth.register.phone")} <span className="text-red-500">*</span>
             </Label>
             <Input
               id="phone"
@@ -244,18 +255,18 @@ export default function RegisterPage() {
               type="tel"
               value={formData.phone}
               onChange={handleChange}
-              placeholder="08xx xxxx xxxx"
+              placeholder={t("auth.register.phonePlaceholder")}
               required
               disabled={showLoginPrompt}
             />
             {isChecking && (
-              <p className="text-xs text-blue-600 mt-1">Memeriksa data...</p>
+              <p className="text-xs text-blue-600 mt-1">{t("auth.register.checkingData")}</p>
             )}
           </div>
 
           <div>
             <Label htmlFor="name">
-              Nama Lengkap <span className="text-red-500">*</span>
+              {t("auth.register.fullName")} <span className="text-red-500">*</span>
             </Label>
             <Input
               id="name"
@@ -263,18 +274,18 @@ export default function RegisterPage() {
               type="text"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Masukkan nama lengkap"
+              placeholder={t("auth.register.namePlaceholder")}
               required
               disabled={showLoginPrompt}
             />
             {isAutoFilled && (
-              <p className="text-xs text-green-600 mt-1">✓ Nama terisi otomatis dari data sebelumnya</p>
+              <p className="text-xs text-green-600 mt-1">{t("auth.register.autoFilledName")}</p>
             )}
           </div>
 
           <div>
             <Label htmlFor="whatsappNumber">
-              Nomor WhatsApp <span className="text-red-500">*</span>
+              {t("auth.register.whatsapp")} <span className="text-red-500">*</span>
             </Label>
             <div className="space-y-2">
               <div className="flex items-center gap-2 mb-2">
@@ -287,7 +298,7 @@ export default function RegisterPage() {
                   disabled={showLoginPrompt}
                 />
                 <label htmlFor="sameAsPhone" className="text-sm text-gray-700 cursor-pointer">
-                  Sama dengan nomor telepon
+                  {t("auth.register.sameAsPhone")}
                 </label>
               </div>
               <Input
@@ -296,17 +307,17 @@ export default function RegisterPage() {
                 type="tel"
                 value={formData.whatsappNumber}
                 onChange={handleChange}
-                placeholder="08xx xxxx xxxx"
+                placeholder={t("auth.register.phonePlaceholder")}
                 disabled={sameAsPhone || showLoginPrompt}
                 required
               />
-              <p className="text-xs text-gray-500">Wajib diisi - untuk notifikasi donasi</p>
+              <p className="text-xs text-gray-500">{t("auth.register.whatsappHint")}</p>
             </div>
           </div>
 
           <div>
             <Label htmlFor="password">
-              Password <span className="text-red-500">*</span>
+              {t("auth.register.password")} <span className="text-red-500">*</span>
             </Label>
             <Input
               id="password"
@@ -314,7 +325,7 @@ export default function RegisterPage() {
               type="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Minimal 8 karakter"
+              placeholder={t("auth.register.passwordPlaceholder")}
               required
               disabled={showLoginPrompt}
             />
@@ -322,7 +333,7 @@ export default function RegisterPage() {
 
           <div>
             <Label htmlFor="confirmPassword">
-              Konfirmasi Password <span className="text-red-500">*</span>
+              {t("auth.register.confirmPassword")} <span className="text-red-500">*</span>
             </Label>
             <Input
               id="confirmPassword"
@@ -330,7 +341,7 @@ export default function RegisterPage() {
               type="password"
               value={formData.confirmPassword}
               onChange={handleChange}
-              placeholder="Ulangi password"
+              placeholder={t("auth.register.confirmPasswordPlaceholder")}
               required
               disabled={showLoginPrompt}
             />
@@ -341,22 +352,22 @@ export default function RegisterPage() {
             disabled={isLoading || showLoginPrompt}
             className="w-full"
           >
-            {isLoading ? "Memproses..." : "Daftar"}
+            {isLoading ? t("auth.register.processing") : t("auth.register.submit")}
           </Button>
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>
-            Sudah punya akun?{" "}
+            {t("auth.register.alreadyHaveAccount")}{" "}
             <Link href="/login" className="text-primary-600 hover:text-primary-700 font-medium">
-              Masuk di sini
+              {t("auth.register.loginHere")}
             </Link>
           </p>
         </div>
 
         <div className="mt-4 text-center">
           <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
-            Kembali ke beranda
+            {t("auth.register.backHome")}
           </Link>
         </div>
       </div>

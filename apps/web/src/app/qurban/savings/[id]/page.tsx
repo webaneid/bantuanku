@@ -7,10 +7,12 @@ import DepositForm from './DepositForm';
 import TransactionList from './TransactionList';
 import ProgressBar from './ProgressBar';
 import { useAuth } from '@/lib/auth';
+import { useI18n } from '@/lib/i18n/provider';
 
 export default function SavingsDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const { user, isHydrated } = useAuth();
+  const { t } = useI18n();
   const [savings, setSavings] = useState<QurbanSavings | null>(null);
   const [transactions, setTransactions] = useState<SavingsTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,8 +40,20 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
       setSavings(savingsData);
       setTransactions(transactionsData);
     } catch (err) {
+      const status = (err as any)?.response?.status;
+      const code = (err as any)?.code;
+
+      if (status === 401) {
+        router.push('/login');
+        return;
+      }
+
+      if (code === 'ECONNABORTED' || code === 'ERR_CANCELED') {
+        return;
+      }
+
       console.error('Error loading savings detail:', err);
-      setError('Gagal memuat data tabungan');
+      setError(t('account.qurbanSavingsDetail.loadFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -55,30 +69,22 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-64"></div>
-          <div className="h-4 bg-gray-200 rounded w-48"></div>
-          <div className="h-24 bg-gray-200 rounded"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="h-64 bg-gray-200 rounded"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
-          </div>
-        </div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
   if (error || !savings) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="max-w-5xl mx-auto space-y-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <p className="text-red-800">{error || 'Tabungan tidak ditemukan'}</p>
+          <p className="text-red-800">{error || t('account.qurbanSavingsDetail.notFound')}</p>
           <button
             onClick={() => router.push('/qurban/savings')}
             className="mt-4 text-red-600 hover:text-red-700 underline"
           >
-            Kembali ke daftar tabungan
+            {t('account.qurbanSavingsDetail.backToList')}
           </button>
         </div>
       </div>
@@ -86,24 +92,30 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-2">Detail Tabungan</h1>
-      <p className="text-gray-600 mb-6">{savings.savingsNumber}</p>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('account.qurbanSavingsDetail.title')}</h1>
+        <p className="text-sm text-gray-600 mt-1">{savings.savingsNumber}</p>
+      </div>
 
       <ProgressBar
         current={savings.currentAmount}
         target={savings.targetAmount}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h2 className="text-lg font-semibold mb-4">Riwayat Setoran</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('account.qurbanSavingsDetail.historyTitle')}</h2>
           <TransactionList transactions={transactions} />
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold mb-4">Setor Baru</h2>
-          <DepositForm savingsId={savings.id} onSuccess={loadData} />
+          <h2 className="text-lg font-semibold mb-4">{t('account.qurbanSavingsDetail.depositTitle')}</h2>
+          <DepositForm
+            savingsId={savings.id}
+            defaultAmount={Number(savings.installmentAmount || 0)}
+            onSuccess={loadData}
+          />
         </div>
       </div>
     </div>

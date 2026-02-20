@@ -4,12 +4,20 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import QurbanPackageForm, { QurbanPackageFormData } from "@/components/QurbanPackageForm";
-import { toast } from "react-hot-toast";
+import { useState } from "react";
+import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
 
 export default function CreateQurbanPackagePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
+  const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   const createMutation = useMutation({
     mutationFn: async (data: QurbanPackageFormData) => {
@@ -22,16 +30,37 @@ export default function CreateQurbanPackagePage() {
         imageUrl: data.imageUrl || null,
         isFeatured: data.isFeatured,
         periods: data.periods,
+        // SEO fields
+        metaTitle: data.metaTitle || null,
+        metaDescription: data.metaDescription || null,
+        focusKeyphrase: data.focusKeyphrase || null,
+        canonicalUrl: data.canonicalUrl || null,
+        noIndex: data.noIndex || false,
+        noFollow: data.noFollow || false,
+        ogTitle: data.ogTitle || null,
+        ogDescription: data.ogDescription || null,
+        ogImageUrl: data.ogImageUrl || null,
+        seoScore: data.seoScore || 0,
       };
       return api.post("/admin/qurban/packages", payload);
     },
     onSuccess: () => {
-      toast.success("Paket qurban berhasil ditambahkan!");
       queryClient.invalidateQueries({ queryKey: ["qurban-packages"] });
-      router.push("/dashboard/qurban/packages");
+      setRedirectAfterFeedback(true);
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Paket qurban berhasil ditambahkan!",
+      });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal menambahkan paket qurban");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: error.response?.data?.message || "Gagal menambahkan paket qurban",
+      });
     },
   });
 
@@ -90,6 +119,20 @@ export default function CreateQurbanPackagePage() {
           </button>
         </div>
       </div>
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => {
+          setFeedback((prev) => ({ ...prev, open: false }));
+          if (redirectAfterFeedback) {
+            setRedirectAfterFeedback(false);
+            router.push("/dashboard/qurban/packages");
+          }
+        }}
+      />
     </div>
   );
 }

@@ -1,11 +1,26 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ChevronDownIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 export interface AutocompleteOption {
   value: string;
   label: string;
+}
+
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+function ChevronDown({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
 }
 
 interface AutocompleteProps {
@@ -117,10 +132,10 @@ export default function Autocomplete({
               onClick={handleClear}
               tabIndex={-1}
             >
-              <XMarkIcon className="w-4 h-4 text-gray-400" />
+              <CloseIcon className="w-4 h-4 text-gray-400" />
             </button>
           )}
-          <ChevronDownIcon
+          <ChevronDown
             className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
           />
         </div>

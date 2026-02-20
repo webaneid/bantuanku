@@ -10,14 +10,15 @@ dist/
 build/
 
 # Environment files
-.env
-.env.local
-.env.*.local
+.env*
+!*.env.example
+!**/*.env.example
 .dev.vars
 
 # IDE
 .idea/
 .vscode/
+.claude/
 *.swp
 *.swo
 
@@ -30,6 +31,8 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+logs/
+**/logs/
 
 # Cloudflare
 .wrangler/
@@ -37,6 +40,8 @@ yarn-error.log*
 
 # Drizzle
 drizzle/meta/
+packages/db/drizzle/migrations.db
+packages/db/logs/
 
 # Testing
 coverage/
@@ -45,3 +50,15 @@ coverage/
 # Misc
 *.tsbuildinfo
 .turbo/
+/*.md
+!/README.md
+/*.pptx
+/*.sql
+/*.html
+/*.db
+
+# Local runtime/data files
+uploads/
+*.db-wal
+*.db-shm
+*.db-journal

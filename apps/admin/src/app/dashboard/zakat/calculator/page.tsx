@@ -96,7 +96,7 @@ export default function ZakatCalculatorPage() {
 
     let result = 0;
 
-    switch (selectedType.slug) {
+    switch (selectedType.calculatorType || selectedType.slug) {
       case "zakat-maal":
         const uangTunai = parseFloat(maalData.uangTunai) || 0;
         const saham = parseFloat(maalData.saham) || 0;
@@ -115,9 +115,11 @@ export default function ZakatCalculatorPage() {
 
       case "zakat-fitrah":
         const jumlahJiwa = parseFloat(fitrahData.jumlahJiwa) || 0;
-        // Use zakat fitrah amount from settings if available, otherwise calculate from rice price
-        if (zakatFitrahAmount > 0) {
-          result = jumlahJiwa * zakatFitrahAmount;
+        // Priority: type-specific fitrahAmount > global setting > manual rice price
+        const typeFitrahAmount = selectedType.fitrahAmount ? parseFloat(selectedType.fitrahAmount) : 0;
+        const effectiveFitrahAmount = typeFitrahAmount > 0 ? typeFitrahAmount : zakatFitrahAmount;
+        if (effectiveFitrahAmount > 0) {
+          result = jumlahJiwa * effectiveFitrahAmount;
         } else {
           const hargaBeras = parseFloat(fitrahData.hargaBeras) || 0;
           const berasPerJiwa = 2.5; // kg
@@ -188,7 +190,7 @@ export default function ZakatCalculatorPage() {
       );
     }
 
-    switch (selectedType.slug) {
+    switch (selectedType.calculatorType || selectedType.slug) {
       case "zakat-maal":
         const uangTunai = parseFloat(maalData.uangTunai) || 0;
         const saham = parseFloat(maalData.saham) || 0;
@@ -418,9 +420,13 @@ export default function ZakatCalculatorPage() {
             <div className="bg-success-50 border border-success-200 rounded-lg p-4">
               <p className="text-sm font-medium text-success-900 mb-1">Ketentuan Zakat Fitrah</p>
               <p className="text-sm text-success-700">
-                {zakatFitrahAmount > 0
-                  ? `Rp ${formatRupiah(zakatFitrahAmount)} per jiwa`
-                  : "2.5 kg beras per jiwa"}
+                {(() => {
+                  const typeFitrah = selectedType?.fitrahAmount ? parseFloat(selectedType.fitrahAmount) : 0;
+                  const effectiveFitrah = typeFitrah > 0 ? typeFitrah : zakatFitrahAmount;
+                  return effectiveFitrah > 0
+                    ? `Rp ${formatRupiah(effectiveFitrah)} per jiwa${typeFitrah > 0 ? " (khusus tipe ini)" : ""}`
+                    : "2.5 kg beras per jiwa";
+                })()}
               </p>
               <p className="text-xs text-success-600 mt-1">
                 Wajib dibayarkan sebelum Shalat Idul Fitri

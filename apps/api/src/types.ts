@@ -6,12 +6,10 @@ export interface Env {
   JWT_EXPIRES_IN?: string;
   ENVIRONMENT: string;
   API_URL?: string;
+  FRONTEND_URL?: string;
+  ADMIN_URL?: string;
   RESEND_API_KEY?: string;
   FROM_EMAIL?: string;
-  // Cloudflare bindings (optional)
-  CACHE?: KVNamespace;
-  STORAGE?: R2Bucket;
-  QUEUE?: Queue;
 }
 
 export interface Variables {
@@ -23,6 +21,7 @@ export interface Variables {
     phone?: string | null;
     whatsappNumber?: string | null;
     roles: string[];
+    isDeveloper?: boolean;
   };
   coordinatorEmployeeId?: string | null;
 }

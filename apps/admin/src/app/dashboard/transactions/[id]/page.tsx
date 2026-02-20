@@ -4,7 +4,6 @@ import { use, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon, PaperClipIcon } from "@heroicons/react/24/outline";
-import { toast } from "react-hot-toast";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
@@ -14,8 +13,11 @@ import {
   getTransactionPaymentStatusLabel,
   getTransactionPaymentStatusBadgeClass
 } from "@/lib/format";
+import { getCategoryLabel } from "@/lib/category-utils";
 import Autocomplete from "@/components/Autocomplete";
+import AdminPaymentMethodList from "@/components/AdminPaymentMethodList";
 import MediaLibrary from "@/components/MediaLibrary";
+import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
 
 export default function TransactionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,6 +30,15 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const [showProofModal, setShowProofModal] = useState(false);
   const [selectedProof, setSelectedProof] = useState<string>("");
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
     paymentDate: new Date().toISOString().split("T")[0],
@@ -52,35 +63,57 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
   });
 
   const transaction = data?.data?.data || data?.data;
+  const selectedPaymentMethod = paymentMethodsData?.find(
+    (m: any) => m.code === transaction?.paymentMethodId
+  );
+  const expectedTransferAmount = Number(transaction?.totalAmount || 0) + Number(transaction?.uniqueCode || 0);
 
   const handleApprovePayment = async () => {
-    if (!confirm("Apakah Anda yakin ingin menyetujui pembayaran ini?")) return;
-
     setIsApproving(true);
     try {
       await api.post(`/transactions/${id}/approve-payment`, {});
-      toast.success("Pembayaran berhasil disetujui");
-      window.location.reload();
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Pembayaran berhasil disetujui",
+      });
+      setShowApproveModal(false);
+      refetch();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Gagal menyetujui pembayaran");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: error.response?.data?.message || "Gagal menyetujui pembayaran",
+      });
     } finally {
       setIsApproving(false);
     }
   };
 
   const handleRejectPayment = async () => {
-    const reason = prompt("Masukkan alasan penolakan (opsional):");
-    if (reason === null) return; // User cancelled
-
     setIsRejecting(true);
     try {
       await api.post(`/transactions/${id}/reject-payment`, {
-        reason: reason || undefined,
+        reason: rejectReason || undefined,
       });
-      toast.success("Pembayaran ditolak");
-      window.location.reload();
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Pembayaran ditolak",
+      });
+      setShowRejectModal(false);
+      setRejectReason("");
+      refetch();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Gagal menolak pembayaran");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: error.response?.data?.message || "Gagal menolak pembayaran",
+      });
     } finally {
       setIsRejecting(false);
     }
@@ -91,7 +124,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
     setPaymentForm({
       amount: remainingAmount,
       paymentDate: new Date().toISOString().split("T")[0],
-      paymentMethod: "",
+      paymentMethod: transaction.paymentMethodId || "",
       paymentProof: "",
     });
     setShowPaymentModal(true);
@@ -99,91 +132,64 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
 
   const handleSubmitPayment = async () => {
     if (!paymentForm.amount || paymentForm.amount <= 0) {
-      toast.error("Jumlah pembayaran harus lebih dari 0");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Validasi",
+        message: "Jumlah pembayaran harus lebih dari 0",
+      });
       return;
     }
     if (!paymentForm.paymentMethod) {
-      toast.error("Metode pembayaran harus dipilih");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Validasi",
+        message: "Metode pembayaran harus dipilih",
+      });
       return;
     }
 
     setIsSubmitting(true);
     try {
       await api.post(`/transactions/${id}/payments`, paymentForm);
-      toast.success("Pembayaran berhasil ditambahkan");
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Pembayaran berhasil ditambahkan",
+      });
       setShowPaymentModal(false);
       refetch();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Gagal menambahkan pembayaran");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: error.response?.data?.message || "Gagal menambahkan pembayaran",
+      });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const paymentMethodOptions = (() => {
-    const methods = paymentMethodsData || [];
-    let targetProgram = "general";
+  const programFilter = (() => {
+    if (!transaction) return "general";
 
-    if (transaction?.productType === "campaign") {
+    if (transaction.productType === "campaign") {
       const pillar = transaction.typeSpecificData?.pillar;
       if (pillar === "wakaf") {
-        targetProgram = "wakaf";
+        return "wakaf";
       } else {
-        targetProgram = "infaq";
+        return "infaq";
       }
-    } else if (transaction?.productType === "zakat") {
-      targetProgram = "zakat";
-    } else if (transaction?.productType === "qurban") {
-      targetProgram = "qurban";
+    } else if (transaction.productType === "zakat") {
+      return "zakat";
+    } else if (transaction.productType === "qurban") {
+      return "qurban";
     } else {
-      targetProgram = "infaq";
+      return "general";
     }
-
-    const bankAndQris = methods.filter(
-      (m: any) => m.type === "bank_transfer" || m.type === "qris"
-    );
-
-    const hasTargetProgram = bankAndQris.some((m: any) => {
-      const programs =
-        m.programs && m.programs.length > 0 ? m.programs : ["general"];
-      return programs.includes(targetProgram);
-    });
-
-    const filtered = bankAndQris.filter((m: any) => {
-      const programs =
-        m.programs && m.programs.length > 0 ? m.programs : ["general"];
-
-      if (hasTargetProgram) {
-        return programs.includes(targetProgram);
-      } else {
-        return programs.includes("general");
-      }
-    });
-
-    return filtered.map((method: any) => {
-      const programs =
-        method.programs && method.programs.length > 0
-          ? method.programs
-          : ["general"];
-      const programLabel = programs.join(", ");
-
-      let label = method.name;
-      if (method.type === "bank_transfer") {
-        const accountNumber = method.details?.accountNumber || "";
-        const accountName = method.details?.accountName || "";
-        label = `${method.details?.bankName || method.name} - ${accountNumber}${
-          accountName ? ` - a.n ${accountName}` : ""
-        } [${programLabel}]`;
-      } else if (method.type === "qris") {
-        const qrisName = method.details?.name || method.name;
-        label = `${qrisName} [${programLabel}]`;
-      }
-
-      return {
-        value: method.code,
-        label,
-      };
-    });
   })();
 
   if (isLoading) {
@@ -230,6 +236,12 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
             <div>
               <label className="text-sm text-gray-500">Product Name</label>
               <div className="font-semibold">{transaction.productName}</div>
+            </div>
+            <div>
+              <label className="text-sm text-gray-500">Kategori</label>
+              <div className="font-semibold">
+                {transaction.category ? getCategoryLabel(transaction.category) : "-"}
+              </div>
             </div>
             <div>
               <label className="text-sm text-gray-500">Payment Status</label>
@@ -288,16 +300,22 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
                   <span>Rp {transaction.adminFee?.toLocaleString()}</span>
                 </div>
               )}
+              {transaction.uniqueCode > 0 && (
+                <div className="flex justify-between">
+                  <span>Kode Unik:</span>
+                  <span>Rp {transaction.uniqueCode?.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-lg border-t pt-2">
-                <span>Total:</span>
-                <span>Rp {formatRupiah(transaction.totalAmount)}</span>
+                <span>{transaction.uniqueCode > 0 ? 'Total Transfer:' : 'Total:'}</span>
+                <span>Rp {formatRupiah(transaction.totalAmount + (transaction.uniqueCode || 0))}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Paid Amount:</span>
                 <span className="text-green-600 font-medium">Rp {formatRupiah(transaction.paidAmount)}</span>
               </div>
               {(() => {
-                const remaining = transaction.totalAmount - transaction.paidAmount;
+                const remaining = (transaction.totalAmount + (transaction.uniqueCode || 0)) - transaction.paidAmount;
                 if (remaining > 0) {
                   return (
                     <div className="flex justify-between text-sm">
@@ -331,6 +349,13 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
             </div>
           )}
 
+          {transaction.typeSpecificData?.onBehalfOf && (
+            <div className="border-t pt-4 mb-6">
+              <h2 className="font-semibold mb-2">Atas Nama</h2>
+              <div className="text-gray-700">{transaction.typeSpecificData.onBehalfOf}</div>
+            </div>
+          )}
+
           {transaction.typeSpecificData && (
             <div className="border-t pt-4 mb-6">
               <h2 className="font-semibold mb-2">Detail Tambahan</h2>
@@ -347,10 +372,25 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
                 )}
                 {transaction.productType === "zakat" && (
                   <>
-                    {transaction.typeSpecificData.zakatType && (
+                    {transaction.typeSpecificData.zakat_type_name && (
                       <div className="flex justify-between">
                         <span className="text-gray-500">Jenis Zakat:</span>
-                        <span className="font-medium">{transaction.typeSpecificData.zakatType}</span>
+                        <span className="font-medium">{transaction.typeSpecificData.zakat_type_name}</span>
+                      </div>
+                    )}
+                    {transaction.typeSpecificData.zakat_period_name && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Periode:</span>
+                        <span className="font-medium">{transaction.typeSpecificData.zakat_period_name}</span>
+                      </div>
+                    )}
+                    {transaction.typeSpecificData.year && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Tahun:</span>
+                        <span className="font-medium">
+                          {transaction.typeSpecificData.year}
+                          {transaction.typeSpecificData.hijri_year && ` / ${transaction.typeSpecificData.hijri_year}`}
+                        </span>
                       </div>
                     )}
                   </>
@@ -375,8 +415,40 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
                         <span className="font-medium">Ya (Group ID: {transaction.typeSpecificData.sharedGroupId})</span>
                       </div>
                     )}
+                    {transaction.typeSpecificData.onBehalfOf && !transaction.message && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Atas Nama:</span>
+                        <span className="font-medium">{transaction.typeSpecificData.onBehalfOf}</span>
+                      </div>
+                    )}
                   </>
                 )}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Nominal Transfer:</span>
+                  <span className="font-medium">Rp {formatRupiah(expectedTransferAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Metode Dipilih:</span>
+                  <span className="font-medium text-right">
+                    {selectedPaymentMethod ? (
+                      selectedPaymentMethod.type === "bank_transfer" ? (
+                        <>
+                          {selectedPaymentMethod.name}
+                          {selectedPaymentMethod.details?.accountNumber && (
+                            <span className="block text-xs text-gray-600">
+                              {selectedPaymentMethod.details.accountNumber}
+                              {selectedPaymentMethod.details?.accountName && ` - ${selectedPaymentMethod.details.accountName}`}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        selectedPaymentMethod.name
+                      )
+                    ) : (
+                      <span className="text-gray-500">Belum dipilih</span>
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -474,14 +546,14 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
           {transaction.paymentStatus === "processing" && (
             <>
               <button
-                onClick={handleRejectPayment}
+                onClick={() => setShowRejectModal(true)}
                 disabled={isRejecting}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
               >
                 {isRejecting ? "Menolak..." : "Tolak Pembayaran"}
               </button>
               <button
-                onClick={handleApprovePayment}
+                onClick={() => setShowApproveModal(true)}
                 disabled={isApproving}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
               >
@@ -497,9 +569,15 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
           </button>
           <button
             onClick={() => {
-              const invoiceUrl = `${window.location.origin}/invoice/${transaction.transactionNumber || transaction.id}`;
+              const webUrl = process.env.NEXT_PUBLIC_WEB_URL || window.location.origin;
+              const invoiceUrl = `${webUrl}/invoice/${transaction.id}`;
               navigator.clipboard.writeText(invoiceUrl);
-              alert("Invoice link copied!");
+              setFeedback({
+                open: true,
+                type: "success",
+                title: "Berhasil",
+                message: "Invoice link copied!",
+              });
             }}
             className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
           >
@@ -549,12 +627,13 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
                 <label className="form-label">
                   Metode Pembayaran <span className="text-danger-500">*</span>
                 </label>
-                <Autocomplete
-                  options={paymentMethodOptions}
+                <AdminPaymentMethodList
                   value={paymentForm.paymentMethod}
                   onChange={(val) =>
                     setPaymentForm({ ...paymentForm, paymentMethod: val })
                   }
+                  types={["cash", "bank_transfer", "qris"]}
+                  programFilter={programFilter}
                   placeholder="Pilih metode pembayaran"
                   allowClear={false}
                 />
@@ -634,6 +713,68 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
         </div>
       )}
 
+      {showApproveModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Setujui Pembayaran</h3>
+            <p className="text-sm text-gray-700 mb-5">Apakah Anda yakin ingin menyetujui pembayaran ini?</p>
+            <div className="flex justify-end gap-3">
+              <button
+                className="btn btn-secondary btn-md"
+                onClick={() => setShowApproveModal(false)}
+                disabled={isApproving}
+              >
+                Batal
+              </button>
+              <button
+                className="btn btn-primary btn-md"
+                onClick={handleApprovePayment}
+                disabled={isApproving}
+              >
+                {isApproving ? "Menyetujui..." : "Setujui"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Tolak Pembayaran</h3>
+            <div className="mb-5">
+              <label className="form-label">Alasan Penolakan (opsional)</label>
+              <textarea
+                className="form-input"
+                rows={3}
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Masukkan alasan penolakan..."
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                className="btn btn-secondary btn-md"
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason("");
+                }}
+                disabled={isRejecting}
+              >
+                Batal
+              </button>
+              <button
+                className="btn btn-danger btn-md"
+                onClick={handleRejectPayment}
+                disabled={isRejecting}
+              >
+                {isRejecting ? "Menolak..." : "Tolak"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Media Library */}
       <MediaLibrary
         isOpen={showMediaLibrary}
@@ -645,6 +786,14 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
         category="financial"
         accept="image/*,application/pdf"
         selectedUrl={paymentForm.paymentProof}
+      />
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
       />
     </div>
   );

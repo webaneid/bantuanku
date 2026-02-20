@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { useSettings } from '@/hooks/useSettings';
-import { QrCodeIcon, CreditCardIcon, BanknotesIcon } from '@heroicons/react/24/outline';
+import { useI18n } from '@/lib/i18n/provider';
 
 // Props now optional - Footer will fetch settings if not provided
 export interface FooterProps extends React.HTMLAttributes<HTMLElement> {
@@ -28,21 +28,6 @@ export interface FooterProps extends React.HTMLAttributes<HTMLElement> {
     tiktok?: string;
   };
 }
-
-const defaultProgramLinks = [
-  { label: 'Zakat', href: '/zakat' },
-  { label: 'Qurban', href: '/qurban' },
-  { label: 'Infaq/Sedekah', href: '/infaq' },
-  { label: 'Wakaf', href: '/wakaf' },
-];
-
-const aboutLinks = [
-  { label: 'Tentang Kami', href: '/tentang' },
-  { label: 'Kontak', href: '/kontak' },
-  { label: 'FAQ', href: '/faq' },
-  { label: 'Syarat & Ketentuan', href: '/syarat-ketentuan' },
-  { label: 'Kebijakan Privasi', href: '/kebijakan-privasi' },
-];
 
 // Social media icon configurations
 const socialMediaIcons = {
@@ -122,13 +107,14 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
   }, ref) => {
     const currentYear = new Date().getFullYear();
     const { settings, isLoading, error } = useSettings();
+    const { t } = useI18n();
 
     // Use props or fallback to settings
     const logo = logoProp || settings.organization_logo || '/logo.svg';
     const organizationName = nameProp || settings.organization_name || 'Bantuanku';
-    const organizationAbout = aboutProp || settings.organization_about || 'Platform donasi terpercaya untuk membantu sesama yang membutuhkan';
+    const organizationAbout = aboutProp || settings.organization_about || t('footer.defaultAbout');
     const organizationAboutUrl = aboutUrlProp ?? settings.organization_about_url;
-    const organizationAboutUrlLabel = aboutUrlLabelProp || settings.organization_about_url_label || 'Selengkapnya';
+    const organizationAboutUrlLabel = aboutUrlLabelProp || settings.organization_about_url_label || t('common.readMore');
     const phone = phoneProp ?? settings.organization_phone;
     const whatsapp = whatsappProp ?? settings.organization_whatsapp;
     const email = emailProp ?? settings.organization_email;
@@ -152,8 +138,23 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
         }
       }
 
-      return defaultProgramLinks;
-    }, [programLinksProp, settings.frontend_service_categories]);
+      return [
+        { label: t('common.menuZakat'), href: '/zakat' },
+        { label: t('common.menuQurban'), href: '/qurban' },
+        { label: t('common.menuInfaq'), href: '/infaq' },
+        { label: t('common.menuWakaf'), href: '/wakaf' },
+      ];
+    }, [programLinksProp, settings.frontend_service_categories, t]);
+
+    const aboutLinks = useMemo(() => {
+      return [
+        { label: t('footer.aboutUs'), href: '/tentang' },
+        { label: t('footer.contact'), href: '/kontak' },
+        { label: t('footer.faq'), href: '/faq' },
+        { label: t('footer.terms'), href: '/syarat-ketentuan' },
+        { label: t('footer.privacyPolicy'), href: '/kebijakan-privasi' },
+      ];
+    }, [t]);
 
     // Parse footer columns from settings
     const footerColumns = useMemo(() => {
@@ -258,7 +259,7 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
                   ))}
                   {/* Keep Kontak column */}
                   <div className="footer__link-group">
-                    <h3 className="footer__link-title">Kontak</h3>
+                    <h3 className="footer__link-title">{t('common.contact')}</h3>
                     <ul className="footer__link-list">
                       {email && (
                         <li>
@@ -277,7 +278,7 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
                       {whatsapp && (
                         <li>
                           <a href={`https://wa.me/${whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="footer__link">
-                            WhatsApp: {whatsapp}
+                            {t('common.whatsapp')}: {whatsapp}
                           </a>
                         </li>
                       )}
@@ -293,7 +294,7 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
                 // Fallback to default columns
                 <>
                   <div className="footer__link-group">
-                    <h3 className="footer__link-title">Program</h3>
+                    <h3 className="footer__link-title">{t('common.program')}</h3>
                     <ul className="footer__link-list">
                       {programLinks.map((link) => (
                         <li key={link.href}>
@@ -306,7 +307,7 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
                   </div>
 
                   <div className="footer__link-group">
-                    <h3 className="footer__link-title">Informasi</h3>
+                    <h3 className="footer__link-title">{t('common.information')}</h3>
                     <ul className="footer__link-list">
                       {aboutLinks.map((link) => (
                         <li key={link.href}>
@@ -319,7 +320,7 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
                   </div>
 
                   <div className="footer__link-group">
-                    <h3 className="footer__link-title">Kontak</h3>
+                    <h3 className="footer__link-title">{t('common.contact')}</h3>
                     <ul className="footer__link-list">
                       {email && (
                         <li>
@@ -338,7 +339,7 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
                       {whatsapp && (
                         <li>
                           <a href={`https://wa.me/${whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="footer__link">
-                            WhatsApp: {whatsapp}
+                            {t('common.whatsapp')}: {whatsapp}
                           </a>
                         </li>
                       )}
@@ -357,19 +358,35 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
           {/* Bottom Section */}
           <div className="footer__bottom">
             <p className="footer__copyright">
-              &copy; {currentYear} {organizationName}. Semua hak cipta dilindungi.
+              {t('footer.copyright', {
+                year: currentYear,
+                organizationName,
+                rightsText: t('common.allRightsReserved'),
+              })}
             </p>
             <div className="footer__payment">
-              <span className="footer__payment-label">Metode Pembayaran:</span>
+              <span className="footer__payment-label">{t('common.paymentMethods')}</span>
               <div className="footer__payment-icons">
                 <span className="footer__payment-icon">
-                  <QrCodeIcon className="w-5 h-5" />
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="3" y="3" width="7" height="7" strokeWidth="2" />
+                    <rect x="14" y="3" width="7" height="7" strokeWidth="2" />
+                    <rect x="3" y="14" width="7" height="7" strokeWidth="2" />
+                    <path d="M14 14h3v3h-3zM20 14h1v1h-1zM18 18h3v3h-3z" strokeWidth="2" />
+                  </svg>
                 </span>
                 <span className="footer__payment-icon">
-                  <CreditCardIcon className="w-5 h-5" />
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="2" y="5" width="20" height="14" rx="2" strokeWidth="2" />
+                    <path d="M2 10h20" strokeWidth="2" />
+                  </svg>
                 </span>
                 <span className="footer__payment-icon">
-                  <BanknotesIcon className="w-5 h-5" />
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <rect x="3" y="6" width="18" height="12" rx="2" strokeWidth="2" />
+                    <circle cx="12" cy="12" r="2.5" strokeWidth="2" />
+                    <path d="M7 9h.01M17 15h.01" strokeWidth="2" />
+                  </svg>
                 </span>
               </div>
             </div>

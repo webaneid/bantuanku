@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq, and } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { settings, bankAccounts } from "@bantuanku/db";
 import { success } from "../lib/response";
 import type { Env, Variables } from "../types";
@@ -10,7 +10,10 @@ settingsPublic.get("/", async (c) => {
   const db = c.get("db");
 
   const publicSettings = await db.query.settings.findMany({
-    where: eq(settings.isPublic, true),
+    where: or(
+      eq(settings.isPublic, true),
+      eq(settings.category, "seo_pages")
+    ),
     columns: {
       key: true,
       value: true,

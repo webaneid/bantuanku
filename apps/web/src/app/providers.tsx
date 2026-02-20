@@ -1,11 +1,31 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { CartProvider } from '@/contexts/CartContext';
+import { saveReferralCode } from '@/lib/referral';
+import FeedbackToastHost from '@/components/FeedbackToastHost';
+import { I18nProvider } from '@/lib/i18n/provider';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+function ReferralCapture() {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) {
+      saveReferralCode(ref);
+    }
+  }, [searchParams]);
+  return null;
+}
+
+export function Providers({
+  children,
+  locale,
+}: {
+  children: React.ReactNode;
+  locale?: string;
+}) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -21,35 +41,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <CartProvider>
-        {children}
-        {/* @ts-ignore */}
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#fff',
-              color: '#111827',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-              borderRadius: '8px',
-              padding: '16px',
-            },
-            success: {
-              iconTheme: {
-                primary: '#678f0c',
-                secondary: '#fff',
-              },
-            },
-            error: {
-              iconTheme: {
-                primary: '#8f132f',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
-      </CartProvider>
+      <I18nProvider initialLocale={locale}>
+        <CartProvider>
+          <ReferralCapture />
+          {children}
+          <FeedbackToastHost />
+        </CartProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }

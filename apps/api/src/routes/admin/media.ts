@@ -1,14 +1,96 @@
 import { Hono } from "hono";
-import { desc, like, or, sql, eq, and } from "drizzle-orm";
-import { media as mediaTable, settings as settingsTable } from "@bantuanku/db";
+import { desc, like, or, eq, and } from "drizzle-orm";
+import { media as mediaTable, settings as settingsTable, type MediaVariant } from "@bantuanku/db";
 import type { Env, Variables } from "../../types";
 import * as fs from "fs";
 import * as pathModule from "path";
 import { uploadToGCS, generateGCSPath, type GCSConfig } from "../../lib/gcs";
+import { processGeneralImage, processSingleWebp } from "../../lib/image-processor";
 
 // Simple ID generator
 const createId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
+};
+
+const IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const PDF_MAX_SIZE = 10 * 1024 * 1024;
+const ORIGINAL_RETENTION_DAYS = 7;
+const ORIGINAL_TEMP_FOLDER = "original-temp";
+
+const sanitizeName = (value: string): string => {
+  return value
+    .toLowerCase()
+    .replace(/\.[^/.]+$/, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+};
+
+const ensureDir = (dirPath: string): void => {
+  if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+  }
+};
+
+const isAbsoluteUrl = (value: string): boolean => {
+  return value.startsWith("http://") || value.startsWith("https://");
+};
+
+const resolvePublicUrl = (apiUrl: string, value: string): string => {
+  if (!value) return "";
+  return isAbsoluteUrl(value) ? value : `${apiUrl}${value}`;
+};
+
+const removeExpiredOriginals = (uploadsDir: string): void => {
+  const root = pathModule.join(uploadsDir, ORIGINAL_TEMP_FOLDER);
+  if (!fs.existsSync(root)) return;
+
+  const cutoffTime = Date.now() - ORIGINAL_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
+  const cleanup = (currentPath: string): void => {
+    const entries = fs.readdirSync(currentPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = pathModule.join(currentPath, entry.name);
+      if (entry.isDirectory()) {
+        cleanup(fullPath);
+        if (fs.readdirSync(fullPath).length === 0) {
+          fs.rmdirSync(fullPath);
+        }
+      } else {
+        const stat = fs.statSync(fullPath);
+        if (stat.mtimeMs < cutoffTime) {
+          fs.unlinkSync(fullPath);
+        }
+      }
+    }
+  };
+
+  cleanup(root);
+};
+
+const storeOriginalTemp = (
+  uploadsDir: string,
+  source: Buffer,
+  originalName: string,
+  mediaId: string
+): { relativePath: string; expiresAt: Date } => {
+  const now = new Date();
+  const yyyy = now.getFullYear().toString();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const ext = pathModule.extname(originalName).replace(".", "").toLowerCase() || "bin";
+  const baseName = sanitizeName(originalName) || "media";
+  const filename = `${Date.now()}-${mediaId}-${baseName}.${ext}`;
+  const relativePath = pathModule
+    .join(ORIGINAL_TEMP_FOLDER, yyyy, mm, dd, filename)
+    .replace(/\\/g, "/");
+  const absolutePath = pathModule.join(uploadsDir, relativePath);
+
+  ensureDir(pathModule.dirname(absolutePath));
+  fs.writeFileSync(absolutePath, source);
+
+  const expiresAt = new Date(now.getTime() + ORIGINAL_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+  return { relativePath, expiresAt };
 };
 
 // Helper to extract path from full URL or return as-is if already a path
@@ -78,10 +160,19 @@ media.get("/", async (c) => {
     const search = c.req.query("search") || "";
     const category = c.req.query("category") || ""; // general, financial, activity, document
     const db = c.get("db");
+    const user = c.get("user");
+
+    // Cek apakah user adalah mitra-only
+    const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
 
     let query = db.select().from(mediaTable).orderBy(desc(mediaTable.createdAt));
 
     const conditions = [];
+
+    // Mitra hanya bisa lihat media yang dia upload sendiri
+    if (isMitra && user) {
+      conditions.push(eq(mediaTable.uploadedBy, user.id));
+    }
 
     if (search) {
       conditions.push(
@@ -108,16 +199,18 @@ media.get("/", async (c) => {
 
     // Transform to match frontend interface
     const transformedData = result.map((item) => {
-      let finalUrl: string;
-
-      // Check if path is already a full URL (GCS CDN)
-      if (item.path && (item.path.startsWith('http://') || item.path.startsWith('https://'))) {
-        // GCS mode: use full URL as-is
-        finalUrl = item.path;
-      } else {
-        // Local mode: construct URL from API_URL + path
-        finalUrl = `${apiUrl}${item.path}`;
-      }
+      const finalUrl = resolvePublicUrl(apiUrl, item.path);
+      const variants = item.variants
+        ? Object.entries(item.variants as Record<string, MediaVariant>).reduce((acc, [key, variant]) => {
+            const sourcePath = variant.path || variant.url;
+            if (!sourcePath) return acc;
+            acc[key] = {
+              ...variant,
+              url: resolvePublicUrl(apiUrl, sourcePath),
+            };
+            return acc;
+          }, {} as Record<string, MediaVariant & { url: string }>)
+        : undefined;
 
       return {
         id: item.id,
@@ -129,6 +222,9 @@ media.get("/", async (c) => {
         size: item.size,
         mimeType: item.mimeType,
         category: item.category,
+        width: item.width,
+        height: item.height,
+        variants,
         createdAt: item.createdAt.toISOString(),
       };
     });
@@ -180,50 +276,44 @@ media.post("/upload", async (c) => {
       );
     }
 
-    // Validate file type based on category
-    if (category === "financial" || category === "document") {
-      // Allow images and PDFs for financial/document
-      const allowedTypes = ["image/", "application/pdf"];
-      if (!allowedTypes.some(type => file.type.startsWith(type))) {
-        return c.json(
-          {
-            success: false,
-            message: "Only image and PDF files are allowed for financial/document categories",
-          },
-          400
-        );
-      }
-    } else if (category === "activity") {
-      // Only images for activity photos
-      if (!file.type.startsWith("image/")) {
-        return c.json(
-          {
-            success: false,
-            message: "Only image files are allowed for activity category",
-          },
-          400
-        );
-      }
-    } else {
-      // General: allow images
-      if (!file.type.startsWith("image/")) {
-        return c.json(
-          {
-            success: false,
-            message: "Only image files are allowed",
-          },
-          400
-        );
-      }
-    }
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (category === "document") {
+      if (!isImage && !isPdf) {
+        return c.json(
+          {
+            success: false,
+            message: "Kategori document hanya menerima gambar atau PDF",
+          },
+          400
+        );
+      }
+    } else if (!isImage) {
       return c.json(
         {
           success: false,
-          message: "File size must be less than 5MB",
+          message: "Kategori ini hanya menerima file gambar",
+        },
+        400
+      );
+    }
+
+    if (isPdf && file.size > PDF_MAX_SIZE) {
+      return c.json(
+        {
+          success: false,
+          message: "Ukuran PDF maksimal 10MB",
+        },
+        400
+      );
+    }
+
+    if (isImage && file.size > IMAGE_MAX_SIZE) {
+      return c.json(
+        {
+          success: false,
+          message: "Ukuran gambar maksimal 5MB",
         },
         400
       );
@@ -232,96 +322,163 @@ media.post("/upload", async (c) => {
     const db = c.get("db");
 
     const id = createId();
-    // Sanitize filename: replace spaces and special chars with dash
-    const sanitizedName = file.name.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.-]/g, '-');
+    const sanitizedBaseName = sanitizeName(file.name) || "media";
+    const uploadsDir = pathModule.join(process.cwd(), "uploads");
+    ensureDir(uploadsDir);
 
     // Get original buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const finalFilename = `${Date.now()}-${sanitizedName}`;
+    const timestamp = Date.now();
+
+    // Keep local original for 7 days as rollback/debug source
+    let originalLocalPath: string | null = null;
+    let originalLocalExpiresAt: Date | null = null;
+
+    if (isImage) {
+      try {
+        removeExpiredOriginals(uploadsDir);
+        const originalInfo = storeOriginalTemp(uploadsDir, buffer, file.name, id);
+        originalLocalPath = originalInfo.relativePath;
+        originalLocalExpiresAt = originalInfo.expiresAt;
+      } catch (originalStoreError) {
+        console.warn("Failed to store local original:", originalStoreError);
+      }
+    }
 
     // Check if CDN is enabled
     const cdnConfig = await fetchCDNSettings(db);
-    let path: string;
-    let fullUrl: string;
-
-    if (cdnConfig) {
-      // CDN Mode: Upload to Google Cloud Storage
-      console.log("CDN enabled, uploading to GCS...");
-
-      try {
-        const gcsPath = generateGCSPath(finalFilename);
-        fullUrl = await uploadToGCS(cdnConfig, buffer, gcsPath, file.type);
-        path = fullUrl; // Store full GCS URL
-        console.log("File uploaded to GCS:", fullUrl);
-      } catch (error) {
-        console.error("GCS upload failed, falling back to local storage:", error);
-        // Fallback to local storage if GCS fails
-        path = `/uploads/${finalFilename}`;
-        fullUrl = path;
-
-        // Store locally as fallback
+    const uploadBinary = async (
+      payload: Buffer,
+      filename: string,
+      mimeType: string
+    ): Promise<{ path: string; url: string }> => {
+      if (cdnConfig) {
         try {
-          const uploadsDir = pathModule.join(process.cwd(), "uploads");
-          if (!fs.existsSync(uploadsDir)) {
-            fs.mkdirSync(uploadsDir, { recursive: true });
-          }
-          fs.writeFileSync(pathModule.join(uploadsDir, finalFilename), buffer);
-        } catch (fsError) {
-          console.error("Local storage also failed:", fsError);
+          const gcsPath = generateGCSPath(filename);
+          const gcsUrl = await uploadToGCS(cdnConfig, payload, gcsPath, mimeType);
+          return { path: gcsUrl, url: gcsUrl };
+        } catch (gcsError) {
+          console.error("GCS upload failed, fallback to local storage:", gcsError);
         }
       }
-    } else {
-      // Local Mode: Store in filesystem
-      console.log("CDN disabled, using local storage");
-      path = `/uploads/${finalFilename}`;
-      fullUrl = path;
 
-      // Store in filesystem for dev mode (persistent across restarts)
-      try {
-        const uploadsDir = pathModule.join(process.cwd(), "uploads");
-        console.log("Upload directory:", uploadsDir);
-        if (!fs.existsSync(uploadsDir)) {
-          console.log("Creating uploads directory...");
-          fs.mkdirSync(uploadsDir, { recursive: true });
-        }
-        const filePath = pathModule.join(uploadsDir, finalFilename);
-        console.log("Writing file to:", filePath);
-        fs.writeFileSync(filePath, buffer);
-        console.log("File written successfully:", filePath);
-      } catch (error) {
-        // Filesystem not available (Cloudflare Workers edge environment)
-        console.error("Filesystem error:", error);
-        console.log("Filesystem not available, using memory only");
-      }
+      const localPath = `/uploads/${filename}`;
+      fs.writeFileSync(pathModule.join(uploadsDir, filename), payload);
 
-      // Also store in global map for immediate access (local mode only)
       if (!global.uploadedFiles) {
         global.uploadedFiles = new Map();
       }
-      global.uploadedFiles.set(finalFilename, buffer);
+      global.uploadedFiles.set(filename, payload);
+
+      return { path: localPath, url: localPath };
+    };
+
+    let finalFilename = "";
+    let path = "";
+    let fullUrl = "";
+    let mimeType = file.type;
+    let finalSize = file.size;
+    let finalWidth: number | null = null;
+    let finalHeight: number | null = null;
+    let variants: Record<string, MediaVariant> | null = null;
+
+    if (isPdf) {
+      finalFilename = `${timestamp}-${id}-${sanitizedBaseName}.pdf`;
+      const uploaded = await uploadBinary(buffer, finalFilename, file.type);
+      path = uploaded.path;
+      fullUrl = uploaded.url;
+    } else if (category === "general") {
+      const processedVariants = await processGeneralImage(buffer);
+      const variantMap: Record<string, MediaVariant> = {};
+      const uploadedDetails: Record<string, { filename: string; variant: MediaVariant }> = {};
+
+      for (const variant of processedVariants) {
+        const variantFilename = `${timestamp}-${id}-${sanitizedBaseName}-${variant.variant}.webp`;
+        const uploaded = await uploadBinary(variant.buffer, variantFilename, variant.mimeType);
+        const variantData: MediaVariant = {
+          variant: variant.variant,
+          width: variant.width,
+          height: variant.height,
+          mimeType: variant.mimeType,
+          size: variant.size,
+          path: uploaded.path,
+          url: uploaded.url,
+        };
+        variantMap[variant.variant] = variantData;
+        uploadedDetails[variant.variant] = { filename: variantFilename, variant: variantData };
+      }
+
+      const primary = uploadedDetails.large || Object.values(uploadedDetails)[0];
+      finalFilename = primary.filename;
+      path = primary.variant.path;
+      fullUrl = primary.variant.url;
+      mimeType = primary.variant.mimeType;
+      finalSize = primary.variant.size;
+      finalWidth = primary.variant.width;
+      finalHeight = primary.variant.height;
+      variants = variantMap;
+    } else {
+      const processed = await processSingleWebp(buffer);
+      finalFilename = `${timestamp}-${id}-${sanitizedBaseName}-original.webp`;
+      const uploaded = await uploadBinary(processed.buffer, finalFilename, processed.mimeType);
+      path = uploaded.path;
+      fullUrl = uploaded.url;
+      mimeType = processed.mimeType;
+      finalSize = processed.size;
+      finalWidth = processed.width;
+      finalHeight = processed.height;
+      variants = {
+        original: {
+          variant: "original",
+          width: processed.width,
+          height: processed.height,
+          mimeType: processed.mimeType,
+          size: processed.size,
+          path: uploaded.path,
+          url: uploaded.url,
+        },
+      };
     }
 
     // Save to database
+    const user = c.get("user");
     const result = await db
       .insert(mediaTable)
       .values({
         id,
         filename: finalFilename,
         originalName: file.name,
-        mimeType: file.type,
-        size: file.size,
+        mimeType,
+        size: finalSize,
         url: path, // Full GCS URL or local path
         path,
-        folder: cdnConfig ? "gcs" : "uploads",
+        width: finalWidth,
+        height: finalHeight,
+        variants,
+        originalLocalPath,
+        originalLocalExpiresAt,
+        folder: isAbsoluteUrl(path) ? "gcs" : "uploads",
         category,
+        uploadedBy: user?.id || null,
       })
       .returning();
 
     // Construct URL for response
     // If CDN mode, use the GCS URL directly; otherwise construct from API_URL
     const apiUrl = c.env?.API_URL || process.env.API_URL || "http://localhost:50245";
-    const responseUrl = cdnConfig ? fullUrl : `${apiUrl}${path}`;
+    const responseUrl = resolvePublicUrl(apiUrl, fullUrl);
+    const responseVariants = result[0].variants
+      ? Object.entries(result[0].variants as Record<string, MediaVariant>).reduce((acc, [key, variant]) => {
+          const sourcePath = variant.path || variant.url;
+          if (!sourcePath) return acc;
+          acc[key] = {
+            ...variant,
+            url: resolvePublicUrl(apiUrl, sourcePath),
+          };
+          return acc;
+        }, {} as Record<string, MediaVariant & { url: string }>)
+      : undefined;
 
     // Transform to match frontend interface
     const uploadedMedia = {
@@ -334,6 +491,9 @@ media.post("/upload", async (c) => {
       size: result[0].size,
       mimeType: result[0].mimeType,
       category: result[0].category,
+      width: result[0].width,
+      height: result[0].height,
+      variants: responseVariants,
       createdAt: result[0].createdAt.toISOString(),
     };
 
@@ -344,6 +504,15 @@ media.post("/upload", async (c) => {
     });
   } catch (error) {
     console.error("Error uploading file:", error);
+    if (error instanceof Error && error.message.includes("Paket sharp belum terpasang")) {
+      return c.json(
+        {
+          success: false,
+          message: error.message,
+        },
+        500
+      );
+    }
     return c.json(
       {
         success: false,

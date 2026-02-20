@@ -11,6 +11,7 @@ import { eq, ilike, or, desc, and } from "drizzle-orm";
 import { z } from "zod";
 import type { Env, Variables } from "../../types";
 import { normalizeContactData } from "../../lib/contact-helpers";
+import { requireRole } from "../../middleware/auth";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -197,7 +198,7 @@ app.get("/:id", async (c) => {
 });
 
 // POST /admin/mustahiqs - Create new mustahiq
-app.post("/", async (c) => {
+app.post("/", requireRole("super_admin", "admin_campaign"), async (c) => {
   try {
     const db = c.get("db");
     const body = await c.req.json();
@@ -276,7 +277,7 @@ app.post("/", async (c) => {
 });
 
 // PUT /admin/mustahiqs/:id - Update mustahiq
-app.put("/:id", async (c) => {
+app.put("/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
   try {
     const db = c.get("db");
     const id = c.req.param("id");
@@ -373,7 +374,7 @@ app.put("/:id", async (c) => {
 });
 
 // DELETE /admin/mustahiqs/:id - Delete mustahiq
-app.delete("/:id", async (c) => {
+app.delete("/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
   try {
     const db = c.get("db");
     const id = c.req.param("id");

@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { eq, or, and, like, gte, lte, desc, sql } from "drizzle-orm";
-import { campaigns, donations, users } from "@bantuanku/db";
+import { campaigns, users } from "@bantuanku/db";
 import { success, paginated } from "../lib/response";
 import type { Env, Variables } from "../types";
 
@@ -20,7 +20,6 @@ searchRoute.get("/", async (c) => {
 
   const results: {
     campaigns?: unknown[];
-    donations?: unknown[];
     users?: unknown[];
   } = {};
 
@@ -47,24 +46,6 @@ searchRoute.get("/", async (c) => {
       },
     });
     results.campaigns = campaignResults;
-  }
-
-  if (type === "all" || type === "donations") {
-    const donationResults = await db.query.donations.findMany({
-      where: or(like(donations.referenceId, `%${query}%`), like(donations.donorName, `%${query}%`)),
-      limit: type === "all" ? 5 : limit,
-      offset: type === "all" ? 0 : offset,
-      orderBy: [desc(donations.createdAt)],
-      columns: {
-        id: true,
-        referenceId: true,
-        donorName: true,
-        amount: true,
-        paymentStatus: true,
-        createdAt: true,
-      },
-    });
-    results.donations = donationResults;
   }
 
   if (type === "all" || type === "users") {
@@ -176,85 +157,6 @@ searchRoute.get("/campaigns", async (c) => {
     db
       .select({ count: sql<number>`count(*)` })
       .from(campaigns)
-      .where(whereClause),
-  ]);
-
-  return paginated(c, data, {
-    page,
-    limit,
-    total: Number(countResult[0]?.count || 0),
-  });
-});
-
-searchRoute.get("/donations", async (c) => {
-  const db = c.get("db");
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "10");
-  const offset = (page - 1) * limit;
-
-  const search = c.req.query("search");
-  const campaignId = c.req.query("campaignId");
-  const userId = c.req.query("userId");
-  const paymentStatus = c.req.query("paymentStatus");
-  const minAmount = c.req.query("minAmount");
-  const maxAmount = c.req.query("maxAmount");
-  const startDate = c.req.query("startDate");
-  const endDate = c.req.query("endDate");
-
-  const conditions = [];
-
-  if (search) {
-    conditions.push(or(like(donations.referenceId, `%${search}%`), like(donations.donorName, `%${search}%`)));
-  }
-
-  if (campaignId) {
-    conditions.push(eq(donations.campaignId, campaignId));
-  }
-
-  if (userId) {
-    conditions.push(eq(donations.userId, userId));
-  }
-
-  if (paymentStatus) {
-    conditions.push(eq(donations.paymentStatus, paymentStatus));
-  }
-
-  if (minAmount) {
-    conditions.push(gte(donations.amount, parseInt(minAmount)));
-  }
-
-  if (maxAmount) {
-    conditions.push(lte(donations.amount, parseInt(maxAmount)));
-  }
-
-  if (startDate) {
-    conditions.push(gte(donations.createdAt, new Date(startDate)));
-  }
-
-  if (endDate) {
-    conditions.push(lte(donations.createdAt, new Date(endDate)));
-  }
-
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-  const [data, countResult] = await Promise.all([
-    db.query.donations.findMany({
-      where: whereClause,
-      limit,
-      offset,
-      orderBy: [desc(donations.createdAt)],
-      with: {
-        campaign: {
-          columns: {
-            title: true,
-            slug: true,
-          },
-        },
-      },
-    }),
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(donations)
       .where(whereClause),
   ]);
 

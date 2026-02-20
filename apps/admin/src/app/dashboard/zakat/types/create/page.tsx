@@ -4,25 +4,43 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ZakatTypeForm, { ZakatTypeFormData } from "@/components/ZakatTypeForm";
-import { toast } from "react-hot-toast";
+import { useState } from "react";
+import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
 
 export default function CreateZakatTypePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
+  const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   const createMutation = useMutation({
     mutationFn: async (data: ZakatTypeFormData) => {
       return api.post("/admin/zakat/types", data);
     },
     onSuccess: () => {
-      toast.success("Jenis zakat berhasil ditambahkan!");
       queryClient.invalidateQueries({ queryKey: ["zakat-types-all"] });
       queryClient.invalidateQueries({ queryKey: ["zakat-types-active"] });
-      router.push("/dashboard/zakat/types");
+      setRedirectAfterFeedback(true);
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Jenis zakat berhasil ditambahkan!",
+      });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal menambahkan jenis zakat");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: error.response?.data?.message || "Gagal menambahkan jenis zakat",
+      });
     },
   });
 
@@ -81,6 +99,20 @@ export default function CreateZakatTypePage() {
           </button>
         </div>
       </div>
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => {
+          setFeedback((prev) => ({ ...prev, open: false }));
+          if (redirectAfterFeedback) {
+            setRedirectAfterFeedback(false);
+            router.push("/dashboard/zakat/types");
+          }
+        }}
+      />
     </div>
   );
 }

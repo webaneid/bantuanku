@@ -78,6 +78,16 @@ export async function validateContentType(c: Context<{ Bindings: Env; Variables:
       return await next();
     }
 
+    // Allow form-urlencoded for payment gateway webhooks (e.g., Flip)
+    if (contentType?.includes("application/x-www-form-urlencoded") && c.req.path.includes("/webhook")) {
+      return await next();
+    }
+
+    // Skip content-type validation for WhatsApp webhook (GOWA may send various content types)
+    if (c.req.path.includes("/whatsapp/webhook")) {
+      return await next();
+    }
+
     if (!contentType || !contentType.includes("application/json")) {
       return c.json(
         {

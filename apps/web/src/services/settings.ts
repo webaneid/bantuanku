@@ -16,6 +16,8 @@ export interface PublicSettings {
   contact_phone?: string;
   organization_name?: string;
   organization_logo?: string;
+  organization_favicon?: string;
+  organization_institution_logo?: string;
   organization_about?: string;
   organization_about_url?: string;
   organization_about_url_label?: string;
@@ -23,6 +25,7 @@ export interface PublicSettings {
   organization_whatsapp?: string;
   organization_email?: string;
   organization_website?: string;
+  organization_address?: string;
   organization_detail_address?: string;
   organization_province_code?: string;
   organization_regency_code?: string;
@@ -45,8 +48,40 @@ export interface PublicSettings {
   frontend_qurban_page?: string; // JSON string
   frontend_wakaf_page?: string; // JSON string
   frontend_program_page?: string; // JSON string
+  utilities_invoice_footer?: string;
   amil_qurban_sapi_fee?: number;
   amil_qurban_perekor_fee?: number;
+  social_media_facebook?: string;
+  social_media_instagram?: string;
+  social_media_youtube?: string;
+  social_media_twitter?: string;
+  social_media_linkedin?: string;
+  social_media_threads?: string;
+  social_media_tiktok?: string;
+}
+
+const DEFAULT_SETTINGS: PublicSettings = {
+  site_name: 'Bantuanku',
+  site_tagline: 'Platform Donasi Terpercaya',
+  organization_logo: '/logo.svg',
+  organization_favicon: '/logo.svg',
+  organization_institution_logo: '/logo.svg',
+};
+
+function isIgnorableSettingsError(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === "AbortError") return true;
+  if (typeof error !== "object" || error === null) return false;
+
+  const err = error as any;
+  const name = String(err.name || "");
+  const message = String(err.message || "");
+
+  if (name === "AbortError") return true;
+  if (name === "TypeError" && (message.includes("NetworkError") || message.includes("Failed to fetch"))) {
+    return true;
+  }
+
+  return false;
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
@@ -80,14 +115,12 @@ export async function fetchPublicSettings(): Promise<PublicSettings> {
 
     return settings;
   } catch (error) {
-    console.error('Error fetching public settings:', error);
+    if (!isIgnorableSettingsError(error)) {
+      console.error('Error fetching public settings:', error);
+    }
 
     // Return default settings on error
-    return {
-      site_name: 'Bantuanku',
-      site_tagline: 'Platform Donasi Terpercaya',
-      organization_logo: '/logo.svg',
-    };
+    return DEFAULT_SETTINGS;
   }
 }
 

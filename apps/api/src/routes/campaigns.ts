@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { eq, desc, and, like, sql } from "drizzle-orm";
-import { campaigns, campaignUpdates, donations, categories } from "@bantuanku/db";
+import { campaigns, campaignUpdates, categories, transactions, mitra, employees } from "@bantuanku/db";
 import { success, error, paginated } from "../lib/response";
 import { optionalAuthMiddleware } from "../middleware/auth";
 import type { Env, Variables } from "../types";
@@ -151,68 +151,66 @@ campaignsRoute.get("/:idOrSlug", async (c) => {
   const db = c.get("db");
   const idOrSlug = c.req.param("idOrSlug");
 
-  const campaign = await db.query.campaigns.findFirst({
+  let campaign = await db.query.campaigns.findFirst({
     where: eq(campaigns.slug, idOrSlug),
   });
 
   if (!campaign) {
-    const campaignById = await db.query.campaigns.findFirst({
+    campaign = await db.query.campaigns.findFirst({
       where: eq(campaigns.id, idOrSlug),
     });
 
-    if (!campaignById) {
+    if (!campaign) {
       return error(c, "Campaign not found", 404);
     }
-
-    return success(c, campaignById);
   }
 
-  return success(c, campaign);
-});
+  // Enrich with mitra data if campaign belongs to a mitra
+  const result: any = { ...campaign };
 
-campaignsRoute.get("/:id/donations", async (c) => {
-  const db = c.get("db");
-  const id = c.req.param("id");
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "10");
-  const offset = (page - 1) * limit;
-
-  const [data, countResult] = await Promise.all([
-    db.query.donations.findMany({
-      where: and(
-        eq(donations.campaignId, id),
-        eq(donations.paymentStatus, "success")
-      ),
-      limit,
-      offset,
-      orderBy: [desc(donations.paidAt)],
+  // Enrich with category name from categories table
+  if (campaign.categoryId) {
+    const categoryRecord = await db.query.categories.findFirst({
+      where: eq(categories.id, campaign.categoryId),
       columns: {
-        id: true,
-        donorName: true,
-        amount: true,
-        message: true,
-        isAnonymous: true,
-        paidAt: true,
+        name: true,
       },
-    }),
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(donations)
-      .where(
-        and(eq(donations.campaignId, id), eq(donations.paymentStatus, "success"))
-      ),
-  ]);
+    });
 
-  const maskedData = data.map((d) => ({
-    ...d,
-    donorName: d.isAnonymous ? "Hamba Allah" : d.donorName,
-  }));
+    if (categoryRecord?.name) {
+      result.categoryName = categoryRecord.name;
+    }
+  }
+  if (campaign.mitraId) {
+    const mitraRecord = await db.query.mitra.findFirst({
+      where: eq(mitra.id, campaign.mitraId),
+      columns: {
+        name: true,
+        slug: true,
+        logoUrl: true,
+      },
+    });
+    if (mitraRecord) {
+      result.mitraName = mitraRecord.name;
+      result.mitraSlug = mitraRecord.slug;
+      result.mitraLogoUrl = mitraRecord.logoUrl;
+    }
+  }
 
-  return paginated(c, maskedData, {
-    page,
-    limit,
-    total: Number(countResult[0]?.count || 0),
-  });
+  // Enrich with coordinator data if available
+  if (campaign.coordinatorId) {
+    const coordinator = await db.query.employees.findFirst({
+      where: eq(employees.id, campaign.coordinatorId),
+      columns: {
+        name: true,
+      },
+    });
+    if (coordinator) {
+      result.coordinatorName = coordinator.name;
+    }
+  }
+
+  return success(c, result);
 });
 
 campaignsRoute.get("/:id/updates", async (c) => {
@@ -233,6 +231,52 @@ campaignsRoute.get("/:id/updates", async (c) => {
       .select({ count: sql<number>`count(*)` })
       .from(campaignUpdates)
       .where(eq(campaignUpdates.campaignId, id)),
+  ]);
+
+  return paginated(c, data, {
+    page,
+    limit,
+    total: Number(countResult[0]?.count || 0),
+  });
+});
+
+// GET /campaigns/:id/donors - Get donors for a campaign (from transactions)
+campaignsRoute.get("/:id/donors", async (c) => {
+  const db = c.get("db");
+  const id = c.req.param("id");
+  const page = parseInt(c.req.query("page") || "1");
+  const limit = parseInt(c.req.query("limit") || "20");
+  const offset = (page - 1) * limit;
+
+  const [data, countResult] = await Promise.all([
+    db.query.transactions.findMany({
+      where: and(
+        eq(transactions.productType, "campaign"),
+        eq(transactions.productId, id),
+        eq(transactions.paymentStatus, "paid")
+      ),
+      limit,
+      offset,
+      orderBy: [desc(transactions.paidAt)],
+      columns: {
+        id: true,
+        donorName: true,
+        isAnonymous: true,
+        totalAmount: true,
+        message: true,
+        paidAt: true,
+      },
+    }),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.productType, "campaign"),
+          eq(transactions.productId, id),
+          eq(transactions.paymentStatus, "paid")
+        )
+      ),
   ]);
 
   return paginated(c, data, {

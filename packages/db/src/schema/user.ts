@@ -13,6 +13,7 @@ export const users = pgTable("users", {
   emailVerifiedAt: timestamp("email_verified_at", { precision: 3, mode: "date" }),
   phoneVerifiedAt: timestamp("phone_verified_at", { precision: 3, mode: "date" }),
   isActive: boolean("is_active").default(true).notNull(),
+  isDeveloper: boolean("is_developer").default(false).notNull(),
   lastLoginAt: timestamp("last_login_at", { precision: 3, mode: "date" }),
   createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),

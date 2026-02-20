@@ -5,6 +5,8 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
+export type ImageVariant = 'thumbnail' | 'medium' | 'large' | 'square' | 'original';
+
 /**
  * Generate inline SVG placeholder
  * Returns data URI with simple gray background and image icon
@@ -40,6 +42,38 @@ export function getImageUrl(imageUrl: string | null | undefined, fallback?: stri
   // Relative path - prepend API base URL
   const baseUrl = API_URL.replace('/v1', ''); // Remove /v1 suffix
   return `${baseUrl}${imageUrl}`;
+}
+
+function swapVariantInUrl(imageUrl: string, targetVariant: ImageVariant): string {
+  const [rawPath, rawQuery] = imageUrl.split('?');
+  const updatedPath = rawPath.replace(
+    /_(thumbnail|medium|large|square|original)(\.[a-zA-Z0-9]+)$/,
+    `_${targetVariant}$2`
+  );
+  return rawQuery ? `${updatedPath}?${rawQuery}` : updatedPath;
+}
+
+/**
+ * Resolve image URL with preferred variant order.
+ * Works best when filename follows: <id>_<slug>_<variant>.<ext>
+ */
+export function getImageUrlByVariant(
+  imageUrl: string | null | undefined,
+  preferredVariants: ImageVariant[],
+  fallback?: string
+): string {
+  const normalized = getImageUrl(imageUrl, fallback);
+
+  if (!normalized || normalized.startsWith('data:') || preferredVariants.length === 0) {
+    return normalized;
+  }
+
+  const variantPattern = /_(thumbnail|medium|large|square|original)(\.[a-zA-Z0-9]+)(\?.*)?$/;
+  if (!variantPattern.test(normalized)) {
+    return normalized;
+  }
+
+  return swapVariantInUrl(normalized, preferredVariants[0]);
 }
 
 /**

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import api from "@/lib/api";
-import { toast } from "react-hot-toast";
+import FeedbackDialog from "@/components/FeedbackDialog";
+import SEOPanel, { type SEOData } from "@/components/SEOPanel";
 
 interface Pillar {
   id: string;
@@ -12,6 +13,16 @@ interface Pillar {
   slug: string;
   description: string | null;
   isDefault: boolean;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  focusKeyphrase?: string | null;
+  canonicalUrl?: string | null;
+  noIndex?: boolean | null;
+  noFollow?: boolean | null;
+  ogTitle?: string | null;
+  ogDescription?: string | null;
+  ogImageUrl?: string | null;
+  seoScore?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -23,6 +34,34 @@ export default function PillarsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPillar, setEditingPillar] = useState<Pillar | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
+  const [seoValues, setSeoValues] = useState<Partial<SEOData>>({
+    focusKeyphrase: "",
+    metaTitle: "",
+    metaDescription: "",
+    canonicalUrl: "",
+    noIndex: false,
+    noFollow: false,
+    ogTitle: "",
+    ogDescription: "",
+    ogImageUrl: "",
+    seoScore: 0,
+  });
+
+  const handleSEOChange = useCallback((data: Partial<SEOData>) => {
+    setSeoValues(data);
+  }, []);
+
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
+  const [deleteTargetPillar, setDeleteTargetPillar] = useState<Pillar | null>(null);
+
+  const showFeedback = (type: "success" | "error", title: string, message: string) => {
+    setFeedback({ open: true, type, title, message });
+  };
 
   // Fetch pillars
   const { data: pillarsData, isLoading } = useQuery({
@@ -35,31 +74,31 @@ export default function PillarsPage() {
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; description: string }) => {
+    mutationFn: async (data: Record<string, any>) => {
       return api.post("/admin/pillars", data);
     },
     onSuccess: () => {
-      toast.success("Pilar berhasil dibuat!");
+      showFeedback("success", "Berhasil", "Pilar berhasil dibuat!");
       queryClient.invalidateQueries({ queryKey: ["pillars"] });
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal membuat pilar");
+      showFeedback("error", "Gagal", error.response?.data?.message || "Gagal membuat pilar");
     },
   });
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { name: string; description: string } }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, any> }) => {
       return api.put(`/admin/pillars/${id}`, data);
     },
     onSuccess: () => {
-      toast.success("Pilar berhasil diperbarui!");
+      showFeedback("success", "Berhasil", "Pilar berhasil diperbarui!");
       queryClient.invalidateQueries({ queryKey: ["pillars"] });
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal memperbarui pilar");
+      showFeedback("error", "Gagal", error.response?.data?.message || "Gagal memperbarui pilar");
     },
   });
 
@@ -69,29 +108,53 @@ export default function PillarsPage() {
       return api.delete(`/admin/pillars/${id}`);
     },
     onSuccess: () => {
-      toast.success("Pilar berhasil dihapus!");
+      showFeedback("success", "Berhasil", "Pilar berhasil dihapus!");
       queryClient.invalidateQueries({ queryKey: ["pillars"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal menghapus pilar");
+      showFeedback("error", "Gagal", error.response?.data?.message || "Gagal menghapus pilar");
     },
   });
 
   const openCreateModal = () => {
     setEditingPillar(null);
     setFormData({ name: "", description: "" });
+    setSeoValues({
+      focusKeyphrase: "",
+      metaTitle: "",
+      metaDescription: "",
+      canonicalUrl: "",
+      noIndex: false,
+      noFollow: false,
+      ogTitle: "",
+      ogDescription: "",
+      ogImageUrl: "",
+      seoScore: 0,
+    });
     setIsModalOpen(true);
   };
 
   const openEditModal = (pillar: Pillar) => {
     if (isProtectedPillar(pillar)) {
-      toast.error("Pilar default tidak dapat diubah.");
+      showFeedback("error", "Gagal", "Pilar default tidak dapat diubah.");
       return;
     }
     setEditingPillar(pillar);
     setFormData({
       name: pillar.name,
       description: pillar.description || "",
+    });
+    setSeoValues({
+      focusKeyphrase: pillar.focusKeyphrase || "",
+      metaTitle: pillar.metaTitle || "",
+      metaDescription: pillar.metaDescription || "",
+      canonicalUrl: pillar.canonicalUrl || "",
+      noIndex: Boolean(pillar.noIndex),
+      noFollow: Boolean(pillar.noFollow),
+      ogTitle: pillar.ogTitle || "",
+      ogDescription: pillar.ogDescription || "",
+      ogImageUrl: pillar.ogImageUrl || "",
+      seoScore: pillar.seoScore || 0,
     });
     setIsModalOpen(true);
   };
@@ -100,25 +163,42 @@ export default function PillarsPage() {
     setIsModalOpen(false);
     setEditingPillar(null);
     setFormData({ name: "", description: "" });
+    setSeoValues({
+      focusKeyphrase: "",
+      metaTitle: "",
+      metaDescription: "",
+      canonicalUrl: "",
+      noIndex: false,
+      noFollow: false,
+      ogTitle: "",
+      ogDescription: "",
+      ogImageUrl: "",
+      seoScore: 0,
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = { ...formData, ...seoValues };
     if (editingPillar) {
-      updateMutation.mutate({ id: editingPillar.id, data: formData });
+      updateMutation.mutate({ id: editingPillar.id, data: payload });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(payload);
     }
   };
 
   const handleDelete = (pillar: Pillar) => {
     if (isProtectedPillar(pillar)) {
-      toast.error("Pilar default tidak dapat dihapus.");
+      showFeedback("error", "Gagal", "Pilar default tidak dapat dihapus.");
       return;
     }
-    if (confirm(`Apakah Anda yakin ingin menghapus pilar "${pillar.name}"?`)) {
-      deleteMutation.mutate(pillar.id);
-    }
+    setDeleteTargetPillar(pillar);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTargetPillar) return;
+    deleteMutation.mutate(deleteTargetPillar.id);
+    setDeleteTargetPillar(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -278,7 +358,7 @@ export default function PillarsPage() {
       {/* Modal Form */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-900">
                 {editingPillar ? "Edit Pilar" : "Tambah Pilar"}
@@ -313,6 +393,21 @@ export default function PillarsPage() {
                 </div>
               </div>
 
+              <div className="p-6 pt-0">
+                <SEOPanel
+                  value={seoValues}
+                  onChange={handleSEOChange}
+                  contentData={{
+                    title: formData.name || "",
+                    slug: editingPillar?.slug || "",
+                    description: formData.description || "",
+                    content: formData.description || "",
+                  }}
+                  entityType="pillar"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                />
+              </div>
+
               <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
                 <button
                   type="button"
@@ -338,6 +433,47 @@ export default function PillarsPage() {
           </div>
         </div>
       )}
+
+      {deleteTargetPillar && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Hapus Pilar</h2>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-700">
+                Apakah Anda yakin ingin menghapus pilar "{deleteTargetPillar.name}"?
+              </p>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={() => setDeleteTargetPillar(null)}
+                disabled={deleteMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-md"
+                onClick={handleConfirmDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Menghapus..." : "Hapus Pilar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

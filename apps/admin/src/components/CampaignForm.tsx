@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import Autocomplete from "./Autocomplete";
 import RichTextEditor from "./RichTextEditor";
 import MediaLibrary from "./MediaLibrary";
 import EmployeeModal from "./modals/EmployeeModal";
+import FeedbackDialog from "./FeedbackDialog";
+import SEOPanel, { type SEOData } from "./SEOPanel";
 import { PlusIcon } from "@heroicons/react/24/outline";
 
 export interface CampaignFormData {
@@ -22,11 +25,24 @@ export interface CampaignFormData {
   categoryId?: string;
   pillar?: string;
   coordinatorId?: string | null;
+  mitraId?: string | null;
+  mitraName?: string;
   startDate?: string;
   endDate?: string;
   status?: string;
   isFeatured?: boolean;
   isUrgent?: boolean;
+  // SEO fields
+  metaTitle?: string;
+  metaDescription?: string;
+  focusKeyphrase?: string;
+  canonicalUrl?: string;
+  noIndex?: boolean;
+  noFollow?: boolean;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImageUrl?: string;
+  seoScore?: number;
 }
 
 interface CampaignFormProps {
@@ -37,6 +53,8 @@ interface CampaignFormProps {
 
 export default function CampaignForm({ onSubmit, initialData, isLoading }: CampaignFormProps) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isMitra = user?.roles?.includes("mitra") && user.roles.length === 1;
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<CampaignFormData>({
     defaultValues: initialData,
     mode: 'onSubmit',
@@ -52,6 +70,12 @@ export default function CampaignForm({ onSubmit, initialData, isLoading }: Campa
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isGalleryLibraryOpen, setIsGalleryLibraryOpen] = useState(false);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
 
   // Sync states when initialData changes
   useEffect(() => {
@@ -106,13 +130,14 @@ export default function CampaignForm({ onSubmit, initialData, isLoading }: Campa
     },
   });
 
-  // Fetch active employees for coordinator dropdown
+  // Fetch active employees for coordinator dropdown (not for mitra)
   const { data: employeesData } = useQuery({
     queryKey: ["employees-active"],
     queryFn: async () => {
       const response = await api.get("/admin/employees?status=active");
       return response.data;
     },
+    enabled: !isMitra,
   });
 
   const categoryOptions = (categoriesData || []).map((cat: any) => ({
@@ -182,21 +207,62 @@ export default function CampaignForm({ onSubmit, initialData, isLoading }: Campa
     }
   };
 
+  // SEO state
+  const [seoValues, setSeoValues] = useState<Partial<SEOData>>({
+    focusKeyphrase: initialData?.focusKeyphrase || "",
+    metaTitle: initialData?.metaTitle || "",
+    metaDescription: initialData?.metaDescription || "",
+    canonicalUrl: initialData?.canonicalUrl || "",
+    noIndex: initialData?.noIndex || false,
+    noFollow: initialData?.noFollow || false,
+    ogTitle: initialData?.ogTitle || "",
+    ogDescription: initialData?.ogDescription || "",
+    ogImageUrl: initialData?.ogImageUrl || "",
+    seoScore: initialData?.seoScore || 0,
+  });
+
+  const handleSEOChange = useCallback((data: Partial<SEOData>) => {
+    setSeoValues(data);
+  }, []);
+
+  // Sync SEO from initialData
+  useEffect(() => {
+    if (initialData) {
+      setSeoValues({
+        focusKeyphrase: initialData.focusKeyphrase || "",
+        metaTitle: initialData.metaTitle || "",
+        metaDescription: initialData.metaDescription || "",
+        canonicalUrl: initialData.canonicalUrl || "",
+        noIndex: initialData.noIndex || false,
+        noFollow: initialData.noFollow || false,
+        ogTitle: initialData.ogTitle || "",
+        ogDescription: initialData.ogDescription || "",
+        ogImageUrl: initialData.ogImageUrl || "",
+        seoScore: initialData.seoScore || 0,
+      });
+    }
+  }, [initialData]);
+
   const handleFormSubmit = (data: CampaignFormData) => {
     console.log('Form submitted with data:', data);
     console.log('Form errors:', errors);
-    onSubmit(data);
+    // Merge SEO fields into data
+    const merged = { ...data, ...seoValues };
+    onSubmit(merged);
   };
 
   const handleFormError = (errors: any) => {
     console.error('Form validation errors:', errors);
 
-    // Show alert with all errors
     const errorMessages = Object.entries(errors)
       .map(([field, error]: [string, any]) => `${field}: ${error.message}`)
       .join('\n');
-
-    alert('Form validation failed:\n\n' + errorMessages);
+    setFeedback({
+      open: true,
+      type: "error",
+      title: "Validasi Form",
+      message: errorMessages,
+    });
 
     // Scroll to first error
     const firstErrorField = Object.keys(errors)[0];
@@ -304,32 +370,44 @@ export default function CampaignForm({ onSubmit, initialData, isLoading }: Campa
             <input type="hidden" {...register("pillar")} />
           </div>
 
-          {/* Coordinator */}
-          <div className="form-field">
-            <label className="form-label">Penanggung Jawab Program (Opsional)</label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Autocomplete
-                  options={employeeOptions}
-                  value={coordinatorId}
-                  onChange={handleCoordinatorChange}
-                  placeholder="Pilih penanggung jawab program..."
-                />
+          {/* Mitra info (read-only, shown when campaign belongs to mitra) */}
+          {!isMitra && initialData?.mitraId && (
+            <div className="form-field">
+              <label className="form-label">Mitra</label>
+              <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                {initialData.mitraName || initialData.mitraId}
               </div>
-              <button
-                type="button"
-                className="btn btn-secondary btn-md"
-                onClick={() => setIsEmployeeModalOpen(true)}
-              >
-                <PlusIcon className="w-5 h-5" />
-                Tambah Employee
-              </button>
             </div>
-            <input type="hidden" {...register("coordinatorId")} />
-            <p className="text-xs text-gray-500 mt-1">
-              Tentukan karyawan yang bertanggung jawab untuk program ini
-            </p>
-          </div>
+          )}
+
+          {/* Coordinator (hidden for mitra) */}
+          {!isMitra && (
+            <div className="form-field">
+              <label className="form-label">Penanggung Jawab Program (Opsional)</label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Autocomplete
+                    options={employeeOptions}
+                    value={coordinatorId}
+                    onChange={handleCoordinatorChange}
+                    placeholder="Pilih penanggung jawab program..."
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-md"
+                  onClick={() => setIsEmployeeModalOpen(true)}
+                >
+                  <PlusIcon className="w-5 h-5" />
+                  Tambah Employee
+                </button>
+              </div>
+              <input type="hidden" {...register("coordinatorId")} />
+              <p className="text-xs text-gray-500 mt-1">
+                Tentukan karyawan yang bertanggung jawab untuk program ini
+              </p>
+            </div>
+          )}
 
           {/* Start Date */}
           <div className="form-field">
@@ -477,75 +555,103 @@ export default function CampaignForm({ onSubmit, initialData, isLoading }: Campa
             {errors.categoryId && <p className="form-error">{errors.categoryId.message}</p>}
           </div>
 
-          {/* Status */}
-          <div className="form-field">
-            <label className="form-label">
-              Status <span className="text-danger-500">*</span>
-            </label>
-            <Autocomplete
-              options={[
-                { value: "draft", label: "Draft" },
-                { value: "active", label: "Aktif" },
-                { value: "completed", label: "Selesai" },
-                { value: "cancelled", label: "Dibatalkan" },
-              ]}
-              value={status}
-              onChange={handleStatusChange}
-              placeholder="Pilih Status"
-              allowClear={false}
-            />
-            <input type="hidden" {...register("status", { required: "Status wajib dipilih" })} />
-            {errors.status && <p className="form-error">{errors.status.message}</p>}
-          </div>
-
-          {/* Campaign Unggulan */}
-          <div className="form-field">
-            <div className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg">
-              <div>
-                <label htmlFor="isFeatured" className="form-label mb-0 cursor-pointer">
-                  Campaign Unggulan
-                </label>
-                <p className="text-xs text-gray-500 mt-1">
-                  Tandai campaign ini sebagai unggulan untuk ditampilkan di beranda
-                </p>
+          {/* Status (mitra always draft, handled by API) */}
+          {isMitra ? (
+            <div className="form-field">
+              <label className="form-label">Status</label>
+              <div className="px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-600">
+                Draft — Campaign mitra akan ditinjau oleh admin sebelum dipublikasikan
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  id="isFeatured"
-                  type="checkbox"
-                  className="sr-only peer"
-                  {...register("isFeatured")}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-              </label>
+              <input type="hidden" {...register("status")} value="draft" />
             </div>
-          </div>
+          ) : (
+            <div className="form-field">
+              <label className="form-label">
+                Status <span className="text-danger-500">*</span>
+              </label>
+              <Autocomplete
+                options={[
+                  { value: "draft", label: "Draft" },
+                  { value: "active", label: "Aktif" },
+                  { value: "completed", label: "Selesai" },
+                  { value: "cancelled", label: "Dibatalkan" },
+                ]}
+                value={status}
+                onChange={handleStatusChange}
+                placeholder="Pilih Status"
+                allowClear={false}
+              />
+              <input type="hidden" {...register("status", { required: "Status wajib dipilih" })} />
+              {errors.status && <p className="form-error">{errors.status.message}</p>}
+            </div>
+          )}
 
-          {/* Campaign Mendesak */}
-          <div className="form-field">
-            <div className="flex items-center justify-between py-2 px-4 bg-amber-50 rounded-lg border border-amber-200">
-              <div>
-                <label htmlFor="isUrgent" className="form-label mb-0 cursor-pointer">
-                  Campaign Mendesak
+          {/* Campaign Unggulan (hidden for mitra) */}
+          {!isMitra && (
+            <div className="form-field">
+              <div className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg">
+                <div>
+                  <label htmlFor="isFeatured" className="form-label mb-0 cursor-pointer">
+                    Campaign Unggulan
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Tandai campaign ini sebagai unggulan untuk ditampilkan di beranda
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    id="isFeatured"
+                    type="checkbox"
+                    className="sr-only peer"
+                    {...register("isFeatured")}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                 </label>
-                <p className="text-xs text-gray-500 mt-1">
-                  Tandai campaign ini sebagai mendesak/urgent untuk prioritas tinggi
-                </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  id="isUrgent"
-                  type="checkbox"
-                  className="sr-only peer"
-                  {...register("isUrgent")}
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
-              </label>
             </div>
-          </div>
+          )}
+
+          {/* Campaign Mendesak (hidden for mitra) */}
+          {!isMitra && (
+            <div className="form-field">
+              <div className="flex items-center justify-between py-2 px-4 bg-amber-50 rounded-lg border border-amber-200">
+                <div>
+                  <label htmlFor="isUrgent" className="form-label mb-0 cursor-pointer">
+                    Campaign Mendesak
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Tandai campaign ini sebagai mendesak/urgent untuk prioritas tinggi
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    id="isUrgent"
+                    type="checkbox"
+                    className="sr-only peer"
+                    {...register("isUrgent")}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       </form>
+
+      <SEOPanel
+        value={seoValues}
+        onChange={handleSEOChange}
+        contentData={{
+          title: watch("title") || "",
+          slug: "",
+          description: watch("description") || "",
+          content: content,
+          imageUrl: imageUrl,
+        }}
+        entityType="campaign"
+        disabled={isLoading}
+      />
 
       {/* Media Library Modal - Main Image */}
       <MediaLibrary
@@ -571,6 +677,14 @@ export default function CampaignForm({ onSubmit, initialData, isLoading }: Campa
         isOpen={isEmployeeModalOpen}
         onClose={() => setIsEmployeeModalOpen(false)}
         onSuccess={handleEmployeeModalSuccess}
+      />
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
       />
     </>
   );

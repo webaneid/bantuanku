@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/format';
 import { QurbanSavings } from '@/services/qurban-savings';
+import { useI18n } from '@/lib/i18n/provider';
 
 export default function SavingsCard({ savings }: { savings: QurbanSavings }) {
+  const { t } = useI18n();
   const progress = (savings.currentAmount / savings.targetAmount) * 100;
 
   const statusColors = {
@@ -15,10 +17,10 @@ export default function SavingsCard({ savings }: { savings: QurbanSavings }) {
   };
 
   const statusLabels = {
-    active: 'Aktif',
-    completed: 'Selesai',
-    converted: 'Terkonversi',
-    cancelled: 'Dibatalkan',
+    active: t('account.qurbanSavings.status.active'),
+    completed: t('account.qurbanSavings.status.completed'),
+    converted: t('account.qurbanSavings.status.converted'),
+    cancelled: t('account.qurbanSavings.status.cancelled'),
   };
 
   return (
@@ -26,7 +28,7 @@ export default function SavingsCard({ savings }: { savings: QurbanSavings }) {
       <div className="border rounded-lg p-6 hover:shadow-lg transition-shadow">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <p className="text-sm text-gray-500">No. Tabungan</p>
+            <p className="text-sm text-gray-500">{t('account.qurbanSavings.table.savingsNumber')}</p>
             <p className="font-semibold">{savings.savingsNumber}</p>
           </div>
           <span className={`text-xs px-2 py-1 rounded ${statusColors[savings.status]}`}>
@@ -35,7 +37,7 @@ export default function SavingsCard({ savings }: { savings: QurbanSavings }) {
         </div>
 
         <div className="mb-4">
-          <p className="text-sm text-gray-500 mb-1">Progress</p>
+          <p className="text-sm text-gray-500 mb-1">{t('account.qurbanSavings.table.progress')}</p>
           <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
             <div
               className="bg-green-600 h-2 rounded-full"
@@ -49,8 +51,8 @@ export default function SavingsCard({ savings }: { savings: QurbanSavings }) {
         </div>
 
         <div className="text-sm text-gray-600">
-          <p>Target: {formatCurrency(savings.targetAmount)}</p>
-          <p>Kurang: {formatCurrency(savings.targetAmount - savings.currentAmount)}</p>
+          <p>{t('account.qurbanSavingsDetail.target')}: {formatCurrency(savings.targetAmount)}</p>
+          <p>{t('account.qurbanSavingsDetail.remaining')}: {formatCurrency(savings.targetAmount - savings.currentAmount)}</p>
         </div>
       </div>
     </Link>

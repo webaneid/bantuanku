@@ -3,6 +3,7 @@ import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { qurbanPackages } from "./qurban-packages";
 import { qurbanPeriods } from "./qurban-periods";
+import { qurbanSavings } from "./qurban-savings";
 
 /**
  * Junction table for many-to-many relationship between packages and periods
@@ -29,6 +30,12 @@ export const qurbanPackagePeriods = pgTable("qurban_package_periods", {
   // Period-specific availability
   isAvailable: boolean("is_available").default(true).notNull(),
 
+  // Optional execution override per package-period
+  executionDateOverride: timestamp("execution_date_override", { precision: 3, mode: "date" }),
+  executionTimeNote: text("execution_time_note"),
+  executionLocation: text("execution_location"),
+  executionNotes: text("execution_notes"),
+
   createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
 }, (table) => ({
@@ -45,13 +52,8 @@ export const qurbanPackagePeriodsRelations = relations(qurbanPackagePeriods, ({ 
     fields: [qurbanPackagePeriods.periodId],
     references: [qurbanPeriods.id],
   }),
-  orders: many(qurbanOrders),
   savings: many(qurbanSavings),
 }));
-
-// Import after declaration to avoid circular dependency
-import { qurbanOrders } from "./qurban-orders";
-import { qurbanSavings } from "./qurban-savings";
 
 export type QurbanPackagePeriod = typeof qurbanPackagePeriods.$inferSelect;
 export type NewQurbanPackagePeriod = typeof qurbanPackagePeriods.$inferInsert;

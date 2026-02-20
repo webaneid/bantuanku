@@ -13,7 +13,7 @@ export function rateLimit(config: RateLimitConfig) {
     // Cleanup expired entries on each request
     cleanupExpiredEntries();
 
-    const identifier = c.req.header("x-forwarded-for") || c.req.header("cf-connecting-ip") || "unknown";
+    const identifier = c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "127.0.0.1";
     const key = `${identifier}:${c.req.path}`;
     const now = Date.now();
 
@@ -49,7 +49,7 @@ export function rateLimit(config: RateLimitConfig) {
 
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 5,
+  maxRequests: 20,
 });
 
 export const apiRateLimit = rateLimit({

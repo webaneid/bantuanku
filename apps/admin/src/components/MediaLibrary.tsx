@@ -32,6 +32,8 @@ interface MediaLibraryProps {
   selectedUrl?: string;
   accept?: string; // e.g., "image/*", "video/*"
   category?: "general" | "financial" | "activity" | "document"; // Filter by category
+  showUploadToast?: boolean;
+  onUploadResult?: (result: { success: boolean; message: string; url?: string }) => void;
 }
 
 export default function MediaLibrary({
@@ -41,6 +43,8 @@ export default function MediaLibrary({
   selectedUrl,
   accept = "image/*",
   category,
+  showUploadToast = true,
+  onUploadResult,
 }: MediaLibraryProps) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -80,12 +84,27 @@ export default function MediaLibrary({
     },
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["media-library"] });
-      toast.success("File berhasil diupload!");
-      setTempSelectedUrl(response.data.data.url);
+      const uploadedUrl = response.data?.data?.url || "";
+      if (showUploadToast) {
+        toast.success("File berhasil diupload!");
+      }
+      onUploadResult?.({
+        success: true,
+        message: "File berhasil diupload!",
+        url: uploadedUrl,
+      });
+      setTempSelectedUrl(uploadedUrl);
       setActiveTab("library");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal upload file");
+      const errorMessage = error.response?.data?.message || "Gagal upload file";
+      if (showUploadToast) {
+        toast.error(errorMessage);
+      }
+      onUploadResult?.({
+        success: false,
+        message: errorMessage,
+      });
     },
   });
 

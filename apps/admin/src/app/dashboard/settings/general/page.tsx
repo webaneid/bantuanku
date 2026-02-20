@@ -10,12 +10,17 @@ import ContactForm, { type ContactValue } from "@/components/forms/ContactForm";
 import { normalizeContactData } from "@/lib/contact-helpers";
 import MediaLibrary from "@/components/MediaLibrary";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import URLAutocomplete from "@/components/URLAutocomplete";
+import { useAuth } from "@/lib/auth";
 
 type TabType = "organization" | "zakat" | "fidyah" | "sosmed" | "cdn";
 
 export default function GeneralSettingsPage() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<TabType>("organization");
+  const { user } = useAuth();
+  const isFinance = user?.roles?.includes("admin_finance") && !user?.roles?.includes("super_admin");
+  const isDeveloper = Boolean(user?.isDeveloper);
+  const [activeTab, setActiveTab] = useState<TabType>(isFinance ? "zakat" : "organization");
   const [isLoadingGoldPrice, setIsLoadingGoldPrice] = useState(false);
   const [isLoadingSilverPrice, setIsLoadingSilverPrice] = useState(false);
 
@@ -39,6 +44,8 @@ export default function GeneralSettingsPage() {
   const [orgForm, setOrgForm] = useState({
     organizationName: "",
     organizationLogo: "",
+    organizationFavicon: "",
+    organizationInstitutionLogo: "",
     organizationAbout: "",
     organizationAboutUrl: "",
     organizationAboutUrlLabel: "",
@@ -54,6 +61,8 @@ export default function GeneralSettingsPage() {
   // Contact data state
   const [contactData, setContactData] = useState<ContactValue>({});
   const [showLogoLibrary, setShowLogoLibrary] = useState(false);
+  const [showFaviconLibrary, setShowFaviconLibrary] = useState(false);
+  const [showInstitutionLogoLibrary, setShowInstitutionLogoLibrary] = useState(false);
   const [feedback, setFeedback] = useState({
     open: false,
     type: "success" as "success" | "error",
@@ -133,6 +142,9 @@ export default function GeneralSettingsPage() {
         if (setting.key === "organization_name") orgData.organizationName = setting.value;
         if (setting.key === "organization_address") orgData.address = setting.value;
         if (setting.key === "organization_logo") orgData.organizationLogo = setting.value;
+        if (setting.key === "organization_favicon") orgData.organizationFavicon = setting.value;
+        if (setting.key === "organization_institution_logo")
+          orgData.organizationInstitutionLogo = setting.value;
         if (setting.key === "organization_about") orgData.organizationAbout = setting.value;
         if (setting.key === "organization_about_url") orgData.organizationAboutUrl = setting.value;
         if (setting.key === "organization_about_url_label") orgData.organizationAboutUrlLabel = setting.value;
@@ -216,6 +228,12 @@ export default function GeneralSettingsPage() {
     }
   }, [groupedSettings]);
 
+  useEffect(() => {
+    if (!isDeveloper && activeTab === "cdn") {
+      setActiveTab(isFinance ? "zakat" : "organization");
+    }
+  }, [activeTab, isDeveloper, isFinance]);
+
   // Auto-fetch gold and silver prices on page load
   useEffect(() => {
     const fetchGoldPrice = async () => {
@@ -276,8 +294,26 @@ export default function GeneralSettingsPage() {
           value: data.organizationLogo || "",
           category: "organization",
           type: "string" as const,
-          label: "Logo Organisasi",
-          description: "URL logo organisasi",
+          label: "Logo Aplikasi",
+          description: "URL logo aplikasi",
+          isPublic: true,
+        },
+        {
+          key: "organization_favicon",
+          value: data.organizationFavicon || "",
+          category: "organization",
+          type: "string" as const,
+          label: "Favicon",
+          description: "URL favicon aplikasi",
+          isPublic: true,
+        },
+        {
+          key: "organization_institution_logo",
+          value: data.organizationInstitutionLogo || "",
+          category: "organization",
+          type: "string" as const,
+          label: "Logo Lembaga",
+          description: "URL logo lembaga",
           isPublic: true,
         },
         {
@@ -756,16 +792,18 @@ export default function GeneralSettingsPage() {
           {/* Tabs Header */}
           <div className="border-b border-gray-200">
             <nav className="flex overflow-x-auto">
-              <button
-                onClick={() => setActiveTab("organization")}
-                className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === "organization"
-                    ? "border-primary-600 text-primary-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
-                }`}
-              >
-                Informasi Organisasi
-              </button>
+              {!isFinance && (
+                <button
+                  onClick={() => setActiveTab("organization")}
+                  className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                    activeTab === "organization"
+                      ? "border-primary-600 text-primary-600"
+                      : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
+                  }`}
+                >
+                  Informasi Organisasi
+                </button>
+              )}
               <button
                 onClick={() => setActiveTab("zakat")}
                 className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
@@ -786,26 +824,32 @@ export default function GeneralSettingsPage() {
               >
                 Setting Fidyah
               </button>
-              <button
-                onClick={() => setActiveTab("sosmed")}
-                className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === "sosmed"
-                    ? "border-primary-600 text-primary-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
-                }`}
-              >
-                Akun Sosmed
-              </button>
-              <button
-                onClick={() => setActiveTab("cdn")}
-                className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                  activeTab === "cdn"
-                    ? "border-primary-600 text-primary-600"
-                    : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
-                }`}
-              >
-                CDN
-              </button>
+              {!isFinance && (
+                <>
+                  <button
+                    onClick={() => setActiveTab("sosmed")}
+                    className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                      activeTab === "sosmed"
+                        ? "border-primary-600 text-primary-600"
+                        : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
+                    }`}
+                  >
+                    Akun Sosmed
+                  </button>
+                  {isDeveloper && (
+                    <button
+                      onClick={() => setActiveTab("cdn")}
+                      className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                        activeTab === "cdn"
+                          ? "border-primary-600 text-primary-600"
+                          : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
+                      }`}
+                    >
+                      CDN
+                    </button>
+                  )}
+                </>
+              )}
             </nav>
           </div>
 
@@ -815,7 +859,7 @@ export default function GeneralSettingsPage() {
               <form onSubmit={handleOrgSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="form-field md:col-span-2">
-                    <label className="form-label">Logo</label>
+                    <label className="form-label">Logo Aplikasi</label>
                     <div className="flex items-center gap-4">
                       <div className="w-20 h-20 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
                         {orgForm.organizationLogo ? (
@@ -856,6 +900,90 @@ export default function GeneralSettingsPage() {
                   </div>
 
                   <div className="form-field md:col-span-2">
+                    <label className="form-label">Favicon</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 h-20 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+                        {orgForm.organizationFavicon ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={orgForm.organizationFavicon}
+                            alt="Favicon aplikasi"
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400 text-center px-2">Belum ada favicon</span>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setShowFaviconLibrary(true)}
+                          >
+                            Pilih dari Media
+                          </button>
+                          {orgForm.organizationFavicon && (
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm text-danger-600"
+                              onClick={() => setOrgForm({ ...orgForm, organizationFavicon: "" })}
+                            >
+                              Hapus
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Gunakan Media Library kategori <span className="font-semibold">financial</span>.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-field md:col-span-2">
+                    <label className="form-label">Logo Lembaga</label>
+                    <div className="flex items-center gap-4">
+                      <div className="w-20 h-20 rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+                        {orgForm.organizationInstitutionLogo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={orgForm.organizationInstitutionLogo}
+                            alt="Logo lembaga"
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <span className="text-xs text-gray-400 text-center px-2">Belum ada logo</span>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setShowInstitutionLogoLibrary(true)}
+                          >
+                            Pilih dari Media
+                          </button>
+                          {orgForm.organizationInstitutionLogo && (
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm text-danger-600"
+                              onClick={() =>
+                                setOrgForm({ ...orgForm, organizationInstitutionLogo: "" })
+                              }
+                            >
+                              Hapus
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Kosongkan jika logo aplikasi sama dengan logo lembaga.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-field md:col-span-2">
                     <label className="form-label">
                       Nama Organisasi <span className="text-danger-500">*</span>
                     </label>
@@ -889,12 +1017,10 @@ export default function GeneralSettingsPage() {
                     <label className="form-label">
                       URL Selengkapnya
                     </label>
-                    <input
-                      type="text"
-                      className="form-input"
+                    <URLAutocomplete
                       value={orgForm.organizationAboutUrl}
-                      onChange={(e) => setOrgForm({ ...orgForm, organizationAboutUrl: e.target.value })}
-                      placeholder="Contoh: /tentang"
+                      onChange={(value) => setOrgForm({ ...orgForm, organizationAboutUrl: value })}
+                      placeholder="Pilih atau ketik URL..."
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       URL untuk halaman informasi lengkap tentang organisasi
@@ -1418,7 +1544,7 @@ export default function GeneralSettingsPage() {
               </form>
             )}
 
-            {activeTab === "cdn" && (
+            {isDeveloper && activeTab === "cdn" && (
               <form onSubmit={handleCdnSubmit} className="space-y-6">
                 <div className="space-y-4">
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
@@ -1575,6 +1701,17 @@ export default function GeneralSettingsPage() {
       <MediaLibrary
         isOpen={showLogoLibrary}
         onClose={() => setShowLogoLibrary(false)}
+        showUploadToast={false}
+        onUploadResult={(result) => {
+          if (!result.success) {
+            setFeedback({
+              open: true,
+              type: "error",
+              title: "Gagal",
+              message: result.message,
+            });
+          }
+        }}
         onSelect={(url) => {
           setOrgForm((prev) => ({ ...prev, organizationLogo: url }));
           setFeedback({
@@ -1588,6 +1725,64 @@ export default function GeneralSettingsPage() {
         category="financial"
         accept="image/*"
         selectedUrl={orgForm.organizationLogo}
+      />
+
+      <MediaLibrary
+        isOpen={showFaviconLibrary}
+        onClose={() => setShowFaviconLibrary(false)}
+        showUploadToast={false}
+        onUploadResult={(result) => {
+          if (!result.success) {
+            setFeedback({
+              open: true,
+              type: "error",
+              title: "Gagal",
+              message: result.message,
+            });
+          }
+        }}
+        onSelect={(url) => {
+          setOrgForm((prev) => ({ ...prev, organizationFavicon: url }));
+          setFeedback({
+            open: true,
+            type: "success",
+            title: "Berhasil",
+            message: "Favicon berhasil dipilih!",
+          });
+          setShowFaviconLibrary(false);
+        }}
+        category="financial"
+        accept="image/*"
+        selectedUrl={orgForm.organizationFavicon}
+      />
+
+      <MediaLibrary
+        isOpen={showInstitutionLogoLibrary}
+        onClose={() => setShowInstitutionLogoLibrary(false)}
+        showUploadToast={false}
+        onUploadResult={(result) => {
+          if (!result.success) {
+            setFeedback({
+              open: true,
+              type: "error",
+              title: "Gagal",
+              message: result.message,
+            });
+          }
+        }}
+        onSelect={(url) => {
+          setOrgForm((prev) => ({ ...prev, organizationInstitutionLogo: url }));
+          setFeedback({
+            open: true,
+            type: "success",
+            title: "Berhasil",
+            message: "Logo lembaga berhasil dipilih!",
+          });
+          setShowInstitutionLogoLibrary(false);
+        }}
+        category="financial"
+        accept="image/*"
+        selectedUrl={orgForm.organizationInstitutionLogo}
       />
 
       <FeedbackDialog

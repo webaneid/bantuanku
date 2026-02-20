@@ -7,6 +7,7 @@ import api from "@/lib/api";
 import { PlusIcon, PencilIcon, TrashIcon, KeyIcon, UserPlusIcon } from "@heroicons/react/24/outline";
 import Autocomplete from "@/components/Autocomplete";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import EmployeeModal from "@/components/modals/EmployeeModal";
 
 interface User {
   id: string;
@@ -31,6 +32,7 @@ interface Employee {
   phone: string | null;
   position: string;
   department: string | null;
+  userId?: string | null;
 }
 
 export default function UsersSettingsPage() {
@@ -40,6 +42,7 @@ export default function UsersSettingsPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [createMode, setCreateMode] = useState<"normal" | "employee">("normal");
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [feedback, setFeedback] = useState({
     open: false,
     type: "success" as "success" | "error",
@@ -64,6 +67,7 @@ export default function UsersSettingsPage() {
     password: "",
     confirmPassword: "",
   });
+  const [deleteTargetUser, setDeleteTargetUser] = useState<User | null>(null);
 
   // Fetch users
   const { data: usersData, isLoading } = useQuery({
@@ -83,29 +87,69 @@ export default function UsersSettingsPage() {
     },
   });
 
-  // Get admin roles only (exclude user role)
+  // Only these roles should appear on this page
+  const allowedSlugs = ["super_admin", "admin_campaign", "admin_finance", "program_coordinator"];
+
+  // Get admin roles only (for the role dropdown)
   const adminRoles = rolesData?.filter(
-    (role: Role) => role.slug !== "user"
+    (role: Role) => allowedSlugs.includes(role.slug)
   ) || [];
 
-  // Fetch unactivated employees
-  const { data: employeesData } = useQuery({
-    queryKey: ["unactivated-employees"],
+  // Get allowed role IDs
+  const allowedRoleIds = adminRoles.map((r: Role) => r.id);
+
+  // Filter users to only show those with allowed roles
+  const adminUsers = usersData?.filter((user: User) => {
+    if (!user.roleIds || user.roleIds.length === 0) return false;
+    return user.roleIds.some((id: string) => allowedRoleIds.includes(id));
+  }) || [];
+
+  // Fetch all active employees (for "Buat dari Employee" flow)
+  const { data: allEmployeesData } = useQuery({
+    queryKey: ["employees-active-for-users"],
     queryFn: async () => {
-      const response = await api.get("/admin/employees/unactivated/list");
+      const response = await api.get("/admin/employees?status=active&limit=1000");
       return response.data?.data || [];
     },
   });
 
+  // Get employee role ID
+  const employeeRoleId = rolesData?.find((r: Role) => r.slug === "employee")?.id;
+
+  // Filter: show employees that are either unactivated OR activated with "employee" role only
+  const employeesData = allEmployeesData?.filter((emp: Employee) => {
+    if (!emp.userId) return true; // unactivated - can create user
+    // Already activated: only show if their current role is "employee" (eligible for promotion)
+    const user = usersData?.find((u: User) => u.id === emp.userId);
+    if (!user) return false;
+    return user.roleIds?.length === 1 && user.roleIds[0] === employeeRoleId;
+  }) || [];
+
+  // Helper to check if selected employee already has a user account
+  const selectedEmployeeHasUser = (() => {
+    if (!formData.employeeId || createMode !== "employee") return false;
+    const emp = allEmployeesData?.find((e: Employee) => e.id === formData.employeeId);
+    return !!emp?.userId;
+  })();
+
   // Create user mutation
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData & { mode: "normal" | "employee" }) => {
-      // If employee mode, use the activation endpoint
       if (data.mode === "employee" && data.employeeId) {
         const role = rolesData?.find((r: Role) => r.id === data.roleId);
         if (!role) {
           throw new Error("Role not found");
         }
+
+        // Check if employee already has user account → change role instead
+        const emp = allEmployeesData?.find((e: Employee) => e.id === data.employeeId);
+        if (emp?.userId) {
+          return api.put(`/admin/employees/${data.employeeId}/change-role`, {
+            roleSlug: role.slug,
+          });
+        }
+
+        // Otherwise, activate new user
         return api.post(`/admin/employees/${data.employeeId}/activate-user`, {
           email: data.email,
           password: data.password,
@@ -124,8 +168,13 @@ export default function UsersSettingsPage() {
     },
     onSuccess: (response, variables) => {
       if (variables.mode === "employee") {
-        showFeedback("success", "Berhasil", "Employee berhasil diaktivasi sebagai user!");
-        queryClient.invalidateQueries({ queryKey: ["unactivated-employees"] });
+        const emp = allEmployeesData?.find((e: Employee) => e.id === variables.employeeId);
+        if (emp?.userId) {
+          showFeedback("success", "Berhasil", "Role employee berhasil diubah!");
+        } else {
+          showFeedback("success", "Berhasil", "Employee berhasil diaktivasi sebagai user!");
+        }
+        queryClient.invalidateQueries({ queryKey: ["employees-active-for-users"] });
       } else {
         showFeedback("success", "Berhasil", "User berhasil dibuat!");
       }
@@ -145,18 +194,6 @@ export default function UsersSettingsPage() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<typeof formData> }) => {
       return api.put(`/admin/users/${id}`, data);
-    },
-    onSuccess: () => {
-      showFeedback("success", "Berhasil", "User berhasil diperbarui!");
-      queryClient.invalidateQueries({ queryKey: ["settings-users"] });
-      closeModal();
-    },
-    onError: (error: any) => {
-      showFeedback(
-        "error",
-        "Gagal",
-        error.response?.data?.message || "Gagal memperbarui user"
-      );
     },
   });
 
@@ -292,25 +329,27 @@ export default function UsersSettingsPage() {
         );
       }
     } else {
-      // Create - password required
-      if (!formData.password) {
-        showFeedback("error", "Validasi", "Password wajib diisi untuk user baru");
-        return;
-      }
-
-      if (formData.password.length < 8) {
-        showFeedback("error", "Validasi", "Password minimal 8 karakter");
-        return;
-      }
-
-      if (!formData.email) {
-        showFeedback("error", "Validasi", "Email wajib diisi");
-        return;
-      }
-
       if (createMode === "employee" && !formData.employeeId) {
         showFeedback("error", "Validasi", "Pilih employee terlebih dahulu");
         return;
+      }
+
+      // Password & email only required for new user creation (not role change)
+      if (!selectedEmployeeHasUser) {
+        if (!formData.password) {
+          showFeedback("error", "Validasi", "Password wajib diisi untuk user baru");
+          return;
+        }
+
+        if (formData.password.length < 8) {
+          showFeedback("error", "Validasi", "Password minimal 8 karakter");
+          return;
+        }
+
+        if (!formData.email) {
+          showFeedback("error", "Validasi", "Email wajib diisi");
+          return;
+        }
       }
 
       createMutation.mutate({ ...formData, mode: createMode });
@@ -350,9 +389,17 @@ export default function UsersSettingsPage() {
       return;
     }
 
-    if (confirm(`Apakah Anda yakin ingin menghapus user "${user.name}"?`)) {
-      deleteMutation.mutate(user.id);
-    }
+    setDeleteTargetUser(user);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteTargetUser(null);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTargetUser) return;
+    deleteMutation.mutate(deleteTargetUser.id);
+    closeDeleteModal();
   };
 
   const getRoleDisplayName = (roleIds?: string[]) => {
@@ -375,6 +422,17 @@ export default function UsersSettingsPage() {
         ...formData,
         employeeId: "",
       });
+    }
+  };
+
+  const handleEmployeeModalSuccess = (createdId?: string) => {
+    queryClient.invalidateQueries({ queryKey: ["employees-active-for-users"] });
+    setIsEmployeeModalOpen(false);
+    if (createdId) {
+      // Auto-select the newly created employee after refetch
+      setTimeout(() => {
+        handleEmployeeSelect(createdId);
+      }, 500);
     }
   };
 
@@ -410,9 +468,9 @@ export default function UsersSettingsPage() {
         <div className="p-6">
           {isLoading ? (
             <div className="text-center py-8 text-gray-500">Loading...</div>
-          ) : usersData && usersData.length > 0 ? (
+          ) : adminUsers.length > 0 ? (
             <div className="space-y-3">
-              {usersData.map((user: User) => (
+              {adminUsers.map((user: User) => (
                 <div
                   key={user.id}
                   className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
@@ -490,7 +548,7 @@ export default function UsersSettingsPage() {
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-900">
-                {editingUser ? "Edit User" : "Tambah User"}
+                {editingUser ? "Edit User" : selectedEmployeeHasUser ? "Ubah Role Employee" : "Tambah User"}
               </h2>
             </div>
 
@@ -507,7 +565,7 @@ export default function UsersSettingsPage() {
                           value: employee.id,
                           label: `${employee.name} - ${employee.position}${
                             employee.department ? ` · ${employee.department}` : ""
-                          }`,
+                          }${employee.userId ? " (sudah aktif)" : ""}`,
                         })) || []
                       }
                       value={formData.employeeId}
@@ -515,99 +573,117 @@ export default function UsersSettingsPage() {
                       placeholder="Cari employee..."
                       allowClear={false}
                     />
-                    {formData.employeeId && (
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm mt-1"
+                      onClick={() => setIsEmployeeModalOpen(true)}
+                    >
+                      <PlusIcon className="w-4 h-4" />
+                      Tambah Employee
+                    </button>
+                    {formData.employeeId && selectedEmployeeHasUser && (
+                      <p className="text-xs text-primary-600 mt-1">
+                        Employee sudah punya akun dengan role &quot;Employee&quot;. Pilih role baru untuk naik pangkat.
+                      </p>
+                    )}
+                    {formData.employeeId && !selectedEmployeeHasUser && (
                       <p className="text-xs text-success-600 mt-1">
                         ✓ Data employee dipilih, nama dan email akan otomatis terisi
                       </p>
                     )}
                     {!formData.employeeId && employeesData && employeesData.length === 0 && (
                       <p className="text-xs text-warning-600 mt-1">
-                        Tidak ada employee yang belum diaktivasi
+                        Belum ada employee yang tersedia. Tambah employee terlebih dahulu.
                       </p>
                     )}
                   </div>
                 )}
 
-                <div className="form-field">
-                  <label className="form-label">
-                    Nama Lengkap <span className="text-danger-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={`form-input ${createMode === "employee" && formData.employeeId ? "bg-gray-50" : ""}`}
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="John Doe"
-                    required
-                    readOnly={createMode === "employee" && !!formData.employeeId}
-                  />
-                  {createMode === "employee" && formData.employeeId && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Nama dari employee yang dipilih
-                    </p>
-                  )}
-                </div>
+                {/* Hide name/email/password for role change (employee already has user) */}
+                {!selectedEmployeeHasUser && (
+                  <>
+                    <div className="form-field">
+                      <label className="form-label">
+                        Nama Lengkap <span className="text-danger-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className={`form-input ${createMode === "employee" && formData.employeeId ? "bg-gray-50" : ""}`}
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="John Doe"
+                        required
+                        readOnly={createMode === "employee" && !!formData.employeeId}
+                      />
+                      {createMode === "employee" && formData.employeeId && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Nama dari employee yang dipilih
+                        </p>
+                      )}
+                    </div>
 
-                {!editingUser && (
-                  <div className="form-field">
-                    <label className="form-label">
-                      Email <span className="text-danger-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      className={`form-input ${createMode === "employee" && formData.employeeId && formData.email ? "bg-gray-50" : ""}`}
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="john@example.com"
-                      required
-                      readOnly={createMode === "employee" && !!(formData.employeeId && formData.email)}
-                    />
-                    {createMode === "employee" && formData.employeeId && formData.email && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Email dari employee yang dipilih
-                      </p>
+                    {!editingUser && (
+                      <div className="form-field">
+                        <label className="form-label">
+                          Email <span className="text-danger-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          className={`form-input ${createMode === "employee" && formData.employeeId && formData.email ? "bg-gray-50" : ""}`}
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="john@example.com"
+                          required
+                          readOnly={createMode === "employee" && !!(formData.employeeId && formData.email)}
+                        />
+                        {createMode === "employee" && formData.employeeId && formData.email && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Email dari employee yang dipilih
+                          </p>
+                        )}
+                        {createMode === "employee" && formData.employeeId && !formData.email && (
+                          <p className="text-xs text-warning-600 mt-1">
+                            Employee ini belum memiliki email, silakan isi email untuk login
+                          </p>
+                        )}
+                      </div>
                     )}
-                    {createMode === "employee" && formData.employeeId && !formData.email && (
-                      <p className="text-xs text-warning-600 mt-1">
-                        Employee ini belum memiliki email, silakan isi email untuk login
-                      </p>
+
+                    {editingUser && (
+                      <div className="form-field">
+                        <label className="form-label">Email</label>
+                        <input
+                          type="email"
+                          className="form-input bg-gray-50"
+                          value={formData.email}
+                          disabled
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Email tidak dapat diubah
+                        </p>
+                      </div>
                     )}
-                  </div>
-                )}
 
-                {editingUser && (
-                  <div className="form-field">
-                    <label className="form-label">Email</label>
-                    <input
-                      type="email"
-                      className="form-input bg-gray-50"
-                      value={formData.email}
-                      disabled
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Email tidak dapat diubah
-                    </p>
-                  </div>
-                )}
-
-                {!editingUser && (
-                  <div className="form-field">
-                    <label className="form-label">
-                      Password <span className="text-danger-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      className="form-input"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="Minimal 8 karakter"
-                      required={!editingUser}
-                      minLength={8}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Password minimal 8 karakter
-                    </p>
-                  </div>
+                    {!editingUser && (
+                      <div className="form-field">
+                        <label className="form-label">
+                          Password <span className="text-danger-500">*</span>
+                        </label>
+                        <input
+                          type="password"
+                          className="form-input"
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                          placeholder="Minimal 8 karakter"
+                          required={!editingUser}
+                          minLength={8}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Password minimal 8 karakter
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div className="form-field">
@@ -633,18 +709,20 @@ export default function UsersSettingsPage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    id="isActive"
-                    checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
-                  <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-                    User aktif
-                  </label>
-                </div>
+                {!selectedEmployeeHasUser && (
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={formData.isActive}
+                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
+                      User aktif
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
@@ -665,6 +743,8 @@ export default function UsersSettingsPage() {
                     ? "Menyimpan..."
                     : editingUser
                     ? "Update User"
+                    : selectedEmployeeHasUser
+                    ? "Ubah Role"
                     : "Buat User"}
                 </button>
               </div>
@@ -737,6 +817,39 @@ export default function UsersSettingsPage() {
           </div>
         </div>
       )}
+
+      {deleteTargetUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Hapus User</h2>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-700">
+                Apakah Anda yakin ingin menghapus user <span className="font-semibold">"{deleteTargetUser.name}"</span>?
+              </p>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={closeDeleteModal}
+                disabled={deleteMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-md"
+                onClick={handleConfirmDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </SettingsLayout>
 
     <FeedbackDialog
@@ -745,6 +858,13 @@ export default function UsersSettingsPage() {
       title={feedback.title}
       message={feedback.message}
       onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+    />
+
+    {/* Employee Modal - for creating new employee from user creation flow */}
+    <EmployeeModal
+      isOpen={isEmployeeModalOpen}
+      onClose={() => setIsEmployeeModalOpen(false)}
+      onSuccess={handleEmployeeModalSuccess}
     />
     </>
   );

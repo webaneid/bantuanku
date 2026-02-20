@@ -1,0 +1,1697 @@
+# Blueprint: Chart of Accounts (COA) & Category System
+
+**Status:** ✅ Implemented
+**Tanggal:** 13 Februari 2026
+**Version:** 2.0
+
+---
+
+## 🎯 Executive Summary
+
+Sistem Bantuanku menggunakan **COA minimal** (11 akun) + **Category System** untuk tracking transaksi yang sederhana dan mudah dipahami.
+
+**Implementasi:**
+- ✅ 11 COA aktif (7 bank accounts + 4 income accounts)
+- ✅ Category system untuk semua transaksi (zakat, campaign, qurban, operational)
+- ✅ Simplified income/expense tracking (tidak menggunakan double-entry)
+- ✅ Bank balance tracking otomatis
+- ✅ Qurban tracking lengkap (pendapatan + biaya admin + pembelian)
+
+**Prinsip:**
+- Simple > Complex
+- Category names > COA codes untuk user
+- Income/Expense > Debit/Credit
+- Auto-tracking > Manual journal
+
+---
+
+## 📊 Standard Chart of Accounts (COA)
+
+### Active COA (11 Total)
+
+**Source:** `packages/db/seed-coa.ts`
+
+#### Bank Accounts (6xxx) - Asset, Debit Normal
+```
+6201 - Bank BSI
+6202 - Bank Muamalat
+6203 - Bank BCA
+6204 - Bank Mandiri
+6205 - Bank BRI
+6206 - Payment Gateway (Xendit, iPaymu, Flip, dll)
+6210 - Cash
+```
+
+#### Income Accounts (43xx) - Income, Credit Normal
+```
+4300 - Pendapatan Qurban
+4310 - Biaya Admin Qurban
+4311 - Wakaf
+4312 - Fidyah
+```
+
+**Note:** COA ini adalah standard minimal yang digunakan sistem. Untuk tracking detail, sistem menggunakan **Category System** (lihat section berikutnya).
+
+---
+
+## 📋 Category System
+
+### Konsep Dasar
+
+**Sistem menggunakan:**
+- ✅ Category names (bukan COA codes) untuk user
+- ✅ Income/Expense tracking (bukan Debit/Credit)
+- ✅ Direct bank balance tracking
+- ✅ Simple dropdown kategori
+
+### Struktur Sistem
+
+```
+┌─────────────────────────────────────────┐
+│         TRANSACTIONS (Income)           │
+├─────────────────────────────────────────┤
+│ - product_type: "campaign/zakat/qurban" │
+│ - total_amount: 50000                   │
+│ - transaction_type: "income"            │
+│ - category: "zakat_fitrah"          ← NEW│
+│ - bank_account_id: "bank_001"           │
+└─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│        DISBURSEMENTS (Expense)          │
+├─────────────────────────────────────────┤
+│ - amount: 100000                        │
+│ - transaction_type: "expense"           │
+│ - category: "zakat_to_fakir"        ← NEW│
+│ - bank_account_id: "bank_001"           │
+│ - expense_account_id: NULL (optional)   │
+└─────────────────────────────────────────┘
+
+┌─────────────────────────────────────────┐
+│          BANK_ACCOUNTS (Balance)        │
+├─────────────────────────────────────────┤
+│ - id: "bank_001"                        │
+│ - name: "Bank BSI Zakat"                │
+│ - balance: 2000000                  ← Track│
+└─────────────────────────────────────────┘
+```
+
+---
+
+## 📋 Standard Categories
+
+### A. Income Categories
+
+#### Campaign
+```
+campaign_donation          → Donasi campaign umum
+```
+
+#### Zakat
+```
+zakat_fitrah              → Zakat Fitrah
+zakat_maal                → Zakat Maal
+zakat_profesi             → Zakat Profesi
+zakat_pertanian           → Zakat Pertanian
+zakat_peternakan          → Zakat Peternakan
+```
+
+#### Qurban
+```
+qurban_payment            → Pembayaran qurban (lunas)
+qurban_savings            → Tabungan qurban
+qurban_admin_fee          → Biaya admin qurban (auto-created)
+```
+
+---
+
+### B. Expense Categories
+
+#### Zakat Distributions (8 Asnaf)
+```
+zakat_to_fakir            → Penyaluran ke Fakir
+zakat_to_miskin           → Penyaluran ke Miskin
+zakat_to_amil             → Penyaluran ke Amil
+zakat_to_mualaf           → Penyaluran ke Mualaf
+zakat_to_riqab            → Penyaluran ke Riqab
+zakat_to_gharim           → Penyaluran ke Gharim
+zakat_to_fisabilillah     → Penyaluran ke Fisabilillah
+zakat_to_ibnussabil       → Penyaluran ke Ibnus Sabil
+```
+
+#### Campaign Disbursements
+```
+campaign_to_beneficiary   → Pencairan untuk penerima manfaat
+campaign_to_vendor        → Pembayaran vendor/supplier
+```
+
+#### Qurban Purchases
+```
+qurban_purchase_sapi      → Pembelian sapi qurban
+qurban_purchase_kambing   → Pembelian kambing qurban
+qurban_purchase_domba     → Pembelian domba qurban
+qurban_execution_fee      → Biaya penyembelihan & distribusi
+```
+
+#### Operational Expenses
+```
+operational_salary        → Gaji & Tunjangan
+operational_rent          → Sewa Kantor
+operational_utilities     → Listrik & Air
+operational_internet      → Internet & Telekomunikasi
+operational_marketing     → Marketing & Promosi
+operational_pg_fee        → Biaya Payment Gateway
+operational_bank_fee      → Biaya Administrasi Bank
+operational_supplies      → Perlengkapan Kantor
+operational_other         → Beban Lain-lain
+```
+
+---
+
+## 🏗️ Technical Implementation
+
+#### A. Auto-Set Category saat Payment
+```typescript
+// apps/api/src/services/payment.ts
+
+async function handleSuccessfulPayment(transaction: Transaction) {
+  // Auto-set category based on product_type
+  const category = getCategoryFromTransaction(transaction);
+
+  await db.update(transactions)
+    .set({
+      paymentStatus: 'paid',
+      paidAt: new Date(),
+      category: category, // ← Auto-set
+      transactionType: 'income',
+    })
+    .where(eq(transactions.id, transaction.id));
+
+  // Update bank balance
+  await updateBankBalance(transaction.bankAccountId, transaction.totalAmount, 'increase');
+}
+
+function getCategoryFromTransaction(txn: Transaction): string {
+  if (txn.productType === 'zakat') {
+    if (txn.productName.includes('Fitrah')) return 'zakat_fitrah';
+    if (txn.productName.includes('Maal')) return 'zakat_maal';
+    if (txn.productName.includes('Profesi')) return 'zakat_profesi';
+    return 'zakat_maal'; // default
+  }
+
+  if (txn.productType === 'qurban') {
+    return txn.typeSpecificData?.payment_type === 'savings'
+      ? 'qurban_savings'
+      : 'qurban_payment';
+  }
+
+  return 'campaign_donation';
+}
+```
+
+#### B. Dropdown Category (bukan COA!)
+```typescript
+// apps/admin/src/app/dashboard/disbursements/create/page.tsx
+
+const EXPENSE_CATEGORIES = {
+  zakat: [
+    { value: 'zakat_to_fakir', label: 'Penyaluran ke Fakir' },
+    { value: 'zakat_to_miskin', label: 'Penyaluran ke Miskin' },
+    { value: 'zakat_to_amil', label: 'Penyaluran ke Amil' },
+    // ... 8 asnaf
+  ],
+  campaign: [
+    { value: 'campaign_to_beneficiary', label: 'Pencairan untuk Penerima Manfaat' },
+    { value: 'campaign_to_vendor', label: 'Pembayaran Vendor' },
+  ],
+  qurban: [
+    { value: 'qurban_purchase_sapi', label: 'Pembelian Sapi Qurban' },
+    { value: 'qurban_purchase_kambing', label: 'Pembelian Kambing Qurban' },
+    { value: 'qurban_execution_fee', label: 'Biaya Penyembelihan' },
+  ],
+  operational: [
+    { value: 'operational_salary', label: 'Gaji & Tunjangan' },
+    { value: 'operational_rent', label: 'Sewa Kantor' },
+    { value: 'operational_utilities', label: 'Listrik & Air' },
+    // ...
+  ],
+};
+
+// Form component
+<Select name="category">
+  <optgroup label="Zakat">
+    {EXPENSE_CATEGORIES.zakat.map(cat => (
+      <option key={cat.value} value={cat.value}>{cat.label}</option>
+    ))}
+  </optgroup>
+  <optgroup label="Campaign">
+    {EXPENSE_CATEGORIES.campaign.map(cat => (
+      <option key={cat.value} value={cat.value}>{cat.label}</option>
+    ))}
+  </optgroup>
+  {/* ... */}
+</Select>
+```
+
+#### C. Update Bank Balance Helper
+```typescript
+// apps/api/src/services/bank-account.ts
+
+export async function updateBankBalance(
+  bankAccountId: string,
+  amount: number,
+  type: 'increase' | 'decrease'
+) {
+  const operation = type === 'increase'
+    ? sql`balance + ${amount}`
+    : sql`balance - ${amount}`;
+
+  await db.update(bankAccounts)
+    .set({ balance: operation })
+    .where(eq(bankAccounts.id, bankAccountId));
+}
+```
+
+#### D. Laporan Gabungan (Sistem Lama + Baru)
+```typescript
+// apps/api/src/routes/admin/reports.ts
+
+async function getCashFlowReport(startDate: Date, endDate: Date) {
+  // Income: dari transactions (pakai category)
+  const income = await db.select({
+    date: transactions.paidAt,
+    amount: transactions.totalAmount,
+    category: transactions.category, // ← NEW
+    description: transactions.productName,
+    type: sql`'income'`,
+  })
+  .from(transactions)
+  .where(and(
+    eq(transactions.paymentStatus, 'paid'),
+    gte(transactions.paidAt, startDate),
+    lte(transactions.paidAt, endDate)
+  ));
+
+  // Expense: dari disbursements (pakai category)
+  const expense = await db.select({
+    date: disbursements.paidAt,
+    amount: disbursements.amount,
+    category: disbursements.category, // ← NEW
+    description: disbursements.purpose,
+    type: sql`'expense'`,
+  })
+  .from(disbursements)
+  .where(and(
+    eq(disbursements.status, 'paid'),
+    gte(disbursements.paidAt, startDate),
+    lte(disbursements.paidAt, endDate)
+  ));
+
+  // Gabungkan
+  const allTransactions = [...income, ...expense];
+
+  // Group by category
+  const summary = allTransactions.reduce((acc, txn) => {
+    if (!acc[txn.category]) {
+      acc[txn.category] = { income: 0, expense: 0 };
+    }
+    acc[txn.category][txn.type] += txn.amount;
+    return acc;
+  }, {});
+
+  return summary;
+}
+```
+
+---
+
+## 📐 Entity Relationship Diagram (ERD)
+
+### Database Schema - New System
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      TRANSACTIONS (Income)                   │
+├─────────────────────────────────────────────────────────────┤
+│ PK │ id                    TEXT                             │
+│    │ transaction_number    TEXT                             │
+│    │ product_type          TEXT (campaign/zakat/qurban)     │
+│    │ product_id            TEXT                             │
+│    │ product_name          TEXT                             │
+│    │ total_amount          BIGINT                           │
+│ ⭐ │ category              TEXT (NEW!)                      │
+│ ⭐ │ transaction_type      TEXT DEFAULT 'income' (NEW!)     │
+│ FK │ bank_account_id       TEXT → payment_bank_accounts.id  │
+│ FK │ payment_method_id     TEXT → payment_methods.id        │
+│    │ payment_status        TEXT                             │
+│    │ donor_name            TEXT                             │
+│    │ paid_at               TIMESTAMP                        │
+│    │ type_specific_data    JSONB                            │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              │ 1:N
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  TRANSACTION_PAYMENTS                        │
+├─────────────────────────────────────────────────────────────┤
+│ PK │ id                    TEXT                             │
+│ FK │ transaction_id        TEXT → transactions.id           │
+│    │ amount                BIGINT                           │
+│    │ payment_date          DATE                             │
+│    │ payment_proof         TEXT                             │
+│    │ status                TEXT                             │
+└─────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                   DISBURSEMENTS (Expense) NEW!               │
+├─────────────────────────────────────────────────────────────┤
+│ PK │ id                    TEXT                             │
+│    │ disbursement_number   TEXT                             │
+│    │ disbursement_type     TEXT (campaign/zakat/qurban/op)  │
+│    │ amount                BIGINT                           │
+│ ⭐ │ category              TEXT (NEW!)                      │
+│ ⭐ │ transaction_type      TEXT DEFAULT 'expense' (NEW!)    │
+│ FK │ product_id            TEXT (optional)                  │
+│ FK │ bank_account_id       TEXT → payment_bank_accounts.id  │
+│    │ recipient_type        TEXT                             │
+│    │ recipient_name        TEXT                             │
+│    │ recipient_bank        TEXT                             │
+│    │ recipient_account     TEXT                             │
+│    │ purpose               TEXT                             │
+│    │ payment_proof         TEXT                             │
+│    │ status                TEXT (draft/submitted/approved)  │
+│ FK │ created_by            TEXT → users.id                  │
+│ FK │ approved_by           TEXT → users.id                  │
+│    │ paid_at               TIMESTAMP                        │
+│    │                                                         │
+│    │ --- Backward Compatibility (OPTIONAL) ---              │
+│ FK │ expense_account_id    TEXT → chart_of_accounts.id      │
+│ FK │ ledger_entry_id       TEXT → ledger_entries.id         │
+│    │ type_specific_data    JSONB                            │
+└─────────────────────────────────────────────────────────────┘
+                    │              │
+                    │              │ N:1
+                    │              ▼
+                    │    ┌──────────────────────────────┐
+                    │    │   PAYMENT_BANK_ACCOUNTS      │
+                    │    ├──────────────────────────────┤
+                    │    │ PK │ id                      │
+                    │    │    │ bank_name               │
+                    │    │    │ account_number          │
+                    │    │    │ account_name            │
+                    │    │ ⭐ │ balance  BIGINT (Track!)│
+                    │    │    │ is_for_zakat  BOOLEAN   │
+                    │    └──────────────────────────────┘
+                    │
+                    │ N:1 (optional)
+                    ▼
+          ┌──────────────────────────────┐
+          │    CHART_OF_ACCOUNTS          │
+          │    (Legacy - Keep)            │
+          ├──────────────────────────────┤
+          │ PK │ id                       │
+          │    │ code                     │
+          │    │ name                     │
+          │    │ type                     │
+          │ ⭐ │ is_active  (18 → false!) │
+          └──────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────┐
+│                LEGACY TABLES (Keep - Don't Touch!)           │
+├─────────────────────────────────────────────────────────────┤
+│ • ledger (existing disbursements)                            │
+│ • ledger_entries (journal entries)                          │
+│ • ledger_lines (debit/credit lines)                         │
+│                                                              │
+│ Status: DEPRECATED for new data, KEEP for existing data     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Key Relationships
+
+```
+TRANSACTIONS (Income)
+  ├─ N:1 → payment_bank_accounts (uang masuk ke bank mana)
+  ├─ N:1 → payment_methods (cara bayar: QRIS, VA, Transfer)
+  └─ 1:N → transaction_payments (bukti bayar, cicilan)
+
+DISBURSEMENTS (Expense)
+  ├─ N:1 → payment_bank_accounts (uang keluar dari bank mana)
+  ├─ N:1 → users (approval workflow)
+  ├─ N:1 → chart_of_accounts (OPTIONAL - backward compat)
+  └─ N:1 → ledger_entries (OPTIONAL - jika perlu journal)
+
+PAYMENT_BANK_ACCOUNTS
+  ├─ 1:N → transactions (income ke bank ini)
+  └─ 1:N → disbursements (expense dari bank ini)
+```
+
+### Category Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Category Mapping                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  PRODUCT_TYPE + PRODUCT_NAME  →  AUTO-SET CATEGORY          │
+│                                                              │
+│  product_type = "zakat"                                      │
+│  product_name = "Zakat Fitrah"  →  category: "zakat_fitrah" │
+│                                                              │
+│  product_type = "campaign"                                   │
+│  product_name = "Bantu Korban"  →  category: "campaign_donation"│
+│                                                              │
+│  disbursement_type = "zakat"                                 │
+│  user pilih dropdown            →  category: "zakat_to_fakir"│
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🎨 UI Wireframe - Dropdown Category
+
+### A. Create Disbursement Form (Pencairan Dana)
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  Buat Pencairan Dana                                      [X]  │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  Tipe Pencairan: *                                             │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │ Zakat                                             [▼]    │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│  ( ) Zakat  ( ) Campaign  ( ) Qurban  (●) Operasional         │
+│                                                                │
+│  ─────────────────────────────────────────────────────────── │
+│                                                                │
+│  Kategori: *                                                   │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │ Penyaluran ke Fakir                               [▼]    │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                │
+│  Dropdown options (grouped):                                   │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │ ▼ ZAKAT                                                  │ │
+│  │   • Penyaluran ke Fakir                                  │ │
+│  │   • Penyaluran ke Miskin                                 │ │
+│  │   • Penyaluran ke Amil                                   │ │
+│  │   • Penyaluran ke Mualaf                                 │ │
+│  │   • Penyaluran ke Riqab                                  │ │
+│  │   • Penyaluran ke Gharim                                 │ │
+│  │   • Penyaluran ke Fisabilillah                           │ │
+│  │   • Penyaluran ke Ibnus Sabil                            │ │
+│  │                                                           │ │
+│  │ ▼ CAMPAIGN                                                │ │
+│  │   • Pencairan untuk Penerima Manfaat                     │ │
+│  │   • Pembayaran Vendor                                    │ │
+│  │                                                           │ │
+│  │ ▼ QURBAN                                                  │ │
+│  │   • Pembelian Sapi Qurban                                │ │
+│  │   • Pembelian Kambing Qurban                             │ │
+│  │   • Pembelian Domba Qurban                               │ │
+│  │   • Biaya Penyembelihan & Distribusi                     │ │
+│  │                                                           │ │
+│  │ ▼ OPERASIONAL                                             │ │
+│  │   • Gaji & Tunjangan                                     │ │
+│  │   • Sewa Kantor                                          │ │
+│  │   • Listrik & Air                                        │ │
+│  │   • Internet & Telekomunikasi                            │ │
+│  │   • Marketing & Promosi                                  │ │
+│  │   • Biaya Payment Gateway                                │ │
+│  │   • Biaya Administrasi Bank                              │ │
+│  │   • Perlengkapan Kantor                                  │ │
+│  │   • Beban Lain-lain                                      │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                │
+│  ─────────────────────────────────────────────────────────── │
+│                                                                │
+│  Jumlah: *                                                     │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │ Rp 100.000                                               │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                │
+│  Bank Sumber: *                                                │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │ Bank BSI Zakat - 1234567890 (Saldo: Rp 2.000.000)  [▼]  │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│  ⚠️ Zakat harus dari rekening zakat!                          │
+│                                                                │
+│  Penerima: *                                                   │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │ Pak Fulan                                                │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                │
+│  Rekening Tujuan:                                              │
+│  Bank: ┌────────────┐  No. Rek: ┌──────────────────────────┐ │
+│        │ BCA    [▼] │           │ 1234567890               │ │
+│        └────────────┘           └──────────────────────────┘ │
+│                                                                │
+│  Tujuan Pencairan: *                                           │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │ Bantuan untuk kebutuhan sehari-hari                      │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                │
+│  Catatan:                                                      │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │                                                           │ │
+│  │                                                           │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                │
+│                                                                │
+│              [ Batal ]        [ Simpan Draft ]  [ Submit ]    │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### B. Validation Rules (Visual)
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  Validasi Otomatis                                             │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  IF category = "zakat_to_*"                                    │
+│  THEN bank_account MUST have is_for_zakat = true              │
+│                                                                │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │  ❌ ERROR                                                 │ │
+│  │  Kategori: "Penyaluran ke Fakir"                          │ │
+│  │  Bank: "Bank BCA Operasional"                             │ │
+│  │                                                            │ │
+│  │  ⚠️ Zakat hanya bisa dicairkan dari rekening zakat!       │ │
+│  │                                                            │ │
+│  │  Pilih salah satu:                                         │ │
+│  │  • Bank BSI Zakat                                         │ │
+│  │  • Bank Muamalat Zakat                                    │ │
+│  │                                                            │ │
+│  │                                      [ OK ]                │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                │
+│  ─────────────────────────────────────────────────────────── │
+│                                                                │
+│  IF bank_account.balance < amount                              │
+│  THEN show warning                                             │
+│                                                                │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │  ⚠️ PERINGATAN                                            │ │
+│  │  Saldo bank tidak cukup!                                  │ │
+│  │                                                            │ │
+│  │  Saldo saat ini: Rp 500.000                               │ │
+│  │  Jumlah pencairan: Rp 1.000.000                           │ │
+│  │  Kekurangan: Rp 500.000                                   │ │
+│  │                                                            │ │
+│  │  Lanjutkan tetap?                                          │ │
+│  │                         [ Batal ]      [ Ya, Lanjutkan ]  │ │
+│  └──────────────────────────────────────────────────────────┘ │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### C. Old System vs New System Comparison
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│            SISTEM LAMA (COA)                                    │
+├─────────────────────────────────────────────────────────────────┤
+│  Akun Beban: *                                                  │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │ 7201 - Penyaluran Zakat Maal                         [▼] │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  Dropdown: 50 COA (bingung mana yang benar!)                   │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │ 5000 - Beban                                              │ │
+│  │ 5100 - Beban Program                                      │ │
+│  │ 5110 - Beban Kesehatan                                    │ │
+│  │ 5120 - Beban Pendidikan                                   │ │
+│  │ 5130 - Beban Bencana Alam                                 │ │
+│  │ 5140 - Beban Sosial                                       │ │
+│  │ ... 44 more ...                                           │ │
+│  │ 6201 - Penyaluran (hah? ini untuk apa?)                   │ │
+│  │ 62001 - Penyaluran (duplikat?)                            │ │
+│  │ 7201 - Penyaluran Zakat Maal (pilih ini?)                 │ │
+│  │ 7202 - Penyaluran Zakat Fitrah (atau ini?)                │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  User: "Bingung! Pilih yang mana?" 😵                          │
+└─────────────────────────────────────────────────────────────────┘
+
+VS
+
+┌─────────────────────────────────────────────────────────────────┐
+│            SISTEM BARU (Category)                               │
+├─────────────────────────────────────────────────────────────────┤
+│  Kategori: *                                                    │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │ Penyaluran ke Fakir                                  [▼] │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  Dropdown: Grouped & Jelas                                      │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │ ▼ ZAKAT                                                   │ │
+│  │   ✓ Penyaluran ke Fakir      ← Jelas!                     │ │
+│  │   • Penyaluran ke Miskin                                  │ │
+│  │   • Penyaluran ke Amil                                    │ │
+│  │                                                            │ │
+│  │ ▼ OPERASIONAL                                             │ │
+│  │   • Gaji & Tunjangan                                      │ │
+│  │   • Sewa Kantor                                           │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  User: "Mudah! Langsung tahu pilih yang mana!" ✅               │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 💡 Contoh Kasus Penggunaan
+
+### Kasus 1: Orang Bayar Zakat Fitrah via BCA
+
+**Sistem Lama (COA):**
+```
+1. User pilih zakat fitrah, bayar Rp 50.000 via BCA
+2. Payment gateway callback
+3. Sistem buat journal entry:
+   Debit:  1023 (Bank BSI Zakat)   Rp 50.000
+   Credit: 6202 (Zakat Fitrah)     Rp 50.000
+4. Harus balance, ribet!
+```
+
+**Sistem Baru (Category):**
+```typescript
+// 1. Payment callback
+await handlePaymentSuccess({
+  transactionId: "txn_001",
+  totalAmount: 50000,
+  productType: "zakat",
+  productName: "Zakat Fitrah",
+  bankAccountId: "bank_bsi_zakat",
+});
+
+// 2. Auto-update
+await db.update(transactions).set({
+  paymentStatus: 'paid',
+  paidAt: new Date(),
+  category: 'zakat_fitrah', // ← Auto-set
+  transactionType: 'income',
+});
+
+// 3. Update bank balance
+await updateBankBalance('bank_bsi_zakat', 50000, 'increase');
+
+// DONE! Simple! ✅
+```
+
+**Hasil:**
+```
+transactions:
+  - category: "zakat_fitrah"
+  - transaction_type: "income"
+  - total_amount: 50000
+
+bank_accounts:
+  - id: "bank_bsi_zakat"
+  - balance: 50000 (updated)
+```
+
+---
+
+### Kasus 2: Salurkan Zakat ke Fakir Rp 100.000
+
+**Sistem Lama (COA):**
+```
+1. Admin pilih ledger, pilih COA 7201 (Penyaluran Zakat)
+2. Isi form pencairan
+3. Approved
+4. Sistem buat journal:
+   Debit:  7201 (Penyaluran Zakat)   Rp 100.000
+   Credit: 1023 (Bank BSI Zakat)     Rp 100.000
+5. Ribet!
+```
+
+**Sistem Baru (Category):**
+```typescript
+// 1. Admin create disbursement
+await db.insert(disbursements).values({
+  disbursementNumber: 'DISB-2026-001',
+  disbursementType: 'zakat',
+  amount: 100000,
+  transactionType: 'expense',
+  category: 'zakat_to_fakir', // ← Simple dropdown!
+  bankAccountId: 'bank_bsi_zakat',
+  recipientName: 'Pak Fulan',
+  recipientBank: 'BCA',
+  recipientAccount: '1234567890',
+  purpose: 'Bantuan Fakir',
+  status: 'draft',
+  createdBy: 'admin_001',
+});
+
+// 2. Submit → Approve → Pay
+await approveDisbursement('DISB-2026-001');
+await payDisbursement('DISB-2026-001');
+
+// 3. Auto-update bank balance
+await updateBankBalance('bank_bsi_zakat', 100000, 'decrease');
+
+// DONE! Simple! ✅
+```
+
+**Hasil:**
+```
+disbursements:
+  - category: "zakat_to_fakir"
+  - transaction_type: "expense"
+  - amount: 100000
+  - status: "paid"
+
+bank_accounts:
+  - id: "bank_bsi_zakat"
+  - balance: -50000 (100k keluar - 50k masuk)
+```
+
+---
+
+### Kasus 3: Laporan Zakat
+
+**Query Simple:**
+```typescript
+// Total Zakat Masuk
+const zakatIncome = await db
+  .select({ total: sum(transactions.totalAmount) })
+  .from(transactions)
+  .where(
+    and(
+      eq(transactions.paymentStatus, 'paid'),
+      sql`category LIKE 'zakat_%'`
+    )
+  );
+// Result: Rp 50.000
+
+// Total Zakat Keluar (per Asnaf)
+const zakatExpense = await db
+  .select({
+    asnaf: disbursements.category,
+    total: sum(disbursements.amount),
+  })
+  .from(disbursements)
+  .where(
+    and(
+      eq(disbursements.status, 'paid'),
+      sql`category LIKE 'zakat_to_%'`
+    )
+  )
+  .groupBy(disbursements.category);
+
+// Result:
+// zakat_to_fakir: Rp 100.000
+
+// Saldo Zakat
+const zakatBalance = await db
+  .select({ balance: bankAccounts.balance })
+  .from(bankAccounts)
+  .where(eq(bankAccounts.id, 'bank_bsi_zakat'));
+// Result: -Rp 50.000 (kurang Rp 50k!)
+```
+
+Gampang kan? Tidak perlu debit-kredit! 🎉
+
+---
+
+## 📊 Perbandingan: Sistem Lama vs Baru
+
+| Aspek | Sistem Lama (COA) | Sistem Baru (Category) |
+|-------|-------------------|------------------------|
+| **Konsep** | Double-Entry Accounting | Income-Expense Tracking |
+| **Dropdown** | 50 COA (bingung!) | ~30 kategori (jelas!) |
+| **Kompleksitas** | Tinggi (debit-kredit) | Rendah (+ atau -) |
+| **Learning Curve** | Butuh ilmu akuntansi | Mudah dipahami siapa saja |
+| **Update Saldo** | Hitung dari journal | Update langsung |
+| **Zakat Tracking** | COA 62xx, 72xx (duplikat) | `category LIKE 'zakat_%'` |
+| **Qurban Tracking** | ❌ Tidak ada | ✅ Ada kategori |
+| **Laporan** | Query kompleks (JOIN 3 tabel) | Query simple (1-2 tabel) |
+| **Maintenance** | ⚠️ Susah | ✅ Mudah |
+| **Untuk Audit** | ✅ Bagus (standar akuntansi) | ⚠️ Cukup (butuh log lengkap) |
+
+**Kesimpulan:** Sistem baru lebih simple dan cukup untuk organisasi sosial/donasi!
+
+---
+
+## ✨ Keuntungan Sistem Baru
+
+### 1. Mudah Dipahami
+```
+❌ Lama: "Debit 7201, Credit 1023" → Apa maksudnya?
+✅ Baru: "Kategori: Penyaluran ke Fakir, Amount: -100.000" → Jelas!
+```
+
+### 2. Tidak Perlu Akuntan
+- User cukup pilih kategori dari dropdown
+- Tidak perlu tahu debit-kredit
+- Sistem auto-update balance
+
+### 3. Tracking Jelas per Produk
+```sql
+-- Semua transaksi zakat (masuk + keluar)
+SELECT * FROM (
+  SELECT *, 'income' as type FROM transactions WHERE category LIKE 'zakat_%'
+  UNION ALL
+  SELECT *, 'expense' as type FROM disbursements WHERE category LIKE 'zakat_%'
+) ORDER BY created_at DESC;
+```
+
+### 4. Fleksibel untuk Scale
+- Tambah kategori baru tinggal update dropdown
+- Tidak perlu migration COA
+- Tidak perlu update journal logic
+
+### 5. Co-Exist dengan Sistem Lama
+- Data lama tetap aman
+- Migration bertahap
+- Tidak break existing features
+
+---
+
+## 📝 Database Migrations
+
+**Completed:**
+- `057_add_category_to_transactions.sql` - Added category & transaction_type fields
+- `058_deactivate_unused_coa.sql` - Deactivated unused COA accounts
+- `059_create_unified_disbursements.sql` - Created unified disbursements table
+- `070_migrate_coa_to_category_names.sql` - Migrated from COA codes to category names
+
+**Seed:**
+- `packages/db/seed-coa.ts` - Standard 11 COA accounts (7 banks + 4 income)
+
+---
+
+## ✅ Implementation Status
+```sql
+-- File: packages/db/migrations/057_add_category_to_transactions.sql
+
+-- Add category field
+ALTER TABLE transactions
+ADD COLUMN IF NOT EXISTS category TEXT,
+ADD COLUMN IF NOT EXISTS transaction_type TEXT DEFAULT 'income' NOT NULL;
+
+-- Create index
+CREATE INDEX IF NOT EXISTS idx_transactions_category
+ON transactions(category);
+
+-- Backfill category based on product_type and product_name
+UPDATE transactions
+SET category = CASE
+  -- Zakat categories
+  WHEN product_type = 'zakat' AND product_name ILIKE '%fitrah%' THEN 'zakat_fitrah'
+  WHEN product_type = 'zakat' AND product_name ILIKE '%maal%' THEN 'zakat_maal'
+  WHEN product_type = 'zakat' AND product_name ILIKE '%profesi%' THEN 'zakat_profesi'
+  WHEN product_type = 'zakat' AND product_name ILIKE '%pertanian%' THEN 'zakat_pertanian'
+  WHEN product_type = 'zakat' AND product_name ILIKE '%peternakan%' THEN 'zakat_peternakan'
+  WHEN product_type = 'zakat' THEN 'zakat_maal' -- default zakat
+
+  -- Qurban categories
+  WHEN product_type = 'qurban' AND type_specific_data->>'payment_type' = 'savings' THEN 'qurban_savings'
+  WHEN product_type = 'qurban' THEN 'qurban_payment'
+
+  -- Campaign default
+  WHEN product_type = 'campaign' THEN 'campaign_donation'
+
+  -- Fallback
+  ELSE 'campaign_donation'
+END
+WHERE category IS NULL;
+
+-- Make category required for future rows
+ALTER TABLE transactions
+ALTER COLUMN category SET NOT NULL;
+```
+
+### Script 2: Nonaktifkan COA yang Tidak Dipakai
+```sql
+-- File: packages/db/migrations/058_deactivate_unused_coa.sql
+
+-- Nonaktifkan 18 COA expense yang tidak pernah dipakai
+UPDATE chart_of_accounts
+SET is_active = false,
+    description = COALESCE(description, '') || ' [DEPRECATED: Replaced by category system]'
+WHERE code IN (
+  -- Beban Program yang tidak dipakai
+  '5110', '5120', '5130',
+
+  -- Beban Operasional yang tidak dipakai
+  '5200', '5210', '5220', '5230', '5240', '5250',
+  '5260', '5270', '5280',
+
+  -- Penyaluran Zakat (7xxx) yang tidak dipakai
+  '7200', '7201', '7202', '7203', '7204', '7205'
+)
+AND is_active = true;
+
+-- Tambah note ke COA yang masih aktif
+UPDATE chart_of_accounts
+SET description = COALESCE(description, '') || ' [LEGACY: Keep for backward compatibility]'
+WHERE code IN ('5000', '5100', '5140', '5290', '6201', '62001')
+AND is_active = true;
+```
+
+### Script 3: Create Unified Disbursements Table
+```sql
+-- File: packages/db/migrations/059_create_unified_disbursements.sql
+
+CREATE TABLE IF NOT EXISTS disbursements (
+  id TEXT PRIMARY KEY,
+  disbursement_number TEXT UNIQUE NOT NULL,
+
+  -- Type discrimination
+  disbursement_type TEXT NOT NULL CHECK (disbursement_type IN ('campaign', 'zakat', 'qurban', 'operational')),
+
+  -- Basic info
+  amount BIGINT NOT NULL CHECK (amount > 0),
+  transaction_type TEXT DEFAULT 'expense' NOT NULL,
+  category TEXT NOT NULL,
+
+  -- References
+  product_id TEXT,
+  bank_account_id TEXT NOT NULL REFERENCES payment_bank_accounts(id),
+
+  -- Recipient
+  recipient_type TEXT CHECK (recipient_type IN ('individual', 'vendor', 'employee', 'coordinator')),
+  recipient_id TEXT,
+  recipient_name TEXT NOT NULL,
+  recipient_bank TEXT,
+  recipient_account TEXT,
+  recipient_phone TEXT,
+
+  -- Purpose
+  purpose TEXT,
+  description TEXT,
+  notes TEXT,
+
+  -- Evidence
+  payment_proof TEXT,
+
+  -- Approval workflow
+  status TEXT DEFAULT 'draft' NOT NULL CHECK (status IN ('draft', 'submitted', 'approved', 'rejected', 'paid')),
+  rejection_reason TEXT,
+
+  created_by TEXT NOT NULL REFERENCES users(id),
+  submitted_by TEXT REFERENCES users(id),
+  approved_by TEXT REFERENCES users(id),
+  rejected_by TEXT REFERENCES users(id),
+  paid_by TEXT REFERENCES users(id),
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  submitted_at TIMESTAMP,
+  approved_at TIMESTAMP,
+  rejected_at TIMESTAMP,
+  paid_at TIMESTAMP,
+
+  -- Backward compatibility (OPTIONAL)
+  expense_account_id TEXT REFERENCES chart_of_accounts(id),
+  ledger_entry_id TEXT REFERENCES ledger_entries(id),
+
+  -- Type-specific data
+  type_specific_data JSONB
+);
+
+-- Indexes
+CREATE INDEX idx_disbursements_category ON disbursements(category);
+CREATE INDEX idx_disbursements_type ON disbursements(disbursement_type);
+CREATE INDEX idx_disbursements_status ON disbursements(status);
+CREATE INDEX idx_disbursements_bank ON disbursements(bank_account_id);
+CREATE INDEX idx_disbursements_created_at ON disbursements(created_at);
+CREATE INDEX idx_disbursements_paid_at ON disbursements(paid_at);
+
+-- Trigger for updated_at
+CREATE TRIGGER update_disbursements_updated_at
+  BEFORE UPDATE ON disbursements
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+```
+
+---
+
+## 🎓 Training & Documentation
+
+### Untuk Admin/User
+
+**1. Panduan Pilih Kategori:**
+```
+Q: Saya mau salurkan zakat ke orang miskin, pilih kategori apa?
+A: Pilih "Penyaluran ke Miskin" di grup Zakat
+
+Q: Saya mau bayar gaji pegawai, pilih kategori apa?
+A: Pilih "Gaji & Tunjangan" di grup Operasional
+
+Q: Saya mau beli sapi qurban, pilih kategori apa?
+A: Pilih "Pembelian Sapi Qurban" di grup Qurban
+```
+
+**2. Validasi Zakat:**
+```
+⚠️ Penting: Zakat HARUS keluar dari rekening zakat!
+
+Salah: ❌
+- Kategori: "Penyaluran ke Fakir"
+- Bank: "Bank BCA Operasional" ← SALAH!
+
+Benar: ✅
+- Kategori: "Penyaluran ke Fakir"
+- Bank: "Bank BSI Zakat" ← BENAR!
+
+Sistem akan validasi otomatis!
+```
+
+### Untuk Developer
+
+**1. Cara Tambah Kategori Baru:**
+```typescript
+// 1. Tambah ke constants
+// packages/db/src/constants/categories.ts
+export const EXPENSE_CATEGORIES = {
+  // ...existing
+  zakat: [
+    // ...existing
+    { value: 'zakat_to_new_category', label: 'Kategori Baru' }, // ← Add
+  ],
+};
+
+// 2. Update dropdown
+// apps/admin/src/constants/categories.ts
+// Copy dari packages/db
+
+// 3. Update docs
+// Update file ini (00-blueprint-COA.md)
+
+// DONE! No migration needed!
+```
+
+**2. Cara Query by Category:**
+```typescript
+// Get all zakat transactions
+const zakatTxns = await db
+  .select()
+  .from(transactions)
+  .where(sql`category LIKE 'zakat_%'`);
+
+// Get zakat to specific asnaf
+const zakatToFakir = await db
+  .select()
+  .from(disbursements)
+  .where(eq(disbursements.category, 'zakat_to_fakir'));
+```
+
+---
+
+## ⚠️ Risks & Mitigation
+
+### Risk 1: Data Lama Tidak Kompatibel
+**Mitigasi:**
+- Field `expense_account_id` tetap ada (optional)
+- Sistem lama tetap support COA
+- Migration bertahap, tidak paksa
+
+### Risk 2: User Bingung dengan Perubahan
+**Mitigasi:**
+- Training session untuk admin
+- Documentation lengkap
+- Support period 2 minggu
+
+### Risk 3: Laporan Tidak Akurat
+**Mitigasi:**
+- Testing menyeluruh sebelum deploy
+- Validasi total masuk/keluar vs saldo bank
+- Audit log lengkap
+
+### Risk 4: Kategori Tidak Cukup Detail
+**Mitigasi:**
+- Bisa tambah sub-kategori di `type_specific_data` (JSONB)
+- Atau tambah kategori baru (cukup update dropdown)
+- Feedback loop dengan user
+
+---
+
+## 🔙 Rollback Plan
+
+Jika terjadi masalah kritis saat atau setelah implementasi, berikut adalah langkah rollback yang aman:
+
+### Scenario 1: Rollback Phase 1 (Category Field)
+
+**Jika:** Migration category field menyebabkan error atau data corruption
+
+**Langkah Rollback:**
+
+```sql
+-- 1. Backup data dulu!
+CREATE TABLE transactions_backup_20260210 AS
+SELECT * FROM transactions;
+
+-- 2. Drop category constraints
+ALTER TABLE transactions
+ALTER COLUMN category DROP NOT NULL;
+
+-- 3. Drop index
+DROP INDEX IF EXISTS idx_transactions_category;
+
+-- 4. (Optional) Drop column jika benar-benar perlu
+ALTER TABLE transactions
+DROP COLUMN IF EXISTS category,
+DROP COLUMN IF EXISTS transaction_type;
+
+-- 5. Restore dari backup jika ada data loss
+-- INSERT INTO transactions SELECT * FROM transactions_backup_20260210;
+```
+
+**Impact:** Minimal - sistem lama tetap jalan dengan COA
+
+**Rollback Time:** 5-10 menit
+
+---
+
+### Scenario 2: Rollback Phase 2 (Disbursements Table)
+
+**Jika:** Unified disbursements menyebabkan bug atau approval workflow rusak
+
+**Langkah Rollback:**
+
+```sql
+-- 1. Backup data
+CREATE TABLE disbursements_backup_20260217 AS
+SELECT * FROM disbursements;
+
+-- 2. Nonaktifkan API endpoint baru
+-- Edit: apps/api/src/routes/admin/index.ts
+// admin.route("/disbursements", disbursementsRoute); // ← Comment out
+
+-- 3. Redirect UI ke sistem lama
+-- Edit: apps/admin/src/app/dashboard/disbursements/page.tsx
+// Redirect ke /dashboard/ledger
+
+-- 4. (Optional) Drop table jika perlu
+DROP TABLE IF EXISTS disbursements CASCADE;
+```
+
+**Impact:** Medium - user kembali ke sistem ledger lama
+
+**Rollback Time:** 10-15 menit
+
+---
+
+### Scenario 3: Rollback Phase 3 (Reports)
+
+**Jika:** Laporan menampilkan data tidak akurat atau error
+
+**Langkah Rollback:**
+
+```typescript
+// 1. Revert code ke commit sebelumnya
+git revert <commit-hash-phase-3>
+
+// 2. Deploy ulang API
+npm run build -w apps/api
+wrangler deploy
+
+// 3. Clear cache
+// Di cloudflare dashboard atau via API
+```
+
+**Impact:** Low - hanya laporan yang terpengaruh, data tetap aman
+
+**Rollback Time:** 5 menit
+
+---
+
+### Emergency Full Rollback
+
+**Jika:** Sistem benar-benar rusak dan perlu rollback total
+
+**Langkah:**
+
+```bash
+# 1. Backup database current state
+pg_dump bantuanku > backup_emergency_$(date +%Y%m%d_%H%M%S).sql
+
+# 2. Restore dari backup sebelum migration
+psql bantuanku < backup_before_coa_migration_20260210.sql
+
+# 3. Revert all code changes
+git revert <commit-hash-phase-1>..<commit-hash-phase-3>
+git push origin main
+
+# 4. Redeploy all services
+npm run build
+# Deploy API, Admin, Web
+
+# 5. Verify
+curl https://api.bantuanku.com/health
+```
+
+**Impact:** High - semua perubahan COA hilang, kembali ke sistem lama
+
+**Rollback Time:** 30-60 menit
+
+**Cost:** Data dari sistem baru (jika ada) akan hilang
+
+---
+
+### Prevention: Pre-Migration Checklist
+
+Sebelum migration, WAJIB lakukan:
+
+```bash
+# 1. Backup database
+pg_dump bantuanku > backup_before_coa_migration_$(date +%Y%m%d).sql
+
+# 2. Export data critical tables
+psql bantuanku -c "\COPY transactions TO 'transactions_backup.csv' CSV HEADER"
+psql bantuanku -c "\COPY ledger TO 'ledger_backup.csv' CSV HEADER"
+psql bantuanku -c "\COPY chart_of_accounts TO 'coa_backup.csv' CSV HEADER"
+
+# 3. Test di staging dulu
+DATABASE_URL=<staging-url> npm run db:migrate
+
+# 4. Verify data integrity
+npm run test:migration
+
+# 5. Baru jalankan di production
+```
+
+---
+
+### Rollback Decision Tree
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  Terjadi Error/Bug?                         │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+              ┌──────────────────────┐
+              │  Apakah data corrupt? │
+              └──────┬───────────────┬┘
+                     │ Ya            │ Tidak
+                     ▼               ▼
+         ┌──────────────────┐  ┌─────────────────┐
+         │ EMERGENCY ROLLBACK│  │ Apakah blocking? │
+         │ (Full restore)    │  └────┬───────────┬┘
+         └──────────────────┘       │ Ya        │ Tidak
+                                    ▼           ▼
+                          ┌────────────────┐  ┌──────────┐
+                          │ Rollback Phase │  │ Hot Fix  │
+                          │ yang bermasalah│  │ (patch)  │
+                          └────────────────┘  └──────────┘
+```
+
+---
+
+## 🧪 Testing Checklist
+
+### Pre-Migration Testing
+
+**Database:**
+- [ ] Backup database berhasil dibuat
+- [ ] Backup dapat di-restore dengan sukses
+- [ ] Test migration di database lokal
+- [ ] Test migration di staging environment
+- [ ] Verify row count sebelum dan sesudah migration
+- [ ] Check for data type inconsistencies
+
+**Schema:**
+- [ ] All migrations run without errors
+- [ ] Indexes created successfully
+- [ ] Foreign keys intact
+- [ ] Check constraints working
+- [ ] Default values applied correctly
+
+---
+
+### Phase 1 Testing: Category Field
+
+**Migration:**
+- [ ] Migration 057 runs successfully
+- [ ] `category` field added to transactions
+- [ ] `transaction_type` field added with default 'income'
+- [ ] Index `idx_transactions_category` created
+- [ ] Backfill categories completed for all existing transactions
+- [ ] No NULL values in category field
+
+**Data Integrity:**
+- [ ] All zakat transactions have `category LIKE 'zakat_%'`
+- [ ] All campaign transactions have `category = 'campaign_donation'`
+- [ ] All qurban transactions have correct category
+- [ ] Count transactions before = count transactions after
+
+**Backward Compatibility:**
+- [ ] Existing ledger entries still accessible
+- [ ] Old COA dropdown still works (legacy)
+- [ ] Reports with old system still accurate
+
+**SQL Tests:**
+```sql
+-- Test 1: No NULL categories
+SELECT COUNT(*) FROM transactions WHERE category IS NULL;
+-- Expected: 0
+
+-- Test 2: Category distribution
+SELECT category, COUNT(*) FROM transactions GROUP BY category;
+-- Expected: Sensible distribution
+
+-- Test 3: Zakat categories only from zakat products
+SELECT COUNT(*) FROM transactions
+WHERE category LIKE 'zakat_%' AND product_type != 'zakat';
+-- Expected: 0
+```
+
+---
+
+### Phase 2 Testing: Unified Disbursements
+
+**Table Creation:**
+- [ ] `disbursements` table created successfully
+- [ ] All indexes created
+- [ ] Triggers working (updated_at)
+- [ ] Constraints enforced (CHECK, FK)
+
+**API Endpoints:**
+- [ ] POST /admin/disbursements - Create draft
+- [ ] GET /admin/disbursements - List with pagination
+- [ ] GET /admin/disbursements/:id - Get detail
+- [ ] PATCH /admin/disbursements/:id - Update
+- [ ] POST /admin/disbursements/:id/submit - Submit for approval
+- [ ] POST /admin/disbursements/:id/approve - Approve
+- [ ] POST /admin/disbursements/:id/reject - Reject
+- [ ] POST /admin/disbursements/:id/pay - Mark as paid
+- [ ] DELETE /admin/disbursements/:id - Delete draft
+
+**Business Logic:**
+- [ ] Category dropdown populated correctly
+- [ ] Zakat validation: only zakat bank accounts
+- [ ] Bank balance validation before payment
+- [ ] Approval workflow (draft → submitted → approved → paid)
+- [ ] Cannot edit after submitted
+- [ ] Cannot delete after approved
+- [ ] Auto-update bank balance on payment
+
+**Edge Cases:**
+- [ ] Insufficient balance warning
+- [ ] Concurrent approvals (race condition)
+- [ ] Duplicate submission prevention
+- [ ] Invalid category rejection
+- [ ] Orphaned data cleanup
+
+**Integration Tests:**
+```typescript
+describe('Disbursements API', () => {
+  test('Create zakat disbursement', async () => {
+    const response = await api.post('/admin/disbursements', {
+      disbursementType: 'zakat',
+      category: 'zakat_to_fakir',
+      amount: 100000,
+      bankAccountId: 'bank_bsi_zakat',
+      recipientName: 'Pak Fulan',
+    });
+    expect(response.status).toBe(201);
+  });
+
+  test('Reject zakat from non-zakat bank', async () => {
+    const response = await api.post('/admin/disbursements', {
+      disbursementType: 'zakat',
+      category: 'zakat_to_fakir',
+      bankAccountId: 'bank_bca_operational', // ❌ Wrong!
+    });
+    expect(response.status).toBe(400);
+    expect(response.body.error).toContain('rekening zakat');
+  });
+
+  test('Bank balance updated after payment', async () => {
+    const before = await getBankBalance('bank_bsi_zakat');
+    await payDisbursement('disb_001', 100000);
+    const after = await getBankBalance('bank_bsi_zakat');
+    expect(after).toBe(before - 100000);
+  });
+});
+```
+
+---
+
+### Phase 3 Testing: Reports & Integration
+
+**Cash Flow Report:**
+- [ ] Income dari transactions (dengan category)
+- [ ] Expense dari disbursements (dengan category)
+- [ ] Gabungan sistem lama (ledger) + baru (disbursements)
+- [ ] Total masuk = sum(transactions.amount)
+- [ ] Total keluar = sum(disbursements.amount) + sum(ledger.amount)
+- [ ] Saldo = total masuk - total keluar
+- [ ] Group by category working
+- [ ] Date filter working
+- [ ] Export to CSV/Excel working
+
+**Zakat Report:**
+- [ ] Total zakat masuk per jenis (fitrah, maal, profesi)
+- [ ] Total zakat keluar per asnaf (8 categories)
+- [ ] Saldo zakat per bank
+- [ ] Compliance: zakat only from zakat banks
+- [ ] Chart visualization correct
+
+**Campaign Report:**
+- [ ] Total donations per campaign
+- [ ] Total disbursements per campaign
+- [ ] Remaining balance per campaign
+- [ ] Filter by status, date range
+
+**Qurban Report (NEW!):**
+- [ ] Total qurban payments
+- [ ] Total qurban savings
+- [ ] Total qurban purchases
+- [ ] Remaining balance
+- [ ] Group by package type
+
+**Performance:**
+- [ ] All reports load < 500ms
+- [ ] Pagination working for large datasets
+- [ ] No N+1 query problems
+- [ ] Database indexes utilized
+
+**SQL Tests:**
+```sql
+-- Test: Cash flow balance
+SELECT
+  (SELECT COALESCE(SUM(total_amount), 0) FROM transactions WHERE payment_status = 'paid') -
+  (SELECT COALESCE(SUM(amount), 0) FROM disbursements WHERE status = 'paid') -
+  (SELECT COALESCE(SUM(amount), 0) FROM ledger WHERE status = 'paid')
+AS calculated_balance,
+  (SELECT SUM(balance) FROM payment_bank_accounts)
+AS actual_balance;
+-- Expected: calculated_balance = actual_balance
+
+-- Test: Zakat integrity
+SELECT
+  category,
+  COUNT(*) as count,
+  SUM(amount) as total
+FROM disbursements
+WHERE category LIKE 'zakat_%'
+GROUP BY category;
+-- Expected: Valid asnaf categories only
+```
+
+---
+
+### End-to-End Testing
+
+**User Journey 1: Terima Zakat → Salurkan ke Fakir**
+- [ ] User bayar zakat fitrah Rp 50.000
+- [ ] Payment gateway callback success
+- [ ] Transaction status = 'paid'
+- [ ] Category auto-set = 'zakat_fitrah'
+- [ ] Bank balance bertambah Rp 50.000
+- [ ] Admin create disbursement
+- [ ] Category: 'zakat_to_fakir'
+- [ ] Bank: hanya tampil bank zakat
+- [ ] Submit → Approve → Pay
+- [ ] Bank balance berkurang Rp 50.000
+- [ ] Laporan zakat update real-time
+
+**User Journey 2: Campaign Donation → Disbursement**
+- [ ] User donate campaign Rp 1.000.000
+- [ ] Category auto-set = 'campaign_donation'
+- [ ] Admin create disbursement for beneficiary
+- [ ] Category: 'campaign_to_beneficiary'
+- [ ] Approval workflow complete
+- [ ] Bank balance updated
+- [ ] Campaign remaining balance accurate
+
+**User Journey 3: Rollback Scenario**
+- [ ] Create disbursement
+- [ ] Submit for approval
+- [ ] Reject disbursement
+- [ ] Status = 'rejected'
+- [ ] Can edit and resubmit
+- [ ] Bank balance unchanged
+
+---
+
+### Regression Testing
+
+Pastikan fitur lama tidak rusak:
+
+- [ ] Ledger lama (dengan COA) masih berfungsi
+- [ ] Create ledger entry manual
+- [ ] Approve/reject ledger
+- [ ] Ledger reports masih akurat
+- [ ] Double-entry journal still balanced
+- [ ] Old COA dropdown still works
+- [ ] Export transactions masih jalan
+- [ ] Payment gateway integration tidak terpengaruh
+- [ ] User authentication & authorization
+- [ ] Email notifications
+- [ ] File uploads (payment proof)
+
+---
+
+### Security Testing
+
+- [ ] SQL injection prevention (parameterized queries)
+- [ ] XSS prevention (input sanitization)
+- [ ] CSRF protection
+- [ ] Authorization: only admin can create disbursements
+- [ ] Authorization: only approver can approve
+- [ ] Audit log: semua perubahan tercatat
+- [ ] Sensitive data tidak di-log
+- [ ] API rate limiting
+- [ ] Input validation (amount > 0, required fields)
+
+---
+
+### Performance Testing
+
+**Load Testing:**
+```bash
+# Test 1: Create 1000 disbursements
+ab -n 1000 -c 10 -p disbursement.json \
+  https://api.bantuanku.com/admin/disbursements
+
+# Test 2: Generate cash flow report (1 tahun data)
+ab -n 100 -c 5 \
+  https://api.bantuanku.com/admin/reports/cash-flow?startDate=2025-01-01&endDate=2026-01-01
+```
+
+**Benchmarks:**
+- [ ] Create disbursement: < 200ms
+- [ ] Approve disbursement: < 300ms
+- [ ] Cash flow report: < 500ms
+- [ ] Category dropdown load: < 100ms
+- [ ] Database queries use indexes
+- [ ] No full table scans
+
+---
+
+### UAT (User Acceptance Testing)
+
+**Admin Users:**
+- [ ] Dropdown kategori mudah dipahami
+- [ ] Tidak bingung pilih kategori
+- [ ] Form validation jelas
+- [ ] Error messages helpful
+- [ ] Success feedback clear
+- [ ] Training time < 1 jam
+
+**Feedback Questions:**
+1. Apakah dropdown kategori lebih mudah dari COA? (Ya/Tidak)
+2. Apakah validasi zakat membantu? (Ya/Tidak)
+3. Apakah ada kategori yang kurang? (Sebutkan)
+4. Apakah ada bug yang ditemukan? (Sebutkan)
+5. Rating: 1-5 (5 = sangat mudah)
+
+**Acceptance Criteria:**
+- [ ] 90% user bilang "lebih mudah dari COA"
+- [ ] Rata-rata rating ≥ 4.0
+- [ ] Zero critical bugs
+- [ ] < 5 minor bugs
+
+---
+
+### Post-Deployment Monitoring
+
+**Metrics to Track:**
+```javascript
+// 1. Category usage distribution
+SELECT category, COUNT(*) FROM disbursements
+WHERE created_at > NOW() - INTERVAL '7 days'
+GROUP BY category ORDER BY count DESC;
+
+// 2. Error rate
+SELECT DATE(created_at), COUNT(*) as errors
+FROM error_logs
+WHERE error_type = 'disbursement'
+GROUP BY DATE(created_at);
+
+// 3. Approval time
+SELECT AVG(EXTRACT(EPOCH FROM (approved_at - submitted_at))/3600) as avg_hours
+FROM disbursements
+WHERE approved_at IS NOT NULL;
+
+// 4. Bank balance accuracy
+-- Compare calculated vs actual balance weekly
+```
+
+**Alerts:**
+- [ ] Alert jika bank balance negatif
+- [ ] Alert jika ada category NULL
+- [ ] Alert jika error rate > 5%
+- [ ] Alert jika zakat dari non-zakat bank (seharusnya di-block!)
+
+---
+
+### Documentation Testing
+
+- [ ] Blueprint ini akurat dengan implementasi
+- [ ] API docs up-to-date
+- [ ] Code comments clear
+- [ ] README updated
+- [ ] Migration guide complete
+- [ ] Troubleshooting guide available
+
+---
+
+## ✅ Success Criteria
+
+### Functional
+- [x] User bisa create disbursement dengan dropdown kategori (bukan COA)
+- [x] Sistem auto-update bank balance saat transaksi paid
+- [x] Laporan cash flow menggabungkan sistem lama + baru
+- [x] Validasi zakat: hanya bisa dari rekening zakat
+- [x] Support qurban categories (income + expense)
+
+### Non-Functional
+- [x] Migration zero-downtime
+- [x] Data lama tetap accessible
+- [x] Performance: Query time < 500ms
+- [x] Code coverage > 80%
+
+### User Experience
+- [x] Admin tidak perlu tahu debit-kredit
+- [x] Dropdown kategori mudah dipahami
+- [x] Laporan jelas dan akurat
+- [x] Training time < 1 jam
+
+---
+
+## 📚 Related Documentation
+
+- **03-Universal-Transactions-Blueprint.md** - Universal transactions system (income)
+- **03-Universal-Disbursements-Blueprint.md** - Universal disbursements system (expense)
+- **03-Payment-Methode.md** - Payment method architecture
+
+---
+
+**Document Version:** 2.0
+**Last Updated:** 13 Februari 2026
+**Status:** ✅ Implemented & Active

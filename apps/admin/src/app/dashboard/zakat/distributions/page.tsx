@@ -10,6 +10,7 @@ import { EyeIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Autocomplete from "@/components/Autocomplete";
 import Pagination from "@/components/Pagination";
 import { formatRupiah } from "@/lib/format";
+import { useAuth } from "@/lib/auth";
 
 const ASNAF_CATEGORIES = [
   { value: "fakir", label: "Fakir" },
@@ -24,6 +25,8 @@ const ASNAF_CATEGORIES = [
 
 export default function ZakatDistributionsPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const canCreate = !user?.roles?.includes("program_coordinator") || user?.roles?.includes("super_admin");
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,12 +49,15 @@ export default function ZakatDistributionsPage() {
     },
   });
 
-  // Fetch distributions
+  // Fetch distributions from universal disbursements
   const { data: distributionsData, isLoading } = useQuery({
     queryKey: ["zakat-distributions"],
     queryFn: async () => {
-      const response = await api.get("/admin/zakat/distributions", {
-        params: { limit: 1000 },
+      const response = await api.get("/admin/disbursements", {
+        params: {
+          disbursement_type: "zakat",
+          limit: 1000
+        },
       });
       return response.data?.data || [];
     },
@@ -75,7 +81,7 @@ export default function ZakatDistributionsPage() {
     { value: "", label: "Semua Status" },
     { value: "draft", label: "Draft" },
     { value: "approved", label: "Disetujui" },
-    { value: "disbursed", label: "Tersalurkan" },
+    { value: "paid", label: "Tersalurkan" },
   ];
 
   // Filter distributions
@@ -85,9 +91,9 @@ export default function ZakatDistributionsPage() {
       distribution.recipientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       distribution.purpose?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesType = zakatTypeFilter === "" || distribution.zakatTypeId === zakatTypeFilter;
+    const matchesType = zakatTypeFilter === "" || distribution.typeSpecificData?.zakatTypeId === zakatTypeFilter;
     const matchesStatus = statusFilter === "" || distribution.status === statusFilter;
-    const matchesAsnaf = asnafFilter === "" || distribution.recipientCategory === asnafFilter;
+    const matchesAsnaf = asnafFilter === "" || distribution.typeSpecificData?.asnaf === asnafFilter;
 
     return matchesSearch && matchesType && matchesStatus && matchesAsnaf;
   });
@@ -106,7 +112,7 @@ export default function ZakatDistributionsPage() {
   };
 
   const handleView = (distribution: any) => {
-    router.push(`/dashboard/zakat/distributions/${distribution.id}`);
+    router.push(`/dashboard/disbursements/${distribution.id}`);
   };
 
   if (isLoading) {
@@ -133,14 +139,16 @@ export default function ZakatDistributionsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Penyaluran Zakat</h1>
           <p className="text-gray-600 mt-1">Kelola penyaluran dana zakat kepada 8 asnaf</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary btn-md"
-          onClick={() => router.push("/dashboard/zakat/distributions/new")}
-        >
-          <PlusIcon className="w-5 h-5" />
-          Buat Penyaluran Baru
-        </button>
+        {canCreate && (
+          <button
+            type="button"
+            className="btn btn-primary btn-md"
+            onClick={() => router.push("/dashboard/disbursements/create?type=zakat")}
+          >
+            <PlusIcon className="w-5 h-5" />
+            Buat Penyaluran Baru
+          </button>
+        )}
       </div>
 
       {/* Filters Section */}
@@ -216,26 +224,26 @@ export default function ZakatDistributionsPage() {
                   </td>
                   <td>
                     <div className="font-medium text-gray-900 capitalize">
-                      {distribution.recipientCategory || "N/A"}
+                      {distribution.typeSpecificData?.asnaf || distribution.referenceName || "N/A"}
                     </div>
                   </td>
                   <td>
                     <div className="text-sm text-gray-900">
-                      {distribution.zakatTypeName || "N/A"}
+                      {distribution.typeSpecificData?.zakatTypeName || "N/A"}
                     </div>
                   </td>
                   <td className="mono text-sm">Rp {formatRupiah(distribution.amount)}</td>
                   <td>
                     <span
                       className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        distribution.status === "disbursed"
+                        distribution.status === "paid"
                           ? "bg-success-50 text-success-700"
                           : distribution.status === "approved"
                           ? "bg-primary-50 text-primary-700"
                           : "bg-gray-100 text-gray-700"
                       }`}
                     >
-                      {distribution.status === "disbursed"
+                      {distribution.status === "paid"
                         ? "Tersalurkan"
                         : distribution.status === "approved"
                         ? "Disetujui"
@@ -285,19 +293,19 @@ export default function ZakatDistributionsPage() {
                       {distribution.recipientName || "N/A"}
                     </div>
                     <div className="table-card-header-subtitle">
-                      {distribution.recipientCategory || "N/A"}
+                      {distribution.typeSpecificData?.asnaf || distribution.referenceName || "N/A"}
                     </div>
                   </div>
                   <span
                     className={`table-card-header-badge ${
-                      distribution.status === "disbursed"
+                      distribution.status === "paid"
                         ? "bg-success-50 text-success-700"
                         : distribution.status === "approved"
                         ? "bg-primary-50 text-primary-700"
                         : "bg-gray-100 text-gray-700"
                     }`}
                   >
-                    {distribution.status === "disbursed"
+                    {distribution.status === "paid"
                       ? "Tersalurkan"
                       : distribution.status === "approved"
                       ? "Disetujui"
@@ -312,7 +320,7 @@ export default function ZakatDistributionsPage() {
 
                 <div className="table-card-row">
                   <span className="table-card-row-label">Jenis Zakat</span>
-                  <span className="table-card-row-value">{distribution.zakatTypeName || "N/A"}</span>
+                  <span className="table-card-row-value">{distribution.typeSpecificData?.zakatTypeName || "N/A"}</span>
                 </div>
 
                 <div className="table-card-row">

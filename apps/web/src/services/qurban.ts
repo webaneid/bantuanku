@@ -1,4 +1,4 @@
-import { getImageUrl } from '@/lib/image';
+import { getImageUrl, getImageUrlByVariant, type ImageVariant } from '@/lib/image';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
@@ -14,9 +14,19 @@ export interface QurbanPeriod {
 }
 
 export interface QurbanPackage {
+  availablePeriods?: Array<{
+    periodId: string;
+    packagePeriodId: string;
+    periodName: string;
+    gregorianYear: number;
+    price: number;
+  }>;
   packagePeriodId: string; // ID of package-period junction (unique per period)
   id: string; // Package master ID
   periodId: string;
+  periodName?: string;
+  periodEndDate?: string;
+  periodExecutionDate?: string;
   animalType: string; // 'cow' or 'goat'
   packageType: string; // 'individual' or 'shared'
   name: string;
@@ -29,6 +39,14 @@ export interface QurbanPackage {
   stockSold: number;
   isFeatured: boolean;
   availableSlots: number;
+  ownerType?: "organization" | "mitra";
+  ownerName?: string | null;
+  ownerSlug?: string | null;
+  ownerLogoUrl?: string | null;
+  executionDateOverride?: string | null;
+  executionTimeNote?: string | null;
+  executionLocation?: string | null;
+  executionNotes?: string | null;
 }
 
 export async function fetchActivePeriods() {
@@ -96,6 +114,19 @@ export function getQurbanImageUrl(imageUrl: string | null | undefined): string {
   const url = getImageUrl(imageUrl, '/images/placeholder-qurban.jpg');
 
   // Fix wrong port (8787 -> 50245) for localhost during development
+  if (url.includes('localhost:8787')) {
+    return url.replace('localhost:8787', 'localhost:50245');
+  }
+
+  return url;
+}
+
+export function getQurbanImageUrlByVariant(
+  imageUrl: string | null | undefined,
+  preferredVariants: ImageVariant[]
+): string {
+  const url = getImageUrlByVariant(imageUrl, preferredVariants, '/images/placeholder-qurban.jpg');
+
   if (url.includes('localhost:8787')) {
     return url.replace('localhost:8787', 'localhost:50245');
   }

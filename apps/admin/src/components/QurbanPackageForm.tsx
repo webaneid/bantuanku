@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import RichTextEditor from "./RichTextEditor";
 import MediaLibrary from "./MediaLibrary";
+import SEOPanel, { type SEOData } from "./SEOPanel";
 import api from "@/lib/api";
 
 export interface PackagePeriod {
@@ -14,6 +15,10 @@ export interface PackagePeriod {
   price: number;
   stock: number;
   isAvailable: boolean;
+  executionDateOverride?: string | null;
+  executionTimeNote?: string | null;
+  executionLocation?: string | null;
+  executionNotes?: string | null;
 }
 
 export interface QurbanPackageFormData {
@@ -25,6 +30,17 @@ export interface QurbanPackageFormData {
   imageUrl?: string;
   isFeatured: boolean;
   periods: PackagePeriod[];
+  // SEO fields
+  metaTitle?: string;
+  metaDescription?: string;
+  focusKeyphrase?: string;
+  canonicalUrl?: string;
+  noIndex?: boolean;
+  noFollow?: boolean;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImageUrl?: string;
+  seoScore?: number;
 }
 
 interface QurbanPackageFormProps {
@@ -104,6 +120,45 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
     setIsMediaLibraryOpen(false);
   };
 
+  // SEO state
+  const [seoValues, setSeoValues] = useState<Partial<SEOData>>({
+    focusKeyphrase: initialData?.focusKeyphrase || "",
+    metaTitle: initialData?.metaTitle || "",
+    metaDescription: initialData?.metaDescription || "",
+    canonicalUrl: initialData?.canonicalUrl || "",
+    noIndex: initialData?.noIndex || false,
+    noFollow: initialData?.noFollow || false,
+    ogTitle: initialData?.ogTitle || "",
+    ogDescription: initialData?.ogDescription || "",
+    ogImageUrl: initialData?.ogImageUrl || "",
+    seoScore: initialData?.seoScore || 0,
+  });
+
+  const handleSEOChange = useCallback((data: Partial<SEOData>) => {
+    setSeoValues(data);
+  }, []);
+
+  useEffect(() => {
+    if (initialData) {
+      setSeoValues({
+        focusKeyphrase: initialData.focusKeyphrase || "",
+        metaTitle: initialData.metaTitle || "",
+        metaDescription: initialData.metaDescription || "",
+        canonicalUrl: initialData.canonicalUrl || "",
+        noIndex: initialData.noIndex || false,
+        noFollow: initialData.noFollow || false,
+        ogTitle: initialData.ogTitle || "",
+        ogDescription: initialData.ogDescription || "",
+        ogImageUrl: initialData.ogImageUrl || "",
+        seoScore: initialData.seoScore || 0,
+      });
+    }
+  }, [initialData]);
+
+  const handleFormSubmit = (data: QurbanPackageFormData) => {
+    onSubmit({ ...data, ...seoValues });
+  };
+
   const handleAddPeriod = () => {
     if (availablePeriods.length === 0) return;
 
@@ -112,6 +167,10 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
       price: 0,
       stock: 0,
       isAvailable: true,
+      executionDateOverride: "",
+      executionTimeNote: "",
+      executionLocation: "",
+      executionNotes: "",
     });
   };
 
@@ -122,7 +181,7 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
 
   return (
     <>
-      <form id="qurban-package-form" onSubmit={handleSubmit(onSubmit)}>
+      <form id="qurban-package-form" onSubmit={handleSubmit(handleFormSubmit)}>
         <div className="form-layout-two-column">
           {/* Main Content (Left Column) */}
           <div className="form-main-content">
@@ -264,7 +323,7 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
                   </button>
                   {!isLoadingPeriods && availablePeriods.length === 0 && (
                     <p className="text-sm text-gray-400 mt-2">
-                      Tidak ada periode tersedia. Buat periode baru terlebih dahulu.
+                      Tidak ada periode tersedia. Periode dikelola oleh admin.
                     </p>
                   )}
                   {!isLoadingPeriods && periods.length > 0 && (
@@ -278,6 +337,7 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
                   {fields.map((field, index) => {
                     const error = errors.periods?.[index];
                     const currentPeriodId = watch(`periods.${index}.periodId`);
+                    const currentPeriodName = field.periodName || getPeriodName(currentPeriodId);
 
                     return (
                       <div
@@ -312,7 +372,7 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
                               <option value="">Pilih Periode</option>
                               {currentPeriodId && (
                                 <option value={currentPeriodId}>
-                                  {getPeriodName(currentPeriodId)}
+                                  {currentPeriodName || "Periode saat ini"}
                                 </option>
                               )}
                               {availablePeriods.map((period) => (
@@ -472,6 +532,63 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
                               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                             </label>
                           </div>
+
+                          {/* Execution Override (optional) */}
+                          <div className="bg-white rounded border border-gray-200 p-3 space-y-3">
+                            <p className="text-xs font-medium text-gray-700">
+                              Override Jadwal Penyembelihan (Opsional)
+                            </p>
+
+                            <div className="form-field mb-0">
+                              <label className="form-label text-sm">
+                                Tanggal Penyembelihan Khusus
+                              </label>
+                              <input
+                                type="date"
+                                className="form-input"
+                                {...register(`periods.${index}.executionDateOverride`)}
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                Kosongkan untuk pakai tanggal penyembelihan dari periode global.
+                              </p>
+                            </div>
+
+                            <div className="form-field mb-0">
+                              <label className="form-label text-sm">
+                                Catatan Jam Penyembelihan
+                              </label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Contoh: 08:00 - 10:00 WIB"
+                                {...register(`periods.${index}.executionTimeNote`)}
+                              />
+                            </div>
+
+                            <div className="form-field mb-0">
+                              <label className="form-label text-sm">
+                                Lokasi Penyembelihan
+                              </label>
+                              <input
+                                type="text"
+                                className="form-input"
+                                placeholder="Contoh: Rumah Potong Mitra A"
+                                {...register(`periods.${index}.executionLocation`)}
+                              />
+                            </div>
+
+                            <div className="form-field mb-0">
+                              <label className="form-label text-sm">
+                                Catatan Penyembelihan
+                              </label>
+                              <textarea
+                                className="form-textarea"
+                                rows={2}
+                                placeholder="Opsional"
+                                {...register(`periods.${index}.executionNotes`)}
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );
@@ -575,6 +692,20 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
           </div>
         </div>
       </form>
+
+      <SEOPanel
+        value={seoValues}
+        onChange={handleSEOChange}
+        contentData={{
+          title: watch("name") || "",
+          slug: "",
+          description: description,
+          content: description,
+          imageUrl: imageUrl,
+        }}
+        entityType="qurbanPackage"
+        disabled={isLoading}
+      />
 
       {/* Media Library Modal */}
       <MediaLibrary

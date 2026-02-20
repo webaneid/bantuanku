@@ -2,6 +2,7 @@ import { pgTable, text, timestamp, integer, date } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { users } from "./user";
+import { mitra } from "./mitra";
 
 export const qurbanPeriods = pgTable("qurban_periods", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -13,12 +14,17 @@ export const qurbanPeriods = pgTable("qurban_periods", {
   executionDate: date("execution_date", { mode: "date" }).notNull(), // Tanggal penyembelihan (Idul Adha)
   status: text("status").default("draft").notNull(), // draft, active, closed, executed
   description: text("description"),
+  mitraId: text("mitra_id").references(() => mitra.id),
   createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
 });
 
-export const qurbanPeriodsRelations = relations(qurbanPeriods, ({ many }) => ({
+export const qurbanPeriodsRelations = relations(qurbanPeriods, ({ one, many }) => ({
   packagePeriods: many(qurbanPackagePeriods), // Many-to-many relationship via junction table
+  mitra: one(mitra, {
+    fields: [qurbanPeriods.mitraId],
+    references: [mitra.id],
+  }),
 }));
 
 // Import after declaration to avoid circular dependency

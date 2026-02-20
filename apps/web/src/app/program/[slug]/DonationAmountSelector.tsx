@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { formatRupiahFull } from '@/lib/format';
+import { useI18n } from '@/lib/i18n/provider';
 
 interface DonationAmountSelectorProps {
   programType: string;
@@ -18,6 +19,7 @@ export default function DonationAmountSelector({
   selectedAmount,
   onFidyahDataChange,
 }: DonationAmountSelectorProps) {
+  const { t } = useI18n();
   const [recommendedAmounts, setRecommendedAmounts] = useState<number[]>([]);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -126,14 +128,14 @@ export default function DonationAmountSelector({
     return (
       <div className="space-y-4 mb-6">
         <p className="text-sm font-medium text-gray-700 mb-3">
-          Hitung Fidyah
+          {t('campaignDetail.amountSelector.fidyah.title')}
         </p>
 
         <div className="space-y-3">
           {/* Person Count */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Jumlah Orang
+              {t('campaignDetail.amountSelector.fidyah.personCount')}
             </label>
             <input
               type="number"
@@ -148,7 +150,7 @@ export default function DonationAmountSelector({
           {/* Day Count */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Jumlah Hari Puasa yang Terlewat
+              {t('campaignDetail.amountSelector.fidyah.dayCount')}
             </label>
             <input
               type="number"
@@ -163,23 +165,27 @@ export default function DonationAmountSelector({
           {/* Price per day info */}
           <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-xs text-amber-800">
-              Fidyah per hari: <span className="font-semibold">{formatRupiahFull(fidyahPricePerDay)}</span>
+              {t('campaignDetail.amountSelector.fidyah.pricePerDay')} <span className="font-semibold">{formatRupiahFull(fidyahPricePerDay)}</span>
             </p>
             <p className="text-xs text-amber-700 mt-1">
-              Setara harga 1 mud beras (±0.6 kg)
+              {t('campaignDetail.amountSelector.fidyah.priceHint')}
             </p>
           </div>
 
           {/* Total Calculation */}
           <div className="p-4 bg-primary-50 border-2 border-primary-500 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-700">Total Fidyah:</span>
+              <span className="text-sm text-gray-700">{t('campaignDetail.amountSelector.fidyah.totalLabel')}</span>
               <span className="text-xl font-bold text-primary-700">
                 {formatRupiahFull(selectedAmount)}
               </span>
             </div>
             <p className="text-xs text-gray-600">
-              {fidyahPersonCount} orang × {fidyahDayCount} hari × {formatRupiahFull(fidyahPricePerDay)}
+              {t('campaignDetail.amountSelector.fidyah.calculation', {
+                personCount: fidyahPersonCount,
+                dayCount: fidyahDayCount,
+                pricePerDay: formatRupiahFull(fidyahPricePerDay),
+              })}
             </p>
           </div>
         </div>
@@ -191,7 +197,9 @@ export default function DonationAmountSelector({
   return (
     <div className="space-y-3 mb-6">
       <p className="text-sm font-medium text-gray-700 mb-3">
-        Pilih Nominal {programType === 'wakaf' ? 'Wakaf' : 'Donasi'}
+        {programType === 'wakaf'
+          ? t('campaignDetail.amountSelector.chooseWakaf')
+          : t('campaignDetail.amountSelector.chooseDonation')}
       </p>
 
       {/* Recommended amounts */}
@@ -216,7 +224,7 @@ export default function DonationAmountSelector({
       <div>
         <input
           type="text"
-          placeholder="Nominal lainnya"
+          placeholder={t('campaignDetail.amountSelector.customPlaceholder')}
           value={customAmount}
           onChange={(e) => handleCustomAmountChange(e.target.value)}
           className={`w-full py-3 px-4 rounded-lg border-2 transition-all ${

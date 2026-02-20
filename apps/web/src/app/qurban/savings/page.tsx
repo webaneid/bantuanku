@@ -7,19 +7,21 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { formatRupiahFull } from '@/lib/format';
 import { cn } from '@/lib/cn';
-
-const statusConfig = {
-  active: { label: "Aktif", color: "bg-blue-50 text-blue-700 border-blue-200" },
-  completed: { label: "Selesai", color: "bg-success-50 text-success-700 border-success-200" },
-  converted: { label: "Terkonversi", color: "bg-purple-50 text-purple-700 border-purple-200" },
-  cancelled: { label: "Dibatalkan", color: "bg-danger-50 text-danger-700 border-danger-200" },
-};
+import { useI18n } from '@/lib/i18n/provider';
 
 export default function SavingsListPage() {
   const router = useRouter();
   const { user, isHydrated } = useAuth();
+  const { t, locale } = useI18n();
+  const localeTag = locale === 'id' ? 'id-ID' : 'en-US';
   const [savingsList, setSavingsList] = useState<QurbanSavings[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const statusConfig = {
+    active: { label: t("account.qurbanSavings.status.active"), color: "bg-blue-50 text-blue-700 border-blue-200" },
+    completed: { label: t("account.qurbanSavings.status.completed"), color: "bg-success-50 text-success-700 border-success-200" },
+    converted: { label: t("account.qurbanSavings.status.converted"), color: "bg-purple-50 text-purple-700 border-purple-200" },
+    cancelled: { label: t("account.qurbanSavings.status.cancelled"), color: "bg-danger-50 text-danger-700 border-danger-200" },
+  };
 
   useEffect(() => {
     if (!isHydrated || !user) {
@@ -49,16 +51,16 @@ export default function SavingsListPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Tabungan Qurban</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t("account.qurbanSavings.listTitle")}</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Total {savingsList.length} tabungan
+            {t("account.qurbanSavings.totalCount", { count: savingsList.length })}
           </p>
         </div>
         <Link
           href="/qurban/savings/new"
           className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
         >
-          Buat Baru
+          {t("account.qurbanSavings.createNew")}
         </Link>
       </div>
 
@@ -74,13 +76,13 @@ export default function SavingsListPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
-          <h3 className="text-base font-medium text-gray-900 mb-2">Belum Ada Tabungan</h3>
-          <p className="text-sm text-gray-500 mb-6">Mulai menabung untuk qurban Anda sekarang</p>
+          <h3 className="text-base font-medium text-gray-900 mb-2">{t("account.qurbanSavings.emptyTitle")}</h3>
+          <p className="text-sm text-gray-500 mb-6">{t("account.qurbanSavings.emptyDesc")}</p>
           <Link
             href="/qurban/savings/new"
             className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
           >
-            Buat Tabungan Baru
+            {t("account.qurbanSavings.createNewFull")}
           </Link>
         </div>
       ) : (
@@ -91,22 +93,22 @@ export default function SavingsListPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nomor Tabungan
+                    {t("account.qurbanSavings.table.savingsNumber")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Paket
+                    {t("account.qurbanSavings.table.package")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Progress
+                    {t("account.qurbanSavings.table.progress")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    {t("account.qurbanSavings.table.status")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tanggal
+                    {t("account.qurbanSavings.table.date")}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aksi
+                    {t("account.qurbanSavings.table.action")}
                   </th>
                 </tr>
               </thead>
@@ -137,7 +139,7 @@ export default function SavingsListPage() {
                           />
                         </div>
                         <div className="text-xs text-gray-500">
-                          {progress.toFixed(1)}% dari {formatRupiahFull(savings.targetAmount)}
+                          {t("account.qurbanSavings.progressOf", { percent: progress.toFixed(1), target: formatRupiahFull(savings.targetAmount) })}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -146,7 +148,7 @@ export default function SavingsListPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(savings.createdAt).toLocaleDateString("id-ID", {
+                        {new Date(savings.createdAt).toLocaleDateString(localeTag, {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
@@ -157,7 +159,7 @@ export default function SavingsListPage() {
                           href={`/qurban/savings/${savings.id}`}
                           className="text-primary-600 hover:text-primary-900"
                         >
-                          Detail
+                          {t("account.qurbanSavings.table.detail")}
                         </Link>
                       </td>
                     </tr>
@@ -207,7 +209,7 @@ export default function SavingsListPage() {
                         </p>
                       </div>
                       <p className="text-xs text-gray-500">
-                        {new Date(savings.createdAt).toLocaleDateString("id-ID", {
+                        {new Date(savings.createdAt).toLocaleDateString(localeTag, {
                           day: "numeric",
                           month: "long",
                           year: "numeric",

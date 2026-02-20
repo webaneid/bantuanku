@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
 import { ArrowLeft, Calculator, Info, Users } from "lucide-react";
@@ -11,12 +13,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ZakatFitrahCalculatorPage() {
-  const RICE_PRICE_PER_KG = 15000; // Default harga beras per kg
   const ZAKAT_PER_PERSON = 2.5; // kg or 3.5 liter
+
+  // Fetch public settings
+  const { data: publicSettings } = useQuery({
+    queryKey: ["public-settings"],
+    queryFn: async () => {
+      const response = await api.get("/settings");
+      return response.data?.data || {};
+    },
+  });
+
+  const ricePricePerKg = publicSettings?.rice_price_per_kg ? Number(publicSettings.rice_price_per_kg) : 15000;
+  const zakatFitrahAmount = publicSettings?.zakat_fitrah_amount ? Number(publicSettings.zakat_fitrah_amount) : null;
 
   const [formData, setFormData] = useState({
     familyMembers: "1",
-    ricePrice: RICE_PRICE_PER_KG.toString(),
+    ricePrice: "",
     paymentType: "beras", // beras or uang
   });
 
@@ -24,10 +37,12 @@ export default function ZakatFitrahCalculatorPage() {
 
   const calculateZakat = () => {
     const members = parseInt(formData.familyMembers);
-    const pricePerKg = parseInt(formData.ricePrice);
+    const pricePerKg = parseInt(formData.ricePrice) || ricePricePerKg;
 
     const totalKg = members * ZAKAT_PER_PERSON;
-    const totalCash = totalKg * pricePerKg;
+    const totalCash = zakatFitrahAmount
+      ? members * zakatFitrahAmount
+      : totalKg * pricePerKg;
 
     setResult({
       members,
@@ -41,7 +56,7 @@ export default function ZakatFitrahCalculatorPage() {
   const handleReset = () => {
     setFormData({
       familyMembers: "1",
-      ricePrice: RICE_PRICE_PER_KG.toString(),
+      ricePrice: "",
       paymentType: "beras",
     });
     setResult(null);
@@ -127,10 +142,12 @@ export default function ZakatFitrahCalculatorPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, ricePrice: e.target.value })
                       }
-                      placeholder="15000"
+                      placeholder={ricePricePerKg.toLocaleString("id-ID")}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Harga beras yang biasa dikonsumsi (makanan pokok)
+                      {zakatFitrahAmount
+                        ? `Nominal zakat fitrah: Rp ${zakatFitrahAmount.toLocaleString("id-ID")}/jiwa (dari pengaturan sistem)`
+                        : `Harga beras default: Rp ${ricePricePerKg.toLocaleString("id-ID")}/kg (dari pengaturan sistem)`}
                     </p>
                   </div>
                 )}

@@ -58,6 +58,8 @@ export default function MustahiqsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMustahiq, setSelectedMustahiq] = useState<Mustahiq | null>(null);
   const [isViewMode, setIsViewMode] = useState(false);
+  const [mustahiqToDelete, setMustahiqToDelete] = useState<Mustahiq | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [feedback, setFeedback] = useState<{
     open: boolean;
     type: "success" | "error";
@@ -117,9 +119,15 @@ export default function MustahiqsPage() {
   };
 
   const handleDelete = (mustahiq: Mustahiq) => {
-    if (confirm(`Yakin ingin menghapus mustahiq "${mustahiq.name}"?`)) {
-      deleteMutation.mutate(mustahiq.id);
-    }
+    setMustahiqToDelete(mustahiq);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!mustahiqToDelete) return;
+    deleteMutation.mutate(mustahiqToDelete.id);
+    setIsDeleteModalOpen(false);
+    setMustahiqToDelete(null);
   };
 
   const handleModalClose = () => {
@@ -373,6 +381,38 @@ export default function MustahiqsPage() {
           onClose={handleModalClose}
           onSuccess={handleModalSuccess}
         />
+      )}
+
+      {isDeleteModalOpen && mustahiqToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Hapus Mustahiq</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Yakin ingin menghapus mustahiq &quot;{mustahiqToDelete.name}&quot;?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setMustahiqToDelete(null);
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-md"
+                onClick={handleConfirmDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <FeedbackDialog

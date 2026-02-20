@@ -52,6 +52,7 @@ type Employee = {
   bankAccountName?: string;
   taxId?: string;
   nationalId?: string;
+  userId?: string | null;
   isActive: boolean;
   notes?: string;
   createdAt: string;
@@ -67,6 +68,8 @@ export default function EmployeesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isViewMode, setIsViewMode] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [feedback, setFeedback] = useState<{
     open: boolean;
     type: "success" | "error";
@@ -126,9 +129,15 @@ export default function EmployeesPage() {
   };
 
   const handleDelete = (employee: Employee) => {
-    if (confirm(`Yakin ingin menghapus karyawan "${employee.name}"?`)) {
-      deleteMutation.mutate(employee.id);
-    }
+    setEmployeeToDelete(employee);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!employeeToDelete) return;
+    deleteMutation.mutate(employeeToDelete.id);
+    setIsDeleteModalOpen(false);
+    setEmployeeToDelete(null);
   };
 
   const handleModalClose = () => {
@@ -402,6 +411,38 @@ export default function EmployeesPage() {
         employee={selectedEmployee}
         isViewMode={isViewMode}
       />
+
+      {isDeleteModalOpen && employeeToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Hapus Karyawan</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Yakin ingin menghapus karyawan &quot;{employeeToDelete.name}&quot;?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setEmployeeToDelete(null);
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-md"
+                onClick={handleConfirmDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <FeedbackDialog
         open={feedback.open}

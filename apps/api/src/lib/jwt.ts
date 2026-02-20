@@ -4,7 +4,10 @@ export interface JWTPayload {
   sub: string;
   email: string;
   name: string;
+  phone?: string | null;
+  whatsappNumber?: string | null;
   roles: string[];
+  isDeveloper?: boolean;
 }
 
 export async function signToken(
@@ -33,7 +36,10 @@ export async function verifyToken(
       sub: payload.sub as string,
       email: payload.email as string,
       name: payload.name as string,
+      phone: payload.phone as string | null | undefined,
+      whatsappNumber: payload.whatsappNumber as string | null | undefined,
       roles: payload.roles as string[],
+      isDeveloper: Boolean(payload.isDeveloper),
     };
   } catch {
     return null;

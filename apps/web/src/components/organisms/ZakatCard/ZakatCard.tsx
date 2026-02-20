@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { cn } from '@/lib/cn';
 import './ZakatCard.css';
 
 export interface ZakatCardProps {
@@ -9,14 +10,21 @@ export interface ZakatCardProps {
   slug: string;
   title: string;
   image: string;
+  ownerName?: string | null;
+  ownerType?: 'organization' | 'mitra';
   collected?: number;
+  aspectRatio?: 'portrait' | 'landscape';
+  className?: string;
 }
 
 export const ZakatCard: React.FC<ZakatCardProps> = ({
   slug,
   title,
   image,
+  ownerName,
   collected,
+  aspectRatio = 'portrait',
+  className,
 }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -28,7 +36,14 @@ export const ZakatCard: React.FC<ZakatCardProps> = ({
   };
 
   return (
-    <Link href={`/zakat/${slug}`} className="zakat-card">
+    <Link
+      href={`/zakat/${slug}`}
+      className={cn(
+        'zakat-card',
+        aspectRatio === 'landscape' ? 'zakat-card--landscape' : 'zakat-card--portrait',
+        className
+      )}
+    >
       <div className="zakat-card__image-wrapper">
         {image ? (
           <img
@@ -47,6 +62,11 @@ export const ZakatCard: React.FC<ZakatCardProps> = ({
       </div>
 
       <div className="zakat-card__content">
+        {ownerName && (
+          <div className="zakat-card__owner">
+            <span className="zakat-card__owner-name">{ownerName}</span>
+          </div>
+        )}
         <h3 className="zakat-card__title">{title}</h3>
         {collected !== undefined ? (
           <div className="zakat-card__stats">
@@ -56,7 +76,7 @@ export const ZakatCard: React.FC<ZakatCardProps> = ({
         ) : (
           <div className="zakat-card__cta">
             <span className="zakat-card__cta-text">Hitung & Bayar Zakat</span>
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </div>

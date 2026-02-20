@@ -7,6 +7,7 @@ import { Plus, Edit, Trash2, Calendar, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 
 interface Period {
   id: string;
@@ -23,8 +24,12 @@ interface Period {
 export default function PeriodsPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { user } = useAuth();
+  const isMitra = user?.roles?.length === 1 && user?.roles?.includes("mitra");
+  const canEdit = (!user?.roles?.includes("admin_finance") || user?.roles?.includes("super_admin")) && !isMitra;
   const [showModal, setShowModal] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<Period | null>(null);
+  const [deleteTargetPeriodId, setDeleteTargetPeriodId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     hijriYear: "",
@@ -125,9 +130,13 @@ export default function PeriodsPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Yakin ingin menghapus periode ini?")) {
-      deleteMutation.mutate(id);
-    }
+    setDeleteTargetPeriodId(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTargetPeriodId) return;
+    deleteMutation.mutate(deleteTargetPeriodId);
+    setDeleteTargetPeriodId(null);
   };
 
   const statusColors = {
@@ -151,23 +160,27 @@ export default function PeriodsPage() {
           <h1 className="text-2xl font-bold">Periode Qurban</h1>
           <p className="text-sm text-gray-600">Kelola periode penerimaan qurban</p>
         </div>
-        <button
-          onClick={() => {
-            resetForm();
-            setShowModal(true);
-          }}
-          className="btn btn-primary"
-        >
-          <Plus className="w-4 h-4" />
-          Tambah Periode
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            className="btn btn-primary"
+          >
+            <Plus className="w-4 h-4" />
+            Tambah Periode
+          </button>
+        )}
       </div>
 
       {isLoading ? (
         <div className="text-center py-12">Loading...</div>
       ) : periodsData?.data?.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          Belum ada periode qurban. Klik "Tambah Periode" untuk membuat periode baru.
+          {isMitra
+            ? "Belum ada periode qurban global yang tersedia."
+            : 'Belum ada periode qurban. Klik "Tambah Periode" untuk membuat periode baru.'}
         </div>
       ) : (
         <>
@@ -221,20 +234,24 @@ export default function PeriodsPage() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => handleEdit(period)}
-                          className="action-btn action-edit"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(period.id)}
-                          className="action-btn action-delete"
-                          title="Hapus"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {canEdit && (
+                          <>
+                            <button
+                              onClick={() => handleEdit(period)}
+                              className="action-btn action-edit"
+                              title="Edit"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(period.id)}
+                              className="action-btn action-delete"
+                              title="Hapus"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -293,20 +310,24 @@ export default function PeriodsPage() {
                   >
                     <Eye className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={() => handleEdit(period)}
-                    className="action-btn action-edit"
-                    title="Edit"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(period.id)}
-                    className="action-btn action-delete"
-                    title="Hapus"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canEdit && (
+                    <>
+                      <button
+                        onClick={() => handleEdit(period)}
+                        className="action-btn action-edit"
+                        title="Edit"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(period.id)}
+                        className="action-btn action-delete"
+                        title="Hapus"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -315,7 +336,7 @@ export default function PeriodsPage() {
       )}
 
       {/* Modal Form */}
-      {showModal && (
+      {showModal && canEdit && (
         <div className="modal-backdrop" onClick={() => setShowModal(false)}>
           <div className="modal-content max-w-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -421,26 +442,28 @@ export default function PeriodsPage() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="form-label">
-                      Status
-                    </label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          status: e.target.value as any,
-                        })
-                      }
-                      className="form-select"
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="active">Aktif</option>
-                      <option value="closed">Ditutup</option>
-                      <option value="executed">Selesai</option>
-                    </select>
-                  </div>
+                  {!isMitra && (
+                    <div>
+                      <label className="form-label">
+                        Status
+                      </label>
+                      <select
+                        value={formData.status}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            status: e.target.value as any,
+                          })
+                        }
+                        className="form-select"
+                      >
+                        <option value="draft">Draft</option>
+                        <option value="active">Aktif</option>
+                        <option value="closed">Ditutup</option>
+                        <option value="executed">Selesai</option>
+                      </select>
+                    </div>
+                  )}
 
                   <div>
                     <label className="form-label">
@@ -478,6 +501,44 @@ export default function PeriodsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteTargetPeriodId && canEdit && (
+        <div className="modal-backdrop" onClick={() => setDeleteTargetPeriodId(null)}>
+          <div className="modal-content max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Hapus Periode</h3>
+              <button
+                type="button"
+                onClick={() => setDeleteTargetPeriodId(null)}
+                className="modal-close"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body">
+              <p className="text-gray-700">Yakin ingin menghapus periode ini?</p>
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                onClick={() => setDeleteTargetPeriodId(null)}
+                className="btn btn-secondary"
+                disabled={deleteMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="btn btn-danger"
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
           </div>
         </div>
       )}

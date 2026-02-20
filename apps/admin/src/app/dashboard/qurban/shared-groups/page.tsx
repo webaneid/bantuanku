@@ -11,6 +11,7 @@ import { formatRupiah } from "@/lib/format";
 interface SharedGroup {
   id: string;
   package_id: string;
+  package_period_id: string;
   period_id: string;
   group_number: number;
   max_slots: number;

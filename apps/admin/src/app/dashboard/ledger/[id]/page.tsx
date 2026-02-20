@@ -1,3 +1,6 @@
+/**
+ * @deprecated This legacy ledger detail page is read-only for historical data.
+ */
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
@@ -15,6 +18,7 @@ import {
   BanknotesIcon,
   PaperClipIcon,
   CloudArrowUpIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import MediaLibrary from "@/components/MediaLibrary";

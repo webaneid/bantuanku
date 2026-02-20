@@ -4,7 +4,10 @@ import { z } from "zod";
 import { eq, desc, like, sql, and, or } from "drizzle-orm";
 import {
   donatur,
-  donations,
+  transactions,
+  users,
+  userRoles,
+  roles,
   createId,
   indonesiaProvinces,
   indonesiaRegencies,
@@ -284,6 +287,7 @@ donaturAdmin.get("/:id", async (c) => {
       regencyCode: donatur.regencyCode,
       districtCode: donatur.districtCode,
       villageCode: donatur.villageCode,
+      userId: donatur.userId,
       avatar: donatur.avatar,
       totalDonations: donatur.totalDonations,
       totalAmount: donatur.totalAmount,
@@ -338,14 +342,16 @@ donaturAdmin.get("/:id", async (c) => {
 
   const data = rawData[0];
 
-  // Get donation stats
-  const donationStats = await db
-    .select({
-      count: sql<number>`count(*)`,
-      total: sql<number>`sum(amount)`,
-    })
-    .from(donations)
-    .where(eq(donations.donaturId, id));
+  // Get donation stats - match by email since transactions don't have donaturId
+  const donationStats = data.email
+    ? await db
+        .select({
+          count: sql<number>`count(*)`,
+          total: sql<number>`sum(total_amount)`,
+        })
+        .from(transactions)
+        .where(eq(transactions.donorEmail, data.email))
+    : [{ count: 0, total: 0 }];
 
   return success(c, {
     ...data,
@@ -388,12 +394,12 @@ donaturAdmin.put(
     if (donaturData.whatsappNumber !== undefined) updateData.whatsappNumber = donaturData.whatsappNumber;
     if (donaturData.website !== undefined) updateData.website = donaturData.website;
 
-    // Address system
-    if (donaturData.detailAddress !== undefined) updateData.detailAddress = donaturData.detailAddress;
-    if (donaturData.provinceCode !== undefined) updateData.provinceCode = donaturData.provinceCode;
-    if (donaturData.regencyCode !== undefined) updateData.regencyCode = donaturData.regencyCode;
-    if (donaturData.districtCode !== undefined) updateData.districtCode = donaturData.districtCode;
-    if (donaturData.villageCode !== undefined) updateData.villageCode = donaturData.villageCode;
+    // Address system — empty string → null to avoid FK violation
+    if (donaturData.detailAddress !== undefined) updateData.detailAddress = donaturData.detailAddress || null;
+    if (donaturData.provinceCode !== undefined) updateData.provinceCode = donaturData.provinceCode || null;
+    if (donaturData.regencyCode !== undefined) updateData.regencyCode = donaturData.regencyCode || null;
+    if (donaturData.districtCode !== undefined) updateData.districtCode = donaturData.districtCode || null;
+    if (donaturData.villageCode !== undefined) updateData.villageCode = donaturData.villageCode || null;
 
     if (donaturData.isActive !== undefined) updateData.isActive = donaturData.isActive;
 
@@ -452,11 +458,13 @@ donaturAdmin.delete(
       return error(c, "Donatur tidak ditemukan", 404);
     }
 
-    // Check if has donations
-    const hasDonations = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(donations)
-      .where(eq(donations.donaturId, id));
+    // Check if has donations - match by email
+    const hasDonations = existing.email
+      ? await db
+          .select({ count: sql<number>`count(*)` })
+          .from(transactions)
+          .where(eq(transactions.donorEmail, existing.email))
+      : [{ count: 0 }];
 
     if (Number(hasDonations[0]?.count) > 0) {
       return error(c, "Tidak bisa menghapus donatur yang sudah pernah donasi", 400);
@@ -486,17 +494,32 @@ donaturAdmin.get("/:id/donations", async (c) => {
   const limit = parseInt(c.req.query("limit") || "20");
   const offset = (page - 1) * limit;
 
-  const [data, countResult] = await Promise.all([
-    db.query.donations.findMany({
-      where: eq(donations.donaturId, id),
+  // Get donatur email first
+  const donaturData = await db.query.donatur.findFirst({
+    where: eq(donatur.id, id),
+    columns: { email: true },
+  });
+
+  if (!donaturData || !donaturData.email) {
+    return paginated(c, [], {
+      page,
       limit,
-      offset,
-      orderBy: [desc(donations.createdAt)],
-    }),
+      total: 0,
+    });
+  }
+
+  const [data, countResult] = await Promise.all([
+    db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.donorEmail, donaturData.email))
+      .orderBy(desc(transactions.createdAt))
+      .limit(limit)
+      .offset(offset),
     db
       .select({ count: sql<number>`count(*)` })
-      .from(donations)
-      .where(eq(donations.donaturId, id)),
+      .from(transactions)
+      .where(eq(transactions.donorEmail, donaturData.email)),
   ]);
 
   return paginated(c, data, {
@@ -504,6 +527,97 @@ donaturAdmin.get("/:id/donations", async (c) => {
     limit,
     total: Number(countResult[0]?.count || 0),
   });
+});
+
+// POST /admin/donatur/:id/activate-user - Activate donatur as user account
+donaturAdmin.post("/:id/activate-user", requireRole("super_admin"), async (c) => {
+  try {
+    const db = c.get("db");
+    const id = c.req.param("id");
+    const body = await c.req.json();
+
+    const schema = z.object({
+      password: z.string().min(8, "Password minimal 8 karakter"),
+    });
+
+    const { password } = schema.parse(body);
+
+    // 1. Check donatur exists and doesn't have user_id yet
+    const existing = await db.query.donatur.findFirst({
+      where: eq(donatur.id, id),
+    });
+
+    if (!existing) {
+      return error(c, "Donatur tidak ditemukan", 404);
+    }
+
+    if (existing.userId) {
+      return error(c, "Donatur sudah memiliki akun user", 400);
+    }
+
+    // 2. Check email not taken in users table
+    const existingUser = await db.query.users.findFirst({
+      where: eq(users.email, existing.email),
+    });
+
+    if (existingUser) {
+      return error(c, "Email sudah digunakan oleh user lain", 400);
+    }
+
+    // 3. Find user role
+    const userRole = await db.query.roles.findFirst({
+      where: eq(roles.slug, "user"),
+    });
+
+    if (!userRole) {
+      return error(c, "Role user belum tersedia", 400);
+    }
+
+    // 4. Hash password & create user
+    const passwordHash = await hashPassword(password);
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        id: createId(),
+        email: existing.email,
+        passwordHash,
+        name: existing.name,
+        phone: existing.phone || null,
+        whatsappNumber: existing.whatsappNumber || null,
+        isActive: true,
+      })
+      .returning();
+
+    // 5. Assign user role
+    await db.insert(userRoles).values({
+      id: createId(),
+      userId: newUser.id,
+      roleId: userRole.id,
+    });
+
+    // 6. Update donatur with userId
+    await db
+      .update(donatur)
+      .set({
+        userId: newUser.id,
+        updatedAt: new Date(),
+      })
+      .where(eq(donatur.id, id));
+
+    return success(c, {
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+      },
+    }, "Akun login donatur berhasil dibuat", 201);
+  } catch (err: any) {
+    console.error("Error activating donatur user:", err);
+    if (err instanceof z.ZodError) {
+      return error(c, err.errors[0].message, 400);
+    }
+    return error(c, "Failed to activate donatur user", 500);
+  }
 });
 
 export default donaturAdmin;

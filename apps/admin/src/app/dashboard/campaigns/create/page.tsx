@@ -4,19 +4,25 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import CampaignForm, { CampaignFormData } from "@/components/CampaignForm";
-import { toast } from "react-hot-toast";
+import { useState } from "react";
+import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
 
 export default function CreateCampaignPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
 
   const createMutation = useMutation({
     mutationFn: async (data: CampaignFormData) => {
       return api.post("/admin/campaigns", data);
     },
     onSuccess: () => {
-      toast.success("Campaign berhasil dibuat!");
       queryClient.invalidateQueries({ queryKey: ["admin-campaigns"] });
       router.push("/dashboard/campaigns");
     },
@@ -32,7 +38,12 @@ export default function CreateCampaignPage() {
           : issues
             ? JSON.stringify(issues)
             : "Gagal membuat campaign";
-      toast.error(msg);
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: msg,
+      });
     },
   });
 
@@ -100,6 +111,14 @@ export default function CreateCampaignPage() {
           </button>
         </div>
       </div>
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

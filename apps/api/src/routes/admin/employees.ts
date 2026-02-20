@@ -310,7 +310,7 @@ app.get("/:id", async (c) => {
 });
 
 // POST /admin/employees - Create new employee
-app.post("/", async (c) => {
+app.post("/", requireRoles("super_admin", "admin_campaign"), async (c) => {
   try {
     const db = c.get("db");
     const body = await c.req.json();
@@ -407,7 +407,7 @@ app.post("/", async (c) => {
 });
 
 // PUT /admin/employees/:id - Update employee
-app.put("/:id", async (c) => {
+app.put("/:id", requireRoles("super_admin", "admin_campaign"), async (c) => {
   try {
     const db = c.get("db");
     const id = c.req.param("id");
@@ -512,7 +512,7 @@ app.put("/:id", async (c) => {
 });
 
 // DELETE /admin/employees/:id - Delete employee
-app.delete("/:id", async (c) => {
+app.delete("/:id", requireRoles("super_admin", "admin_campaign"), async (c) => {
   try {
     const db = c.get("db");
     const id = c.req.param("id");
@@ -668,6 +668,75 @@ app.get("/unactivated/list", requireRoles("super_admin"), async (c) => {
   } catch (error: any) {
     console.error("Error fetching unactivated employees:", error);
     return c.json({ error: "Failed to fetch unactivated employees" }, 500);
+  }
+});
+
+// PUT /admin/employees/:id/change-role - Change employee user role
+app.put("/:id/change-role", requireRoles("super_admin", "admin_campaign"), async (c) => {
+  try {
+    const db = c.get("db");
+    const id = c.req.param("id");
+    const body = await c.req.json();
+
+    const schema = z.object({
+      roleSlug: z.string().min(1, "Role wajib dipilih"),
+    });
+
+    const { roleSlug } = schema.parse(body);
+
+    // 1. Get employee
+    const employee = await db.query.employees.findFirst({
+      where: eq(employees.id, id),
+    });
+
+    if (!employee) {
+      return c.json({ error: "Employee not found" }, 404);
+    }
+
+    if (!employee.userId) {
+      return c.json({ error: "Employee belum memiliki akun user. Aktivasi terlebih dahulu." }, 400);
+    }
+
+    // 2. Get new role
+    const newRole = await db.query.roles.findFirst({
+      where: eq(roles.slug, roleSlug),
+    });
+
+    if (!newRole) {
+      return c.json({ error: "Role tidak ditemukan" }, 404);
+    }
+
+    // 3. Delete existing roles for this user
+    await db
+      .delete(userRoles)
+      .where(eq(userRoles.userId, employee.userId));
+
+    // 4. Assign new role
+    await db.insert(userRoles).values({
+      id: createId(),
+      userId: employee.userId,
+      roleId: newRole.id,
+    });
+
+    return c.json({
+      success: true,
+      data: {
+        employeeId: id,
+        userId: employee.userId,
+        newRole: {
+          id: newRole.id,
+          slug: newRole.slug,
+          name: newRole.name,
+        },
+      },
+      message: `Role berhasil diubah ke ${newRole.name}`,
+    });
+  } catch (error: any) {
+    console.error("Error changing employee role:", error);
+    if (error instanceof z.ZodError) {
+      return c.json({ error: error.errors[0].message }, 400);
+    }
+    return c.json({ error: "Failed to change role" }, 500);
   }
 });
 

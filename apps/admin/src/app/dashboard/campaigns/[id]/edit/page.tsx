@@ -4,7 +4,8 @@ import { useRouter, useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import CampaignForm, { CampaignFormData } from "@/components/CampaignForm";
-import { toast } from "react-hot-toast";
+import { useState } from "react";
+import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
 
 export default function EditCampaignPage() {
@@ -12,6 +13,13 @@ export default function EditCampaignPage() {
   const params = useParams();
   const queryClient = useQueryClient();
   const campaignId = params.id as string;
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
+  const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   // Fetch campaign data
   const { data: campaignData, isLoading } = useQuery({
@@ -35,11 +43,24 @@ export default function EditCampaignPage() {
     categoryId: campaignData.categoryId,
     pillar: campaignData.pillar,
     coordinatorId: campaignData.coordinatorId,
+    mitraId: campaignData.mitraId,
+    mitraName: campaignData.mitraName,
     status: campaignData.status,
     startDate: campaignData.startDate ? new Date(campaignData.startDate).toISOString().split('T')[0] : undefined,
     endDate: campaignData.endDate ? new Date(campaignData.endDate).toISOString().split('T')[0] : undefined,
     isFeatured: campaignData.isFeatured,
     isUrgent: campaignData.isUrgent,
+    // SEO fields
+    metaTitle: campaignData.metaTitle || "",
+    metaDescription: campaignData.metaDescription || "",
+    focusKeyphrase: campaignData.focusKeyphrase || "",
+    canonicalUrl: campaignData.canonicalUrl || "",
+    noIndex: Boolean(campaignData.noIndex),
+    noFollow: Boolean(campaignData.noFollow),
+    ogTitle: campaignData.ogTitle || "",
+    ogDescription: campaignData.ogDescription || "",
+    ogImageUrl: campaignData.ogImageUrl || "",
+    seoScore: campaignData.seoScore || 0,
   } : undefined;
 
   const updateMutation = useMutation({
@@ -47,10 +68,15 @@ export default function EditCampaignPage() {
       return api.put(`/admin/campaigns/${campaignId}`, data);
     },
     onSuccess: () => {
-      toast.success("Campaign berhasil diperbarui!");
       queryClient.invalidateQueries({ queryKey: ["admin-campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["campaign", campaignId] });
-      router.push("/dashboard/campaigns");
+      setRedirectAfterFeedback(true);
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Campaign berhasil diperbarui!",
+      });
     },
     onError: (error: any) => {
       const issues =
@@ -64,7 +90,12 @@ export default function EditCampaignPage() {
           : issues
             ? JSON.stringify(issues)
             : "Gagal memperbarui campaign";
-      toast.error(msg);
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: msg,
+      });
     },
   });
 
@@ -87,6 +118,17 @@ export default function EditCampaignPage() {
       endDate: data.endDate || undefined,
       isFeatured: data.isFeatured || false,
       isUrgent: data.isUrgent || false,
+      // SEO fields
+      metaTitle: data.metaTitle || null,
+      metaDescription: data.metaDescription || null,
+      focusKeyphrase: data.focusKeyphrase || null,
+      canonicalUrl: data.canonicalUrl || null,
+      noIndex: data.noIndex || false,
+      noFollow: data.noFollow || false,
+      ogTitle: data.ogTitle || null,
+      ogDescription: data.ogDescription || null,
+      ogImageUrl: data.ogImageUrl || null,
+      seoScore: data.seoScore || 0,
     };
 
     // Handle images array
@@ -163,6 +205,20 @@ export default function EditCampaignPage() {
           </button>
         </div>
       </div>
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => {
+          setFeedback((prev) => ({ ...prev, open: false }));
+          if (redirectAfterFeedback) {
+            setRedirectAfterFeedback(false);
+            router.push("/dashboard/campaigns");
+          }
+        }}
+      />
     </div>
   );
 }

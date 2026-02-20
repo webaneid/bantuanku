@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
-import { campaigns, donations, ledger, users, ledgerEntries, ledgerLines, ledgerAccounts } from "@bantuanku/db";
+import { campaigns, transactions, ledger, users, ledgerEntries, ledgerLines, ledgerAccounts } from "@bantuanku/db";
 import { requireRole } from "../../middleware/auth";
 import {
   generateCSV,
@@ -63,27 +63,31 @@ exportAdmin.get("/donations", requireRole("super_admin", "admin_finance"), async
   const conditions = [];
 
   if (campaignId) {
-    conditions.push(eq(donations.campaignId, campaignId));
+    conditions.push(and(
+      eq(transactions.productType, "campaign"),
+      eq(transactions.productId, campaignId)
+    ));
   }
 
   if (paymentStatus) {
-    conditions.push(eq(donations.paymentStatus, paymentStatus));
+    conditions.push(eq(transactions.paymentStatus, paymentStatus));
   }
 
   if (startDate) {
-    conditions.push(gte(donations.createdAt, new Date(startDate)));
+    conditions.push(gte(transactions.createdAt, new Date(startDate)));
   }
 
   if (endDate) {
-    conditions.push(lte(donations.createdAt, new Date(endDate)));
+    conditions.push(lte(transactions.createdAt, new Date(endDate)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const data = await db.query.donations.findMany({
-    where: whereClause,
-    orderBy: [desc(donations.createdAt)],
-  });
+  const data = await db
+    .select()
+    .from(transactions)
+    .where(whereClause)
+    .orderBy(desc(transactions.createdAt));
 
   const csv = generateCSV(data, donationExportColumns);
 

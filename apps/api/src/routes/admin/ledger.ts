@@ -1,3 +1,12 @@
+/**
+ * @deprecated Legacy Ledger System - Read-Only
+ *
+ * This endpoint is deprecated. All new disbursements should use /admin/disbursements instead.
+ * This route is kept for backward compatibility and historical data access only.
+ *
+ * Migration: Historical ledger data has been migrated to the disbursements table (migration 061).
+ * Legacy data remains in this table for audit trail purposes.
+ */
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -9,6 +18,15 @@ import { requireRole } from "../../middleware/auth";
 import type { Env, Variables } from "../../types";
 
 const ledgerAdmin = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+// Legacy ledger is fully deprecated (migration anti-legacy phase)
+ledgerAdmin.use("*", async (c) => {
+  return errorResponse(
+    c,
+    "Legacy ledger endpoint is deprecated. Use /admin/disbursements and /admin/reports endpoints (universal transactions + disbursements).",
+    410
+  );
+});
 
 // GET /admin/ledger - List with pagination and filters
 const listQuerySchema = z.object({

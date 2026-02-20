@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import type {
   PaymentGatewayAdapter,
   PaymentRequest,
@@ -39,22 +40,23 @@ export class FlipAdapter implements PaymentGatewayAdapter {
   }
 
   async createPayment(request: PaymentRequest): Promise<PaymentResponse> {
-    const referenceId = `DNT-${request.donationId}-${Date.now()}`;
-
     // Calculate expiry in hours (Flip uses expired_date)
     const expiryMinutes = request.expiryMinutes || 1440; // Default 24 hours
     const expiredDate = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
+    // Truncate title to max 55 chars (Flip limit)
+    const title = `Donasi #${request.donationId}`.substring(0, 55);
+
     // Build request body for Flip PWF (Payment Without Form) API
     const formData = new URLSearchParams({
-      title: `Donasi #${request.donationId}`,
+      title,
       type: "SINGLE", // Single-use payment link
       amount: request.amount.toString(),
-      step: "3", // Step 3 = Direct API payment (creates transaction immediately)
+      step: "2", // Step 2 = payment link with channel selection on Flip side
       sender_name: request.donorName || "Donor",
       sender_email: request.donorEmail || "donor@bantuanku.org",
       sender_phone_number: request.donorPhone || "08123456789",
-      expired_date: expiredDate.toISOString(),
+      expired_date: `${expiredDate.getFullYear()}-${String(expiredDate.getMonth() + 1).padStart(2, '0')}-${String(expiredDate.getDate()).padStart(2, '0')} ${String(expiredDate.getHours()).padStart(2, '0')}:${String(expiredDate.getMinutes()).padStart(2, '0')}`,
     });
 
     try {
@@ -125,17 +127,16 @@ export class FlipAdapter implements PaymentGatewayAdapter {
   }
 
   async verifyWebhook(payload: WebhookPayload, signature?: string): Promise<boolean> {
-    // Flip uses token validation instead of signature
-    // The token should be sent in the webhook callback
+    // Flip sends bcrypt hash of validation token as `token` in webhook callback
     const token = signature || (payload.token as string);
 
-    if (!token) {
+    if (!token || !this.validationToken) {
       console.warn("No validation token provided in Flip webhook");
       return false;
     }
 
-    // Compare with configured validation token
-    return token === this.validationToken;
+    // token is bcrypt hash, validationToken is the plain text configured in Flip dashboard
+    return bcrypt.compare(this.validationToken, token);
   }
 
   parseWebhook(payload: WebhookPayload): {
@@ -143,13 +144,13 @@ export class FlipAdapter implements PaymentGatewayAdapter {
     status: "success" | "failed" | "expired";
     paidAt?: Date;
   } {
-    // Flip webhook payload structure
-    const billId = (payload.id || payload.bill_link_id || payload.link_id) as string | number;
+    // Flip webhook: bill_link_id matches link_id from createPayment response (stored as externalId)
+    const billLinkId = (payload.bill_link_id || payload.id || payload.link_id) as string | number;
     const status = (payload.status as string)?.toUpperCase();
 
     let parsedStatus: "success" | "failed" | "expired" = "failed";
 
-    // Flip statuses: SUCCESSFUL, ACTIVE, INACTIVE, EXPIRED
+    // Flip statuses: SUCCESSFUL, FAILED, CANCELLED
     if (status === "SUCCESSFUL") {
       parsedStatus = "success";
     } else if (status === "EXPIRED") {
@@ -157,7 +158,7 @@ export class FlipAdapter implements PaymentGatewayAdapter {
     }
 
     return {
-      externalId: billId?.toString() || "",
+      externalId: billLinkId?.toString() || "",
       status: parsedStatus,
       paidAt: parsedStatus === "success" ? new Date() : undefined,
     };

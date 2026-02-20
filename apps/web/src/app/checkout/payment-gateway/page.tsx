@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header, Footer } from '@/components/organisms';
 import { Button } from '@/components/atoms';
-import toast from 'react-hot-toast';
+import toast from '@/lib/feedback-toast';
+import { useI18n } from '@/lib/i18n/provider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
@@ -25,11 +26,13 @@ interface DonationData {
 
 export default function PaymentGatewayPage() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const [gateways, setGateways] = useState<PaymentGateway[]>([]);
   const [selectedGateway, setSelectedGateway] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [donationData, setDonationData] = useState<DonationData[]>([]);
   const [isMounted, setIsMounted] = useState(false);
+  const activeLocale = locale === 'id' ? 'id-ID' : 'en-US';
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -37,7 +40,7 @@ export default function PaymentGatewayPage() {
     // Check if there are pending transactions
     const pendingTransactions = sessionStorage.getItem('pendingTransactions');
     if (!pendingTransactions) {
-      toast.error('Tidak ada transaksi pending');
+      toast.error(t('checkout.common.noPendingTransactions'));
       router.push('/');
       return;
     }
@@ -48,10 +51,10 @@ export default function PaymentGatewayPage() {
       loadPaymentGateways();
     } catch (error) {
       console.error('Error parsing donation data:', error);
-      toast.error('Data transaksi tidak valid');
+      toast.error(t('checkout.common.invalidTransactionData'));
       router.push('/');
     }
-  }, [router]);
+  }, [router, t]);
 
   const loadPaymentGateways = async () => {
     try {
@@ -77,7 +80,7 @@ export default function PaymentGatewayPage() {
       }
     } catch (error) {
       console.error('Error loading payment gateways:', error);
-      toast.error('Gagal memuat payment gateway');
+      toast.error(t('checkout.common.loadDataFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +92,7 @@ export default function PaymentGatewayPage() {
 
   const handleContinue = () => {
     if (!selectedGateway) {
-      toast.error('Silakan pilih payment gateway');
+      toast.error(t('checkout.paymentGateway.selectGateway'));
       return;
     }
 
@@ -103,9 +106,9 @@ export default function PaymentGatewayPage() {
       router.push('/checkout/flip-channels');
     } else if (selectedGateway === 'xendit') {
       // TODO: Implement Xendit channels page
-      toast.error('Xendit belum tersedia, sedang dalam pengembangan');
+      toast.error(t('checkout.common.xenditUnavailable'));
     } else {
-      toast.error('Gateway tidak dikenali');
+      toast.error(t('checkout.common.unknownGateway'));
     }
   };
 
@@ -143,10 +146,10 @@ export default function PaymentGatewayPage() {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Kembali
+                {t('checkout.paymentGateway.back')}
               </Link>
               <h1 className="section-title text-gray-900">
-                Pilih Payment Gateway
+                {t('checkout.paymentGateway.title')}
               </h1>
             </div>
 
@@ -157,8 +160,8 @@ export default function PaymentGatewayPage() {
                   <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                   </svg>
-                  <p className="text-gray-600 font-medium mb-2">Tidak ada payment gateway tersedia</p>
-                  <p className="text-sm text-gray-500">Silakan hubungi administrator</p>
+                  <p className="text-gray-600 font-medium mb-2">{t('checkout.paymentGateway.noGatewayTitle')}</p>
+                  <p className="text-sm text-gray-500">{t('checkout.paymentGateway.noGatewayDesc')}</p>
                 </div>
               ) : (
                 gateways.map((gateway) => (
@@ -185,7 +188,7 @@ export default function PaymentGatewayPage() {
                             {gateway.name}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            general
+                            {t('checkout.paymentGateway.categoryGeneral')}
                           </p>
                         </div>
                       </div>
@@ -210,14 +213,14 @@ export default function PaymentGatewayPage() {
             {selectedGateway && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                 <h2 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>
-                  {selectedGateway === 'ipaymu' && 'Detail iPaymu'}
-                  {selectedGateway === 'flip' && 'Detail Flip'}
-                  {selectedGateway === 'xendit' && 'Detail Xendit'}
+                  {selectedGateway === 'ipaymu' && t('checkout.paymentGateway.detailIpaymu')}
+                  {selectedGateway === 'flip' && t('checkout.paymentGateway.detailFlip')}
+                  {selectedGateway === 'xendit' && t('checkout.paymentGateway.detailXendit')}
                 </h2>
                 <p className="text-sm text-gray-600 mb-4">
-                  {selectedGateway === 'ipaymu' && 'Pembayaran melalui iPaymu mendukung Virtual Account, QRIS, E-wallet, dan metode lainnya.'}
-                  {selectedGateway === 'flip' && 'Pembayaran melalui Flip mendukung transfer antar bank dengan biaya rendah.'}
-                  {selectedGateway === 'xendit' && 'Pembayaran melalui Xendit mendukung berbagai metode pembayaran digital.'}
+                  {selectedGateway === 'ipaymu' && t('checkout.paymentGateway.descIpaymu')}
+                  {selectedGateway === 'flip' && t('checkout.paymentGateway.descFlip')}
+                  {selectedGateway === 'xendit' && t('checkout.paymentGateway.descXendit')}
                 </p>
               </div>
             )}
@@ -225,13 +228,13 @@ export default function PaymentGatewayPage() {
             {/* Total Amount */}
             <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200 p-6 mb-6">
               <div className="flex justify-between items-center">
-                <span className="text-gray-700 font-medium">Total Pembayaran</span>
+                <span className="text-gray-700 font-medium">{t('checkout.paymentGateway.totalPayment')}</span>
                 <span className="text-2xl font-bold text-primary-600">
-                  Rp {totalAmount.toLocaleString('id-ID')}
+                  Rp {totalAmount.toLocaleString(activeLocale)}
                 </span>
               </div>
               <p className="text-sm text-gray-600 mt-2">
-                Transfer tepat sesuai nominal untuk mempercepat verifikasi
+                {t('checkout.paymentGateway.exactAmountInfo')}
               </p>
             </div>
 
@@ -244,12 +247,12 @@ export default function PaymentGatewayPage() {
                 onClick={handleContinue}
                 disabled={!selectedGateway}
               >
-                Lanjutkan
+                {t('checkout.paymentGateway.continue')}
               </Button>
 
               <Link href="/checkout/payment-method">
                 <Button variant="outline" size="lg" className="w-full">
-                  Kembali ke Metode Pembayaran
+                  {t('checkout.paymentGateway.backToMethod')}
                 </Button>
               </Link>
             </div>
@@ -263,7 +266,7 @@ export default function PaymentGatewayPage() {
           <div className="flex gap-2">
             <Link href="/checkout/payment-method" className="flex-1">
               <Button variant="outline" size="lg" className="w-full">
-                Kembali
+                {t('checkout.paymentGateway.back')}
               </Button>
             </Link>
             <Button
@@ -273,7 +276,7 @@ export default function PaymentGatewayPage() {
               onClick={handleContinue}
               disabled={!selectedGateway}
             >
-              Lanjutkan
+              {t('checkout.paymentGateway.continue')}
             </Button>
           </div>
         </div>,

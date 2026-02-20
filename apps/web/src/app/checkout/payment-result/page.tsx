@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Header, Footer } from '@/components/organisms';
 import { Button } from '@/components/atoms';
 import QRCode from 'qrcode';
+import toast from '@/lib/feedback-toast';
+import { useI18n } from '@/lib/i18n/provider';
 
 interface PaymentResult {
   paymentId: string;
@@ -19,9 +21,11 @@ interface PaymentResult {
 
 export default function PaymentResultPage() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const [paymentData, setPaymentData] = useState<PaymentResult | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const activeLocale = locale === 'id' ? 'id-ID' : 'en-US';
 
   useEffect(() => {
     loadPaymentData();
@@ -59,7 +63,7 @@ export default function PaymentResultPage() {
   };
 
   const getChannelInfo = (channel?: string) => {
-    if (!channel) return { name: 'iPaymu', icon: '💳' };
+    if (!channel) return { name: t('checkout.paymentResult.defaultMethodName'), icon: '💳' };
 
     const [method, channelCode] = channel.split(':');
 
@@ -84,7 +88,7 @@ export default function PaymentResultPage() {
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('id-ID', {
+    return new Intl.DateTimeFormat(activeLocale, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -99,60 +103,61 @@ export default function PaymentResultPage() {
 
     const [method] = channel.split(':');
 
-    const instructionsMap: Record<string, string[]> = {
+    const groupedKeys: Record<string, string[]> = {
       qris: [
-        'Pilih salah satu metode pembayaran di atas (Virtual Account, QRIS, atau Link)',
-        'Scan QR Code di atas menggunakan aplikasi e-wallet atau mobile banking yang mendukung QRIS',
-        'Selesaikan pembayaran sesuai nominal yang tertera',
-        'Simpan bukti pembayaran Anda',
-        'Pembayaran akan diverifikasi otomatis oleh sistem',
-        'Status pesanan akan diupdate setelah pembayaran berhasil',
+        'checkout.instructions.qris.step1',
+        'checkout.instructions.qris.step2',
+        'checkout.instructions.qris.step3',
+        'checkout.instructions.qris.step4',
+        'checkout.instructions.qris.step5',
+        'checkout.instructions.qris.step6',
       ],
       va: [
-        'Pilih salah satu metode pembayaran di atas (Virtual Account, QRIS, atau Link)',
-        'Salin nomor Virtual Account di atas',
-        'Buka aplikasi mobile banking atau internet banking Anda',
-        'Pilih menu Transfer > Virtual Account / Bayar',
-        'Masukkan nomor Virtual Account',
-        'Masukkan nominal pembayaran sesuai yang tertera',
-        'Verifikasi dan konfirmasi pembayaran',
-        'Simpan bukti pembayaran Anda',
-        'Pembayaran akan diverifikasi otomatis oleh sistem',
-        'Status pesanan akan diupdate setelah pembayaran berhasil',
+        'checkout.instructions.va.step1',
+        'checkout.instructions.va.step2',
+        'checkout.instructions.va.step3',
+        'checkout.instructions.va.step4',
+        'checkout.instructions.va.step5',
+        'checkout.instructions.va.step6',
+        'checkout.instructions.va.step7',
+        'checkout.instructions.va.step8',
+        'checkout.instructions.va.step9',
+        'checkout.instructions.va.step10',
       ],
       cstore: [
-        'Pilih salah satu metode pembayaran di atas (Virtual Account, QRIS, atau Link)',
-        'Catat kode pembayaran di atas',
-        'Kunjungi gerai terdekat atau buka aplikasi e-wallet',
-        'Sebutkan kode pembayaran kepada kasir atau masukkan di aplikasi',
-        'Bayar sesuai nominal yang tertera',
-        'Simpan bukti pembayaran Anda',
-        'Pembayaran akan diverifikasi otomatis oleh sistem',
-        'Status pesanan akan diupdate setelah pembayaran berhasil',
+        'checkout.instructions.cstore.step1',
+        'checkout.instructions.cstore.step2',
+        'checkout.instructions.cstore.step3',
+        'checkout.instructions.cstore.step4',
+        'checkout.instructions.cstore.step5',
+        'checkout.instructions.cstore.step6',
+        'checkout.instructions.cstore.step7',
+        'checkout.instructions.cstore.step8',
       ],
       cc: [
-        'Pilih salah satu metode pembayaran di atas (Virtual Account, QRIS, atau Link)',
-        'Klik link pembayaran di atas',
-        'Masukkan detail kartu kredit Anda',
-        'Masukkan kode OTP yang dikirim ke nomor HP Anda',
-        'Konfirmasi pembayaran',
-        'Simpan bukti pembayaran Anda',
-        'Pembayaran akan diverifikasi otomatis oleh sistem',
-        'Status pesanan akan diupdate setelah pembayaran berhasil',
+        'checkout.instructions.cc.step1',
+        'checkout.instructions.cc.step2',
+        'checkout.instructions.cc.step3',
+        'checkout.instructions.cc.step4',
+        'checkout.instructions.cc.step5',
+        'checkout.instructions.cc.step6',
+        'checkout.instructions.cc.step7',
+        'checkout.instructions.cc.step8',
       ],
       online: [
-        'Pilih salah satu metode pembayaran di atas (Virtual Account, QRIS, atau Link)',
-        'Klik link pembayaran di atas',
-        'Pilih bank Anda',
-        'Login dengan internet banking Anda',
-        'Konfirmasi pembayaran',
-        'Simpan bukti pembayaran Anda',
-        'Pembayaran akan diverifikasi otomatis oleh sistem',
-        'Status pesanan akan diupdate setelah pembayaran berhasil',
+        'checkout.instructions.online.step1',
+        'checkout.instructions.online.step2',
+        'checkout.instructions.online.step3',
+        'checkout.instructions.online.step4',
+        'checkout.instructions.online.step5',
+        'checkout.instructions.online.step6',
+        'checkout.instructions.online.step7',
+        'checkout.instructions.online.step8',
       ],
     };
 
-    return instructionsMap[method] || instructionsMap.qris;
+    const keys = groupedKeys[method] || groupedKeys.qris;
+    return keys.map((key) => t(key));
   };
 
   if (isLoading) {
@@ -195,10 +200,10 @@ export default function PaymentResultPage() {
                 </svg>
               </div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Pembayaran Berhasil Dibuat
+                {t('checkout.paymentResult.successTitle')}
               </h1>
               <p className="text-gray-600">
-                Silakan selesaikan pembayaran melalui salah satu metode di bawah ini
+                {t('checkout.paymentResult.successSubtitle')}
               </p>
             </div>
 
@@ -206,21 +211,21 @@ export default function PaymentResultPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
               <div className="space-y-4">
                 <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-600">Nomor Pesanan</span>
+                  <span className="text-gray-600">{t('checkout.paymentResult.orderNumber')}</span>
                   <span className="font-semibold text-gray-900">{paymentData.paymentId}</span>
                 </div>
                 <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-600">Metode</span>
+                  <span className="text-gray-600">{t('checkout.paymentResult.method')}</span>
                   <span className="font-semibold text-gray-900">{channelInfo.name}</span>
                 </div>
                 <div className="flex justify-between border-b border-orange-200 pb-3">
-                  <span className="text-gray-900 font-medium">Total Pembayaran</span>
+                  <span className="text-gray-900 font-medium">{t('checkout.paymentResult.totalPayment')}</span>
                   <span className="font-bold text-orange-600 text-xl">
-                    Rp {totalAmount.toLocaleString('id-ID')}
+                    Rp {totalAmount.toLocaleString(activeLocale)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Berlaku Hingga</span>
+                  <span className="text-gray-600">{t('checkout.paymentResult.validUntil')}</span>
                   <span className="font-semibold text-red-600">{formatDate(paymentData.expiredAt)}</span>
                 </div>
               </div>
@@ -243,7 +248,7 @@ export default function PaymentResultPage() {
                     style={{ width: '300px', height: '300px' }}
                   />
                   <p className="text-sm text-gray-600 mt-4">
-                    Scan QR Code di atas menggunakan aplikasi e-wallet atau mobile banking yang mendukung QRIS.
+                    {t('checkout.instructions.qris.step2')}
                   </p>
                 </div>
               )}
@@ -251,7 +256,7 @@ export default function PaymentResultPage() {
               {/* Virtual Account Number */}
               {paymentData.paymentCode && !qrCodeDataUrl && (
                 <div className="bg-gray-50 rounded-lg p-4 mb-4">
-                  <div className="text-sm text-gray-600 mb-2">Nomor Virtual Account</div>
+                  <div className="text-sm text-gray-600 mb-2">{t('checkout.paymentResult.virtualAccountNumber')}</div>
                   <div className="flex items-center justify-between">
                     <div className="font-mono text-2xl font-bold text-gray-900">
                       {paymentData.paymentCode}
@@ -259,11 +264,11 @@ export default function PaymentResultPage() {
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(paymentData.paymentCode || '');
-                        alert('Nomor Virtual Account berhasil disalin!');
+                        toast.success(t('checkout.common.copiedVirtualAccount'));
                       }}
                       className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm"
                     >
-                      Salin
+                      {t('checkout.common.copy')}
                     </button>
                   </div>
                 </div>
@@ -276,9 +281,9 @@ export default function PaymentResultPage() {
                     href={paymentData.paymentUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block w-full py-3 px-4 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                  >
-                    Bayar via Link iPaymu
+                  className="block w-full py-3 px-4 bg-blue-600 text-white text-center rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                    {t('checkout.paymentResult.payViaLink')}
                   </a>
                 </div>
               )}
@@ -286,7 +291,7 @@ export default function PaymentResultPage() {
 
             {/* Payment Instructions */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Cara Pembayaran</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">{t('checkout.paymentResult.paymentGuide')}</h3>
               <ol className="space-y-3">
                 {getPaymentInstructions(paymentData.selectedChannel).map((instruction, index) => (
                   <li key={index} className="flex gap-3">
@@ -303,12 +308,12 @@ export default function PaymentResultPage() {
             <div className="space-y-3">
               <Link href="/">
                 <Button variant="primary" size="lg" className="w-full">
-                  Kembali ke Beranda
+                  {t('checkout.paymentResult.backHome')}
                 </Button>
               </Link>
               <Link href="/account">
                 <Button variant="outline" size="lg" className="w-full">
-                  Lihat Dashboard
+                  {t('checkout.paymentResult.viewDashboard')}
                 </Button>
               </Link>
             </div>

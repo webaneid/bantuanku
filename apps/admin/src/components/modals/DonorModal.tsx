@@ -33,6 +33,7 @@ type Donatur = {
   // Bank accounts - new system
   bankAccounts?: BankAccountValue[];
 
+  userId?: string | null;
   isActive: boolean;
   emailVerifiedAt?: string | null;
   lastLoginAt?: string | null;
@@ -47,7 +48,6 @@ interface DonorModalProps {
   onSuccess: (createdId?: string) => void;
   donatur?: Donatur | null;
   isViewMode?: boolean;
-  disablePassword?: boolean;
   zIndex?: number; // Optional z-index for stacking modals
 }
 
@@ -57,12 +57,10 @@ export default function DonorModal({
   onSuccess,
   donatur,
   isViewMode = false,
-  disablePassword = false,
   zIndex,
 }: DonorModalProps) {
   const [formData, setFormData] = useState({
     name: "",
-    password: "",
   });
 
   // Contact data state
@@ -96,6 +94,8 @@ export default function DonorModal({
   // State untuk track perubahan bank accounts dari user
   const [bankAccountsFormData, setBankAccountsFormData] = useState<BankAccountValue[]>([]);
 
+  const [activatePassword, setActivatePassword] = useState("");
+
   const [feedback, setFeedback] = useState<{
     open: boolean;
     type: "success" | "error";
@@ -108,7 +108,6 @@ export default function DonorModal({
     if (donatur) {
       setFormData({
         name: donatur.name || "",
-        password: "",
       });
       setContactData({
         email: donatur.email || "",
@@ -119,7 +118,6 @@ export default function DonorModal({
     } else {
       setFormData({
         name: "",
-        password: "",
       });
       setContactData({});
       setAddressFormData({});
@@ -169,6 +167,42 @@ export default function DonorModal({
     },
   });
 
+  const activateUserMutation = useMutation({
+    mutationFn: (payload: { password: string }) =>
+      api.post(`/admin/donatur/${donatur?.id}/activate-user`, payload),
+    onSuccess: () => {
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Akun login berhasil dibuat",
+        message: "Donatur sekarang bisa login ke website.",
+        next: () => onSuccess(),
+      });
+      setActivatePassword("");
+    },
+    onError: (error: any) => {
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal membuat akun login",
+        message: error.response?.data?.message || "Terjadi kesalahan. Coba lagi.",
+      });
+    },
+  });
+
+  const handleActivateUser = () => {
+    if (!activatePassword || activatePassword.length < 8) {
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Password tidak valid",
+        message: "Password minimal 8 karakter.",
+      });
+      return;
+    }
+    activateUserMutation.mutate({ password: activatePassword });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -185,16 +219,17 @@ export default function DonorModal({
     // Normalize contact data
     const normalizedContact = normalizeContactData(contactData);
 
+    const { password, ...restFormData } = formData as any;
     const payload: any = {
-      ...formData,
+      ...restFormData,
       ...normalizedContact,
       ...addressFormData,
       bankAccounts: bankAccountsFormData,
     };
 
-    // Remove password if empty on update
-    if (donatur && !formData.password) {
-      delete payload.password;
+    // Only send password if filled (edit mode)
+    if (donatur && password) {
+      payload.password = password;
     }
 
     if (donatur) {
@@ -277,31 +312,63 @@ export default function DonorModal({
               />
             </div>
 
-            {/* Login Info */}
-            {!disablePassword && (
-              <div className="form-section">
-                <h3 className="form-section-title">
-                  Info Login {!donatur && <span className="text-sm text-gray-500 font-normal">(Opsional)</span>}
-                </h3>
+            {/* Akun Login - only on edit */}
+            {donatur && !isViewMode && (
+              donatur.userId ? (
+                <div className="form-section">
+                  <h3 className="form-section-title">Change Password</h3>
 
-                <div className="form-group">
-                  <label className="form-label">Password</label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="form-input"
-                    placeholder={donatur ? "Kosongkan jika tidak ingin mengubah" : "Minimal 8 karakter"}
-                    minLength={8}
-                    disabled={isViewMode}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {donatur
-                      ? "Kosongkan jika tidak ingin mengubah password"
-                      : "Jika diisi, donatur bisa login ke website"}
-                  </p>
+                  <div className="form-group">
+                    <label className="form-label">Password Baru</label>
+                    <input
+                      type="password"
+                      value={(formData as any).password || ""}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value } as any)}
+                      className="form-input"
+                      placeholder="Kosongkan jika tidak ingin mengubah"
+                      minLength={8}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Kosongkan jika tidak ingin mengubah password
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="form-section">
+                  <h3 className="form-section-title">Activate User</h3>
+
+                  <div className="form-group">
+                    <label className="form-label">Email</label>
+                    <input
+                      type="text"
+                      value={donatur.email || ""}
+                      disabled
+                      className="form-input bg-gray-100"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Password</label>
+                    <input
+                      type="password"
+                      value={activatePassword}
+                      onChange={(e) => setActivatePassword(e.target.value)}
+                      className="form-input"
+                      placeholder="Minimal 8 karakter"
+                      minLength={8}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleActivateUser}
+                    disabled={activateUserMutation.isPending}
+                  >
+                    {activateUserMutation.isPending ? "Mengaktifkan..." : "Aktifkan Akun Login"}
+                  </button>
+                </div>
+              )
             )}
           </form>
         </div>

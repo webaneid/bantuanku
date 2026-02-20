@@ -1,0 +1,106 @@
+// Transaction Categories
+
+export const INCOME_CATEGORIES = {
+  campaign: [
+    { value: 'campaign_donation', label: 'Donasi Campaign' },
+  ],
+  zakat: [
+    { value: 'zakat_fitrah', label: 'Zakat Fitrah' },
+    { value: 'zakat_maal', label: 'Zakat Maal' },
+    { value: 'zakat_profesi', label: 'Zakat Profesi' },
+    { value: 'zakat_pertanian', label: 'Zakat Pertanian' },
+    { value: 'zakat_peternakan', label: 'Zakat Peternakan' },
+    { value: 'zakat_bisnis', label: 'Zakat Bisnis' },
+  ],
+  qurban: [
+    { value: 'qurban_payment', label: 'Pembayaran Qurban' },
+    { value: 'qurban_savings', label: 'Tabungan Qurban' },
+    { value: 'qurban_admin_fee', label: 'Biaya Admin Qurban' },
+  ],
+  unique_code: [
+    { value: 'unique_code_income', label: 'Pendapatan Kode Unik' },
+  ],
+} as const;
+
+export const EXPENSE_CATEGORIES = {
+  zakat: [
+    { value: 'zakat_to_fakir', label: 'Penyaluran ke Fakir' },
+    { value: 'zakat_to_miskin', label: 'Penyaluran ke Miskin' },
+    { value: 'zakat_to_amil', label: 'Penyaluran ke Amil' },
+    { value: 'zakat_to_mualaf', label: 'Penyaluran ke Mualaf' },
+    { value: 'zakat_to_riqab', label: 'Penyaluran ke Riqab' },
+    { value: 'zakat_to_gharim', label: 'Penyaluran ke Gharim' },
+    { value: 'zakat_to_fisabilillah', label: 'Penyaluran ke Fisabilillah' },
+    { value: 'zakat_to_ibnussabil', label: 'Penyaluran ke Ibnus Sabil' },
+  ],
+  campaign: [
+    { value: 'campaign_to_beneficiary', label: 'Pencairan untuk Penerima Manfaat' },
+    { value: 'campaign_to_vendor', label: 'Pembayaran Vendor' },
+  ],
+  qurban: [
+    { value: 'qurban_purchase_sapi', label: 'Pembelian Sapi Qurban' },
+    { value: 'qurban_purchase_kambing', label: 'Pembelian Kambing Qurban' },
+    { value: 'qurban_execution_fee', label: 'Biaya Penyembelihan & Distribusi' },
+  ],
+  operational: [
+    { value: 'operational_salary', label: 'Gaji & Tunjangan' },
+    { value: 'operational_rent', label: 'Sewa Kantor' },
+    { value: 'operational_utilities', label: 'Listrik & Air' },
+    { value: 'operational_internet', label: 'Internet & Telekomunikasi' },
+    { value: 'operational_marketing', label: 'Marketing & Promosi' },
+    { value: 'operational_pg_fee', label: 'Biaya Payment Gateway' },
+    { value: 'operational_bank_fee', label: 'Biaya Administrasi Bank' },
+    { value: 'operational_supplies', label: 'Perlengkapan Kantor' },
+    { value: 'operational_other', label: 'Beban Lain-lain' },
+  ],
+  vendor: [
+    { value: 'vendor_general_payment', label: 'Pembayaran Vendor Umum' },
+  ],
+  revenue_share: [
+    { value: 'revenue_share_mitra', label: 'Pencairan Bagi Hasil Mitra' },
+    { value: 'revenue_share_fundraiser', label: 'Pencairan Komisi Fundraiser' },
+    { value: 'revenue_share_developer', label: 'Pencairan Fee Developer' },
+  ],
+} as const;
+
+// Category Mapping Helper
+export function getCategoryFromTransaction(txn: {
+  productType: string;
+  productName: string;
+  typeSpecificData?: any;
+}): string {
+  if (txn.productType === 'zakat') {
+    if (txn.productName.toLowerCase().includes('fitrah')) return 'zakat_fitrah';
+    if (txn.productName.toLowerCase().includes('maal')) return 'zakat_maal';
+    if (txn.productName.toLowerCase().includes('profesi')) return 'zakat_profesi';
+    if (txn.productName.toLowerCase().includes('pertanian')) return 'zakat_pertanian';
+    if (txn.productName.toLowerCase().includes('peternakan')) return 'zakat_peternakan';
+    return 'zakat_maal'; // default
+  }
+
+  if (txn.productType === 'qurban') {
+    return txn.typeSpecificData?.payment_type === 'savings'
+      ? 'qurban_savings'
+      : 'qurban_payment';
+  }
+
+  return 'campaign_donation';
+}
+
+// Get category label from value
+export function getCategoryLabel(categoryValue: string): string {
+  // Search in all expense categories
+  for (const [type, categories] of Object.entries(EXPENSE_CATEGORIES)) {
+    const found = categories.find(cat => cat.value === categoryValue);
+    if (found) return found.label;
+  }
+
+  // Search in all income categories
+  for (const [type, categories] of Object.entries(INCOME_CATEGORIES)) {
+    const found = categories.find(cat => cat.value === categoryValue);
+    if (found) return found.label;
+  }
+
+  // Return original value if not found
+  return categoryValue;
+}

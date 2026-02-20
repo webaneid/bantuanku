@@ -1,7 +1,14 @@
 .zakat-card {
   @apply relative block rounded-xl overflow-hidden transition-all duration-300;
   @apply hover:shadow-xl hover:-translate-y-1;
-  @apply aspect-[3/4] lg:aspect-[4/3];
+}
+
+.zakat-card--portrait {
+  @apply aspect-[3/4];
+}
+
+.zakat-card--landscape {
+  @apply aspect-[4/3];
 }
 
 .zakat-card__image-wrapper {
@@ -24,8 +31,17 @@
   @apply absolute bottom-0 left-0 right-0 p-4 md:p-6 text-white z-10;
 }
 
+.zakat-card__owner {
+  @apply mb-2;
+}
+
+.zakat-card__owner-name {
+  @apply inline-flex items-center px-2 py-1 rounded-md border border-white/35 bg-black/25;
+  @apply text-[11px] md:text-xs font-medium text-white/95;
+}
+
 .zakat-card__title {
-  @apply text-lg md:text-xl lg:text-2xl font-bold mb-2 md:mb-3;
+  @apply text-base md:text-lg lg:text-xl font-bold mb-2;
 }
 
 .zakat-card__stats {
@@ -45,7 +61,7 @@
 }
 
 .zakat-card__cta-text {
-  @apply text-sm md:text-base font-semibold;
+  @apply text-[12px] md:text-[13px] font-semibold;
 }
 
 .zakat-card:hover .zakat-card__cta svg {

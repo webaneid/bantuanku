@@ -6,10 +6,11 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/hooks/useSettings";
 import { cn } from "@/lib/cn";
+import { useI18n } from "@/lib/i18n/provider";
 
 const navigation = [
   {
-    name: "Dashboard",
+    key: "dashboard",
     href: "/account",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,7 +19,7 @@ const navigation = [
     ),
   },
   {
-    name: "Riwayat Transaksi",
+    key: "transactions",
     href: "/account/transactions",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -27,7 +28,7 @@ const navigation = [
     ),
   },
   {
-    name: "Tabungan Qurban",
+    key: "qurbanSavings",
     href: "/account/qurban-savings",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,7 +37,16 @@ const navigation = [
     ),
   },
   {
-    name: "Profil",
+    key: "fundraiser",
+    href: "/account/fundraiser",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46" />
+      </svg>
+    ),
+  },
+  {
+    key: "profile",
     href: "/account/profile",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,7 +55,7 @@ const navigation = [
     ),
   },
   {
-    name: "Keluar",
+    key: "logout",
     href: "#",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,6 +75,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { user, logout, isHydrated } = useAuth();
   const { settings } = useSettings();
+  const { t } = useI18n();
 
   // Use logo from settings or fallback
   const logo = settings.organization_logo || '/logo.svg';
@@ -115,7 +126,7 @@ export default function DashboardLayout({
                 href="/"
                 className="text-sm text-gray-600 hover:text-gray-900 hidden sm:block"
               >
-                Kembali ke Beranda
+                {t("account.layout.backToHome")}
               </Link>
               {user ? (
                 <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold">
@@ -126,7 +137,7 @@ export default function DashboardLayout({
                   href="/login"
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
                 >
-                  Login
+                  {t("common.login")}
                 </Link>
               )}
             </div>
@@ -141,23 +152,24 @@ export default function DashboardLayout({
             <nav className="flex-1 px-4 py-6 space-y-1">
               {navigation.map((item) => {
                 const isActive = pathname === item.href;
+                const label = t(`account.layout.nav.${item.key}`);
 
                 if (item.isLogout) {
                   return (
                     <button
-                      key={item.name}
+                      key={item.key}
                       onClick={logout}
                       className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-danger-700 hover:bg-danger-50"
                     >
                       {item.icon}
-                      {item.name}
+                      {label}
                     </button>
                   );
                 }
 
                 return (
                   <Link
-                    key={item.name}
+                    key={item.key}
                     href={item.href}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors",
@@ -167,7 +179,7 @@ export default function DashboardLayout({
                     )}
                   >
                     {item.icon}
-                    {item.name}
+                    {label}
                   </Link>
                 );
               })}

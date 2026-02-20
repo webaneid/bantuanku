@@ -4,7 +4,8 @@ import { useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import QurbanPackageForm, { QurbanPackageFormData } from "@/components/QurbanPackageForm";
-import { toast } from "react-hot-toast";
+import { useState } from "react";
+import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
 
 export default function EditQurbanPackagePage() {
@@ -12,6 +13,13 @@ export default function EditQurbanPackagePage() {
   const params = useParams();
   const queryClient = useQueryClient();
   const packageId = params.id as string;
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
+  const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   // Fetch existing package data
   const { data: packageData, isLoading } = useQuery({
@@ -33,17 +41,38 @@ export default function EditQurbanPackagePage() {
         imageUrl: data.imageUrl || null,
         isFeatured: data.isFeatured,
         periods: data.periods,
+        // SEO fields
+        metaTitle: data.metaTitle || null,
+        metaDescription: data.metaDescription || null,
+        focusKeyphrase: data.focusKeyphrase || null,
+        canonicalUrl: data.canonicalUrl || null,
+        noIndex: data.noIndex || false,
+        noFollow: data.noFollow || false,
+        ogTitle: data.ogTitle || null,
+        ogDescription: data.ogDescription || null,
+        ogImageUrl: data.ogImageUrl || null,
+        seoScore: data.seoScore || 0,
       };
       return api.patch(`/admin/qurban/packages/${packageId}`, payload);
     },
     onSuccess: () => {
-      toast.success("Paket qurban berhasil diperbarui!");
       queryClient.invalidateQueries({ queryKey: ["qurban-packages"] });
       queryClient.invalidateQueries({ queryKey: ["qurban-package", packageId] });
-      router.push("/dashboard/qurban/packages");
+      setRedirectAfterFeedback(true);
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Paket qurban berhasil diperbarui!",
+      });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal memperbarui paket qurban");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: error.response?.data?.message || "Gagal memperbarui paket qurban",
+      });
     },
   });
 
@@ -75,12 +104,29 @@ export default function EditQurbanPackagePage() {
     maxSlots: packageData.maxSlots || undefined,
     imageUrl: packageData.imageUrl,
     isFeatured: packageData.isFeatured,
+    // SEO fields
+    metaTitle: packageData.metaTitle || "",
+    metaDescription: packageData.metaDescription || "",
+    focusKeyphrase: packageData.focusKeyphrase || "",
+    canonicalUrl: packageData.canonicalUrl || "",
+    noIndex: Boolean(packageData.noIndex),
+    noFollow: Boolean(packageData.noFollow),
+    ogTitle: packageData.ogTitle || "",
+    ogDescription: packageData.ogDescription || "",
+    ogImageUrl: packageData.ogImageUrl || "",
+    seoScore: packageData.seoScore || 0,
     periods: packageData.periods?.map((p: any) => ({
       periodId: p.periodId,
       periodName: p.periodName,
       price: p.price,
       stock: p.stock,
       isAvailable: p.isAvailable ?? true,
+      executionDateOverride: p.executionDateOverride
+        ? new Date(p.executionDateOverride).toISOString().split("T")[0]
+        : "",
+      executionTimeNote: p.executionTimeNote || "",
+      executionLocation: p.executionLocation || "",
+      executionNotes: p.executionNotes || "",
     })) || [],
   } : undefined;
 
@@ -132,6 +178,20 @@ export default function EditQurbanPackagePage() {
           </button>
         </div>
       </div>
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => {
+          setFeedback((prev) => ({ ...prev, open: false }));
+          if (redirectAfterFeedback) {
+            setRedirectAfterFeedback(false);
+            router.push("/dashboard/qurban/packages");
+          }
+        }}
+      />
     </div>
   );
 }

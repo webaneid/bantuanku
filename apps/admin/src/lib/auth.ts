@@ -7,6 +7,7 @@ interface User {
   email: string;
   name: string;
   roles: string[];
+  isDeveloper?: boolean;
 }
 
 interface AuthState {

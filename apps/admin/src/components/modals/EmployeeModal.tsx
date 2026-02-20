@@ -34,6 +34,7 @@ type Employee = {
   // Bank accounts - new system
   bankAccounts?: BankAccountValue[];
 
+  userId?: string | null;
   isActive: boolean;
   createdAt: string;
 };
@@ -88,6 +89,8 @@ export default function EmployeeModal({
 
   // State untuk track perubahan bank accounts dari user
   const [bankAccountsFormData, setBankAccountsFormData] = useState<BankAccountValue[]>([]);
+
+  const [activatePassword, setActivatePassword] = useState("");
 
   const [feedback, setFeedback] = useState<{
     open: boolean;
@@ -162,6 +165,46 @@ export default function EmployeeModal({
     },
   });
 
+  const activateUserMutation = useMutation({
+    mutationFn: (payload: { email: string; password: string; roleSlug: string }) =>
+      api.post(`/admin/employees/${employee?.id}/activate-user`, payload),
+    onSuccess: () => {
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Akun employee berhasil diaktifkan",
+        message: "Employee sekarang bisa login ke dashboard.",
+        next: () => onSuccess(),
+      });
+      setActivatePassword("");
+    },
+    onError: (error: any) => {
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal mengaktifkan akun",
+        message: error.response?.data?.message || "Terjadi kesalahan. Coba lagi.",
+      });
+    },
+  });
+
+  const handleActivateUser = () => {
+    if (!activatePassword || activatePassword.length < 8) {
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Password tidak valid",
+        message: "Password minimal 8 karakter.",
+      });
+      return;
+    }
+    activateUserMutation.mutate({
+      email: employee?.email || "",
+      password: activatePassword,
+      roleSlug: "employee",
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -178,12 +221,18 @@ export default function EmployeeModal({
     // Normalize contact data
     const normalizedContact = normalizeContactData(contactData);
 
+    const { password, ...restFormData } = formData as any;
     const payload: any = {
-      ...formData,
+      ...restFormData,
       ...normalizedContact,
       ...addressFormData,
       bankAccounts: bankAccountsFormData,
     };
+
+    // Only send password if filled (edit mode, change password)
+    if (employee && password) {
+      payload.password = password;
+    }
 
     if (employee) {
       updateMutation.mutate(payload);
@@ -279,6 +328,65 @@ export default function EmployeeModal({
                 required={false}
               />
             </div>
+
+            {/* Akun Login - only on edit */}
+            {employee && !isViewMode && (
+              employee.userId ? (
+                <div className="form-section">
+                  <h3 className="form-section-title">Change Password</h3>
+
+                  <div className="form-group">
+                    <label className="form-label">Password Baru</label>
+                    <input
+                      type="password"
+                      value={(formData as any).password || ""}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value } as any)}
+                      className="form-input"
+                      placeholder="Kosongkan jika tidak ingin mengubah"
+                      minLength={8}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Kosongkan jika tidak ingin mengubah password
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="form-section">
+                  <h3 className="form-section-title">Aktifkan Akun Employee</h3>
+
+                  <div className="form-group">
+                    <label className="form-label">Email</label>
+                    <input
+                      type="text"
+                      value={employee.email || ""}
+                      disabled
+                      className="form-input bg-gray-100"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Password</label>
+                    <input
+                      type="password"
+                      value={activatePassword}
+                      onChange={(e) => setActivatePassword(e.target.value)}
+                      className="form-input"
+                      placeholder="Minimal 8 karakter"
+                      minLength={8}
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleActivateUser}
+                    disabled={activateUserMutation.isPending}
+                  >
+                    {activateUserMutation.isPending ? "Mengaktifkan..." : "Aktifkan Akun Employee"}
+                  </button>
+                </div>
+              )
+            )}
           </form>
         </div>
 

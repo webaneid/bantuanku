@@ -28,6 +28,8 @@ const updateUserSchema = z.object({
 
 usersAdmin.get("/", async (c) => {
   const db = c.get("db");
+  const currentUser = c.get("user");
+  const canSeeDeveloperUsers = Boolean(currentUser?.isDeveloper);
   const page = parseInt(c.req.query("page") || "1");
   const limit = parseInt(c.req.query("limit") || "10");
   const search = c.req.query("search");
@@ -35,6 +37,9 @@ usersAdmin.get("/", async (c) => {
   const offset = (page - 1) * limit;
 
   const conditions = [];
+  if (!canSeeDeveloperUsers) {
+    conditions.push(eq(users.isDeveloper, false));
+  }
   if (search) {
     conditions.push(like(users.name, `%${search}%`));
   }
@@ -121,6 +126,7 @@ usersAdmin.post("/", zValidator("json", createUserSchema), async (c) => {
 
 usersAdmin.get("/:id", async (c) => {
   const db = c.get("db");
+  const currentUser = c.get("user");
   const id = c.req.param("id");
 
   const user = await db.query.users.findFirst({
@@ -135,10 +141,15 @@ usersAdmin.get("/:id", async (c) => {
       emailVerifiedAt: true,
       lastLoginAt: true,
       createdAt: true,
+      isDeveloper: true,
     },
   });
 
   if (!user) {
+    return error(c, "User not found", 404);
+  }
+
+  if (user.isDeveloper && !currentUser?.isDeveloper) {
     return error(c, "User not found", 404);
   }
 
@@ -155,12 +166,17 @@ usersAdmin.patch("/:id", zValidator("json", updateUserSchema), async (c) => {
   const id = c.req.param("id");
   const body = c.req.valid("json");
   const db = c.get("db");
+  const currentUser = c.get("user");
 
   const user = await db.query.users.findFirst({
     where: eq(users.id, id),
   });
 
   if (!user) {
+    return error(c, "User not found", 404);
+  }
+
+  if (user.isDeveloper && !currentUser?.isDeveloper) {
     return error(c, "User not found", 404);
   }
 
@@ -192,6 +208,10 @@ usersAdmin.delete("/:id", async (c) => {
     return error(c, "User not found", 404);
   }
 
+  if (user.isDeveloper && !currentUser?.isDeveloper) {
+    return error(c, "User not found", 404);
+  }
+
   await db.delete(users).where(eq(users.id, id));
 
   return success(c, null, "User deleted");
@@ -200,6 +220,7 @@ usersAdmin.delete("/:id", async (c) => {
 usersAdmin.patch("/:id/roles", async (c) => {
   const db = c.get("db");
   const id = c.req.param("id");
+  const currentUser = c.get("user");
   const body = await c.req.json();
 
   const { roleIds } = body;
@@ -213,6 +234,10 @@ usersAdmin.patch("/:id/roles", async (c) => {
   });
 
   if (!user) {
+    return error(c, "User not found", 404);
+  }
+
+  if (user.isDeveloper && !currentUser?.isDeveloper) {
     return error(c, "User not found", 404);
   }
 
@@ -236,6 +261,7 @@ const changePasswordSchema = z.object({
 usersAdmin.put("/:id/password", zValidator("json", changePasswordSchema), async (c) => {
   const db = c.get("db");
   const id = c.req.param("id");
+  const currentUser = c.get("user");
   const body = c.req.valid("json");
 
   const user = await db.query.users.findFirst({
@@ -243,6 +269,10 @@ usersAdmin.put("/:id/password", zValidator("json", changePasswordSchema), async 
   });
 
   if (!user) {
+    return error(c, "User not found", 404);
+  }
+
+  if (user.isDeveloper && !currentUser?.isDeveloper) {
     return error(c, "User not found", 404);
   }
 

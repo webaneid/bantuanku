@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import api from '@/lib/api';
 import { formatRupiahFull } from '@/lib/format';
 import { cn } from '@/lib/cn';
+import { useI18n } from '@/lib/i18n/provider';
 
 interface Transaction {
   id: string;
@@ -19,25 +20,26 @@ interface Transaction {
   createdAt: string;
 }
 
-const statusConfig = {
-  pending: { label: 'Menunggu Pembayaran', color: 'bg-warning-50 text-warning-700 border-warning-200' },
-  processing: { label: 'Diproses', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  paid: { label: 'Berhasil', color: 'bg-success-50 text-success-700 border-success-200' },
-  cancelled: { label: 'Dibatalkan', color: 'bg-danger-50 text-danger-700 border-danger-200' },
-};
-
-const productTypeLabel = {
-  campaign: 'Donasi',
-  zakat: 'Zakat',
-  qurban: 'Qurban',
-};
-
 export default function TransactionsPage() {
   const router = useRouter();
   const { user, isHydrated } = useAuth();
+  const { t, locale } = useI18n();
+  const localeTag = locale === 'id' ? 'id-ID' : 'en-US';
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
+  const statusConfig = {
+    pending: { label: t('account.transactions.status.pending'), color: 'bg-warning-50 text-warning-700 border-warning-200' },
+    processing: { label: t('account.transactions.status.processing'), color: 'bg-blue-50 text-blue-700 border-blue-200' },
+    paid: { label: t('account.transactions.status.paid'), color: 'bg-success-50 text-success-700 border-success-200' },
+    cancelled: { label: t('account.transactions.status.cancelled'), color: 'bg-danger-50 text-danger-700 border-danger-200' },
+  };
+
+  const productTypeLabel = {
+    campaign: t('account.transactions.productType.campaign'),
+    zakat: t('account.transactions.productType.zakat'),
+    qurban: t('account.transactions.productType.qurban'),
+  };
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -51,6 +53,7 @@ export default function TransactionsPage() {
 
   const loadTransactions = async () => {
     try {
+      setIsLoading(true);
       const params = new URLSearchParams();
       if (filter !== 'all') {
         params.append('status', filter);
@@ -61,7 +64,19 @@ export default function TransactionsPage() {
       if (response.data.success) {
         setTransactions(response.data.data);
       }
-    } catch (error) {
+    } catch (error: any) {
+      const status = error?.response?.status;
+      const code = error?.code;
+
+      if (status === 401) {
+        router.push('/login');
+        return;
+      }
+
+      if (code === 'ECONNABORTED' || code === 'ERR_CANCELED') {
+        return;
+      }
+
       console.error('Error loading transactions:', error);
     } finally {
       setIsLoading(false);
@@ -80,8 +95,8 @@ export default function TransactionsPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Riwayat Transaksi</h1>
-          <p className="text-gray-600 mt-1">Lihat semua transaksi Anda</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('account.transactions.title')}</h1>
+          <p className="text-gray-600 mt-1">{t('account.transactions.subtitle')}</p>
         </div>
       </div>
 
@@ -96,7 +111,7 @@ export default function TransactionsPage() {
               : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
           )}
         >
-          Semua
+          {t('account.transactions.filter.all')}
         </button>
         <button
           onClick={() => setFilter('pending')}
@@ -107,7 +122,7 @@ export default function TransactionsPage() {
               : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
           )}
         >
-          Menunggu
+          {t('account.transactions.filter.pending')}
         </button>
         <button
           onClick={() => setFilter('processing')}
@@ -118,7 +133,7 @@ export default function TransactionsPage() {
               : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
           )}
         >
-          Diproses
+          {t('account.transactions.filter.processing')}
         </button>
         <button
           onClick={() => setFilter('paid')}
@@ -129,7 +144,7 @@ export default function TransactionsPage() {
               : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
           )}
         >
-          Berhasil
+          {t('account.transactions.filter.paid')}
         </button>
       </div>
 
@@ -141,14 +156,14 @@ export default function TransactionsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <h3 className="text-base font-medium text-gray-900 mb-2">Belum Ada Transaksi</h3>
+          <h3 className="text-base font-medium text-gray-900 mb-2">{t('account.transactions.empty.title')}</h3>
           <p className="text-sm text-gray-500 mb-6">
-            {filter === 'all' ? 'Mulai berbagi kebaikan dengan berdonasi sekarang' : 'Tidak ada transaksi dengan status ini'}
+            {filter === 'all' ? t('account.transactions.empty.allDesc') : t('account.transactions.empty.filteredDesc')}
           </p>
           {filter === 'all' && (
             <Link href="/">
               <button className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
-                Mulai Berdonasi
+                {t('account.transactions.empty.startDonating')}
               </button>
             </Link>
           )}
@@ -160,13 +175,13 @@ export default function TransactionsPage() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>No. Transaksi</th>
-                  <th>Produk</th>
-                  <th>Tipe</th>
-                  <th>Nominal</th>
-                  <th>Status</th>
-                  <th>Tanggal</th>
-                  <th>Aksi</th>
+                  <th>{t('account.transactions.table.transactionNumber')}</th>
+                  <th>{t('account.transactions.table.product')}</th>
+                  <th>{t('account.transactions.table.type')}</th>
+                  <th>{t('account.transactions.table.amount')}</th>
+                  <th>{t('account.transactions.table.status')}</th>
+                  <th>{t('account.transactions.table.date')}</th>
+                  <th>{t('account.transactions.table.action')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -196,7 +211,7 @@ export default function TransactionsPage() {
                         </span>
                       </td>
                       <td className="text-gray-600 text-sm">
-                        {new Date(transaction.createdAt).toLocaleDateString('id-ID', {
+                        {new Date(transaction.createdAt).toLocaleDateString(localeTag, {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
@@ -205,7 +220,7 @@ export default function TransactionsPage() {
                       <td>
                         <div className="table-actions">
                           <Link href={`/invoice/${transaction.id}`}>
-                            <button className="action-btn action-view" title="Lihat Detail">
+                            <button className="action-btn action-view" title={t('account.transactions.table.viewDetail')}>
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -240,19 +255,19 @@ export default function TransactionsPage() {
                   </div>
 
                   <div className="table-card-row">
-                    <span className="table-card-row-label">Tipe</span>
+                    <span className="table-card-row-label">{t('account.transactions.table.typeLabel')}</span>
                     <span className="table-card-row-value">{productLabel}</span>
                   </div>
 
                   <div className="table-card-row">
-                    <span className="table-card-row-label">Nominal</span>
+                    <span className="table-card-row-label">{t('account.transactions.table.amountLabel')}</span>
                     <span className="table-card-row-value mono">{formatRupiahFull(transaction.totalAmount)}</span>
                   </div>
 
                   <div className="table-card-row">
-                    <span className="table-card-row-label">Tanggal</span>
+                    <span className="table-card-row-label">{t('account.transactions.table.dateLabel')}</span>
                     <span className="table-card-row-value">
-                      {new Date(transaction.createdAt).toLocaleDateString('id-ID', {
+                      {new Date(transaction.createdAt).toLocaleDateString(localeTag, {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric',
@@ -262,7 +277,7 @@ export default function TransactionsPage() {
 
                   <div className="table-card-footer">
                     <Link href={`/invoice/${transaction.id}`}>
-                      <button className="action-btn action-view" title="Lihat Detail">
+                      <button className="action-btn action-view" title={t('account.transactions.table.viewDetail')}>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />

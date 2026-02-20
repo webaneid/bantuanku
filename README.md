@@ -1,71 +1,119 @@
 # Bantuanku - Donation Platform
 
-Platform donasi online yang komprehensif untuk mengelola campaign, donasi, zakat, dan penyaluran dana.
+Platform donasi online yang komprehensif untuk mengelola campaign, donasi, zakat, qurban, tabungan qurban, dan penyaluran dana.
+
+## Developed by Webane Indonesia
+
+Aplikasi ini dibuat dan dikembangkan oleh **[Webane Indonesia](https://webane.com)** — penyedia solusi digital kreatif yang berbasis di Indonesia. Webane Indonesia adalah creative digital squad yang menghadirkan layanan komprehensif meliputi **Web Design**, **Web-based App Development**, **Branding**, **Graphic Design**, **Social Media Management**, **Copywriting**, dan **Course**. Dengan prinsip **Fast & Unique**, **High Quality**, dan **Affordable**, Webane Indonesia merancang solusi digital yang inovatif dan terpersonalisasi untuk mendorong pertumbuhan bisnis klien.
+
+📧 [salam@webane.com](mailto:salam@webane.com) · 🌐 [webane.com](https://webane.com)
 
 ## Tech Stack
 
-- **Runtime**: Cloudflare Workers
-- **Framework**: Hono
-- **Database**: PostgreSQL (Neon)
-- **ORM**: Drizzle
-- **Language**: TypeScript
-- **Email**: Resend
-- **Payment**: Midtrans, Xendit
+| Layer | Technology |
+|-------|-----------|
+| **Runtime** | Node.js (dev via tsx), target: Cloudflare Workers |
+| **API Framework** | Hono |
+| **Frontend** | Next.js 15 (admin), Next.js 14 (web) |
+| **UI** | React 19 (admin), React 18 (web), TailwindCSS 3 |
+| **Database** | PostgreSQL (Neon) |
+| **ORM** | Drizzle |
+| **Language** | TypeScript |
+| **Auth** | JWT (jose), bcryptjs |
+| **Email** | Resend |
+| **Payment** | Flip, iPaymu, Midtrans, Xendit, Manual, QRIS |
+| **Storage** | Google Cloud Storage, local uploads fallback |
+| **Image** | Sharp |
+| **WhatsApp** | Custom AI bot, GoWA integration |
+| **State** | Zustand (admin v5, web v4) |
 
 ## Project Structure
 
 ```
-bantuanku/
+bantuanku/                        # npm workspaces monorepo
 ├── apps/
-│   └── api/              # Hono API (Cloudflare Workers)
+│   ├── api/                      # @bantuanku/api  — Hono API (port 50245)
+│   │   ├── src/
+│   │   │   ├── routes/           # 22 public + 41 admin route modules
+│   │   │   ├── services/         # 16 service modules (payment, whatsapp, ledger, etc)
+│   │   │   ├── middleware/       # auth, db, cache, ratelimit, security, compression, coordinator-filter
+│   │   │   ├── lib/              # jwt, password, response, gcs, image-processor, contact-helpers
+│   │   │   └── utils/            # timezone, bank-balance
+│   │   └── server-node.ts        # Node.js dev entry point
+│   ├── admin/                    # @bantuanku/admin — Next.js 15 admin panel (port 3001)
+│   │   └── src/
+│   │       ├── app/dashboard/    # 18 dashboard modules
+│   │       ├── components/       # CampaignForm, MediaLibrary, SEOPanel, Sidebar, etc
+│   │       └── lib/              # api, auth, format, url-registry, category-utils
+│   └── web/                      # @bantuanku/web  — Next.js 14 public website (port 3002)
+│       └── src/
+│           ├── app/              # program, zakat, qurban, checkout, account, invoice, etc
+│           ├── components/       # Atomic Design: atoms/molecules/organisms/templates
+│           ├── services/         # 10 service modules (campaigns, zakat, qurban, settings, etc)
+│           └── lib/              # api, auth, format, seo, i18n, timezone
 ├── packages/
-│   ├── db/              # Database schema & seed
-│   └── shared/          # Shared utilities
-└── docs/                # Documentation
+│   ├── db/                       # @bantuanku/db — Drizzle ORM schemas + migrations
+│   │   ├── src/schema/           # 49 schema files
+│   │   └── migrations/           # 96 SQL migration files
+│   └── shared/                   # @bantuanku/shared — constants + validators (Zod)
+└── docs/                         # Documentation
 ```
 
 ## Features
 
-### Phase 1 - Foundation/MVP
+### Phase 1 — Foundation/MVP
 - ✅ Authentication (register, login, JWT)
-- ✅ RBAC (Role-Based Access Control)
-- ✅ Campaign CRUD
-- ✅ Donation flow
+- ✅ RBAC (super_admin, admin_finance, admin_campaign, program_coordinator, employee, mitra)
+- ✅ Campaign CRUD with SEO fields
+- ✅ Universal transaction flow (campaign, zakat, qurban)
 - ✅ Admin dashboard
 
-### Phase 2 - Payment & Finance
-- ✅ Payment gateway integration (Midtrans, Xendit, Manual)
-- ✅ Invoice generation
-- ✅ Double-entry ledger
-- ✅ Disbursement management
+### Phase 2 — Payment & Finance
+- ✅ Payment gateway integration (Flip, iPaymu, Midtrans, Xendit, Manual)
+- ✅ QRIS generation
+- ✅ Invoice generation (PDF via jsPDF + html2canvas)
+- ✅ Double-entry ledger (Chart of Accounts, Journal Entries, Ledger Lines)
+- ✅ Unified disbursement management (campaign, zakat, qurban, operational, vendor, revenue_share)
+- ✅ Revenue sharing (amil, developer, fundraiser, mitra splits)
 
-### Phase 3 - Features Enhancement
-- ✅ Zakat calculator (6 types)
-- ✅ Email notifications
+### Phase 3 — Features Enhancement
+- ✅ Zakat system (types, periods, distributions, calculator configs)
+- ✅ Qurban system (periods, packages, shared groups, orders, savings, executions)
+- ✅ Tabungan Qurban (savings with installments, reminders, conversions)
+- ✅ Mitra (partner organizations) management
+- ✅ Fundraiser referral system with commission
+- ✅ Email notifications (Resend)
+- ✅ WhatsApp AI bot & notifications (GoWA)
 - ✅ Search & filter with autocomplete
-- ✅ Export functionality (CSV)
-- ✅ Donor dashboard
-- ✅ Static pages
+- ✅ Export functionality (CSV, XLSX)
+- ✅ Donor dashboard & donatur management
+- ✅ Static pages CMS
+- ✅ Media library (GCS + local fallback, image processing via Sharp)
+- ✅ Indonesia address system (provinsi → kabupaten → kecamatan → kelurahan)
+- ✅ i18n (multi-language support)
 
-### Phase 4 - Admin Features & Reporting
-- ✅ Advanced reports (donations, campaigns, finance)
+### Phase 4 — Admin Features & Reporting
+- ✅ Advanced reports (16 report sub-modules)
 - ✅ Analytics dashboard
-- ✅ Settings management
+- ✅ Settings management (10 settings sub-modules)
 - ✅ Audit logs
+- ✅ Activity reports for disbursements
+- ✅ Vendor, employee, mustahiq management
 
-### Phase 5 - Optimization & Security
+### Phase 5 — Optimization & Security
 - ✅ Rate limiting
-- ✅ Caching
-- ✅ Security headers
-- ✅ Input validation
+- ✅ Response caching
+- ✅ Security headers (CSP, HSTS, X-Frame-Options, etc.)
+- ✅ Input validation (Zod)
 - ✅ Compression
+- ✅ SEO (dynamic sitemaps, meta tags, OG tags, canonical URLs)
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- npm/pnpm
+- npm
 - PostgreSQL database (Neon recommended)
 
 ### Installation
@@ -79,9 +127,14 @@ cd packages/db
 npm run db:push
 npm run db:seed
 
-# Start development server
-cd ../../apps/api
+# Start all dev servers
+cd ../..
 npm run dev
+
+# Or start individually:
+npm run dev:api     # API at http://127.0.0.1:50245
+npm run dev:admin   # Admin at http://localhost:3001
+npm run dev:web     # Web at http://localhost:3002
 ```
 
 ### Environment Variables
@@ -94,228 +147,164 @@ DATABASE_URL=postgresql://user:password@host/database
 
 # JWT
 JWT_SECRET=your-secret-key-here
-JWT_EXPIRES_IN=7d
+JWT_EXPIRES_IN=15m
+
+# URLs
+API_URL=http://127.0.0.1:50245
+FRONTEND_URL=http://localhost:3002
+ADMIN_URL=http://localhost:3001
 
 # Email
 RESEND_API_KEY=re_xxx
 FROM_EMAIL=noreply@bantuanku.org
 
-# Payment Gateways
-MIDTRANS_SERVER_KEY=xxx
-MIDTRANS_CLIENT_KEY=xxx
-XENDIT_SECRET_KEY=xxx
-
 # Environment
 ENVIRONMENT=development
 ```
 
-## API Endpoints
+Create `.env.local` in `apps/admin` and `apps/web`:
 
-### Public Endpoints
+```env
+NEXT_PUBLIC_API_URL=http://localhost:50245/v1
+```
 
-#### Authentication
-- `POST /v1/auth/register` - Register new user
-- `POST /v1/auth/login` - Login user
-- `POST /v1/auth/refresh` - Refresh token
-- `GET /v1/auth/me` - Get current user
+## API Routes
 
-#### Campaigns
-- `GET /v1/campaigns` - List campaigns
-- `GET /v1/campaigns/:slug` - Get campaign detail
-- `GET /v1/campaigns/:id/updates` - Get campaign updates
+### Public Routes (22 modules)
 
-#### Donations
-- `POST /v1/donations` - Create donation
-- `GET /v1/donations/:id` - Get donation detail
-- `GET /v1/donations/check/:referenceId` - Check donation status
+| Route | Module |
+|-------|--------|
+| `/v1/auth` | Authentication (register, login, refresh, me) |
+| `/v1/campaigns` | Campaign listing & detail |
+| `/v1/categories` | Campaign categories |
+| `/v1/pillars` | Campaign pillars |
+| `/v1/donatur` | Donatur management |
+| `/v1/payments` | Payment methods & webhooks |
+| `/v1/transactions` | Universal transactions (campaign, zakat, qurban) |
+| `/v1/qurban` | Qurban packages, orders, savings |
+| `/v1/account` | Donor dashboard (donations, stats, invoices) |
+| `/v1/pages` | Static pages |
+| `/v1/settings` | Public settings |
+| `/v1/search` | Search campaigns & donations |
+| `/v1/autocomplete` | Autocomplete suggestions |
+| `/v1/public-stats` | Public statistics |
+| `/v1/address` | Indonesia address lookup |
+| `/v1/activity-reports` | Public activity reports |
+| `/v1/indonesia` | Indonesia region data |
+| `/v1/zakat` | Zakat calculator & configs |
+| `/v1/fundraisers` | Fundraiser profiles & referrals |
+| `/v1/mitra` | Mitra (partner) public profiles |
+| `/v1/whatsapp` | WhatsApp webhook |
 
-#### Payments
-- `GET /v1/payments/methods` - List payment methods
-- `POST /v1/payments/create` - Create payment
-- `POST /v1/payments/:gateway/webhook` - Payment webhook
+### Admin Routes (41 modules under `/v1/admin`)
 
-#### Zakat
-- `GET /v1/zakat/config` - Get zakat config
-- `POST /v1/zakat/calculate/income` - Calculate income zakat
-- `POST /v1/zakat/calculate/maal` - Calculate wealth zakat
-- `POST /v1/zakat/calculate/gold` - Calculate gold zakat
-- `POST /v1/zakat/calculate/trade` - Calculate trade zakat
-- `POST /v1/zakat/calculate/fitrah` - Calculate fitrah zakat
-- `POST /v1/zakat/calculate/fidyah` - Calculate fidyah
+All require authentication. Staff-only routes blocked for `mitra` role.
 
-#### Search
-- `GET /v1/search?q=keyword&type=all|campaigns|donations|users`
-- `GET /v1/search/campaigns` - Advanced campaign search
-- `GET /v1/search/donations` - Advanced donation search
-
-#### Autocomplete
-- `GET /v1/autocomplete/campaigns?q=keyword`
-- `GET /v1/autocomplete/categories?q=keyword`
-- `GET /v1/autocomplete/pillars`
-- `GET /v1/autocomplete/payment-status`
-
-### Authenticated Endpoints
-
-#### Account (Donor Dashboard)
-- `GET /v1/account/donations` - My donations
-- `GET /v1/account/donations/:id` - Donation detail
-- `GET /v1/account/donations/:id/invoice` - Download invoice
-- `GET /v1/account/stats` - Donation statistics
-- `GET /v1/account/zakat-history` - Zakat history
-- `GET /v1/account/notifications` - Notifications
-
-### Admin Endpoints
-
-All admin endpoints require authentication and appropriate role.
-
-#### Dashboard
-- `GET /v1/admin/dashboard/stats` - Dashboard statistics
-
-#### Campaigns Management
-- `GET /v1/admin/campaigns` - List campaigns
-- `POST /v1/admin/campaigns` - Create campaign
-- `GET /v1/admin/campaigns/:id` - Get campaign
-- `PATCH /v1/admin/campaigns/:id` - Update campaign
-- `DELETE /v1/admin/campaigns/:id` - Delete campaign
-- `PATCH /v1/admin/campaigns/:id/status` - Update status
-- `POST /v1/admin/campaigns/:id/updates` - Post update
-
-#### Donations Management
-- `GET /v1/admin/donations` - List donations
-- `GET /v1/admin/donations/:id` - Get donation detail
-
-#### Users Management
-- `GET /v1/admin/users` - List users
-- `POST /v1/admin/users` - Create user
-- `GET /v1/admin/users/:id` - Get user
-- `PATCH /v1/admin/users/:id` - Update user
-- `DELETE /v1/admin/users/:id` - Delete user
-
-#### Roles Management
-- `GET /v1/admin/roles` - List roles
-- `POST /v1/admin/roles` - Create role
-- `GET /v1/admin/roles/:id` - Get role
-- `PATCH /v1/admin/roles/:id` - Update role
-- `DELETE /v1/admin/roles/:id` - Delete role
-
-#### Finance
-- `GET /v1/admin/finance/balance-sheet` - Balance sheet
-- `GET /v1/admin/finance/income-statement` - Income statement
-- `GET /v1/admin/finance/cash-flow` - Cash flow
-- `GET /v1/admin/finance/ledger` - Ledger entries
-
-#### Disbursements
-- `GET /v1/admin/disbursements` - List disbursements
-- `POST /v1/admin/disbursements` - Create disbursement
-- `GET /v1/admin/disbursements/:id` - Get disbursement
-- `PATCH /v1/admin/disbursements/:id/status` - Update status
-
-#### Reports
-- `GET /v1/admin/reports/donations-summary` - Donation summary
-- `GET /v1/admin/reports/campaigns-performance` - Campaign performance
-- `GET /v1/admin/reports/financial-statement` - Financial statement
-- `GET /v1/admin/reports/disbursements-summary` - Disbursement summary
-- `GET /v1/admin/reports/donor-analytics` - Donor analytics
-
-#### Analytics
-- `GET /v1/admin/analytics/overview` - Analytics overview
-- `GET /v1/admin/analytics/conversion` - Conversion rates
-- `GET /v1/admin/analytics/growth` - Growth metrics
-
-#### Export
-- `GET /v1/admin/export/campaigns` - Export campaigns (CSV)
-- `GET /v1/admin/export/donations` - Export donations (CSV)
-- `GET /v1/admin/export/disbursements` - Export disbursements (CSV)
-- `GET /v1/admin/export/users` - Export users (CSV)
-- `GET /v1/admin/export/ledger` - Export ledger (CSV)
-
-#### Settings
-- `GET /v1/admin/settings` - List settings
-- `GET /v1/admin/settings/:key` - Get setting
-- `PATCH /v1/admin/settings/:key` - Update setting
-- `POST /v1/admin/settings` - Create setting
-- `DELETE /v1/admin/settings/:key` - Delete setting
-
-#### Audit Logs
-- `GET /v1/admin/audit` - List audit logs
-- `GET /v1/admin/audit/stats` - Audit statistics
+| Route | Module |
+|-------|--------|
+| `/dashboard` | Dashboard statistics |
+| `/campaigns` | Campaign CRUD (mitra accessible) |
+| `/categories` | Category management (mitra accessible) |
+| `/pillars` | Pillar management (mitra accessible) |
+| `/donatur` | Donatur management |
+| `/users` | User CRUD |
+| `/roles` | Role & permission management |
+| `/finance` | Balance sheet, income statement, cash flow |
+| `/ledger` | Ledger entries & journal management |
+| `/coa` | Chart of Accounts CRUD |
+| `/evidences` | Payment evidences |
+| `/export` | CSV/XLSX export (campaigns, donations, disbursements, users, ledger) |
+| `/reports` | 16 report types |
+| `/analytics` | Overview, conversion, growth metrics |
+| `/settings` | Application settings management |
+| `/audit` | Audit logs & statistics |
+| `/media` | Media library (upload, manage) — mitra accessible |
+| `/vendors` | Vendor management |
+| `/employees` | Employee management |
+| `/mustahiqs` | Mustahiq (zakat recipient) management |
+| `/activity-reports` | Activity report management (mitra accessible) |
+| `/donations` | Donation management |
+| `/zakat/types` | Zakat type management (mitra accessible) |
+| `/zakat/periods` | Zakat period management (mitra accessible) |
+| `/zakat/donations` | Zakat donation management |
+| `/zakat/distributions` | Zakat distribution management |
+| `/zakat/stats` | Zakat statistics |
+| `/qurban` | Qurban period, package, order management (mitra accessible) |
+| `/qurban/savings` | Qurban savings management (mitra accessible) |
+| `/address` | Address lookup (mitra accessible) |
+| `/disbursements` | Unified disbursement management (mitra accessible) |
+| `/ledger/categories` | Ledger category management |
+| `/bank-accounts` | Bank account management |
+| `/fundraisers` | Fundraiser management |
+| `/mitra` | Mitra management (mitra accessible) |
+| `/transactions` | Transaction management |
+| `/revenue-shares` | Revenue share management |
+| `/whatsapp` | WhatsApp notification settings |
+| `/pages` | Static pages CMS (super_admin, admin_campaign only) |
 
 ## Security Features
 
 - Rate limiting (15 req/15min for auth, 60 req/min for API)
-- JWT authentication
-- RBAC (Role-Based Access Control)
+- JWT authentication (jose library)
+- RBAC with 6 roles (super_admin, admin_finance, admin_campaign, program_coordinator, employee, mitra)
 - Security headers (CSP, HSTS, X-Frame-Options, etc.)
-- Input sanitization
+- Input validation (Zod schemas)
 - SQL injection protection via Drizzle ORM
-- Password hashing with bcrypt
+- Password hashing with bcryptjs
 
-## Performance Optimizations
+## Database Schema (49 tables)
 
-- Response caching
-- Gzip compression
-- Database query optimization
-- Cloudflare Workers edge computing
+### Users & Auth
+`users`, `roles`, `permissions`, `user_roles`, `role_permissions`
 
-## Database Schema
+### Donatur
+`donatur` (with Indonesia address references)
 
-### Core Tables
-- `users` - User accounts
-- `roles` - User roles
-- `permissions` - Role permissions
-- `user_roles` - User-role mapping
-- `role_permissions` - Role-permission mapping
+### Campaigns
+`campaigns` (with SEO & mitra/coordinator refs), `campaign_updates`, `categories`, `pillars`
 
-### Campaign Tables
-- `categories` - Campaign categories
-- `campaigns` - Campaigns
-- `campaign_updates` - Campaign updates
+### Transactions & Payments
+`transactions` (polymorphic: campaign/zakat/qurban), `transaction_payments`, `payment_gateways`, `payment_gateway_credentials`, `payment_methods`
 
-### Transaction Tables
-- `donations` - Donations
-- `payments` - Payment transactions
-- `invoices` - Donation invoices
-- `payment_gateways` - Gateway configurations
-- `payment_methods` - Payment methods
-- `payment_gateway_credentials` - Gateway credentials
+### Accounting & Finance
+`chart_of_accounts` (hierarchical COA), `ledger_entries` (journal entries), `ledger_lines` (debit/credit), `ledger` (legacy disbursement), `disbursements` (unified), `disbursement_activity_reports`, `bank_accounts`
 
-### Finance Tables
-- `ledger_accounts` - Chart of accounts
-- `ledger_entries` - Journal entries
-- `ledger_lines` - Journal lines
-- `disbursements` - Disbursements
-- `bank_accounts` - Bank accounts
+### Zakat
+`zakat_calculator_configs`, `zakat_calculation_logs`, `zakat_types`, `zakat_periods`, `zakat_distributions`
 
-### Other Tables
-- `zakat_configs` - Zakat configurations
-- `pages` - Static pages
-- `settings` - Application settings
-- `audit_logs` - Audit trail
-- `notifications` - User notifications
-- `media` - Media files
+### Qurban
+`qurban_periods`, `qurban_packages`, `qurban_package_periods`, `qurban_shared_groups`, `qurban_orders` (legacy), `qurban_savings`, `qurban_savings_transactions`, `qurban_savings_conversions`, `qurban_executions`, `qurban_payments`
+
+### Indonesia Address
+`indonesia_provinces`, `indonesia_regencies`, `indonesia_districts`, `indonesia_villages`
+
+### HR & Partners
+`employees`, `vendors`, `mustahiqs`, `fundraisers`, `fundraiser_referrals`, `mitra`
+
+### Revenue
+`revenue_shares` (amil/developer/fundraiser/mitra/program splits)
+
+### CMS & System
+`pages`, `media`, `settings`, `audit_logs`, `notifications`, `activity_reports`, `evidences`
 
 ## Deployment
 
-### Cloudflare Workers
+### Production (Cloudflare Workers)
 
 ```bash
-# Build for production
 npm run build
-
-# Deploy to Cloudflare Workers
 npm run deploy
 ```
 
 ### Environment Variables (Production)
 
-Set these in Cloudflare Workers dashboard:
-
 ```
 DATABASE_URL=postgresql://...
 JWT_SECRET=...
 RESEND_API_KEY=...
-MIDTRANS_SERVER_KEY=...
-XENDIT_SECRET_KEY=...
+API_URL=https://api.bantuanku.org
+FRONTEND_URL=https://bantuanku.org
+ADMIN_URL=https://admin.bantuanku.org
 ENVIRONMENT=production
 ```
 

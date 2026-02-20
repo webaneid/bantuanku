@@ -1,20 +1,29 @@
-import { drizzle as drizzleNeon } from "drizzle-orm/neon-http";
-import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/node-postgres";
 import pkg from "pg";
 const { Pool } = pkg;
 import * as schema from "./schema";
 
-export function createDb(databaseUrl: string) {
-  // Use local PostgreSQL for development (localhost)
-  if (databaseUrl.includes("localhost") || databaseUrl.includes("127.0.0.1")) {
-    const pool = new Pool({ connectionString: databaseUrl });
-    return drizzlePg(pool, { schema });
-  }
-
-  // Use Neon HTTP for production (Cloudflare Workers)
-  const sql = neon(databaseUrl);
-  return drizzleNeon(sql, { schema });
+// Helper whose return type carries the full schema info
+function initDb(databaseUrl: string) {
+  const pool = new Pool({ connectionString: databaseUrl });
+  return { db: drizzle(pool, { schema }), pool };
 }
 
-export type Database = ReturnType<typeof createDb>;
+type DbInstance = ReturnType<typeof initDb>;
+
+let instance: DbInstance | null = null;
+
+export function createDb(databaseUrl: string) {
+  if (instance) return instance.db;
+  instance = initDb(databaseUrl);
+  return instance.db;
+}
+
+export function closeDb() {
+  if (instance) {
+    instance.pool.end();
+    instance = null;
+  }
+}
+
+export type Database = ReturnType<typeof initDb>["db"];

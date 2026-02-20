@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useI18n } from '@/lib/i18n/provider';
+import { getImageUrlByVariant } from '@/lib/image';
 
 interface Donation {
   id: string;
   donorName: string;
-  amount: number;
+  isAnonymous: boolean;
+  totalAmount: number;
   message: string | null;
   paidAt: string | null;
-  createdAt: string;
 }
 
 interface ActivityReport {
@@ -23,20 +25,26 @@ interface ActivityReport {
 interface CampaignTabsProps {
   campaignId: string;
   campaignDescription: string;
+  campaignVideoUrl?: string | null;
   donorCount: number;
+  coordinatorName?: string;
 }
 
 export default function CampaignTabs({
   campaignId,
   campaignDescription,
+  campaignVideoUrl,
   donorCount,
+  coordinatorName,
 }: CampaignTabsProps) {
+  const { t, locale } = useI18n();
   const [activeTab, setActiveTab] = useState<'detail' | 'updates' | 'donors' | 'partners'>('detail');
   const [donations, setDonations] = useState<Donation[]>([]);
   const [activityReports, setActivityReports] = useState<ActivityReport[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [donationsPage, setDonationsPage] = useState(1);
   const [donationsTotalPages, setDonationsTotalPages] = useState(1);
+  const localeTag = locale === 'id' ? 'id-ID' : 'en-US';
 
   // Fetch data when tabs are active
   useEffect(() => {
@@ -51,7 +59,7 @@ export default function CampaignTabs({
     setIsLoading(true);
     try {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
-      const response = await fetch(`${API_URL}/donations/campaign/${campaignId}?limit=20&page=${donationsPage}`);
+      const response = await fetch(`${API_URL}/campaigns/${campaignId}/donors?limit=20&page=${donationsPage}`);
       const data = await response.json();
 
       if (data.success && Array.isArray(data.data)) {
@@ -85,9 +93,10 @@ export default function CampaignTabs({
     }
   };
 
-  const formatFullDate = (dateString: string) => {
+  const formatFullDate = (dateString?: string | null) => {
+    if (!dateString) return '-';
     const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
+    return date.toLocaleDateString(localeTag, {
       day: 'numeric',
       month: 'long',
       year: 'numeric'
@@ -96,7 +105,7 @@ export default function CampaignTabs({
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
+    return date.toLocaleDateString(localeTag, {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -104,15 +113,31 @@ export default function CampaignTabs({
     });
   };
 
-  const getImageUrl = (imageUrl: string) => {
-    if (!imageUrl) return '';
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      return imageUrl;
+  const getYoutubeEmbedUrl = (url?: string | null): string | null => {
+    if (!url) return null;
+    try {
+      const parsed = new URL(url);
+      const host = parsed.hostname.toLowerCase();
+      let videoId = "";
+
+      if (host.includes("youtu.be")) {
+        videoId = parsed.pathname.replace("/", "").split("/")[0] || "";
+      } else if (host.includes("youtube.com")) {
+        videoId =
+          parsed.searchParams.get("v") ||
+          parsed.pathname.split("/embed/")[1]?.split("/")[0] ||
+          parsed.pathname.split("/shorts/")[1]?.split("/")[0] ||
+          "";
+      }
+
+      if (!videoId) return null;
+      return `https://www.youtube.com/embed/${videoId}`;
+    } catch {
+      return null;
     }
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
-    const baseUrl = API_URL.replace('/v1', '');
-    return `${baseUrl}${imageUrl}`;
   };
+
+  const youtubeEmbedUrl = getYoutubeEmbedUrl(campaignVideoUrl);
 
   return (
     <div className="bg-white rounded-lg shadow-sm">
@@ -127,7 +152,7 @@ export default function CampaignTabs({
                 : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
             }`}
           >
-            Detail
+            {t('campaignDetail.tabs.detail')}
           </button>
           <button
             onClick={() => setActiveTab('updates')}
@@ -137,7 +162,7 @@ export default function CampaignTabs({
                 : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
             }`}
           >
-            Kabar Terbaru
+            {t('campaignDetail.tabs.updates')}
           </button>
           <button
             onClick={() => setActiveTab('donors')}
@@ -147,7 +172,7 @@ export default function CampaignTabs({
                 : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
             }`}
           >
-            Donatur
+            {t('campaignDetail.tabs.donors')}
             <span className="ml-2 px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded-full">
               {donorCount}
             </span>
@@ -160,7 +185,7 @@ export default function CampaignTabs({
                 : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
             }`}
           >
-            Mitra
+            {t('campaignDetail.tabs.partners')}
           </button>
         </nav>
       </div>
@@ -169,10 +194,36 @@ export default function CampaignTabs({
       <div className="p-6">
         {/* Detail Tab */}
         {activeTab === 'detail' && (
-          <div
-            className="prose prose-gray max-w-none"
-            dangerouslySetInnerHTML={{ __html: campaignDescription }}
-          />
+          <div className="space-y-6">
+            <div
+              className="prose prose-gray max-w-none"
+              dangerouslySetInnerHTML={{ __html: campaignDescription }}
+            />
+            {youtubeEmbedUrl && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-900">{t('campaignDetail.tabs.videoTitle')}</h3>
+                <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
+                  <iframe
+                    src={youtubeEmbedUrl}
+                    title={t('campaignDetail.tabs.videoTitle')}
+                    className="w-full h-full"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            )}
+            <div className="pt-4 border-t border-gray-100">
+              <p className="text-sm text-gray-600">
+                {t('campaignDetail.tabs.coordinatorLabel')}{" "}
+                <span className="font-medium text-gray-900">
+                  {coordinatorName || t('campaignDetail.tabs.coordinatorUnset')}
+                </span>
+              </p>
+            </div>
+          </div>
         )}
 
         {/* Updates Tab */}
@@ -181,7 +232,7 @@ export default function CampaignTabs({
             {isLoading ? (
               <div className="text-center py-12">
                 <div className="inline-block w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-gray-600 mt-4">Memuat kabar terbaru...</p>
+                <p className="text-gray-600 mt-4">{t('campaignDetail.tabs.loadingUpdates')}</p>
               </div>
             ) : activityReports.length === 0 ? (
               <div className="text-center py-12">
@@ -198,7 +249,7 @@ export default function CampaignTabs({
                     d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
                   />
                 </svg>
-                <p className="text-gray-600">Belum ada kabar terbaru</p>
+                <p className="text-gray-600">{t('campaignDetail.tabs.noUpdates')}</p>
               </div>
             ) : (
               <div className="space-y-8">
@@ -251,10 +302,10 @@ export default function CampaignTabs({
                                 key={imgIndex}
                                 className="relative aspect-video rounded-lg overflow-hidden bg-gray-100"
                               >
-                                <img
-                                  src={getImageUrl(imageUrl)}
-                                  alt={`${report.title} - Foto ${imgIndex + 1}`}
-                                  className="w-full h-full object-cover"
+                                  <img
+                                  src={getImageUrlByVariant(imageUrl, ['large', 'medium'])}
+                                  alt={t('campaignDetail.tabs.photoAlt', { title: report.title, number: imgIndex + 1 })}
+                                  className="w-full h-full object-contain bg-gray-100"
                                 />
                               </div>
                             ))}
@@ -275,7 +326,7 @@ export default function CampaignTabs({
             {isLoading ? (
               <div className="text-center py-12">
                 <div className="inline-block w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-gray-600 mt-4">Memuat data donatur...</p>
+                <p className="text-gray-600 mt-4">{t('campaignDetail.tabs.loadingDonors')}</p>
               </div>
             ) : donations.length === 0 ? (
               <div className="text-center py-12">
@@ -292,7 +343,7 @@ export default function CampaignTabs({
                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
                   />
                 </svg>
-                <p className="text-gray-600">Belum ada donatur</p>
+                <p className="text-gray-600">{t('campaignDetail.tabs.noDonors')}</p>
               </div>
             ) : (
               <>
@@ -323,10 +374,10 @@ export default function CampaignTabs({
                           </div>
                           <div className="flex-1">
                             <h4 className="text-gray-900 mb-1" style={{ fontSize: '15px', fontWeight: 600 }}>
-                              {donation.donorName}
+                              {donation.isAnonymous ? t('campaignDetail.tabs.anonymousDonor') : donation.donorName}
                             </h4>
                             <p className="text-gray-500" style={{ fontSize: '12px' }}>
-                              {formatFullDate(donation.paidAt || donation.createdAt)}
+                              {formatFullDate(donation.paidAt)}
                             </p>
                             {donation.message && (
                               <p className="text-gray-600 italic mt-2" style={{ fontSize: '15px', fontWeight: 400 }}>
@@ -339,9 +390,9 @@ export default function CampaignTabs({
 
                       {/* Right: Donation amount */}
                       <div className="flex-shrink-0 text-right ml-4">
-                        <div className="text-gray-500 mb-1" style={{ fontSize: '12px' }}>Donasi</div>
+                        <div className="text-gray-500 mb-1" style={{ fontSize: '12px' }}>{t('campaignDetail.tabs.donationLabel')}</div>
                         <div className="mono text-primary-600" style={{ fontSize: '15px', fontWeight: 600 }}>
-                          Rp {donation.amount.toLocaleString('id-ID')}
+                          Rp {donation.totalAmount.toLocaleString(localeTag)}
                         </div>
                       </div>
                     </div>
@@ -444,7 +495,7 @@ export default function CampaignTabs({
                 d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
               />
             </svg>
-            <p className="text-gray-600">Belum ada mitra</p>
+            <p className="text-gray-600">{t('campaignDetail.tabs.noPartners')}</p>
           </div>
         )}
       </div>

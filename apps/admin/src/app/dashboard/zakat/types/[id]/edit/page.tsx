@@ -4,7 +4,8 @@ import { useRouter, useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import ZakatTypeForm, { ZakatTypeFormData } from "@/components/ZakatTypeForm";
-import { toast } from "react-hot-toast";
+import { useState } from "react";
+import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
 
 export default function EditZakatTypePage() {
@@ -12,6 +13,13 @@ export default function EditZakatTypePage() {
   const params = useParams();
   const queryClient = useQueryClient();
   const zakatTypeId = params.id as string;
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
+  const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   // Fetch zakat type data
   const { data: zakatTypeData, isLoading } = useQuery({
@@ -32,6 +40,19 @@ export default function EditZakatTypePage() {
     hasCalculator: zakatTypeData.hasCalculator,
     isActive: zakatTypeData.isActive,
     displayOrder: zakatTypeData.displayOrder,
+    calculatorType: zakatTypeData.calculatorType || "",
+    fitrahAmount: zakatTypeData.fitrahAmount || "",
+    // SEO fields
+    metaTitle: zakatTypeData.metaTitle || "",
+    metaDescription: zakatTypeData.metaDescription || "",
+    focusKeyphrase: zakatTypeData.focusKeyphrase || "",
+    canonicalUrl: zakatTypeData.canonicalUrl || "",
+    noIndex: Boolean(zakatTypeData.noIndex),
+    noFollow: Boolean(zakatTypeData.noFollow),
+    ogTitle: zakatTypeData.ogTitle || "",
+    ogDescription: zakatTypeData.ogDescription || "",
+    ogImageUrl: zakatTypeData.ogImageUrl || "",
+    seoScore: zakatTypeData.seoScore || 0,
   } : undefined;
 
   const updateMutation = useMutation({
@@ -39,14 +60,24 @@ export default function EditZakatTypePage() {
       return api.put(`/admin/zakat/types/${zakatTypeId}`, data);
     },
     onSuccess: () => {
-      toast.success("Jenis zakat berhasil diperbarui!");
       queryClient.invalidateQueries({ queryKey: ["zakat-types-all"] });
       queryClient.invalidateQueries({ queryKey: ["zakat-types-active"] });
       queryClient.invalidateQueries({ queryKey: ["zakat-type", zakatTypeId] });
-      router.push("/dashboard/zakat/types");
+      setRedirectAfterFeedback(true);
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Jenis zakat berhasil diperbarui!",
+      });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal memperbarui jenis zakat");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: error.response?.data?.message || "Gagal memperbarui jenis zakat",
+      });
     },
   });
 
@@ -117,6 +148,20 @@ export default function EditZakatTypePage() {
           </button>
         </div>
       </div>
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => {
+          setFeedback((prev) => ({ ...prev, open: false }));
+          if (redirectAfterFeedback) {
+            setRedirectAfterFeedback(false);
+            router.push("/dashboard/zakat/types");
+          }
+        }}
+      />
     </div>
   );
 }

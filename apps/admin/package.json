@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
-    "start": "next start -p 3001",
+    "start": "next start -p 3002",
     "lint": "next lint"
   },
   "dependencies": {
@@ -19,6 +19,7 @@
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "idn-area-data": "^4.0.0",
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.469.0",
     "next": "^15.1.6",
     "react": "^19.0.0",
@@ -27,6 +28,7 @@
     "react-hot-toast": "^2.6.0",
     "recharts": "^2.15.0",
     "sonner": "^1.7.4",
+    "xlsx": "^0.18.5",
     "zod": "^3.24.1",
     "zustand": "^5.0.3"
   },

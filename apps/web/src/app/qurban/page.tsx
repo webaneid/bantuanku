@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Header, Footer } from '@/components/organisms';
 import { QurbanCard } from '@/components/organisms/QurbanCard/QurbanCard';
-import { fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrl, type QurbanPackage, type QurbanPeriod } from '@/services/qurban';
+import { fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrlByVariant, type QurbanPackage, type QurbanPeriod } from '@/services/qurban';
 import { fetchPublicSettings } from '@/services/settings';
+import { useI18n } from '@/lib/i18n/provider';
 
 function QurbanCardSkeleton() {
   return (
@@ -27,7 +29,16 @@ function QurbanCardSkeleton() {
 }
 
 // Helper function to map qurban package to QurbanCard props
-function mapQurbanPackageToCardProps(pkg: QurbanPackage) {
+function mapQurbanPackageToCardProps(
+  pkg: QurbanPackage,
+  organizationName: string,
+  popularBadgeLabel: string
+) {
+  const ownerName =
+    pkg.ownerType === "mitra" && pkg.ownerName
+      ? pkg.ownerName
+      : organizationName;
+
   return {
     id: pkg.packagePeriodId, // Use packagePeriodId as unique identifier
     slug: pkg.packagePeriodId, // Use packagePeriodId for routing
@@ -35,13 +46,14 @@ function mapQurbanPackageToCardProps(pkg: QurbanPackage) {
     category: pkg.animalType === 'cow' ? ('sapi' as const) : ('kambing' as const),
     packageType: pkg.packageType, // Add packageType for filtering
     price: pkg.price,
-    image: getQurbanImageUrl(pkg.imageUrl),
-    description: pkg.description || undefined,
-    badge: pkg.isFeatured ? 'Populer' : undefined,
+    image: getQurbanImageUrlByVariant(pkg.imageUrl, ['medium', 'thumbnail', 'large']),
+    badge: pkg.isFeatured ? popularBadgeLabel : undefined,
+    ownerName,
   };
 }
 
 export default function QurbanPage() {
+  const { t } = useI18n();
   const [periods, setPeriods] = useState<QurbanPeriod[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('');
   const [qurbanPackages, setQurbanPackages] = useState<any[]>([]);
@@ -49,16 +61,19 @@ export default function QurbanPage() {
   const [animalFilter, setAnimalFilter] = useState<'all' | 'sapi' | 'kambing'>('all');
 
   // Page settings state
-  const [pageTitle, setPageTitle] = useState("Paket Qurban");
-  const [pageDescription, setPageDescription] = useState("Wujudkan ibadah qurban Anda bersama kami dengan hewan berkualitas dan penyaluran yang amanah");
-  const [infoTitle, setInfoTitle] = useState("Informasi Penting");
-  const [infoItems, setInfoItems] = useState([
-    "Harga sudah termasuk hewan, pemotongan, dan pengemasan",
-    "Daging akan didistribusikan kepada yang berhak",
-    "Anda dapat memilih untuk menerima bagian daging atau disalurkan sepenuhnya",
-    "Penyembelihan dilakukan pada hari raya Idul Adha sesuai syariat",
-  ]);
+  const [pageTitle, setPageTitle] = useState("");
+  const [pageDescription, setPageDescription] = useState("");
+  const [infoTitle, setInfoTitle] = useState("");
+  const [infoItems, setInfoItems] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<'all' | 'individual' | 'shared'>('all');
+  const [organizationName, setOrganizationName] = useState("");
+
+  const defaultInfoItems = [
+    t('qurbanPage.defaults.infoItems.item1'),
+    t('qurbanPage.defaults.infoItems.item2'),
+    t('qurbanPage.defaults.infoItems.item3'),
+    t('qurbanPage.defaults.infoItems.item4'),
+  ];
 
   // Fetch periods on mount
   useEffect(() => {
@@ -66,11 +81,17 @@ export default function QurbanPage() {
       try {
         const periodsResponse = await fetchActivePeriods();
         const fetchedPeriods: QurbanPeriod[] = periodsResponse.data || [];
-        setPeriods(fetchedPeriods);
+        const sortedPeriods = [...fetchedPeriods].sort((a, b) => {
+          if (a.gregorianYear !== b.gregorianYear) {
+            return a.gregorianYear - b.gregorianYear;
+          }
+          return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        });
+        setPeriods(sortedPeriods);
 
-        // Set default to first (most recent) period
-        if (fetchedPeriods.length > 0) {
-          setSelectedPeriodId(fetchedPeriods[0].id);
+        // Set default to first (oldest year) period
+        if (sortedPeriods.length > 0) {
+          setSelectedPeriodId(sortedPeriods[0].id);
         }
       } catch (error) {
         console.error('Failed to fetch periods:', error);
@@ -85,6 +106,11 @@ export default function QurbanPage() {
     const loadSettings = async () => {
       try {
         const settings = await fetchPublicSettings();
+        setOrganizationName(
+          settings.organization_name ||
+            settings.site_name ||
+            t('qurbanPage.defaults.organizationName')
+        );
 
         if (settings.frontend_qurban_page) {
           const qurbanPage = JSON.parse(settings.frontend_qurban_page);
@@ -101,7 +127,7 @@ export default function QurbanPage() {
     };
 
     loadSettings();
-  }, []);
+  }, [t]);
 
   // Fetch packages when period changes
   useEffect(() => {
@@ -112,7 +138,13 @@ export default function QurbanPage() {
       try {
         const packagesResponse = await fetchPackagesByPeriod(selectedPeriodId);
         const packages: QurbanPackage[] = packagesResponse.data || [];
-        const mappedPackages = packages.map(mapQurbanPackageToCardProps);
+        const mappedPackages = packages.map((pkg) =>
+          mapQurbanPackageToCardProps(
+            pkg,
+            organizationName || t('qurbanPage.defaults.organizationName'),
+            t('qurbanPage.badges.popular')
+          )
+        );
         setQurbanPackages(mappedPackages);
       } catch (error) {
         console.error('Failed to fetch packages:', error);
@@ -123,7 +155,7 @@ export default function QurbanPage() {
     };
 
     loadPackages();
-  }, [selectedPeriodId]);
+  }, [selectedPeriodId, organizationName, t]);
 
   // Filter packages based on selected filters
   const filteredPackages = qurbanPackages.filter((pkg) => {
@@ -136,8 +168,6 @@ export default function QurbanPage() {
     return true;
   });
 
-  const selectedPeriod = periods.find(p => p.id === selectedPeriodId);
-
   return (
     <>
       <Header />
@@ -147,11 +177,19 @@ export default function QurbanPage() {
           <div className="container mx-auto px-4">
             <div className="text-center max-w-3xl mx-auto">
               <h1 className="section-title text-gray-900 mb-4">
-                {pageTitle}
+                {pageTitle || t('qurbanPage.defaults.title')}
               </h1>
               <p className="section-description text-gray-600">
-                {pageDescription}
+                {pageDescription || t('qurbanPage.defaults.description')}
               </p>
+              <div className="mt-5">
+                <Link
+                  href="/qurban/laporan"
+                  className="inline-flex items-center px-4 py-2 rounded-lg bg-amber-600 text-white font-medium hover:bg-amber-700 transition-colors"
+                >
+                  Lihat Laporan Qurban Publik
+                </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -162,8 +200,8 @@ export default function QurbanPage() {
           {/* Period Selector */}
           {periods.length > 1 && (
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pilih Periode
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('qurbanPage.filters.selectPeriod')}
               </label>
               <select
                 value={selectedPeriodId}
@@ -181,7 +219,7 @@ export default function QurbanPage() {
 
           {/* Filters */}
           <div className="mb-8 grid grid-cols-2 md:grid-cols-5 gap-3">
-            <button
+              <button
               onClick={() => {
                 setAnimalFilter('all');
                 setTypeFilter('all');
@@ -192,7 +230,7 @@ export default function QurbanPage() {
                   : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
               }`}
             >
-              Semua Paket
+              {t('qurbanPage.filters.allPackages')}
             </button>
             <button
               onClick={() => {
@@ -205,7 +243,7 @@ export default function QurbanPage() {
                   : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
               }`}
             >
-              Sapi
+              {t('qurbanPage.filters.cow')}
             </button>
             <button
               onClick={() => {
@@ -218,7 +256,7 @@ export default function QurbanPage() {
                   : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
               }`}
             >
-              Kambing
+              {t('qurbanPage.filters.goat')}
             </button>
             <button
               onClick={() => {
@@ -231,7 +269,7 @@ export default function QurbanPage() {
                   : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
               }`}
             >
-              Individu
+              {t('qurbanPage.filters.individual')}
             </button>
             <button
               onClick={() => {
@@ -244,7 +282,7 @@ export default function QurbanPage() {
                   : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
               }`}
             >
-              Patungan
+              {t('qurbanPage.filters.shared')}
             </button>
           </div>
 
@@ -263,10 +301,10 @@ export default function QurbanPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Belum Ada Paket Qurban
+                {t('qurbanPage.empty.title')}
               </h3>
               <p className="text-gray-600">
-                Paket qurban untuk periode ini akan segera tersedia.
+                {t('qurbanPage.empty.description')}
               </p>
             </div>
           ) : (
@@ -288,10 +326,10 @@ export default function QurbanPage() {
                 </svg>
                 <div className="flex-1">
                   <h4 className="section-title text-amber-900 mb-3">
-                    {infoTitle}
+                    {infoTitle || t('qurbanPage.defaults.infoTitle')}
                   </h4>
                   <ul className="!space-y-0 md:!space-y-2 !mb-0 !ml-0">
-                    {infoItems.map((item, index) => (
+                    {(infoItems.length > 0 ? infoItems : defaultInfoItems).map((item, index) => (
                       <li key={index} className="section-description text-amber-800">• {item}</li>
                     ))}
                   </ul>

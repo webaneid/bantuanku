@@ -39,6 +39,7 @@ export const authMiddleware = createMiddleware<{ Bindings: Env; Variables: Varia
       phone: payload.phone,
       whatsappNumber: payload.whatsappNumber,
       roles: payload.roles,
+      isDeveloper: Boolean(payload.isDeveloper),
     });
 
     await next();
@@ -61,6 +62,7 @@ export const optionalAuthMiddleware = createMiddleware<{ Bindings: Env; Variable
           phone: payload.phone,
           whatsappNumber: payload.whatsappNumber,
           roles: payload.roles,
+          isDeveloper: Boolean(payload.isDeveloper),
         });
       }
     }
@@ -92,6 +94,22 @@ export function requireRole(...roles: string[]) {
     await next();
   });
 }
+
+export const requireDeveloper = createMiddleware<{ Bindings: Env; Variables: Variables }>(
+  async (c, next) => {
+    const user = c.get("user");
+
+    if (!user) {
+      return error(c, "Unauthorized", 401);
+    }
+
+    if (!user.isDeveloper) {
+      return error(c, "Forbidden", 403);
+    }
+
+    await next();
+  }
+);
 
 // Aliases for convenience
 export const requireAuth = authMiddleware;

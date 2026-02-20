@@ -1,5 +1,7 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import {
   Header,
   Footer,
@@ -11,40 +13,182 @@ import {
   QurbanSection,
 } from '@/components/organisms';
 import { Button, ProgramBadge } from '@/components/atoms';
-import { fetchCampaigns, calculateDaysLeft, getImageUrl } from '@/services/campaigns';
+import { fetchCampaigns, calculateDaysLeft, getImageUrlByVariant } from '@/services/campaigns';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchPublicStats } from '@/services/stats';
 import { fetchCompleteAddress, formatCompleteAddress } from '@/services/address';
-import { fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrl } from '@/services/qurban';
+import { fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrlByVariant } from '@/services/qurban';
 import { fetchCategories } from '@/services/categories';
+import { fetchSeoSettings } from '@/lib/seo';
+import { normalizeLocale, translate } from '@/lib/i18n';
 
-// Default hero slides (fallback if settings not configured)
-const heroSlides: HeroSlide[] = [
-  {
-    id: '1',
-    title: 'Wujudkan Mimpi Pendidikan Anak Yatim',
-    description: 'Bersama kita bantu mereka meraih masa depan yang lebih cerah melalui pendidikan berkualitas',
-    image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1920&q=80',
-    ctaText: 'Mulai Berdonasi',
-    ctaLink: '/program/bantuan-pendidikan',
-  },
-  {
-    id: '2',
-    title: 'Tunaikan Zakat dengan Mudah & Aman',
-    description: 'Salurkan zakat fitrah dan zakat mal Anda kepada yang berhak dengan transparan',
-    image: 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=1920&q=80',
-    ctaText: 'Bayar Zakat',
-    ctaLink: '/zakat',
-  },
-  {
-    id: '3',
-    title: 'Qurban 1446 H - Berkah untuk Sesama',
-    description: 'Pesan hewan qurban berkualitas dan bagikan kebahagiaan di hari raya Idul Adha',
-    image: 'https://images.unsplash.com/photo-1568515045052-f9a854d70bfd?w=1920&q=80',
-    ctaText: 'Pesan Qurban',
-    ctaLink: '/qurban',
-  },
-];
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await fetchSeoSettings();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const toAbsoluteUrl = (url: string) =>
+    url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
+
+  // Parse seo_page_home setting (JSON)
+  let seo: Record<string, any> = {};
+  try {
+    if (settings.seo_page_home) {
+      seo = typeof settings.seo_page_home === 'string'
+        ? JSON.parse(settings.seo_page_home)
+        : settings.seo_page_home;
+    }
+  } catch {}
+
+  const siteName = settings.site_name || 'Bantuanku';
+  const siteTagline = settings.site_tagline || 'Platform Donasi Terpercaya';
+  const title = seo.metaTitle || `${siteName} - ${siteTagline}`;
+  const description = seo.metaDescription || settings.site_description || `Platform donasi online terpercaya untuk zakat, infaq, sedekah, qurban, dan wakaf.`;
+  const canonical = seo.canonicalUrl ? toAbsoluteUrl(seo.canonicalUrl) : appUrl;
+
+  const keywords = seo.focusKeyphrase
+    ? seo.focusKeyphrase.split(',').map((k: string) => k.trim())
+    : (settings.site_keywords ? settings.site_keywords.split(',').map((k: string) => k.trim()) : []);
+
+  const ogTitle = seo.ogTitle || title;
+  const ogDescription = seo.ogDescription || description;
+  const ogImageUrl = seo.ogImageUrl
+    ? toAbsoluteUrl(seo.ogImageUrl)
+    : (settings.og_image ? toAbsoluteUrl(settings.og_image) : undefined);
+
+  const noIndex = seo.noIndex === true || seo.noIndex === 'true';
+  const noFollow = seo.noFollow === true || seo.noFollow === 'true';
+
+  return {
+    title,
+    description,
+    keywords,
+    alternates: { canonical },
+    ...(noIndex || noFollow ? {
+      robots: { index: !noIndex, follow: !noFollow },
+    } : {}),
+    openGraph: {
+      type: 'website',
+      url: canonical,
+      title: ogTitle,
+      description: ogDescription,
+      siteName,
+      locale: 'id_ID',
+      ...(ogImageUrl ? {
+        images: [{ url: ogImageUrl, width: 1200, height: 630, alt: ogTitle }],
+      } : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: ogTitle,
+      description: ogDescription,
+      ...(ogImageUrl ? { images: [ogImageUrl] } : {}),
+    },
+  };
+}
+
+type TranslateFn = (key: string, params?: Record<string, string | number>) => string;
+
+function getDefaultHeroSlides(t: TranslateFn): HeroSlide[] {
+  return [
+    {
+      id: '1',
+      title: t('home.hero.slides.education.title'),
+      description: t('home.hero.slides.education.description'),
+      image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1920&q=80',
+      ctaText: t('home.hero.slides.education.cta'),
+      ctaLink: '/program/bantuan-pendidikan',
+    },
+    {
+      id: '2',
+      title: t('home.hero.slides.zakat.title'),
+      description: t('home.hero.slides.zakat.description'),
+      image: 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=1920&q=80',
+      ctaText: t('home.hero.slides.zakat.cta'),
+      ctaLink: '/zakat',
+    },
+    {
+      id: '3',
+      title: t('home.hero.slides.qurban.title'),
+      description: t('home.hero.slides.qurban.description'),
+      image: 'https://images.unsplash.com/photo-1568515045052-f9a854d70bfd?w=1920&q=80',
+      ctaText: t('home.hero.slides.qurban.cta'),
+      ctaLink: '/qurban',
+    },
+  ];
+}
+
+function getDefaultSections(t: TranslateFn) {
+  return {
+    featuredSectionData: {
+      title: t('home.featured.title'),
+      description: t('home.featured.description'),
+      limit: 6,
+      sortBy: 'urgent' as const,
+    },
+    programsSectionData: {
+      title: t('home.programs.title'),
+      description: t('home.programs.description'),
+      limit: 6,
+      sortBy: 'created_date' as const,
+    },
+    funfactSectionData: {
+      title: t('home.stats.title'),
+      description: t('home.stats.description'),
+      items: [
+        { id: '1', key: 'donors' as const, title: t('home.stats.items.donors.title'), description: t('home.stats.items.donors.description') },
+        { id: '2', key: 'campaigns' as const, title: t('home.stats.items.campaigns.title'), description: t('home.stats.items.campaigns.description') },
+        { id: '3', key: 'disbursed' as const, title: t('home.stats.items.disbursed.title'), description: t('home.stats.items.disbursed.description') },
+        { id: '4', key: 'partners' as const, title: t('home.stats.items.partners.title'), description: t('home.stats.items.partners.description') },
+      ],
+    },
+    whyChooseUsSectionData: {
+      title: t('home.whyChoose.title'),
+      description: t('home.whyChoose.description'),
+      items: [
+        {
+          id: '1',
+          icon: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+          iconBgColor: 'primary' as const,
+          title: t('home.whyChoose.items.trusted.title'),
+          description: t('home.whyChoose.items.trusted.description'),
+        },
+        {
+          id: '2',
+          icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+          iconBgColor: 'success' as const,
+          title: t('home.whyChoose.items.easy.title'),
+          description: t('home.whyChoose.items.easy.description'),
+        },
+        {
+          id: '3',
+          icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z',
+          iconBgColor: 'info' as const,
+          title: t('home.whyChoose.items.transparent.title'),
+          description: t('home.whyChoose.items.transparent.description'),
+        },
+      ],
+    },
+    ctaSectionData: {
+      title: t('home.cta.title'),
+      description: t('home.cta.description'),
+      buttons: [
+        {
+          text: t('home.cta.buttons.programs'),
+          url: '/program',
+          variant: 'primary' as const,
+        },
+        {
+          text: t('home.cta.buttons.about'),
+          url: '/tentang',
+          variant: 'outline' as const,
+        },
+      ],
+    },
+    qurbanSectionData: {
+      title: t('home.qurban.title'),
+      description: t('home.qurban.description'),
+    },
+  };
+}
 
 // Categories are fetched from database and used as-is
 // No hardcoded mapping needed
@@ -57,23 +201,23 @@ function mapQurbanPackageToCardProps(pkg: any) {
     name: pkg.name,
     category: pkg.animalType === 'cow' ? ('sapi' as const) : ('kambing' as const),
     price: pkg.price,
-    image: getQurbanImageUrl(pkg.imageUrl),
+    image: getQurbanImageUrlByVariant(pkg.imageUrl, ['medium', 'thumbnail', 'large']),
     description: pkg.description || undefined,
     badge: pkg.isFeatured ? 'Unggulan' : undefined,
   };
 }
 
 // Helper function to map campaign to ProgramCard props
-function mapCampaignToCardProps(campaign: any) {
+function mapCampaignToCardProps(campaign: any, defaultCategoryName: string) {
   // Use categoryName from API response (already enriched by backend)
-  const categoryName = campaign.categoryName || 'Program';
+  const categoryName = campaign.categoryName || defaultCategoryName;
 
   return {
     id: campaign.id,
     slug: campaign.slug,
     title: campaign.title,
     description: campaign.description,
-    image: getImageUrl(campaign.imageUrl),
+    image: getImageUrlByVariant(campaign.imageUrl, ['medium', 'thumbnail', 'large']),
     categoryName,
     currentAmount: campaign.collected || 0,
     targetAmount: campaign.goal || 0,
@@ -84,6 +228,20 @@ function mapCampaignToCardProps(campaign: any) {
 }
 
 export default async function HomePage() {
+  const locale = normalizeLocale(cookies().get('locale')?.value);
+  const localeTag = locale === 'id' ? 'id-ID' : 'en-US';
+  const t: TranslateFn = (key, params) => translate(locale, key, params);
+  const {
+    featuredSectionData: defaultFeaturedSectionData,
+    programsSectionData: defaultProgramsSectionData,
+    funfactSectionData: defaultFunfactSectionData,
+    whyChooseUsSectionData: defaultWhyChooseUsSectionData,
+    ctaSectionData: defaultCtaSectionData,
+    qurbanSectionData: defaultQurbanSectionData,
+  } = getDefaultSections(t);
+  const defaultProgramCategoryName = t('home.programs.defaultCategory');
+  const mapCampaign = (campaign: any) => mapCampaignToCardProps(campaign, defaultProgramCategoryName);
+
   // Fetch latest 6 campaigns from API
   let campaigns: any[] = [];
   let urgentCampaign: any = null;
@@ -119,7 +277,7 @@ export default async function HomePage() {
     totalDonors: 0,
     totalCampaigns: 0,
     totalDisbursed: 0,
-    totalPartners: 50,
+    totalPartners: 0,
   };
 
   try {
@@ -171,76 +329,13 @@ export default async function HomePage() {
   let serviceCategoriesData: any[] = [];
 
   // Fetch hero slides from settings
-  let heroSlidesData: HeroSlide[] = heroSlides; // Fallback to default
-  let featuredSectionData = {
-    title: "Program Unggulan & Mendesak",
-    description: "Program-program prioritas yang membutuhkan dukungan Anda",
-    limit: 6,
-    sortBy: "urgent" as const,
-  };
-  let programsSectionData = {
-    title: "Program Kami",
-    description: "Pilih program yang ingin Anda dukung",
-    limit: 6,
-    sortBy: "created_date" as const,
-  };
-  let funfactSectionData = {
-    title: "Kepercayaan Anda, Amanah Kami",
-    description: "Bersama mewujudkan kebaikan untuk Indonesia",
-    items: [
-      { id: "1", key: "donors" as const, title: "Total Donatur", description: "Kepercayaan dari seluruh Indonesia" },
-      { id: "2", key: "campaigns" as const, title: "Program Aktif", description: "Tersebar di berbagai kategori" },
-      { id: "3", key: "disbursed" as const, title: "Dana Tersalurkan", description: "Manfaat nyata untuk masyarakat" },
-      { id: "4", key: "partners" as const, title: "Total Mitra", description: "Kolaborasi untuk dampak lebih luas" },
-    ],
-  };
-  let whyChooseUsSectionData = {
-    title: "Mengapa Memilih Bantuanku?",
-    description: "Platform donasi terpercaya dengan layanan terbaik",
-    items: [
-      {
-        id: "1",
-        icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
-        iconBgColor: "primary" as const,
-        title: "Terpercaya & Resmi",
-        description: "Berizin resmi dan diawasi oleh instansi berwenang dengan laporan keuangan yang transparan",
-      },
-      {
-        id: "2",
-        icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-        iconBgColor: "success" as const,
-        title: "Mudah & Cepat",
-        description: "Proses donasi yang simple dengan berbagai metode pembayaran yang aman dan terpercaya",
-      },
-      {
-        id: "3",
-        icon: "M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z",
-        iconBgColor: "info" as const,
-        title: "100% Transparan",
-        description: "Laporan donasi real-time dan dokumentasi lengkap penyaluran dana ke penerima manfaat",
-      },
-    ],
-  };
-  let ctaSectionData = {
-    title: "Mulai Berbagi Kebaikan Hari Ini",
-    description: "Setiap donasi Anda membawa harapan baru bagi mereka yang membutuhkan. Mari bersama wujudkan Indonesia yang lebih baik.",
-    buttons: [
-      {
-        text: "Lihat Semua Program",
-        url: "/program",
-        variant: "primary" as const,
-      },
-      {
-        text: "Tentang Kami",
-        url: "/tentang",
-        variant: "outline" as const,
-      },
-    ],
-  };
-  let qurbanSectionData = {
-    title: "Paket Qurban",
-    description: "Wujudkan ibadah qurban Anda bersama kami dengan hewan berkualitas dan penyaluran yang amanah",
-  };
+  let heroSlidesData: HeroSlide[] = getDefaultHeroSlides(t);
+  let featuredSectionData = defaultFeaturedSectionData;
+  let programsSectionData = defaultProgramsSectionData;
+  let funfactSectionData = defaultFunfactSectionData;
+  let whyChooseUsSectionData = defaultWhyChooseUsSectionData;
+  let ctaSectionData = defaultCtaSectionData;
+  let qurbanSectionData = defaultQurbanSectionData;
 
   let settings: any = {
     organization_logo: '/logo.svg',
@@ -335,8 +430,24 @@ export default async function HomePage() {
     console.error('Failed to fetch frontend settings:', error);
   }
 
+  // WebSite JSON-LD for homepage
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const webSiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: settings.site_name || 'Bantuanku',
+    url: appUrl,
+    description: settings.site_description || 'Platform donasi online terpercaya',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${appUrl}/program?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }} />
       <Header />
 
       <main className="flex-1">
@@ -367,7 +478,7 @@ export default async function HomePage() {
                 <FeaturedCarousel
                   campaigns={featuredAndUrgentCampaigns
                     .slice(0, featuredSectionData.limit)
-                    .map(mapCampaignToCardProps)
+                    .map(mapCampaign)
                   }
                 />
               </div>
@@ -391,28 +502,28 @@ export default async function HomePage() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 mb-8">
                   {campaigns.slice(0, Math.min(3, programsSectionData.limit)).map((campaign) => (
-                    <ProgramCard key={campaign.id} {...mapCampaignToCardProps(campaign, allCategoriesForLookup)} />
+                    <ProgramCard key={campaign.id} {...mapCampaign(campaign)} />
                   ))}
                 </div>
 
                 {campaigns.length > 3 && programsSectionData.limit > 3 && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
                     {campaigns.slice(3, programsSectionData.limit).map((campaign) => (
-                      <ProgramCard key={campaign.id} {...mapCampaignToCardProps(campaign, allCategoriesForLookup)} variant="compact" />
+                      <ProgramCard key={campaign.id} {...mapCampaign(campaign)} variant="compact" />
                     ))}
                   </div>
                 )}
               </>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500">Tidak ada program tersedia saat ini</p>
+                <p className="text-gray-500">{t('home.programs.empty')}</p>
               </div>
             )}
 
             <div className="text-center mt-12">
               <Link href="/program">
                 <Button size="lg" variant="outline">
-                  Lihat Semua Program
+                  {t('home.programs.viewAll')}
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M7 4l6 6-6 6"
@@ -456,15 +567,15 @@ export default async function HomePage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
               {funfactSectionData.items.map((item) => {
                 // Get stat value based on key
-                let statValue: string = '0+';
+                let statValue: string = t('home.stats.defaultValue');
                 if (item.key === 'donors') {
-                  statValue = `${stats.totalDonors.toLocaleString('id-ID')}+`;
+                  statValue = `${stats.totalDonors.toLocaleString(localeTag)}+`;
                 } else if (item.key === 'campaigns') {
-                  statValue = `${stats.totalCampaigns.toLocaleString('id-ID')}+`;
+                  statValue = `${stats.totalCampaigns.toLocaleString(localeTag)}+`;
                 } else if (item.key === 'disbursed') {
                   statValue = stats.totalDisbursed >= 1000000000
-                    ? `${Math.floor(stats.totalDisbursed / 1000000000)}M+`
-                    : `${Math.floor(stats.totalDisbursed / 1000000)}Jt+`;
+                    ? t('home.stats.disbursedBillion', { value: Math.floor(stats.totalDisbursed / 1000000000) })
+                    : t('home.stats.disbursedMillion', { value: Math.floor(stats.totalDisbursed / 1000000) });
                 } else if (item.key === 'partners') {
                   statValue = `${stats.totalPartners}+`;
                 }

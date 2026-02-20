@@ -5,7 +5,6 @@ import { users } from "./user";
 import { qurbanPeriods } from "./qurban-periods";
 import { qurbanPackages } from "./qurban-packages";
 import { qurbanPackagePeriods } from "./qurban-package-periods";
-import { qurbanOrders } from "./qurban-orders";
 
 export const qurbanSavings = pgTable("qurban_savings", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -37,10 +36,6 @@ export const qurbanSavings = pgTable("qurban_savings", {
   // Status
   status: text("status").default("active").notNull(), // active, paused, completed, converted, cancelled
 
-  // Conversion (ketika tabungan dikonversi jadi order)
-  convertedToOrderId: text("converted_to_order_id").references(() => qurbanOrders.id),
-  convertedAt: timestamp("converted_at", { precision: 3, mode: "date" }),
-
   notes: text("notes"),
   createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
@@ -65,15 +60,13 @@ export const qurbanSavingsRelations = relations(qurbanSavings, ({ one, many }) =
     fields: [qurbanSavings.targetPackageId],
     references: [qurbanPackages.id],
   }),
-  convertedOrder: one(qurbanOrders, {
-    fields: [qurbanSavings.convertedToOrderId],
-    references: [qurbanOrders.id],
-  }),
   transactions: many(qurbanSavingsTransactions),
+  conversions: many(qurbanSavingsConversions),
 }));
 
 // Import after declaration
 import { qurbanSavingsTransactions } from "./qurban-savings-transactions";
+import { qurbanSavingsConversions } from "./qurban-savings-conversions";
 
 export type QurbanSaving = typeof qurbanSavings.$inferSelect;
 export type NewQurbanSaving = typeof qurbanSavings.$inferInsert;

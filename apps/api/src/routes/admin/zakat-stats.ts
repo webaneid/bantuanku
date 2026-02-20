@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { zakatDonations, zakatDistributions, zakatTypes, eq, and, sql } from "@bantuanku/db";
+import { zakatDistributions, zakatTypes, eq, and, sql, transactions } from "@bantuanku/db";
 import type { Env, Variables } from "../../types";
 import { requireAuth } from "../../middleware/auth";
 
@@ -17,20 +17,25 @@ app.get("/", async (c) => {
   const zakatTypeId = c.req.query("zakatTypeId");
 
   // Build conditions for filtering by zakatTypeId if provided
-  const donationConditions = zakatTypeId ? eq(zakatDonations.zakatTypeId, zakatTypeId) : undefined;
+  const donationConditions = zakatTypeId
+    ? and(
+        eq(transactions.productType, "zakat"),
+        eq(transactions.productId, zakatTypeId)
+      )
+    : eq(transactions.productType, "zakat");
   const distributionConditions = zakatTypeId ? eq(zakatDistributions.zakatTypeId, zakatTypeId) : undefined;
 
-  // Get total donations statistics
+  // Get total donations statistics from transactions table
   const donationsStats = await db
     .select({
       totalDonations: sql<number>`COUNT(*)`,
-      totalAmount: sql<number>`COALESCE(SUM(${zakatDonations.amount}), 0)`,
-      paidAmount: sql<number>`COALESCE(SUM(CASE WHEN ${zakatDonations.paymentStatus} = 'success' THEN ${zakatDonations.amount} ELSE 0 END), 0)`,
-      pendingAmount: sql<number>`COALESCE(SUM(CASE WHEN ${zakatDonations.paymentStatus} = 'pending' THEN ${zakatDonations.amount} ELSE 0 END), 0)`,
-      paidCount: sql<number>`COUNT(CASE WHEN ${zakatDonations.paymentStatus} = 'success' THEN 1 END)`,
-      pendingCount: sql<number>`COUNT(CASE WHEN ${zakatDonations.paymentStatus} = 'pending' THEN 1 END)`,
+      totalAmount: sql<number>`COALESCE(SUM(${transactions.totalAmount}), 0)`,
+      paidAmount: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.paymentStatus} = 'paid' THEN ${transactions.totalAmount} ELSE 0 END), 0)`,
+      pendingAmount: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.paymentStatus} = 'pending' THEN ${transactions.totalAmount} ELSE 0 END), 0)`,
+      paidCount: sql<number>`COUNT(CASE WHEN ${transactions.paymentStatus} = 'paid' THEN 1 END)`,
+      pendingCount: sql<number>`COUNT(CASE WHEN ${transactions.paymentStatus} = 'pending' THEN 1 END)`,
     })
-    .from(zakatDonations)
+    .from(transactions)
     .where(donationConditions);
 
   // Get total distributions statistics
@@ -66,16 +71,16 @@ app.get("/", async (c) => {
   // Get donations by zakat type
   const donationsByType = await db
     .select({
-      zakatTypeId: zakatDonations.zakatTypeId,
+      zakatTypeId: transactions.productId,
       zakatTypeName: zakatTypes.name,
       zakatTypeSlug: zakatTypes.slug,
-      totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${zakatDonations.paymentStatus} = 'success' THEN ${zakatDonations.amount} ELSE 0 END), 0)`,
-      count: sql<number>`COUNT(CASE WHEN ${zakatDonations.paymentStatus} = 'success' THEN 1 END)`,
+      totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.paymentStatus} = 'paid' THEN ${transactions.totalAmount} ELSE 0 END), 0)`,
+      count: sql<number>`COUNT(CASE WHEN ${transactions.paymentStatus} = 'paid' THEN 1 END)`,
     })
-    .from(zakatDonations)
-    .leftJoin(zakatTypes, eq(zakatDonations.zakatTypeId, zakatTypes.id))
+    .from(transactions)
+    .leftJoin(zakatTypes, eq(transactions.productId, zakatTypes.id))
     .where(donationConditions)
-    .groupBy(zakatDonations.zakatTypeId, zakatTypes.name, zakatTypes.slug);
+    .groupBy(transactions.productId, zakatTypes.name, zakatTypes.slug);
 
   // Get distributions by zakat type
   const distributionsByType = await db
@@ -151,13 +156,16 @@ app.get("/recent-donations", async (c) => {
 
   const recentDonations = await db
     .select({
-      donation: zakatDonations,
+      donation: transactions,
       zakatType: zakatTypes,
     })
-    .from(zakatDonations)
-    .leftJoin(zakatTypes, eq(zakatDonations.zakatTypeId, zakatTypes.id))
-    .where(eq(zakatDonations.paymentStatus, "success"))
-    .orderBy(sql`${zakatDonations.createdAt} DESC`)
+    .from(transactions)
+    .leftJoin(zakatTypes, eq(transactions.productId, zakatTypes.id))
+    .where(and(
+      eq(transactions.productType, "zakat"),
+      eq(transactions.paymentStatus, "paid")
+    ))
+    .orderBy(sql`${transactions.createdAt} DESC`)
     .limit(limit);
 
   const enrichedData = recentDonations.map((row) => ({

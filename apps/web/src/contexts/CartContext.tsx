@@ -28,8 +28,11 @@ export interface CartItem {
   // Zakat-specific fields
   zakatData?: {
     zakatType: string; // fitrah, maal, profesi, pertanian, peternakan
+    zakatTypeId?: string;
+    zakatTypeSlug?: string;
     quantity?: number;
     pricePerUnit?: number;
+    periodId?: string;
   };
   // Fidyah-specific fields
   fidyahData?: {

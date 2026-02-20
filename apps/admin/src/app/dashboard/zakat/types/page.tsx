@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { toast } from "react-hot-toast";
+import FeedbackDialog from "@/components/FeedbackDialog";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth";
 
 interface ZakatType {
   id: string;
@@ -22,6 +24,32 @@ interface ZakatType {
 
 export default function ZakatTypesPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isMitra = user?.roles?.length === 1 && user?.roles?.includes("mitra");
+
+  // Fetch mitra record to check approval status
+  const { data: mitraRecord } = useQuery({
+    queryKey: ["my-mitra-record"],
+    queryFn: async () => {
+      const response = await api.get("/admin/mitra/me");
+      return response.data?.data || null;
+    },
+    enabled: !!isMitra,
+  });
+  const isMitraApproved = mitraRecord?.status === "verified";
+
+  const canEdit = (!user?.roles?.includes("admin_finance") || user?.roles?.includes("super_admin")) || (isMitra && isMitraApproved);
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const showFeedback = (type: "success" | "error", title: string, message: string) => {
+    setFeedback({ open: true, type, title, message });
+  };
 
   // Fetch zakat types
   const { data: typesData, isLoading } = useQuery({
@@ -43,17 +71,21 @@ export default function ZakatTypesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["zakat-types-all"] });
       queryClient.invalidateQueries({ queryKey: ["zakat-types-active"] });
-      toast.success("Jenis zakat berhasil dihapus!");
+      showFeedback("success", "Berhasil", "Jenis zakat berhasil dihapus!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Gagal menghapus jenis zakat");
+      showFeedback("error", "Gagal", error.response?.data?.error || "Gagal menghapus jenis zakat");
     },
   });
 
   const handleDelete = (id: string, name: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus jenis zakat "${name}"?`)) {
-      deleteMutation.mutate(id);
-    }
+    setDeleteTarget({ id, name });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteMutation.mutate(deleteTarget.id);
+    setDeleteTarget(null);
   };
 
   if (isLoading) {
@@ -82,10 +114,12 @@ export default function ZakatTypesPage() {
             <Link href="/dashboard/zakat" className="btn btn-secondary btn-md">
               Kembali ke Dashboard
             </Link>
-            <Link href="/dashboard/zakat/types/create" className="btn btn-primary btn-md">
-              <PlusIcon className="h-5 w-5" />
-              Tambah Jenis Zakat
-            </Link>
+            {canEdit && (
+              <Link href="/dashboard/zakat/types/create" className="btn btn-primary btn-md">
+                <PlusIcon className="h-5 w-5" />
+                Tambah Jenis Zakat
+              </Link>
+            )}
           </div>
         </div>
 
@@ -132,40 +166,84 @@ export default function ZakatTypesPage() {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{type.description}</p>
                         <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                           <span>Slug: {type.slug}</span>
                           <span>Urutan: {type.displayOrder}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/dashboard/zakat/types/${type.id}/edit`}
-                        className="btn btn-sm btn-secondary"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                        Edit
-                      </Link>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger"
-                        onClick={() => handleDelete(type.id, type.name)}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                        Hapus
-                      </button>
-                    </div>
+                    {canEdit && (
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/dashboard/zakat/types/${type.id}/edit`}
+                          className="btn btn-sm btn-secondary"
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                          Edit
+                        </Link>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDelete(type.id, type.name)}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                          Hapus
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
             </div>
           ) : (
             <div className="text-center py-12 text-gray-500">
-              Belum ada jenis zakat. Klik tombol "Tambah Jenis Zakat" untuk menambahkan.
+              {isMitra
+                ? "Anda belum membuat jenis zakat. Klik tombol \"Tambah Jenis Zakat\" untuk menambahkan."
+                : "Belum ada jenis zakat. Klik tombol \"Tambah Jenis Zakat\" untuk menambahkan."}
             </div>
           )}
         </div>
       </div>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Hapus Jenis Zakat</h2>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-700">
+                Apakah Anda yakin ingin menghapus jenis zakat "{deleteTarget.name}"?
+              </p>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleteMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-md"
+                onClick={handleConfirmDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+      />
     </main>
   );
 }

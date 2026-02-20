@@ -1,16 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import api from "@/lib/api";
-import { toast } from "react-hot-toast";
+import FeedbackDialog from "@/components/FeedbackDialog";
+import SEOPanel, { type SEOData } from "@/components/SEOPanel";
 
 interface Category {
   id: string;
   name: string;
   slug: string;
   description: string | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  focusKeyphrase?: string | null;
+  canonicalUrl?: string | null;
+  noIndex?: boolean | null;
+  noFollow?: boolean | null;
+  ogTitle?: string | null;
+  ogDescription?: string | null;
+  ogImageUrl?: string | null;
+  seoScore?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,6 +31,34 @@ export default function CategoriesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({ name: "", description: "" });
+  const [seoValues, setSeoValues] = useState<Partial<SEOData>>({
+    focusKeyphrase: "",
+    metaTitle: "",
+    metaDescription: "",
+    canonicalUrl: "",
+    noIndex: false,
+    noFollow: false,
+    ogTitle: "",
+    ogDescription: "",
+    ogImageUrl: "",
+    seoScore: 0,
+  });
+
+  const handleSEOChange = useCallback((data: Partial<SEOData>) => {
+    setSeoValues(data);
+  }, []);
+
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const showFeedback = (type: "success" | "error", title: string, message: string) => {
+    setFeedback({ open: true, type, title, message });
+  };
 
   // Fetch categories
   const { data: categoriesData, isLoading } = useQuery({
@@ -32,31 +71,31 @@ export default function CategoriesPage() {
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; description: string }) => {
+    mutationFn: async (data: Record<string, any>) => {
       return api.post("/admin/categories", data);
     },
     onSuccess: () => {
-      toast.success("Kategori berhasil dibuat!");
+      showFeedback("success", "Berhasil", "Kategori berhasil dibuat!");
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal membuat kategori");
+      showFeedback("error", "Gagal", error.response?.data?.message || "Gagal membuat kategori");
     },
   });
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { name: string; description: string } }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, any> }) => {
       return api.put(`/admin/categories/${id}`, data);
     },
     onSuccess: () => {
-      toast.success("Kategori berhasil diperbarui!");
+      showFeedback("success", "Berhasil", "Kategori berhasil diperbarui!");
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       closeModal();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal memperbarui kategori");
+      showFeedback("error", "Gagal", error.response?.data?.message || "Gagal memperbarui kategori");
     },
   });
 
@@ -66,17 +105,29 @@ export default function CategoriesPage() {
       return api.delete(`/admin/categories/${id}`);
     },
     onSuccess: () => {
-      toast.success("Kategori berhasil dihapus!");
+      showFeedback("success", "Berhasil", "Kategori berhasil dihapus!");
       queryClient.invalidateQueries({ queryKey: ["categories"] });
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal menghapus kategori");
+      showFeedback("error", "Gagal", error.response?.data?.message || "Gagal menghapus kategori");
     },
   });
 
   const openCreateModal = () => {
     setEditingCategory(null);
     setFormData({ name: "", description: "" });
+    setSeoValues({
+      focusKeyphrase: "",
+      metaTitle: "",
+      metaDescription: "",
+      canonicalUrl: "",
+      noIndex: false,
+      noFollow: false,
+      ogTitle: "",
+      ogDescription: "",
+      ogImageUrl: "",
+      seoScore: 0,
+    });
     setIsModalOpen(true);
   };
 
@@ -86,6 +137,18 @@ export default function CategoriesPage() {
       name: category.name,
       description: category.description || "",
     });
+    setSeoValues({
+      focusKeyphrase: category.focusKeyphrase || "",
+      metaTitle: category.metaTitle || "",
+      metaDescription: category.metaDescription || "",
+      canonicalUrl: category.canonicalUrl || "",
+      noIndex: Boolean(category.noIndex),
+      noFollow: Boolean(category.noFollow),
+      ogTitle: category.ogTitle || "",
+      ogDescription: category.ogDescription || "",
+      ogImageUrl: category.ogImageUrl || "",
+      seoScore: category.seoScore || 0,
+    });
     setIsModalOpen(true);
   };
 
@@ -93,21 +156,38 @@ export default function CategoriesPage() {
     setIsModalOpen(false);
     setEditingCategory(null);
     setFormData({ name: "", description: "" });
+    setSeoValues({
+      focusKeyphrase: "",
+      metaTitle: "",
+      metaDescription: "",
+      canonicalUrl: "",
+      noIndex: false,
+      noFollow: false,
+      ogTitle: "",
+      ogDescription: "",
+      ogImageUrl: "",
+      seoScore: 0,
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = { ...formData, ...seoValues };
     if (editingCategory) {
-      updateMutation.mutate({ id: editingCategory.id, data: formData });
+      updateMutation.mutate({ id: editingCategory.id, data: payload });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(payload);
     }
   };
 
   const handleDelete = (id: string, name: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus kategori "${name}"?`)) {
-      deleteMutation.mutate(id);
-    }
+    setDeleteTarget({ id, name });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteMutation.mutate(deleteTarget.id);
+    setDeleteTarget(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -263,7 +343,7 @@ export default function CategoriesPage() {
       {/* Modal Form */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-900">
                 {editingCategory ? "Edit Kategori" : "Tambah Kategori"}
@@ -298,6 +378,21 @@ export default function CategoriesPage() {
                 </div>
               </div>
 
+              <div className="p-6 pt-0">
+                <SEOPanel
+                  value={seoValues}
+                  onChange={handleSEOChange}
+                  contentData={{
+                    title: formData.name || "",
+                    slug: editingCategory?.slug || "",
+                    description: formData.description || "",
+                    content: formData.description || "",
+                  }}
+                  entityType="category"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                />
+              </div>
+
               <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
                 <button
                   type="button"
@@ -323,6 +418,47 @@ export default function CategoriesPage() {
           </div>
         </div>
       )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Hapus Kategori</h2>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-700">
+                Apakah Anda yakin ingin menghapus kategori "{deleteTarget.name}"?
+              </p>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleteMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger btn-md"
+                onClick={handleConfirmDelete}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Menghapus..." : "Hapus Kategori"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

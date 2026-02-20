@@ -13,6 +13,12 @@ export interface ZakatType {
   imageUrl: string | null;
   icon: string | null;
   hasCalculator: boolean;
+  calculatorType?: string | null;
+  fitrahAmount?: number | string | null;
+  ownerType?: "organization" | "mitra";
+  ownerName?: string | null;
+  ownerSlug?: string | null;
+  ownerLogoUrl?: string | null;
   isActive: boolean;
   displayOrder: number;
 }
@@ -32,6 +38,16 @@ export interface ZakatCalculationResult {
   totalAssets: number;
   zakatAmount: number;
   details: any;
+}
+
+export interface ZakatPeriod {
+  id: string;
+  name: string;
+  year: number;
+  hijriYear: string | null;
+  startDate: string;
+  endDate: string;
+  status: string;
 }
 
 // Get active zakat types
@@ -68,6 +84,25 @@ export async function fetchZakatConfig(): Promise<ZakatConfig> {
     return data.data;
   } catch (error) {
     console.error('Error fetching zakat config:', error);
+    throw error;
+  }
+}
+
+// Get active zakat periods
+export async function fetchZakatPeriods(): Promise<ZakatPeriod[]> {
+  try {
+    const response = await fetch(`${API_URL}/zakat/periods`, {
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch zakat periods: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('Error fetching zakat periods:', error);
     throw error;
   }
 }

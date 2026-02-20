@@ -1,50 +1,83 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, and, asc } from "drizzle-orm";
-import { donations, payments, campaigns, paymentGateways, paymentMethods, paymentGatewayCredentials, bankAccounts, createId } from "@bantuanku/db";
+import { eq, and, sql } from "drizzle-orm";
+import {
+  campaigns,
+  transactions,
+  transactionPayments,
+  paymentGateways,
+  paymentMethods,
+  paymentGatewayCredentials,
+  qurbanSavings,
+  qurbanSavingsTransactions,
+  createId,
+} from "@bantuanku/db";
 import { createPaymentAdapter } from "../services/payment";
-import { createInvoice } from "../services/invoice";
-import { createDonationLedgerEntry } from "../services/ledger";
 import { createEmailService } from "../services/email";
 import { success, error } from "../lib/response";
 import { paymentRateLimit } from "../middleware/ratelimit";
 import type { Env, Variables } from "../types";
-import type { Database } from "@bantuanku/db";
-
 const paymentsRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// Helper function to determine bank account code from payment method (dynamic from settings)
-async function determineBankCode(db: Database, paymentMethodId?: string): Promise<string> {
-  // Handle cash
-  if (paymentMethodId === 'cash') return '1110';
+const syncQurbanSavingsBalance = async (db: any, savingsId: string) => {
+  const savings = await db.query.qurbanSavings.findFirst({
+    where: eq(qurbanSavings.id, savingsId),
+  });
+  if (!savings) return;
 
-  // Get bank accounts from settings
-  const allSettings = await db.query.settings.findMany();
-  const paymentSettings = allSettings.filter((s: any) => s.category === "payment");
-  const bankAccountsSetting = paymentSettings.find((s: any) => s.key === "payment_bank_accounts");
+  const legacyVerifiedResult = await db.execute(sql`
+    SELECT COALESCE(SUM(
+      CASE
+        WHEN qst.transaction_type = 'withdrawal' THEN -qst.amount
+        ELSE qst.amount
+      END
+    ), 0)::numeric AS total
+    FROM qurban_savings_transactions qst
+    WHERE qst.savings_id = ${savingsId}
+      AND qst.status = 'verified'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM transactions t
+        WHERE t.category = 'qurban_savings'
+          AND t.product_type = 'qurban'
+          AND t.type_specific_data ->> 'legacy_savings_transaction_id' = qst.id
+      )
+  `);
 
-  let bankAccounts: any[] = [];
-  if (bankAccountsSetting?.value) {
-    try {
-      bankAccounts = JSON.parse(bankAccountsSetting.value);
-    } catch (e) {
-      console.error("Failed to parse bank accounts:", e);
-    }
-  }
+  const legacyVerified = Number((legacyVerifiedResult as any).rows?.[0]?.total || 0);
 
-  if (!paymentMethodId) {
-    // Get first bank or default to 1120
-    return bankAccounts[0]?.coaCode || '1120';
-  }
+  const [universalAgg] = await db
+    .select({
+      total: sql<number>`COALESCE(SUM(${transactions.totalAmount}), 0)`,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.category, "qurban_savings"),
+        eq(transactions.productType, "qurban"),
+        eq(transactions.paymentStatus, "paid"),
+        sql`${transactions.typeSpecificData} ->> 'savings_id' = ${savingsId}`
+      )
+    );
 
-  // Try to find bank by matching payment method ID
-  const bank = bankAccounts.find((b: any) =>
-    paymentMethodId.toLowerCase().includes(b.id.toLowerCase())
-  );
+  const currentAmount = Math.max(0, legacyVerified + Number(universalAgg?.total || 0));
+  const status =
+    savings.status === "cancelled" || savings.status === "converted"
+      ? savings.status
+      : currentAmount >= Number(savings.targetAmount || 0)
+        ? "completed"
+        : "active";
 
-  return bank?.coaCode || '1120';
-}
+  await db
+    .update(qurbanSavings)
+    .set({
+      currentAmount,
+      status,
+      updatedAt: new Date(),
+    })
+    .where(eq(qurbanSavings.id, savingsId));
+};
 
 // Payment methods endpoint - ambil dari settings, bukan dari hardcoded table
 paymentsRoute.get("/methods", async (c) => {
@@ -74,9 +107,9 @@ paymentsRoute.get("/methods", async (c) => {
         qrisAccounts = parsed.map((acc) => ({
           id: acc.id || `qris-${Math.random().toString(36).slice(2)}`,
           name: acc.name || "QRIS",
-          nmid: acc.nmid || "",
           imageUrl: acc.imageUrl || "",
           programs: Array.isArray(acc.programs) && acc.programs.length > 0 ? acc.programs : ["general"],
+          isDynamic: acc.isDynamic || false,
         }));
       }
     } catch (e) {
@@ -135,8 +168,8 @@ paymentsRoute.get("/methods", async (c) => {
           type: "qris",
           details: {
             name: acc.name || undefined,
-            nmid: acc.nmid || undefined,
             imageUrl: acc.imageUrl || undefined,
+            isDynamic: acc.isDynamic || false,
           },
           programs: acc.programs,
         });
@@ -144,7 +177,6 @@ paymentsRoute.get("/methods", async (c) => {
     } else {
       // fallback: single entry using legacy keys if any
       const legacyName = paymentSettings.find((s: any) => s.key === "payment_qris_name")?.value || "QRIS";
-      const legacyNmid = paymentSettings.find((s: any) => s.key === "payment_qris_nmid")?.value || "";
       const legacyImage = paymentSettings.find((s: any) => s.key === "payment_qris_image")?.value || "";
       methods.push({
         id: "qris",
@@ -153,7 +185,6 @@ paymentsRoute.get("/methods", async (c) => {
         type: "qris",
         details: {
           name: legacyName,
-          nmid: legacyNmid || undefined,
           imageUrl: legacyImage || undefined,
         },
         programs: ["general"],
@@ -198,25 +229,25 @@ paymentsRoute.get("/methods", async (c) => {
 });
 
 const createPaymentSchema = z.object({
-  donationId: z.string(),
+  transactionId: z.string(),
   methodId: z.string(),
   channel: z.string().optional(), // Optional channel for payment gateways (e.g., "qris:qris", "va:bca")
 });
 
 paymentsRoute.post("/create", paymentRateLimit, zValidator("json", createPaymentSchema), async (c) => {
-  const { donationId, methodId, channel } = c.req.valid("json");
+  const { transactionId, methodId, channel } = c.req.valid("json");
   const db = c.get("db");
 
-  const donation = await db.query.donations.findFirst({
-    where: eq(donations.id, donationId),
+  const txn = await db.query.transactions.findFirst({
+    where: eq(transactions.id, transactionId),
   });
 
-  if (!donation) {
-    return error(c, "Donation not found", 404);
+  if (!txn) {
+    return error(c, "Transaction not found", 404);
   }
 
-  if (donation.paymentStatus !== "pending") {
-    return error(c, "Donation already processed", 400);
+  if (txn.paymentStatus !== "pending") {
+    return error(c, "Transaction already processed", 400);
   }
 
   // Try to get payment method from database first
@@ -313,9 +344,10 @@ paymentsRoute.post("/create", paymentRateLimit, zValidator("json", createPayment
         callbackToken,
       };
     } else if (methodId === "flip") {
-      const secretKey = paymentSettings.find((s: any) => s.key === "payment_flip_secret_key" || s.key === "flip_secret_key")?.value;
-      const validationToken = paymentSettings.find((s: any) => s.key === "payment_flip_validation_token" || s.key === "flip_validation_token")?.value;
-      const mode = paymentSettings.find((s: any) => s.key === "payment_flip_mode" || s.key === "flip_mode")?.value || "sandbox";
+      // Phase 1: Fixed key mismatch — match admin UI keys
+      const secretKey = paymentSettings.find((s: any) => s.key === "payment_flip_api_key" || s.key === "payment_flip_secret_key")?.value;
+      const validationToken = paymentSettings.find((s: any) => s.key === "payment_flip_webhook" || s.key === "payment_flip_validation_token")?.value;
+      const mode = paymentSettings.find((s: any) => s.key === "payment_flip_environment" || s.key === "payment_flip_mode")?.value || "sandbox";
 
       if (!secretKey) {
         return error(c, "Flip credentials not configured", 500);
@@ -341,11 +373,11 @@ paymentsRoute.post("/create", paymentRateLimit, zValidator("json", createPayment
   const adapter = createPaymentAdapter(gatewayCode, credentials, isProduction);
 
   const result = await adapter.createPayment({
-    donationId: donation.id,
-    amount: donation.totalAmount,
-    donorName: donation.donorName,
-    donorEmail: donation.donorEmail || undefined,
-    donorPhone: donation.donorPhone || undefined,
+    donationId: txn.id,
+    amount: txn.totalAmount,
+    donorName: txn.donorName,
+    donorEmail: txn.donorEmail || undefined,
+    donorPhone: txn.donorPhone || undefined,
     methodCode,
   });
 
@@ -354,30 +386,32 @@ paymentsRoute.post("/create", paymentRateLimit, zValidator("json", createPayment
   }
 
   const paymentId = createId();
+  const paymentNumber = `PAY-${Date.now().toString(36).toUpperCase()}`;
 
-  await db.insert(payments).values({
+  await db.insert(transactionPayments).values({
     id: paymentId,
-    donationId: donation.id,
-    gatewayId: gateway.id,
-    methodId: method?.id || methodId,
+    paymentNumber,
+    transactionId: txn.id,
+    amount: txn.totalAmount,
+    paymentMethod: method?.name || gatewayCode,
+    paymentChannel: methodCode,
     externalId: result.externalId,
-    amount: donation.totalAmount,
     paymentCode: result.paymentCode,
     paymentUrl: result.paymentUrl,
     qrCode: result.qrCode,
-    status: "pending",
+    gatewayCode,
     expiredAt: result.expiredAt,
+    status: "pending",
   });
 
   await db
-    .update(donations)
+    .update(transactions)
     .set({
       paymentMethodId: method?.id || methodId,
-      paymentStatus: "processing",
-      expiredAt: result.expiredAt,
+      paymentStatus: "pending",
       updatedAt: new Date(),
     })
-    .where(eq(donations.id, donation.id));
+    .where(eq(transactions.id, txn.id));
 
   return success(c, {
     paymentId,
@@ -426,9 +460,10 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
       };
       isProduction = mode === "production";
     } else if (gatewayCode === "flip") {
-      const secretKey = paymentSettings.find((s: any) => s.key === "payment_flip_secret_key" || s.key === "flip_secret_key")?.value;
-      const validationToken = paymentSettings.find((s: any) => s.key === "payment_flip_validation_token" || s.key === "flip_validation_token")?.value;
-      const mode = paymentSettings.find((s: any) => s.key === "payment_flip_mode" || s.key === "flip_mode")?.value || "sandbox";
+      // Phase 1: Fixed key mismatch — match admin UI keys
+      const secretKey = paymentSettings.find((s: any) => s.key === "payment_flip_api_key" || s.key === "payment_flip_secret_key")?.value;
+      const validationToken = paymentSettings.find((s: any) => s.key === "payment_flip_webhook" || s.key === "payment_flip_validation_token")?.value;
+      const mode = paymentSettings.find((s: any) => s.key === "payment_flip_environment" || s.key === "payment_flip_mode")?.value || "sandbox";
 
       if (!secretKey) {
         return error(c, "Flip credentials not configured", 500);
@@ -472,8 +507,21 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
     }
   }
 
-  const payload = await c.req.json();
-  const signature = c.req.header("X-Callback-Token") || c.req.header("X-Signature") || c.req.header("X-Ipaymu-Signature");
+  // Phase 3: Handle Flip form-urlencoded webhook body
+  let payload: any;
+  let signature: string | undefined;
+
+  if (gatewayCode === "flip") {
+    // Flip sends form-urlencoded: data={json}&token={bcrypt}
+    const formData = await c.req.parseBody();
+    const dataStr = formData.data as string;
+    const token = formData.token as string;
+    payload = JSON.parse(dataStr);
+    signature = token;
+  } else {
+    payload = await c.req.json();
+    signature = c.req.header("X-Callback-Token") || c.req.header("X-Signature") || c.req.header("X-Ipaymu-Signature");
+  }
 
   const adapter = createPaymentAdapter(gateway.code, credentials, isProduction);
 
@@ -484,58 +532,59 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
 
   const parsed = adapter.parseWebhook(payload);
 
-  const payment = await db.query.payments.findFirst({
-    where: eq(payments.externalId, parsed.externalId),
+  const payment = await db.query.transactionPayments.findFirst({
+    where: eq(transactionPayments.externalId, parsed.externalId),
   });
 
   if (!payment) {
     return success(c, { received: true });
   }
 
-  if (payment.status === "success") {
+  if (payment.status === "verified") {
     return success(c, { received: true });
   }
 
-  // Get donation first (before transaction)
-  const donation = await db.query.donations.findFirst({
-    where: eq(donations.id, payment.donationId),
+  // Get transaction
+  const txn = await db.query.transactions.findFirst({
+    where: eq(transactions.id, payment.transactionId),
   });
 
-  if (!donation) {
+  if (!txn) {
     return success(c, { received: true });
   }
 
-  const newStatus = parsed.status === "success" ? "success" : parsed.status === "expired" ? "expired" : "failed";
+  const newPaymentStatus = parsed.status === "success" ? "paid" : parsed.status === "expired" ? "cancelled" : "pending";
+  const newTxPaymentStatus = parsed.status === "success" ? "verified" : parsed.status === "expired" ? "rejected" : "pending";
 
   // Use transaction to ensure atomicity
-  // If any operation fails, all changes are rolled back
   try {
     await db.transaction(async (tx) => {
-      // 1. Update payment status
+      // 1. Update transaction payment status
       await tx
-        .update(payments)
+        .update(transactionPayments)
         .set({
-          status: parsed.status,
-          paidAt: parsed.paidAt,
+          status: newTxPaymentStatus,
+          verifiedAt: parsed.paidAt,
           webhookPayload: payload,
           updatedAt: new Date(),
         })
-        .where(eq(payments.id, payment.id));
+        .where(eq(transactionPayments.id, payment.id));
 
-      // 2. Update donation status
+      // 2. Update transaction status
       await tx
-        .update(donations)
+        .update(transactions)
         .set({
-          paymentStatus: newStatus,
+          paymentStatus: newPaymentStatus,
           paidAt: parsed.paidAt,
+          paidAmount: parsed.status === "success" ? txn.totalAmount : 0,
           updatedAt: new Date(),
         })
-        .where(eq(donations.id, donation.id));
+        .where(eq(transactions.id, txn.id));
 
       // 3. If payment successful, process completion
-      if (parsed.status === "success") {
+      if (parsed.status === "success" && txn.productType === "campaign") {
         const campaign = await tx.query.campaigns.findFirst({
-          where: eq(campaigns.id, donation.campaignId),
+          where: eq(campaigns.id, txn.productId),
         });
 
         if (campaign) {
@@ -543,54 +592,39 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
           await tx
             .update(campaigns)
             .set({
-              collected: campaign.collected + donation.amount,
+              collected: campaign.collected + txn.subtotal,
               donorCount: campaign.donorCount + 1,
               updatedAt: new Date(),
             })
             .where(eq(campaigns.id, campaign.id));
 
-          // 5. Create invoice
-          await createInvoice(tx, {
-            donationId: donation.id,
-            amount: donation.amount,
-            feeAmount: donation.feeAmount,
-            payerName: donation.donorName,
-            payerEmail: donation.donorEmail || undefined,
-            payerPhone: donation.donorPhone || undefined,
-          });
-
-          // 6. Create ledger entry
-          const method = payment.methodId ? await tx.query.paymentMethods.findFirst({
-            where: eq(paymentMethods.id, payment.methodId),
-          }) : null;
-
-          const bankCode = await determineBankCode(tx, donation.paymentMethodId);
-
-          await createDonationLedgerEntry(tx, {
-            donationId: donation.id,
-            amount: donation.amount,
-            campaignTitle: campaign.title,
-            donorName: donation.donorName,
-            paymentMethod: method?.name || donation.paymentMethodId || 'Unknown',
-            bankAccountCode: bankCode,
-          });
-
-          // 7. Send email (outside transaction - non-critical)
-          // Email sending happens after transaction commits
-          if (donation.donorEmail && c.env.RESEND_API_KEY && method) {
-            // Store email data to send after transaction
+          // 5. Send email (outside transaction - non-critical)
+          if (txn.donorEmail && c.env.RESEND_API_KEY) {
             c.set('emailToSend', {
-              donorEmail: donation.donorEmail,
-              donorName: donation.donorName,
+              donorEmail: txn.donorEmail,
+              donorName: txn.donorName,
               campaignTitle: campaign.title,
-              amount: donation.amount,
-              invoiceNumber: donation.referenceId,
-              paymentMethod: method?.name || "Unknown",
+              amount: txn.subtotal,
+              invoiceNumber: txn.transactionNumber,
+              paymentMethod: payment.paymentMethod || "Unknown",
             });
           }
         }
       }
     });
+
+    // Keep qurban savings balance consistent when gateway webhook updates a savings transaction.
+    const savingsId = (txn.typeSpecificData as any)?.savings_id;
+    if (txn.category === "qurban_savings" && savingsId) {
+      await syncQurbanSavingsBalance(db, savingsId);
+    }
+
+    // Qurban shared group: confirm slot when payment succeeds via gateway
+    if (parsed.status === "success" && txn.productType === "qurban") {
+      const { TransactionService } = await import("../services/transaction");
+      const txnService = new TransactionService(db);
+      await txnService.confirmSharedGroupSlot(txn.id);
+    }
 
     // Send email after transaction successfully committed
     const emailData = c.get('emailToSend');

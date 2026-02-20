@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { EyeIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import Autocomplete from "@/components/Autocomplete";
@@ -10,6 +10,7 @@ import api from "@/lib/api";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { formatRupiah } from "@/lib/format";
+import { getCategoryLabel } from "@/lib/category-utils";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -26,6 +27,19 @@ const statusOptions = [
   { value: "partial", label: "Partial" },
   { value: "paid", label: "Paid" },
   { value: "cancelled", label: "Cancelled" },
+];
+
+const categoryOptions = [
+  { value: "", label: "Semua Kategori" },
+  { value: "campaign_donation", label: "Donasi Campaign" },
+  { value: "zakat_fitrah", label: "Zakat Fitrah" },
+  { value: "zakat_maal", label: "Zakat Maal" },
+  { value: "zakat_profesi", label: "Zakat Profesi" },
+  { value: "zakat_pertanian", label: "Zakat Pertanian" },
+  { value: "zakat_peternakan", label: "Zakat Peternakan" },
+  { value: "qurban_payment", label: "Pembayaran Qurban" },
+  { value: "qurban_savings", label: "Tabungan Qurban" },
+  { value: "qurban_admin_fee", label: "Biaya Admin Qurban" },
 ];
 
 const statusBadgeMap: Record<string, string> = {
@@ -54,17 +68,22 @@ export default function TransactionsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [productTypeFilter, setProductTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery<{
+    data: any[];
+    pagination: { total: number; totalPages: number; page: number; limit: number };
+  }>({
     queryKey: [
       "all-transactions",
       currentPage,
       productTypeFilter,
       statusFilter,
+      categoryFilter,
       searchQuery,
       startDate,
       endDate,
@@ -77,12 +96,13 @@ export default function TransactionsPage() {
 
       if (productTypeFilter) params.product_type = productTypeFilter;
       if (statusFilter) params.status = statusFilter;
+      if (categoryFilter) params.category = categoryFilter;
       if (searchQuery) params.donor_email = searchQuery;
 
       const response = await api.get("/transactions", { params });
       return response.data;
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 
   const transactions = data?.data || [];
@@ -109,6 +129,7 @@ export default function TransactionsPage() {
   const handleResetFilters = () => {
     setProductTypeFilter("");
     setStatusFilter("");
+    setCategoryFilter("");
     setSearchInput("");
     setSearchQuery("");
     setStartDate("");
@@ -155,6 +176,7 @@ export default function TransactionsPage() {
   const isFilterApplied = Boolean(
     productTypeFilter ||
       statusFilter ||
+      categoryFilter ||
       searchQuery ||
       startDate ||
       endDate
@@ -217,6 +239,15 @@ export default function TransactionsPage() {
         </div>
 
         <div className="filter-group">
+          <Autocomplete
+            options={categoryOptions}
+            value={categoryFilter}
+            onChange={handleFilterChange(setCategoryFilter)}
+            placeholder="Semua Kategori"
+          />
+        </div>
+
+        <div className="filter-group">
           <input
             type="date"
             className="form-input"
@@ -257,6 +288,7 @@ export default function TransactionsPage() {
             <tr>
               <th>No. Transaksi</th>
               <th>Tipe</th>
+              <th>Kategori</th>
               <th>Donatur</th>
               <th>Produk</th>
               <th>Nominal</th>
@@ -268,7 +300,7 @@ export default function TransactionsPage() {
           <tbody>
             {isEmptyState ? (
               <tr>
-                <td colSpan={8} className="text-center py-12 text-gray-500">
+                <td colSpan={9} className="text-center py-12 text-gray-500">
                   {isFilterApplied
                     ? "Tidak ada transaksi yang sesuai dengan filter saat ini"
                     : "Belum ada transaksi"}
@@ -286,6 +318,11 @@ export default function TransactionsPage() {
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
                       {getProductTypeLabel(transaction.productType)}
                     </span>
+                  </td>
+                  <td>
+                    <div className="text-sm text-gray-900">
+                      {transaction.category ? getCategoryLabel(transaction.category) : "-"}
+                    </div>
                   </td>
                   <td>
                     <div className="font-medium text-gray-900">
@@ -369,6 +406,13 @@ export default function TransactionsPage() {
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
                     {getProductTypeLabel(transaction.productType)}
                   </span>
+                </span>
+              </div>
+
+              <div className="table-card-row">
+                <span className="table-card-row-label">Kategori</span>
+                <span className="table-card-row-value">
+                  {transaction.category ? getCategoryLabel(transaction.category) : "-"}
                 </span>
               </div>
 

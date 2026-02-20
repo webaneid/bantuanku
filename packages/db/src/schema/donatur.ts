@@ -5,6 +5,7 @@ import { indonesiaProvinces } from "./indonesia-provinces";
 import { indonesiaRegencies } from "./indonesia-regencies";
 import { indonesiaDistricts } from "./indonesia-districts";
 import { indonesiaVillages } from "./indonesia-villages";
+import { users } from "./user";
 
 export const donatur = pgTable("donatur", {
   id: text("id")
@@ -24,6 +25,7 @@ export const donatur = pgTable("donatur", {
   districtCode: text("district_code").references(() => indonesiaDistricts.code),
   villageCode: text("village_code").references(() => indonesiaVillages.code),
 
+  userId: text("user_id").references(() => users.id),
   avatar: text("avatar"),
 
   // Stats

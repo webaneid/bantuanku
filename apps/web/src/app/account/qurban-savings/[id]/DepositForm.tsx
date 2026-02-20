@@ -1,38 +1,53 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { depositSavings } from '@/services/qurban-savings';
+import toast from '@/lib/feedback-toast';
+import { useI18n } from '@/lib/i18n/provider';
 
 export default function DepositForm({
   savingsId,
+  defaultAmount,
   onSuccess
 }: {
   savingsId: string;
+  defaultAmount?: number;
   onSuccess?: () => void | Promise<void>;
 }) {
-  const [amount, setAmount] = useState(0);
-  const [paymentProof, setPaymentProof] = useState('');
+  const router = useRouter();
+  const { t } = useI18n();
+  const [amount, setAmount] = useState(defaultAmount || 0);
   const [notes, setNotes] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!amount || amount <= 0) {
+      toast.error(t('account.qurbanSavingsDetail.form.validationAmount'));
+      return;
+    }
+
     try {
-      await depositSavings(savingsId, {
+      const deposit = await depositSavings(savingsId, {
         amount,
-        paymentMethod: 'bank_transfer',
-        paymentChannel: 'BCA',
-        paymentProof,
         notes,
       });
-      alert('Setoran berhasil, menunggu verifikasi admin');
+
+      const transactionId = deposit.transactionId;
+      if (!transactionId) {
+        throw new Error('transaction_id_not_found');
+      }
+
       if (onSuccess) {
         await onSuccess();
-      } else {
-        window.location.reload();
       }
+
+      toast.success(t('account.qurbanSavingsDetail.form.success'));
+      router.push(`/invoice/${transactionId}/payment-method`);
     } catch (error) {
       console.error('Failed to deposit:', error);
-      alert('Gagal melakukan setoran');
+      toast.error(t('account.qurbanSavingsDetail.form.failed'));
     }
   };
 
@@ -40,7 +55,7 @@ export default function DepositForm({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Nominal Setoran
+          {t('account.qurbanSavingsDetail.form.amount')}
         </label>
         <input
           type="number"
@@ -53,20 +68,7 @@ export default function DepositForm({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Link Bukti Transfer
-        </label>
-        <input
-          type="url"
-          value={paymentProof}
-          onChange={(e) => setPaymentProof(e.target.value)}
-          className="w-full border rounded-lg px-4 py-2"
-          placeholder="https://..."
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Catatan (Opsional)
+          {t('account.qurbanSavingsDetail.form.notes')}
         </label>
         <textarea
           value={notes}
@@ -80,7 +82,7 @@ export default function DepositForm({
         type="submit"
         className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
       >
-        Setor Sekarang
+        {t('account.qurbanSavingsDetail.form.submit')}
       </button>
     </form>
   );

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { cn } from '@/lib/cn';
+import { useI18n } from '@/lib/i18n/provider';
 
 interface QurbanTabsProps {
   packageId: string;
@@ -17,6 +18,7 @@ export default function QurbanTabs({
   packageType,
   periodName,
 }: QurbanTabsProps) {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'description' | 'info'>('description');
 
   return (
@@ -33,7 +35,7 @@ export default function QurbanTabs({
                 : 'text-gray-600 hover:text-gray-900'
             )}
           >
-            Deskripsi
+            {t('qurbanDetail.tabs.description')}
           </button>
           <button
             onClick={() => setActiveTab('info')}
@@ -44,7 +46,7 @@ export default function QurbanTabs({
                 : 'text-gray-600 hover:text-gray-900'
             )}
           >
-            Informasi Paket
+            {t('qurbanDetail.tabs.packageInfo')}
           </button>
         </nav>
       </div>
@@ -56,7 +58,7 @@ export default function QurbanTabs({
             {packageDescription ? (
               <div dangerouslySetInnerHTML={{ __html: packageDescription }} />
             ) : (
-              <p className="text-gray-500">Belum ada deskripsi untuk paket qurban ini.</p>
+              <p className="text-gray-500">{t('qurbanDetail.tabs.noDescription')}</p>
             )}
           </div>
         )}
@@ -64,54 +66,56 @@ export default function QurbanTabs({
         {activeTab === 'info' && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Periode</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">{t('qurbanDetail.tabs.labels.period')}</h3>
               <p className="text-base text-gray-900">{periodName}</p>
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Jenis Hewan</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">{t('qurbanDetail.tabs.labels.animalType')}</h3>
               <p className="text-base text-gray-900">{animalType}</p>
             </div>
 
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">Tipe Paket</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-1">{t('qurbanDetail.tabs.labels.packageType')}</h3>
               <p className="text-base text-gray-900">
-                {packageType === 'individual' ? 'Individu' : 'Patungan (Shared)'}
+                {packageType === 'individual'
+                  ? t('qurbanDetail.tabs.values.packageIndividual')
+                  : t('qurbanDetail.tabs.values.packageShared')}
               </p>
             </div>
 
             <div className="pt-4 border-t border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Ketentuan</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">{t('qurbanDetail.tabs.terms.title')}</h3>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li className="flex items-start">
                   <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Hewan qurban berkualitas dan sehat</span>
+                  <span>{t('qurbanDetail.tabs.terms.items.quality')}</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Disembelih sesuai syariat Islam</span>
+                  <span>{t('qurbanDetail.tabs.terms.items.sharia')}</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Daging disalurkan kepada yang berhak</span>
+                  <span>{t('qurbanDetail.tabs.terms.items.distribution')}</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Dokumentasi lengkap penyembelihan</span>
+                  <span>{t('qurbanDetail.tabs.terms.items.documentation')}</span>
                 </li>
                 <li className="flex items-start">
                   <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Sertifikat digital untuk peserta qurban</span>
+                  <span>{t('qurbanDetail.tabs.terms.items.certificate')}</span>
                 </li>
               </ul>
             </div>

@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeftIcon,
   EnvelopeIcon,
@@ -12,16 +13,27 @@ import {
   BanknotesIcon,
   HeartIcon,
   GlobeAltIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 import api from "@/lib/api";
+import FeedbackDialog from "@/components/FeedbackDialog";
 
 export default function ViewDonaturPage() {
   const router = useRouter();
   const params = useParams();
+  const queryClient = useQueryClient();
   const donaturId = params.id as string;
+  const [showActivateForm, setShowActivateForm] = useState(false);
+  const [activatePassword, setActivatePassword] = useState("");
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
 
   // Fetch donatur data
-  const { data: donaturData, isLoading } = useQuery({
+  const { data: donaturData, isLoading, refetch } = useQuery({
     queryKey: ["donatur", donaturId],
     queryFn: async () => {
       const response = await api.get(`/admin/donatur/${donaturId}`);
@@ -38,6 +50,44 @@ export default function ViewDonaturPage() {
     },
     enabled: !!donaturId,
   });
+
+  // Activate user mutation
+  const activateUserMutation = useMutation({
+    mutationFn: (payload: { password: string }) =>
+      api.post(`/admin/donatur/${donaturId}/activate-user`, payload),
+    onSuccess: () => {
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Akun login donatur berhasil dibuat",
+      });
+      setShowActivateForm(false);
+      setActivatePassword("");
+      queryClient.invalidateQueries({ queryKey: ["donatur", donaturId] });
+      refetch();
+    },
+    onError: (err: any) =>
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: err.response?.data?.message || "Gagal membuat akun login",
+      }),
+  });
+
+  const handleActivateUser = () => {
+    if (!activatePassword || activatePassword.length < 8) {
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: "Password minimal 8 karakter",
+      });
+      return;
+    }
+    activateUserMutation.mutate({ password: activatePassword });
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -145,6 +195,71 @@ export default function ViewDonaturPage() {
                   <span className="badge badge-secondary">Nonaktif</span>
                 )}
               </div>
+            </div>
+
+            {/* Akun Login Indicator */}
+            <div className="mb-4">
+              {donaturData.userId ? (
+                <div className="flex items-center gap-2 justify-center text-success-600 text-sm">
+                  <UserIcon className="w-4 h-4" />
+                  <span>User Activated</span>
+                </div>
+              ) : (
+                <div className="text-center">
+                  {showActivateForm ? (
+                    <div className="space-y-2 text-left bg-gray-50 rounded-lg p-3">
+                      <div>
+                        <label className="text-xs text-gray-500 block mb-1">Email</label>
+                        <input
+                          type="text"
+                          value={donaturData.email || ""}
+                          disabled
+                          className="form-input bg-gray-100 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 block mb-1">Password</label>
+                        <input
+                          type="text"
+                          value={activatePassword}
+                          onChange={(e) => setActivatePassword(e.target.value)}
+                          className="form-input text-sm"
+                          placeholder="Minimal 8 karakter"
+                          minLength={8}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm flex-1"
+                          onClick={handleActivateUser}
+                          disabled={activateUserMutation.isPending}
+                        >
+                          {activateUserMutation.isPending ? "..." : "Simpan"}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => {
+                            setShowActivateForm(false);
+                            setActivatePassword("");
+                          }}
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                      onClick={() => setShowActivateForm(true)}
+                    >
+                      Aktifkan Akun Login
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -337,6 +452,14 @@ export default function ViewDonaturPage() {
           </div>
         </div>
       </div>
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

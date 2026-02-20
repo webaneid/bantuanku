@@ -1,7 +1,6 @@
 import { pgTable, text, timestamp, boolean, bigint, integer, jsonb, decimal } from "drizzle-orm/pg-core";
 import { createId } from "../utils";
 import { users } from "./user";
-import { donations } from "./donation";
 
 export const zakatCalculatorConfigs = pgTable("zakat_calculator_configs", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -31,7 +30,7 @@ export const zakatCalculationLogs = pgTable("zakat_calculation_logs", {
   nisabValue: bigint("nisab_value", { mode: "number" }),
   resultAmount: bigint("result_amount", { mode: "number" }).notNull(),
 
-  donationId: text("donation_id").references(() => donations.id),
+  donationId: text("donation_id"),
   isConverted: boolean("is_converted").default(false).notNull(),
 
   createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),

@@ -3,10 +3,11 @@
  * Fetch campaigns from API
  */
 
-import { getImageUrl } from '@/lib/image';
+import { getImageUrl, getImageUrlByVariant } from '@/lib/image';
 
 // Re-export for backward compatibility
 export { getImageUrl };
+export { getImageUrlByVariant };
 
 export interface Campaign {
   id: string;
@@ -18,6 +19,7 @@ export interface Campaign {
   collected: number;
   donorCount: number;
   category: string | null;
+  categoryName?: string | null;
   categoryId: string | null;
   pillar: string;
   isFeatured: boolean;

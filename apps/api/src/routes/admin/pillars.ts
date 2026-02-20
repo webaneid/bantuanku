@@ -9,11 +9,25 @@ import type { Env, Variables } from "../../types";
 
 const pillarsAdmin = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+const seoFields = {
+  metaTitle: z.string().max(70).optional(),
+  metaDescription: z.string().max(170).optional(),
+  focusKeyphrase: z.string().max(100).optional(),
+  canonicalUrl: z.string().optional(),
+  noIndex: z.boolean().optional(),
+  noFollow: z.boolean().optional(),
+  ogTitle: z.string().max(70).optional(),
+  ogDescription: z.string().max(200).optional(),
+  ogImageUrl: z.string().optional(),
+  seoScore: z.number().optional(),
+};
+
 const createPillarSchema = z.object({
   name: z.string().min(2),
   description: z.string().optional(),
   icon: z.string().optional(),
   color: z.string().optional(),
+  ...seoFields,
 });
 
 const updatePillarSchema = z.object({
@@ -21,6 +35,7 @@ const updatePillarSchema = z.object({
   description: z.string().optional(),
   icon: z.string().optional(),
   color: z.string().optional(),
+  ...seoFields,
 });
 
 // GET all pillars (admin view)
@@ -53,6 +68,16 @@ pillarsAdmin.post(
       description: body.description,
       icon: body.icon,
       color: body.color,
+      metaTitle: body.metaTitle || null,
+      metaDescription: body.metaDescription || null,
+      focusKeyphrase: body.focusKeyphrase || null,
+      canonicalUrl: body.canonicalUrl || null,
+      noIndex: body.noIndex ?? false,
+      noFollow: body.noFollow ?? false,
+      ogTitle: body.ogTitle || null,
+      ogDescription: body.ogDescription || null,
+      ogImageUrl: body.ogImageUrl || null,
+      seoScore: body.seoScore ?? 0,
     });
 
     return success(c, { id: pillarId, slug }, "Pillar created", 201);
@@ -109,6 +134,16 @@ pillarsAdmin.put(
     if (body.description !== undefined) updateData.description = body.description;
     if (body.icon !== undefined) updateData.icon = body.icon;
     if (body.color !== undefined) updateData.color = body.color;
+    if (body.metaTitle !== undefined) updateData.metaTitle = body.metaTitle || null;
+    if (body.metaDescription !== undefined) updateData.metaDescription = body.metaDescription || null;
+    if (body.focusKeyphrase !== undefined) updateData.focusKeyphrase = body.focusKeyphrase || null;
+    if (body.canonicalUrl !== undefined) updateData.canonicalUrl = body.canonicalUrl || null;
+    if (body.noIndex !== undefined) updateData.noIndex = body.noIndex;
+    if (body.noFollow !== undefined) updateData.noFollow = body.noFollow;
+    if (body.ogTitle !== undefined) updateData.ogTitle = body.ogTitle || null;
+    if (body.ogDescription !== undefined) updateData.ogDescription = body.ogDescription || null;
+    if (body.ogImageUrl !== undefined) updateData.ogImageUrl = body.ogImageUrl || null;
+    if (body.seoScore !== undefined) updateData.seoScore = body.seoScore;
 
     await db
       .update(pillars)

@@ -5,7 +5,8 @@ import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { Input, Button, Label } from "@/components/atoms";
 import Autocomplete from "@/components/Autocomplete";
-import toast from "react-hot-toast";
+import toast from "@/lib/feedback-toast";
+import { useI18n } from "@/lib/i18n/provider";
 
 interface ProfileData {
   name: string;
@@ -26,6 +27,7 @@ interface ProfileData {
 
 export default function ProfilePage() {
   const { user, isHydrated } = useAuth();
+  const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -217,9 +219,9 @@ export default function ProfilePage() {
 
     try {
       await api.patch("/auth/me", profileData);
-      toast.success("Profil berhasil diperbarui");
+      toast.success(t("account.profile.toasts.profileUpdated"));
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Gagal memperbarui profil");
+      toast.error(error.response?.data?.message || t("account.profile.toasts.profileUpdateFailed"));
     } finally {
       setIsSaving(false);
     }
@@ -229,12 +231,12 @@ export default function ProfilePage() {
     e.preventDefault();
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error("Password baru tidak cocok");
+      toast.error(t("account.profile.toasts.passwordMismatch"));
       return;
     }
 
     if (passwordData.newPassword.length < 8) {
-      toast.error("Password minimal 8 karakter");
+      toast.error(t("account.profile.toasts.passwordMinLength"));
       return;
     }
 
@@ -246,14 +248,14 @@ export default function ProfilePage() {
         newPassword: passwordData.newPassword,
       });
 
-      toast.success("Password berhasil diubah");
+      toast.success(t("account.profile.toasts.passwordUpdated"));
       setPasswordData({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Gagal mengubah password");
+      toast.error(error.response?.data?.message || t("account.profile.toasts.passwordUpdateFailed"));
     } finally {
       setIsChangingPassword(false);
     }
@@ -292,7 +294,7 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600">Memuat...</div>
+        <div className="text-gray-600">{t("account.profile.loading")}</div>
       </div>
     );
   }
@@ -301,31 +303,31 @@ export default function ProfilePage() {
     <div className="max-w-4xl mx-auto space-y-6 pb-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profil Saya</h1>
-        <p className="text-sm text-gray-600 mt-1">Kelola informasi profil Anda</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t("account.profile.title")}</h1>
+        <p className="text-sm text-gray-600 mt-1">{t("account.profile.subtitle")}</p>
       </div>
 
       <form onSubmit={handleSubmitProfile} className="space-y-6">
         {/* Basic Info Card */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-6">Informasi Dasar</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-6">{t("account.profile.basicInfo")}</h2>
 
           <div className="space-y-5">
             <div>
-              <Label htmlFor="name">Nama Lengkap</Label>
+              <Label htmlFor="name">{t("account.profile.labels.fullName")}</Label>
               <Input
                 id="name"
                 name="name"
                 type="text"
                 value={profileData.name}
                 onChange={handleChange}
-                placeholder="Masukkan nama lengkap"
+                placeholder={t("account.profile.placeholders.fullName")}
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("account.profile.labels.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -333,49 +335,49 @@ export default function ProfilePage() {
                 disabled
                 className="bg-gray-50"
               />
-              <p className="text-xs text-gray-500 mt-1">Email tidak dapat diubah</p>
+              <p className="text-xs text-gray-500 mt-1">{t("account.profile.hints.emailImmutable")}</p>
             </div>
           </div>
         </div>
 
         {/* Contact Info Card */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-6">Informasi Kontak</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-6">{t("account.profile.contactInfo")}</h2>
 
           <div className="space-y-5">
             <div>
-              <Label htmlFor="phone">Nomor Telepon</Label>
+              <Label htmlFor="phone">{t("account.profile.labels.phone")}</Label>
               <Input
                 id="phone"
                 name="phone"
                 type="tel"
                 value={profileData.phone}
                 onChange={handleChange}
-                placeholder="08xx xxxx xxxx"
+                placeholder={t("account.profile.placeholders.phone")}
               />
             </div>
 
             <div>
-              <Label htmlFor="whatsappNumber">Nomor WhatsApp</Label>
+              <Label htmlFor="whatsappNumber">{t("account.profile.labels.whatsapp")}</Label>
               <Input
                 id="whatsappNumber"
                 name="whatsappNumber"
                 type="tel"
                 value={profileData.whatsappNumber}
                 onChange={handleChange}
-                placeholder="08xx xxxx xxxx"
+                placeholder={t("account.profile.placeholders.whatsapp")}
               />
             </div>
 
             <div>
-              <Label htmlFor="website">Website</Label>
+              <Label htmlFor="website">{t("account.profile.labels.website")}</Label>
               <Input
                 id="website"
                 name="website"
                 type="url"
                 value={profileData.website}
                 onChange={handleChange}
-                placeholder="https://example.com"
+                placeholder={t("account.profile.placeholders.website")}
               />
             </div>
           </div>
@@ -383,17 +385,17 @@ export default function ProfilePage() {
 
         {/* Address Card */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-6">Alamat</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-6">{t("account.profile.address")}</h2>
 
           <div className="space-y-5">
             <div>
-              <Label htmlFor="detailAddress">Alamat Lengkap</Label>
+              <Label htmlFor="detailAddress">{t("account.profile.labels.fullAddress")}</Label>
               <textarea
                 id="detailAddress"
                 name="detailAddress"
                 value={profileData.detailAddress}
                 onChange={handleChange}
-                placeholder="Jalan, No. Rumah, RT/RW, dll"
+                placeholder={t("account.profile.placeholders.fullAddress")}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 rows={3}
               />
@@ -401,44 +403,44 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <Label htmlFor="provinceCode">Provinsi</Label>
+                <Label htmlFor="provinceCode">{t("account.profile.labels.province")}</Label>
                 <Autocomplete
                   options={provinceOptions}
                   value={profileData.provinceCode}
                   onChange={handleProvinceChange}
-                  placeholder="Pilih Provinsi"
+                  placeholder={t("account.profile.placeholders.province")}
                 />
               </div>
 
               <div>
-                <Label htmlFor="regencyCode">Kabupaten/Kota</Label>
+                <Label htmlFor="regencyCode">{t("account.profile.labels.regency")}</Label>
                 <Autocomplete
                   options={regencyOptions}
                   value={profileData.regencyCode}
                   onChange={handleRegencyChange}
-                  placeholder="Pilih Kabupaten/Kota"
+                  placeholder={t("account.profile.placeholders.regency")}
                   disabled={!profileData.provinceCode}
                 />
               </div>
 
               <div>
-                <Label htmlFor="districtCode">Kecamatan</Label>
+                <Label htmlFor="districtCode">{t("account.profile.labels.district")}</Label>
                 <Autocomplete
                   options={districtOptions}
                   value={profileData.districtCode}
                   onChange={handleDistrictChange}
-                  placeholder="Pilih Kecamatan"
+                  placeholder={t("account.profile.placeholders.district")}
                   disabled={!profileData.regencyCode}
                 />
               </div>
 
               <div>
-                <Label htmlFor="villageCode">Kelurahan/Desa</Label>
+                <Label htmlFor="villageCode">{t("account.profile.labels.village")}</Label>
                 <Autocomplete
                   options={villageOptions}
                   value={profileData.villageCode}
                   onChange={handleVillageChange}
-                  placeholder="Pilih Kelurahan/Desa"
+                  placeholder={t("account.profile.placeholders.village")}
                   disabled={!profileData.districtCode}
                 />
               </div>
@@ -449,15 +451,15 @@ export default function ProfilePage() {
         {/* Bank Accounts Card */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-900">Rekening Bank</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t("account.profile.bankAccounts")}</h2>
             <Button type="button" onClick={addBankAccount} size="sm" variant="outline">
-              + Tambah Rekening
+              {t("account.profile.addBankAccount")}
             </Button>
           </div>
 
           {profileData.bankAccounts.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-8">
-              Belum ada rekening bank. Klik tombol &quot;Tambah Rekening&quot; untuk menambahkan.
+              {t("account.profile.noBankAccounts")}
             </p>
           ) : (
             <div className="space-y-4">
@@ -465,47 +467,47 @@ export default function ProfilePage() {
                 <div key={index} className="p-4 border border-gray-200 rounded-lg space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">
-                      Rekening #{index + 1}
+                      {t("account.profile.bankAccountNumber", { number: index + 1 })}
                     </span>
                     <button
                       type="button"
                       onClick={() => removeBankAccount(index)}
                       className="text-sm text-red-600 hover:text-red-700"
                     >
-                      Hapus
+                      {t("account.profile.delete")}
                     </button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor={`bankName-${index}`}>Nama Bank</Label>
+                      <Label htmlFor={`bankName-${index}`}>{t("account.profile.labels.bankName")}</Label>
                       <Input
                         id={`bankName-${index}`}
                         value={account.bankName}
                         onChange={(e) => updateBankAccount(index, "bankName", e.target.value)}
-                        placeholder="Contoh: BCA, BNI, Mandiri"
+                        placeholder={t("account.profile.placeholders.bankName")}
                         required
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor={`accountNumber-${index}`}>Nomor Rekening</Label>
+                      <Label htmlFor={`accountNumber-${index}`}>{t("account.profile.labels.accountNumber")}</Label>
                       <Input
                         id={`accountNumber-${index}`}
                         value={account.accountNumber}
                         onChange={(e) => updateBankAccount(index, "accountNumber", e.target.value)}
-                        placeholder="1234567890"
+                        placeholder={t("account.profile.placeholders.accountNumber")}
                         required
                       />
                     </div>
 
                     <div className="md:col-span-2">
-                      <Label htmlFor={`accountHolderName-${index}`}>Nama Pemilik Rekening</Label>
+                      <Label htmlFor={`accountHolderName-${index}`}>{t("account.profile.labels.accountHolderName")}</Label>
                       <Input
                         id={`accountHolderName-${index}`}
                         value={account.accountHolderName}
                         onChange={(e) => updateBankAccount(index, "accountHolderName", e.target.value)}
-                        placeholder="Nama sesuai rekening"
+                        placeholder={t("account.profile.placeholders.accountHolderName")}
                         required
                       />
                     </div>
@@ -519,58 +521,58 @@ export default function ProfilePage() {
         {/* Submit Button */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <Button type="submit" disabled={isSaving} fullWidth size="lg">
-            {isSaving ? "Menyimpan..." : "Simpan Semua Perubahan"}
+            {isSaving ? t("account.profile.saving") : t("account.profile.saveChanges")}
           </Button>
         </div>
       </form>
 
       {/* Change Password Card */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-6">Ubah Password</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-6">{t("account.profile.changePassword")}</h2>
 
         <form onSubmit={handleSubmitPassword} className="space-y-5">
           <div>
-            <Label htmlFor="currentPassword">Password Saat Ini</Label>
+            <Label htmlFor="currentPassword">{t("account.profile.labels.currentPassword")}</Label>
             <Input
               id="currentPassword"
               name="currentPassword"
               type="password"
               value={passwordData.currentPassword}
               onChange={handlePasswordChange}
-              placeholder="Masukkan password saat ini"
+              placeholder={t("account.profile.placeholders.currentPassword")}
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="newPassword">Password Baru</Label>
+            <Label htmlFor="newPassword">{t("account.profile.labels.newPassword")}</Label>
             <Input
               id="newPassword"
               name="newPassword"
               type="password"
               value={passwordData.newPassword}
               onChange={handlePasswordChange}
-              placeholder="Minimal 8 karakter"
+              placeholder={t("account.profile.placeholders.newPassword")}
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="confirmPassword">Konfirmasi Password Baru</Label>
+            <Label htmlFor="confirmPassword">{t("account.profile.labels.confirmPassword")}</Label>
             <Input
               id="confirmPassword"
               name="confirmPassword"
               type="password"
               value={passwordData.confirmPassword}
               onChange={handlePasswordChange}
-              placeholder="Ulangi password baru"
+              placeholder={t("account.profile.placeholders.confirmPassword")}
               required
             />
           </div>
 
           <div className="pt-4">
             <Button type="submit" disabled={isChangingPassword} fullWidth variant="outline">
-              {isChangingPassword ? "Mengubah..." : "Ubah Password"}
+              {isChangingPassword ? t("account.profile.changingPassword") : t("account.profile.updatePassword")}
             </Button>
           </div>
         </form>

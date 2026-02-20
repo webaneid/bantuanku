@@ -20,11 +20,9 @@ import authRoutes from "./routes/auth";
 import campaignsRoutes from "./routes/campaigns";
 import categoriesRoutes from "./routes/categories";
 import pillarsRoutes from "./routes/pillars";
-import donationsRoutes from "./routes/donations";
 import donaturRoutes from "./routes/donatur";
 import paymentsRoutes from "./routes/payments";
 import adminRoutes from "./routes/admin";
-import zakatRoutes from "./routes/zakat";
 import qurbanRoutes from "./routes/qurban";
 import accountRoutes from "./routes/account";
 import pagesRoutes from "./routes/pages";
@@ -36,6 +34,10 @@ import addressPublicRoutes from "./routes/address-public";
 import activityReportsPublicRoutes from "./routes/activity-reports-public";
 import indonesiaRoutes from "./routes/indonesia";
 import transactionsRoutes from "./routes/transactions";
+import zakatRoutes from "./routes/zakat";
+import fundraisersRoutes from "./routes/fundraisers";
+import mitraPublicRoutes from "./routes/mitra";
+import whatsappWebhookRoutes from "./routes/whatsapp";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -81,6 +83,20 @@ app.get("/", (c) => {
 
 app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// Cron endpoint: savings reminder (protected by secret, callable by external cron)
+// Usage: curl "https://api.example.com/cron/savings-reminder?secret=YOUR_SECRET"
+app.get("/cron/savings-reminder", async (c) => {
+  const secret = c.req.query("secret");
+  const expectedSecret = c.env.JWT_SECRET; // Reuse JWT_SECRET as cron auth
+  if (!secret || secret !== expectedSecret) {
+    return c.json({ success: false, message: "Unauthorized" }, 401);
+  }
+  const db = c.get("db");
+  const { runSavingsReminders } = await import("./services/savings-reminder");
+  const result = await runSavingsReminders(db, c.env.FRONTEND_URL);
+  return c.json({ success: true, data: result });
 });
 
 // Serve uploaded files
@@ -141,11 +157,9 @@ app.route("/v1/auth", authRoutes);
 app.route("/v1/campaigns", campaignsRoutes);
 app.route("/v1/categories", categoriesRoutes);
 app.route("/v1/pillars", pillarsRoutes);
-app.route("/v1/donations", donationsRoutes);
 app.route("/v1/donatur", donaturRoutes);
 app.route("/v1/payments", paymentsRoutes);
 app.route("/v1/admin", adminRoutes);
-app.route("/v1/zakat", zakatRoutes);
 app.route("/v1/qurban", qurbanRoutes);
 app.route("/v1/account", accountRoutes);
 app.route("/v1/pages", pagesRoutes);
@@ -157,6 +171,10 @@ app.route("/v1/address", addressPublicRoutes);
 app.route("/v1/activity-reports", activityReportsPublicRoutes);
 app.route("/v1/indonesia", indonesiaRoutes);
 app.route("/v1/transactions", transactionsRoutes);
+app.route("/v1/zakat", zakatRoutes);
+app.route("/v1/fundraisers", fundraisersRoutes);
+app.route("/v1/mitra", mitraPublicRoutes);
+app.route("/v1/whatsapp", whatsappWebhookRoutes);
 
 app.notFound((c) => {
   return c.json({ success: false, message: "Not found" }, 404);

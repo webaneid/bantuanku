@@ -3,6 +3,7 @@ import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { users } from "./user";
 import { donatur } from "./donatur";
+import { bankAccounts } from "./bank";
 
 export const transactions = pgTable("transactions", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -23,6 +24,7 @@ export const transactions = pgTable("transactions", {
   subtotal: bigint("subtotal", { mode: "number" }).notNull(),
   adminFee: bigint("admin_fee", { mode: "number" }).default(0),
   totalAmount: bigint("total_amount", { mode: "number" }).notNull(),
+  uniqueCode: integer("unique_code").default(0),
 
   // Donor Information
   donorName: text("donor_name").notNull(),
@@ -36,6 +38,7 @@ export const transactions = pgTable("transactions", {
 
   // Payment
   paymentMethodId: text("payment_method_id"),
+  bankAccountId: text("bank_account_id").references(() => bankAccounts.id), // Bank account yang menerima pembayaran
   paymentStatus: text("payment_status").default("pending").notNull(), // pending, partial, paid, cancelled
   paidAmount: bigint("paid_amount", { mode: "number" }).default(0),
   paidAt: timestamp("paid_at", { precision: 3, mode: "date" }),
@@ -43,8 +46,15 @@ export const transactions = pgTable("transactions", {
   // Type-Specific Data (Conditional Fields as JSON)
   typeSpecificData: jsonb("type_specific_data"),
 
+  // Category System (Phase 1)
+  category: text("category").notNull(),
+  transactionType: text("transaction_type").default("income").notNull(),
+
   message: text("message"),
   notes: text("notes"),
+
+  // Fundraiser Referral
+  referredByFundraiserId: text("referred_by_fundraiser_id"),
 
   // Ledger Integration
   ledgerEntryId: text("ledger_entry_id"),
@@ -65,6 +75,10 @@ export const transactionsRelations = relations(transactions, ({ many, one }) => 
   donatur: one(donatur, {
     fields: [transactions.donaturId],
     references: [donatur.id],
+  }),
+  bankAccount: one(bankAccounts, {
+    fields: [transactions.bankAccountId],
+    references: [bankAccounts.id],
   }),
 }));
 

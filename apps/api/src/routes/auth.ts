@@ -8,6 +8,7 @@ import { signToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
 import { success, error } from "../lib/response";
 import { authMiddleware } from "../middleware/auth";
 import { authRateLimit } from "../middleware/ratelimit";
+import { WhatsAppService } from "../services/whatsapp";
 import type { Env, Variables } from "../types";
 
 const auth = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -61,13 +62,13 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
   }
 
   // Create or update donatur record for this user
-  const { donatur, donations } = await import("@bantuanku/db");
+  const { donatur, transactions } = await import("@bantuanku/db");
   const existingDonatur = await db.query.donatur.findFirst({
     where: eq(donatur.email, email.toLowerCase().trim()),
   });
 
   if (existingDonatur) {
-    // Update existing donatur with password
+    // Update existing donatur with password and link to user account
     await db
       .update(donatur)
       .set({
@@ -75,11 +76,12 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
         name,
         phone: phone || existingDonatur.phone,
         whatsappNumber: whatsappNumber || existingDonatur.whatsappNumber,
+        userId,
         updatedAt: new Date(),
       })
       .where(eq(donatur.id, existingDonatur.id));
   } else {
-    // Create new donatur record
+    // Create new donatur record linked to user account
     await db.insert(donatur).values({
       id: createId(),
       email,
@@ -87,16 +89,13 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
       name,
       phone,
       whatsappNumber,
+      userId,
     });
   }
 
-  // Link existing donations to new user account
-  // Update donations that have matching email or phone
+  // Link existing transactions to new user account
   const { or } = await import("drizzle-orm");
 
-  const conditions = [eq(donations.donorEmail, email.toLowerCase().trim())];
-
-  // Normalize phone for matching
   const normalizePhone = (input: string): string => {
     let cleaned = input.replace(/[^\d+]/g, "");
     if (cleaned.startsWith("+62")) {
@@ -110,19 +109,38 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
     return cleaned;
   };
 
+  const conditions = [eq(transactions.donorEmail, email.toLowerCase().trim())];
   if (phone) {
-    conditions.push(eq(donations.donorPhone, normalizePhone(phone)));
+    conditions.push(eq(transactions.donorPhone, normalizePhone(phone)));
   }
   if (whatsappNumber) {
-    conditions.push(eq(donations.donorPhone, normalizePhone(whatsappNumber)));
+    conditions.push(eq(transactions.donorPhone, normalizePhone(whatsappNumber)));
   }
 
-  // Update all matching donations to link them to the new user
   if (conditions.length > 0) {
     await db
-      .update(donations)
+      .update(transactions)
       .set({ userId, updatedAt: new Date() })
       .where(or(...conditions));
+  }
+
+  // WhatsApp notification: selamat datang
+  if (whatsappNumber) {
+    try {
+      const wa = new WhatsAppService(db, c.env.FRONTEND_URL);
+      const waResult = await wa.send({
+        phone: whatsappNumber,
+        templateKey: "wa_tpl_register_welcome",
+        variables: {
+          customer_name: name,
+          customer_email: email,
+          customer_phone: phone || whatsappNumber,
+        },
+      });
+      console.log("[WA] welcome notification result:", waResult);
+    } catch (err) {
+      console.error("[WA] welcome notification error:", err);
+    }
   }
 
   return success(c, { id: userId, email, name }, "Registration successful", 201);
@@ -167,6 +185,7 @@ auth.post("/login", authRateLimit, zValidator("json", loginSchema), async (c) =>
       phone: user.phone,
       whatsappNumber: user.whatsappNumber,
       roles: rolesSlugs,
+      isDeveloper: Boolean(user.isDeveloper),
     },
     c.env.JWT_SECRET,
     c.env.JWT_EXPIRES_IN || "15m"
@@ -189,6 +208,7 @@ auth.post("/login", authRateLimit, zValidator("json", loginSchema), async (c) =>
       phone: user.phone,
       whatsappNumber: user.whatsappNumber,
       roles: rolesSlugs,
+      isDeveloper: Boolean(user.isDeveloper),
     },
   });
 });
@@ -233,6 +253,7 @@ auth.post("/refresh", async (c) => {
       phone: user.phone,
       whatsappNumber: user.whatsappNumber,
       roles: rolesSlugs,
+      isDeveloper: Boolean(user.isDeveloper),
     },
     c.env.JWT_SECRET,
     c.env.JWT_EXPIRES_IN || "15m"
@@ -261,6 +282,7 @@ auth.get("/me", authMiddleware, async (c) => {
       whatsappNumber: true,
       avatar: true,
       emailVerifiedAt: true,
+      isDeveloper: true,
       createdAt: true,
     },
   });
@@ -322,6 +344,7 @@ auth.get("/me", authMiddleware, async (c) => {
     donaturId: donaturProfile?.id,
     bankAccounts,
     roles: currentUser!.roles,
+    isDeveloper: Boolean(user.isDeveloper),
     dbRoles: dbRoles, // Add this for debugging
   };
 
@@ -452,6 +475,361 @@ auth.patch("/me", authMiddleware, async (c) => {
     }
   }
 
+  return success(c, null, "Profile updated");
+});
+
+// Get unified profile data for ANY role (employee, mitra, donatur/user, super_admin, etc.)
+auth.get("/me/profile-data", authMiddleware, async (c) => {
+  const currentUser = c.get("user");
+  const db = c.get("db");
+
+  const { employees, mitra: mitraTable, donatur, entityBankAccounts, indonesiaProvinces, indonesiaRegencies, indonesiaDistricts, indonesiaVillages } = await import("@bantuanku/db");
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, currentUser!.id),
+    columns: {
+      id: true,
+      email: true,
+      name: true,
+      phone: true,
+      whatsappNumber: true,
+      avatar: true,
+      isDeveloper: true,
+      createdAt: true,
+    },
+  });
+
+  if (!user) {
+    return error(c, "User not found", 404);
+  }
+
+  const userRolesList = await db.query.userRoles.findMany({
+    where: eq(userRoles.userId, currentUser!.id),
+    with: { role: true },
+  });
+  const rolesSlugs = userRolesList.map((ur) => (ur as any).role?.slug).filter(Boolean);
+
+  // Determine entity type based on roles
+  let entityType: "employee" | "mitra" | "donatur" | null = null;
+  let entityData: any = null;
+  let bankAccounts: any[] = [];
+
+  // 1. Check employee (super_admin, admin_finance, admin_campaign, program_coordinator, employee)
+  const employeeRecord = await db
+    .select({
+      id: employees.id,
+      employeeId: employees.employeeId,
+      name: employees.name,
+      position: employees.position,
+      department: employees.department,
+      employmentType: employees.employmentType,
+      email: employees.email,
+      phone: employees.phone,
+      whatsappNumber: employees.whatsappNumber,
+      website: employees.website,
+      detailAddress: employees.detailAddress,
+      provinceCode: employees.provinceCode,
+      regencyCode: employees.regencyCode,
+      districtCode: employees.districtCode,
+      villageCode: employees.villageCode,
+      provinceName: indonesiaProvinces.name,
+      regencyName: indonesiaRegencies.name,
+      districtName: indonesiaDistricts.name,
+      villageName: indonesiaVillages.name,
+      joinDate: employees.joinDate,
+      createdAt: employees.createdAt,
+    })
+    .from(employees)
+    .leftJoin(indonesiaProvinces, eq(employees.provinceCode, indonesiaProvinces.code))
+    .leftJoin(indonesiaRegencies, eq(employees.regencyCode, indonesiaRegencies.code))
+    .leftJoin(indonesiaDistricts, eq(employees.districtCode, indonesiaDistricts.code))
+    .leftJoin(indonesiaVillages, eq(employees.villageCode, indonesiaVillages.code))
+    .where(eq(employees.userId, currentUser!.id))
+    .limit(1);
+
+  if (employeeRecord.length > 0) {
+    entityType = "employee";
+    entityData = employeeRecord[0];
+    const { and } = await import("drizzle-orm");
+    bankAccounts = await db
+      .select()
+      .from(entityBankAccounts)
+      .where(and(eq(entityBankAccounts.entityType, "employee"), eq(entityBankAccounts.entityId, entityData.id)));
+  }
+
+  // 2. Check mitra (if no employee found and user has mitra role)
+  if (!entityType && rolesSlugs.includes("mitra")) {
+    const mitraRecord = await db
+      .select({
+        id: mitraTable.id,
+        name: mitraTable.name,
+        slug: mitraTable.slug,
+        description: mitraTable.description,
+        logoUrl: mitraTable.logoUrl,
+        picName: mitraTable.picName,
+        picPosition: mitraTable.picPosition,
+        email: mitraTable.email,
+        phone: mitraTable.phone,
+        whatsappNumber: mitraTable.whatsappNumber,
+        website: mitraTable.website,
+        detailAddress: mitraTable.detailAddress,
+        provinceCode: mitraTable.provinceCode,
+        regencyCode: mitraTable.regencyCode,
+        districtCode: mitraTable.districtCode,
+        villageCode: mitraTable.villageCode,
+        provinceName: indonesiaProvinces.name,
+        regencyName: indonesiaRegencies.name,
+        districtName: indonesiaDistricts.name,
+        villageName: indonesiaVillages.name,
+        ktpUrl: mitraTable.ktpUrl,
+        bankBookUrl: mitraTable.bankBookUrl,
+        npwpUrl: mitraTable.npwpUrl,
+        status: mitraTable.status,
+        createdAt: mitraTable.createdAt,
+      })
+      .from(mitraTable)
+      .leftJoin(indonesiaProvinces, eq(mitraTable.provinceCode, indonesiaProvinces.code))
+      .leftJoin(indonesiaRegencies, eq(mitraTable.regencyCode, indonesiaRegencies.code))
+      .leftJoin(indonesiaDistricts, eq(mitraTable.districtCode, indonesiaDistricts.code))
+      .leftJoin(indonesiaVillages, eq(mitraTable.villageCode, indonesiaVillages.code))
+      .where(eq(mitraTable.userId, currentUser!.id))
+      .limit(1);
+
+    if (mitraRecord.length > 0) {
+      entityType = "mitra";
+      entityData = mitraRecord[0];
+      const { and } = await import("drizzle-orm");
+      bankAccounts = await db
+        .select()
+        .from(entityBankAccounts)
+        .where(and(eq(entityBankAccounts.entityType, "mitra"), eq(entityBankAccounts.entityId, entityData.id)));
+    }
+  }
+
+  // 3. Fallback to donatur (user role)
+  if (!entityType) {
+    const donaturRecord = await db
+      .select({
+        id: donatur.id,
+        name: donatur.name,
+        email: donatur.email,
+        phone: donatur.phone,
+        whatsappNumber: donatur.whatsappNumber,
+        website: donatur.website,
+        detailAddress: donatur.detailAddress,
+        provinceCode: donatur.provinceCode,
+        regencyCode: donatur.regencyCode,
+        districtCode: donatur.districtCode,
+        villageCode: donatur.villageCode,
+        provinceName: indonesiaProvinces.name,
+        regencyName: indonesiaRegencies.name,
+        districtName: indonesiaDistricts.name,
+        villageName: indonesiaVillages.name,
+        createdAt: donatur.createdAt,
+      })
+      .from(donatur)
+      .leftJoin(indonesiaProvinces, eq(donatur.provinceCode, indonesiaProvinces.code))
+      .leftJoin(indonesiaRegencies, eq(donatur.regencyCode, indonesiaRegencies.code))
+      .leftJoin(indonesiaDistricts, eq(donatur.districtCode, indonesiaDistricts.code))
+      .leftJoin(indonesiaVillages, eq(donatur.villageCode, indonesiaVillages.code))
+      .where(eq(donatur.userId, currentUser!.id))
+      .limit(1);
+
+    if (donaturRecord.length > 0) {
+      entityType = "donatur";
+      entityData = donaturRecord[0];
+      const { and } = await import("drizzle-orm");
+      bankAccounts = await db
+        .select()
+        .from(entityBankAccounts)
+        .where(and(eq(entityBankAccounts.entityType, "donatur"), eq(entityBankAccounts.entityId, entityData.id)));
+    }
+  }
+
+  return success(c, {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      whatsappNumber: user.whatsappNumber,
+      avatar: user.avatar,
+      isDeveloper: Boolean(user.isDeveloper),
+      createdAt: user.createdAt,
+    },
+    roles: rolesSlugs,
+    entityType,
+    entity: entityData,
+    bankAccounts,
+  });
+});
+
+// Update own profile (employee, mitra, or donatur - based on role)
+auth.patch("/me/profile", authMiddleware, async (c) => {
+  const currentUser = c.get("user");
+  const db = c.get("db");
+  const body = await c.req.json();
+
+  const { employees, mitra: mitraTable, donatur, entityBankAccounts } = await import("@bantuanku/db");
+  const { and } = await import("drizzle-orm");
+
+  const {
+    name,
+    phone,
+    whatsappNumber,
+    website,
+    detailAddress,
+    provinceCode,
+    regencyCode,
+    districtCode,
+    villageCode,
+    bankAccounts,
+    // Mitra-specific
+    picName,
+    picPosition,
+    description,
+  } = body;
+
+  // Sync name to users table
+  const userUpdateData: any = { updatedAt: new Date() };
+  if (name) userUpdateData.name = name;
+  if (phone !== undefined) userUpdateData.phone = phone || null;
+  if (whatsappNumber !== undefined) userUpdateData.whatsappNumber = whatsappNumber || null;
+  await db.update(users).set(userUpdateData).where(eq(users.id, currentUser!.id));
+
+  // 1. Try employee first
+  const employee = await db.query.employees.findFirst({
+    where: eq(employees.userId, currentUser!.id),
+  });
+
+  if (employee) {
+    await db
+      .update(employees)
+      .set({
+        name: name || employee.name,
+        phone: phone !== undefined ? (phone || null) : employee.phone,
+        whatsappNumber: whatsappNumber !== undefined ? (whatsappNumber || null) : employee.whatsappNumber,
+        website: website !== undefined ? (website || null) : employee.website,
+        detailAddress: detailAddress !== undefined ? (detailAddress || null) : employee.detailAddress,
+        provinceCode: provinceCode !== undefined ? (provinceCode || null) : employee.provinceCode,
+        regencyCode: regencyCode !== undefined ? (regencyCode || null) : employee.regencyCode,
+        districtCode: districtCode !== undefined ? (districtCode || null) : employee.districtCode,
+        villageCode: villageCode !== undefined ? (villageCode || null) : employee.villageCode,
+        updatedAt: new Date(),
+      })
+      .where(eq(employees.id, employee.id));
+
+    // Handle bank accounts
+    if (bankAccounts && Array.isArray(bankAccounts)) {
+      await db.delete(entityBankAccounts).where(and(eq(entityBankAccounts.entityType, "employee"), eq(entityBankAccounts.entityId, employee.id)));
+      if (bankAccounts.length > 0) {
+        const { createId } = await import("@bantuanku/db");
+        await db.insert(entityBankAccounts).values(
+          bankAccounts.map((account: any) => ({
+            id: createId(),
+            entityType: "employee" as const,
+            entityId: employee.id,
+            bankName: account.bankName,
+            accountNumber: account.accountNumber,
+            accountHolderName: account.accountHolderName,
+          }))
+        );
+      }
+    }
+
+    return success(c, null, "Profile updated");
+  }
+
+  // 2. Try mitra
+  const mitraRecord = await db.query.mitra.findFirst({
+    where: eq(mitraTable.userId, currentUser!.id),
+  });
+
+  if (mitraRecord) {
+    await db
+      .update(mitraTable)
+      .set({
+        picName: picName !== undefined ? picName : mitraRecord.picName,
+        picPosition: picPosition !== undefined ? (picPosition || null) : mitraRecord.picPosition,
+        description: description !== undefined ? (description || null) : mitraRecord.description,
+        email: mitraRecord.email, // email cannot change
+        phone: phone !== undefined ? (phone || null) : mitraRecord.phone,
+        whatsappNumber: whatsappNumber !== undefined ? (whatsappNumber || null) : mitraRecord.whatsappNumber,
+        website: website !== undefined ? (website || null) : mitraRecord.website,
+        detailAddress: detailAddress !== undefined ? (detailAddress || null) : mitraRecord.detailAddress,
+        provinceCode: provinceCode !== undefined ? (provinceCode || null) : mitraRecord.provinceCode,
+        regencyCode: regencyCode !== undefined ? (regencyCode || null) : mitraRecord.regencyCode,
+        districtCode: districtCode !== undefined ? (districtCode || null) : mitraRecord.districtCode,
+        villageCode: villageCode !== undefined ? (villageCode || null) : mitraRecord.villageCode,
+        updatedAt: new Date(),
+      })
+      .where(eq(mitraTable.id, mitraRecord.id));
+
+    // Handle bank accounts
+    if (bankAccounts && Array.isArray(bankAccounts)) {
+      await db.delete(entityBankAccounts).where(and(eq(entityBankAccounts.entityType, "mitra"), eq(entityBankAccounts.entityId, mitraRecord.id)));
+      if (bankAccounts.length > 0) {
+        const { createId } = await import("@bantuanku/db");
+        await db.insert(entityBankAccounts).values(
+          bankAccounts.map((account: any) => ({
+            id: createId(),
+            entityType: "mitra" as const,
+            entityId: mitraRecord.id,
+            bankName: account.bankName,
+            accountNumber: account.accountNumber,
+            accountHolderName: account.accountHolderName,
+          }))
+        );
+      }
+    }
+
+    return success(c, null, "Profile updated");
+  }
+
+  // 3. Fallback to donatur
+  const donaturRecord = await db.query.donatur.findFirst({
+    where: eq(donatur.userId, currentUser!.id),
+  });
+
+  if (donaturRecord) {
+    await db
+      .update(donatur)
+      .set({
+        name: name || donaturRecord.name,
+        phone: phone !== undefined ? (phone || null) : donaturRecord.phone,
+        whatsappNumber: whatsappNumber !== undefined ? (whatsappNumber || null) : donaturRecord.whatsappNumber,
+        website: website !== undefined ? (website || null) : donaturRecord.website,
+        detailAddress: detailAddress !== undefined ? (detailAddress || null) : donaturRecord.detailAddress,
+        provinceCode: provinceCode !== undefined ? (provinceCode || null) : donaturRecord.provinceCode,
+        regencyCode: regencyCode !== undefined ? (regencyCode || null) : donaturRecord.regencyCode,
+        districtCode: districtCode !== undefined ? (districtCode || null) : donaturRecord.districtCode,
+        villageCode: villageCode !== undefined ? (villageCode || null) : donaturRecord.villageCode,
+        updatedAt: new Date(),
+      })
+      .where(eq(donatur.id, donaturRecord.id));
+
+    // Handle bank accounts
+    if (bankAccounts && Array.isArray(bankAccounts)) {
+      await db.delete(entityBankAccounts).where(and(eq(entityBankAccounts.entityType, "donatur"), eq(entityBankAccounts.entityId, donaturRecord.id)));
+      if (bankAccounts.length > 0) {
+        const { createId } = await import("@bantuanku/db");
+        await db.insert(entityBankAccounts).values(
+          bankAccounts.map((account: any) => ({
+            id: createId(),
+            entityType: "donatur" as const,
+            entityId: donaturRecord.id,
+            bankName: account.bankName,
+            accountNumber: account.accountNumber,
+            accountHolderName: account.accountHolderName,
+          }))
+        );
+      }
+    }
+
+    return success(c, null, "Profile updated");
+  }
+
+  // No entity found - just update users table (already done above)
   return success(c, null, "Profile updated");
 });
 

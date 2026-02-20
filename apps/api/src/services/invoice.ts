@@ -1,4 +1,4 @@
-import { invoices, createId } from "@bantuanku/db";
+import { createId } from "@bantuanku/db";
 import type { Database } from "@bantuanku/db";
 
 interface InvoiceParams {
@@ -13,26 +13,9 @@ interface InvoiceParams {
 
 export async function createInvoice(db: Database, params: InvoiceParams) {
   const invoiceNumber = generateInvoiceNumber();
-  const now = new Date();
   const invoiceId = createId();
 
-  await db.insert(invoices).values({
-    id: invoiceId,
-    invoiceNumber,
-    donationId: params.donationId,
-    issuedAt: now,
-    issuedBy: params.issuedBy || "system",
-    subtotal: params.amount,
-    feeAmount: params.feeAmount || 0,
-    totalAmount: params.amount + (params.feeAmount || 0),
-    currency: "IDR",
-    payerName: params.payerName,
-    payerEmail: params.payerEmail,
-    payerPhone: params.payerPhone,
-    status: "paid",
-    paidAt: now,
-  });
-
+  // TODO: Implement invoice creation via universal system
   return { invoiceId, invoiceNumber };
 }
 

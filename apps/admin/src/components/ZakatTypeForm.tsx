@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
+import { useQuery } from "@tanstack/react-query";
 import RichTextEditor from "./RichTextEditor";
 import MediaLibrary from "./MediaLibrary";
+import SEOPanel, { type SEOData } from "./SEOPanel";
+import api from "@/lib/api";
 
 export interface ZakatTypeFormData {
   name: string;
@@ -14,6 +17,19 @@ export interface ZakatTypeFormData {
   hasCalculator: boolean;
   isActive: boolean;
   displayOrder: number;
+  calculatorType?: string;
+  fitrahAmount?: string;
+  // SEO fields
+  metaTitle?: string;
+  metaDescription?: string;
+  focusKeyphrase?: string;
+  canonicalUrl?: string;
+  noIndex?: boolean;
+  noFollow?: boolean;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImageUrl?: string;
+  seoScore?: number;
 }
 
 interface ZakatTypeFormProps {
@@ -34,6 +50,17 @@ export default function ZakatTypeForm({ onSubmit, initialData, isLoading }: Zaka
   const [description, setDescription] = useState(initialData?.description || "");
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || "");
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
+
+  // Fetch public settings to get default fitrah amount
+  const { data: publicSettings } = useQuery({
+    queryKey: ["public-settings"],
+    queryFn: async () => {
+      const response = await api.get("/settings");
+      return response.data?.data || {};
+    },
+  });
+
+  const defaultFitrahAmount = publicSettings?.zakat_fitrah_amount ? String(publicSettings.zakat_fitrah_amount) : "";
 
   const nameValue = watch("name");
 
@@ -67,9 +94,48 @@ export default function ZakatTypeForm({ onSubmit, initialData, isLoading }: Zaka
     setIsMediaLibraryOpen(false);
   };
 
+  // SEO state
+  const [seoValues, setSeoValues] = useState<Partial<SEOData>>({
+    focusKeyphrase: initialData?.focusKeyphrase || "",
+    metaTitle: initialData?.metaTitle || "",
+    metaDescription: initialData?.metaDescription || "",
+    canonicalUrl: initialData?.canonicalUrl || "",
+    noIndex: initialData?.noIndex || false,
+    noFollow: initialData?.noFollow || false,
+    ogTitle: initialData?.ogTitle || "",
+    ogDescription: initialData?.ogDescription || "",
+    ogImageUrl: initialData?.ogImageUrl || "",
+    seoScore: initialData?.seoScore || 0,
+  });
+
+  const handleSEOChange = useCallback((data: Partial<SEOData>) => {
+    setSeoValues(data);
+  }, []);
+
+  useEffect(() => {
+    if (initialData) {
+      setSeoValues({
+        focusKeyphrase: initialData.focusKeyphrase || "",
+        metaTitle: initialData.metaTitle || "",
+        metaDescription: initialData.metaDescription || "",
+        canonicalUrl: initialData.canonicalUrl || "",
+        noIndex: initialData.noIndex || false,
+        noFollow: initialData.noFollow || false,
+        ogTitle: initialData.ogTitle || "",
+        ogDescription: initialData.ogDescription || "",
+        ogImageUrl: initialData.ogImageUrl || "",
+        seoScore: initialData.seoScore || 0,
+      });
+    }
+  }, [initialData]);
+
+  const handleFormSubmit = (data: ZakatTypeFormData) => {
+    onSubmit({ ...data, ...seoValues });
+  };
+
   return (
     <>
-      <form id="zakat-type-form" onSubmit={handleSubmit(onSubmit)}>
+      <form id="zakat-type-form" onSubmit={handleSubmit(handleFormSubmit)}>
         <div className="form-layout-two-column">
           {/* Main Content (Left Column) */}
           <div className="form-main-content">
@@ -110,6 +176,30 @@ export default function ZakatTypeForm({ onSubmit, initialData, isLoading }: Zaka
               {errors.slug && <p className="form-error">{errors.slug.message}</p>}
               <p className="text-xs text-gray-500 mt-1">
                 Otomatis dibuat dari nama, bisa diubah manual
+              </p>
+            </div>
+
+            {/* Calculator Type */}
+            <div className="form-field">
+              <label className="form-label">
+                Jenis Kalkulator Zakat <span className="text-danger-500">*</span>
+              </label>
+              <select
+                className={`form-input ${errors.calculatorType ? 'border-danger-500' : ''}`}
+                {...register("calculatorType", {
+                  required: "Jenis kalkulator wajib dipilih"
+                })}
+              >
+                <option value="">-- Pilih Jenis Kalkulator --</option>
+                <option value="zakat-fitrah">Zakat Fitrah</option>
+                <option value="zakat-maal">Zakat Maal</option>
+                <option value="zakat-profesi">Zakat Profesi</option>
+                <option value="zakat-pertanian">Zakat Pertanian</option>
+                <option value="zakat-peternakan">Zakat Peternakan</option>
+              </select>
+              {errors.calculatorType && <p className="form-error">{errors.calculatorType.message}</p>}
+              <p className="text-xs text-gray-500 mt-1">
+                Menentukan jenis kalkulator yang digunakan untuk menghitung zakat ini
               </p>
             </div>
 
@@ -154,6 +244,23 @@ export default function ZakatTypeForm({ onSubmit, initialData, isLoading }: Zaka
               />
               <p className="text-xs text-gray-500 mt-1">
                 Urutan tampilan di daftar (angka lebih kecil tampil lebih dulu)
+              </p>
+            </div>
+
+            {/* Nominal Zakat Fitrah */}
+            <div className="form-field">
+              <label className="form-label">Nominal Zakat Fitrah (Rp/jiwa)</label>
+              <input
+                type="number"
+                className="form-input"
+                {...register("fitrahAmount")}
+                placeholder={defaultFitrahAmount ? `Rp ${Number(defaultFitrahAmount).toLocaleString("id-ID")}` : "Kosongkan untuk menggunakan default"}
+                min={0}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {defaultFitrahAmount
+                  ? `Jika dikosongkan maka Nominal Zakat Fitrah Rp. ${Number(defaultFitrahAmount).toLocaleString("id-ID")}/Jiwa sesuai dengan sistem ini.`
+                  : "Jika dikosongkan, nominal akan menggunakan nilai default dari pengaturan sistem."}
               </p>
             </div>
 
@@ -257,6 +364,20 @@ export default function ZakatTypeForm({ onSubmit, initialData, isLoading }: Zaka
           </div>
         </div>
       </form>
+
+      <SEOPanel
+        value={seoValues}
+        onChange={handleSEOChange}
+        contentData={{
+          title: watch("name") || "",
+          slug: watch("slug") || "",
+          description: description,
+          content: description,
+          imageUrl: imageUrl,
+        }}
+        entityType="zakatType"
+        disabled={isLoading}
+      />
 
       {/* Media Library Modal */}
       <MediaLibrary

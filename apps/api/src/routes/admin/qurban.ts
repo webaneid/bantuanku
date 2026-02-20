@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, isNull } from "drizzle-orm";
 import {
   qurbanPeriods,
   qurbanPackages,
@@ -8,13 +8,14 @@ import {
   qurbanPayments,
   qurbanSharedGroups,
   qurbanExecutions,
-  qurbanSavings,
-  qurbanSavingsTransactions,
+  revenueShares,
+  transactions,
   users,
   donatur,
+  mitra,
   createId,
 } from "@bantuanku/db";
-import { requireAuth } from "../../middleware/auth";
+import { requireAuth, requireRole } from "../../middleware/auth";
 import { extractPath } from "./media";
 import { getCurrentYearWIB } from "../../utils/timezone";
 import type { Env, Variables } from "../../types";
@@ -35,6 +36,7 @@ app.get("/periods", async (c) => {
   const periods = await db
     .select()
     .from(qurbanPeriods)
+    .where(isNull(qurbanPeriods.mitraId))
     .orderBy(desc(qurbanPeriods.gregorianYear));
 
   return c.json({ data: periods });
@@ -77,7 +79,9 @@ app.get("/periods/:id", async (c) => {
 // Get period detail with orders
 app.get("/periods/:id/detail", async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const { id } = c.req.param();
+  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
 
   // Get period
   const period = await db
@@ -97,7 +101,13 @@ app.get("/periods/:id/detail", async (c) => {
       packageId: qurbanPackagePeriods.packageId,
     })
     .from(qurbanPackagePeriods)
-    .where(eq(qurbanPackagePeriods.periodId, id));
+    .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+    .where(
+      and(
+        eq(qurbanPackagePeriods.periodId, id),
+        ...(isMitra && user ? [eq(qurbanPackages.createdBy, user.id)] : [])
+      )
+    );
 
   const packagePeriodIds = packagePeriods.map((pp: any) => pp.id);
 
@@ -112,7 +122,8 @@ app.get("/periods/:id/detail", async (c) => {
         .where(
           and(
             eq(transactions.productType, "qurban"),
-            inArray(transactions.productId, packagePeriodIds)
+            inArray(transactions.productId, packagePeriodIds),
+            sql<boolean>`coalesce((${transactions.typeSpecificData} ->> 'is_admin_fee_entry')::boolean, false) = false`
           )
         )
         .orderBy(transactions.createdAt)
@@ -197,8 +208,8 @@ app.get("/periods/:id/detail", async (c) => {
   });
 });
 
-// Create period
-app.post("/periods", async (c) => {
+// Create period (global only - mitra is not allowed)
+app.post("/periods", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const body = await c.req.json();
 
@@ -214,14 +225,15 @@ app.post("/periods", async (c) => {
       executionDate: new Date(body.executionDate),
       status: body.status || "draft",
       description: body.description,
+      mitraId: null,
     })
     .returning();
 
   return c.json({ data: newPeriod[0], message: "Period created successfully" });
 });
 
-// Update period
-app.patch("/periods/:id", async (c) => {
+// Update period (global only - mitra is not allowed)
+app.patch("/periods/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const body = await c.req.json();
@@ -250,8 +262,8 @@ app.patch("/periods/:id", async (c) => {
   return c.json({ data: updated[0], message: "Period updated successfully" });
 });
 
-// Delete period
-app.delete("/periods/:id", async (c) => {
+// Delete period (global only - mitra is not allowed)
+app.delete("/periods/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
 
@@ -274,25 +286,32 @@ app.delete("/periods/:id", async (c) => {
 // Get all packages with their period associations
 app.get("/packages", async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const periodId = c.req.query("period_id");
   const apiUrl = (c.env as any)?.API_URL || "http://localhost:50245";
+
+  // If mitra, only show own packages
+  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+  const packageConditions: any[] = [];
+  if (isMitra && user) packageConditions.push(eq(qurbanPackages.createdBy, user.id));
+  const packageWhere = packageConditions.length > 0 ? and(...packageConditions) : undefined;
 
   // Get all packages
   const packages = await db
     .select()
     .from(qurbanPackages)
+    .where(packageWhere)
     .orderBy(desc(qurbanPackages.createdAt));
 
   // For each package, get its period associations
   const packagesWithPeriods: any[] = [];
 
   for (const pkg of packages) {
-    const conditions = periodId
-      ? and(
-          eq(qurbanPackagePeriods.packageId, pkg.id),
-          eq(qurbanPackagePeriods.periodId, periodId)
-        )
-      : eq(qurbanPackagePeriods.packageId, pkg.id);
+    let periodConditions: any[] = [eq(qurbanPackagePeriods.packageId, pkg.id)];
+    if (periodId) {
+      periodConditions.push(eq(qurbanPackagePeriods.periodId, periodId));
+    }
+    const conditions = and(...periodConditions);
 
     const periods = await db
       .select({
@@ -306,6 +325,10 @@ app.get("/packages", async (c) => {
         stockSold: qurbanPackagePeriods.stockSold,
         slotsFilled: qurbanPackagePeriods.slotsFilled,
         isAvailable: qurbanPackagePeriods.isAvailable,
+        executionDateOverride: qurbanPackagePeriods.executionDateOverride,
+        executionTimeNote: qurbanPackagePeriods.executionTimeNote,
+        executionLocation: qurbanPackagePeriods.executionLocation,
+        executionNotes: qurbanPackagePeriods.executionNotes,
         createdAt: qurbanPackagePeriods.createdAt,
       })
       .from(qurbanPackagePeriods)
@@ -326,7 +349,7 @@ app.get("/packages", async (c) => {
     });
   }
 
-  // If periodId filter is active, only return packages that have associations with that period
+  // If period filter is active, only return packages that have associations
   const filteredPackages = periodId
     ? packagesWithPeriods.filter((pkg: any) => pkg.periods.length > 0)
     : packagesWithPeriods;
@@ -337,8 +360,10 @@ app.get("/packages", async (c) => {
 // Get single package (supports both master package ID and package-period ID)
 app.get("/packages/:id", async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const { id } = c.req.param();
   const apiUrl = (c.env as any)?.API_URL || "http://localhost:50245";
+  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
 
   // First, try to find as master package ID
   const pkg = await db
@@ -348,6 +373,35 @@ app.get("/packages/:id", async (c) => {
     .limit(1);
 
   if (pkg.length > 0) {
+    if (isMitra) {
+      if (pkg[0].createdBy && pkg[0].createdBy !== user!.id) {
+        return c.json({ error: "Forbidden" }, 403);
+      }
+      if (!pkg[0].createdBy) {
+        const mitraRecord = await db.query.mitra.findFirst({
+          where: eq(mitra.userId, user!.id),
+        });
+        if (!mitraRecord) {
+          return c.json({ error: "Forbidden" }, 403);
+        }
+        const pkgPeriods = await db
+          .select({ periodId: qurbanPackagePeriods.periodId })
+          .from(qurbanPackagePeriods)
+          .where(eq(qurbanPackagePeriods.packageId, pkg[0].id));
+        const periodIds = pkgPeriods.map((p) => p.periodId);
+        if (periodIds.length === 0) {
+          return c.json({ error: "Forbidden" }, 403);
+        }
+        const mitraPeriods = await db
+          .select({ id: qurbanPeriods.id })
+          .from(qurbanPeriods)
+          .where(and(inArray(qurbanPeriods.id, periodIds), eq(qurbanPeriods.mitraId, mitraRecord.id)));
+        if (mitraPeriods.length === 0) {
+          return c.json({ error: "Forbidden" }, 403);
+        }
+      }
+    }
+
     // Found as master package - return with periods array (for edit page)
     const constructUrl = (urlOrPath: string | null | undefined) => {
       if (!urlOrPath) return urlOrPath;
@@ -369,6 +423,10 @@ app.get("/packages/:id", async (c) => {
         stockSold: qurbanPackagePeriods.stockSold,
         slotsFilled: qurbanPackagePeriods.slotsFilled,
         isAvailable: qurbanPackagePeriods.isAvailable,
+        executionDateOverride: qurbanPackagePeriods.executionDateOverride,
+        executionTimeNote: qurbanPackagePeriods.executionTimeNote,
+        executionLocation: qurbanPackagePeriods.executionLocation,
+        executionNotes: qurbanPackagePeriods.executionNotes,
         createdAt: qurbanPackagePeriods.createdAt,
       })
       .from(qurbanPackagePeriods)
@@ -395,6 +453,7 @@ app.get("/packages/:id", async (c) => {
       animalType: qurbanPackages.animalType,
       packageType: qurbanPackages.packageType,
       maxSlots: qurbanPackages.maxSlots,
+      createdBy: qurbanPackages.createdBy,
       isFeatured: qurbanPackages.isFeatured,
       isAvailable: sql<boolean>`${qurbanPackages.isAvailable} AND ${qurbanPackagePeriods.isAvailable}`,
       periodId: qurbanPackagePeriods.periodId,
@@ -405,6 +464,10 @@ app.get("/packages/:id", async (c) => {
       stock: qurbanPackagePeriods.stock,
       stockSold: qurbanPackagePeriods.stockSold,
       slotsFilled: qurbanPackagePeriods.slotsFilled,
+      executionDateOverride: qurbanPackagePeriods.executionDateOverride,
+      executionTimeNote: qurbanPackagePeriods.executionTimeNote,
+      executionLocation: qurbanPackagePeriods.executionLocation,
+      executionNotes: qurbanPackagePeriods.executionNotes,
       createdAt: qurbanPackagePeriods.createdAt,
     })
     .from(qurbanPackagePeriods)
@@ -415,6 +478,28 @@ app.get("/packages/:id", async (c) => {
 
   if (packagePeriodData.length === 0) {
     return c.json({ error: "Package not found" }, 404);
+  }
+
+  if (isMitra) {
+    if (packagePeriodData[0].createdBy && packagePeriodData[0].createdBy !== user!.id) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+    if (!packagePeriodData[0].createdBy) {
+      const mitraRecord = await db.query.mitra.findFirst({
+        where: eq(mitra.userId, user!.id),
+      });
+      if (!mitraRecord) {
+        return c.json({ error: "Forbidden" }, 403);
+      }
+      const period = await db
+        .select({ mitraId: qurbanPeriods.mitraId })
+        .from(qurbanPeriods)
+        .where(eq(qurbanPeriods.id, packagePeriodData[0].periodId))
+        .limit(1);
+      if (period.length === 0 || period[0].mitraId !== mitraRecord.id) {
+        return c.json({ error: "Forbidden" }, 403);
+      }
+    }
   }
 
   const pkgPeriod = packagePeriodData[0];
@@ -431,9 +516,34 @@ app.get("/packages/:id", async (c) => {
 });
 
 // Create package with period associations
-app.post("/packages", async (c) => {
+app.post("/packages", requireRole("super_admin", "admin_campaign", "mitra"), async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const body = await c.req.json();
+
+  // If mitra, ensure mitra record exists
+  const isMitra = user?.roles?.length === 1 && user?.roles?.includes("mitra");
+  if (isMitra) {
+    const mitraRecord = await db.query.mitra.findFirst({
+      where: eq(mitra.userId, user!.id),
+    });
+    if (!mitraRecord) {
+      return c.json({ error: "Mitra record not found for this user" }, 403);
+    }
+  }
+
+  // Enforce global period usage (no mitra-specific period to avoid duplicate timeline)
+  if (body.periods && Array.isArray(body.periods)) {
+    for (const period of body.periods) {
+      const p = await db.select().from(qurbanPeriods).where(eq(qurbanPeriods.id, period.periodId)).limit(1);
+      if (p.length === 0) {
+        return c.json({ error: "Period not found" }, 400);
+      }
+      if (p[0].mitraId) {
+        return c.json({ error: "Period mitra tidak didukung. Gunakan periode global." }, 400);
+      }
+    }
+  }
 
   // Store GCS URLs as-is, extract path for local uploads
   const cleanImageUrl = body.imageUrl
@@ -455,6 +565,18 @@ app.post("/packages", async (c) => {
       maxSlots: body.maxSlots,
       isAvailable: body.isAvailable ?? true,
       isFeatured: body.isFeatured ?? false,
+      // SEO fields
+      metaTitle: body.metaTitle || null,
+      metaDescription: body.metaDescription || null,
+      focusKeyphrase: body.focusKeyphrase || null,
+      canonicalUrl: body.canonicalUrl || null,
+      noIndex: body.noIndex ?? false,
+      noFollow: body.noFollow ?? false,
+      ogTitle: body.ogTitle || null,
+      ogDescription: body.ogDescription || null,
+      ogImageUrl: body.ogImageUrl || null,
+      seoScore: body.seoScore ?? 0,
+      createdBy: user?.id || null,
     })
     .returning();
 
@@ -469,6 +591,10 @@ app.post("/packages", async (c) => {
       stockSold: 0,
       slotsFilled: 0,
       isAvailable: period.isAvailable ?? true,
+      executionDateOverride: period.executionDateOverride ? new Date(period.executionDateOverride) : null,
+      executionTimeNote: period.executionTimeNote || null,
+      executionLocation: period.executionLocation || null,
+      executionNotes: period.executionNotes || null,
     }));
 
     await db.insert(qurbanPackagePeriods).values(packagePeriodValues);
@@ -478,10 +604,56 @@ app.post("/packages", async (c) => {
 });
 
 // Update package master data and periods
-app.patch("/packages/:id", async (c) => {
+app.patch("/packages/:id", requireRole("super_admin", "admin_campaign", "mitra"), async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const { id } = c.req.param();
   const body = await c.req.json();
+
+  // If mitra, verify package ownership
+  const isMitra = user?.roles?.length === 1 && user?.roles?.includes("mitra");
+  if (isMitra) {
+    const mitraRecord = await db.query.mitra.findFirst({
+      where: eq(mitra.userId, user!.id),
+    });
+    if (!mitraRecord) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+    const pkgRow = await db
+      .select({ id: qurbanPackages.id, createdBy: qurbanPackages.createdBy })
+      .from(qurbanPackages)
+      .where(eq(qurbanPackages.id, id))
+      .limit(1);
+    if (pkgRow.length === 0) {
+      return c.json({ error: "Package not found" }, 404);
+    }
+    if (pkgRow[0].createdBy && pkgRow[0].createdBy !== user!.id) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+    if (!pkgRow[0].createdBy) {
+      const pkgPeriods = await db.select({ periodId: qurbanPackagePeriods.periodId }).from(qurbanPackagePeriods).where(eq(qurbanPackagePeriods.packageId, id));
+      if (pkgPeriods.length > 0) {
+        const periodIds = pkgPeriods.map(p => p.periodId);
+        const mitraPeriods = await db.select({ id: qurbanPeriods.id }).from(qurbanPeriods).where(and(inArray(qurbanPeriods.id, periodIds), eq(qurbanPeriods.mitraId, mitraRecord.id)));
+        if (mitraPeriods.length === 0) {
+          return c.json({ error: "Forbidden" }, 403);
+        }
+      }
+    }
+  }
+
+  // Enforce global period usage in package associations
+  if (body.periods && Array.isArray(body.periods)) {
+    for (const period of body.periods) {
+      const p = await db.select().from(qurbanPeriods).where(eq(qurbanPeriods.id, period.periodId)).limit(1);
+      if (p.length === 0) {
+        return c.json({ error: "Period not found" }, 400);
+      }
+      if (p[0].mitraId) {
+        return c.json({ error: "Period mitra tidak didukung. Gunakan periode global." }, 400);
+      }
+    }
+  }
 
   const updateData: any = { updatedAt: new Date() };
 
@@ -499,6 +671,17 @@ app.patch("/packages/:id", async (c) => {
   if (body.isFeatured !== undefined) updateData.isFeatured = body.isFeatured;
   if (body.animalType !== undefined) updateData.animalType = body.animalType;
   if (body.packageType !== undefined) updateData.packageType = body.packageType;
+  // SEO fields
+  if (body.metaTitle !== undefined) updateData.metaTitle = body.metaTitle || null;
+  if (body.metaDescription !== undefined) updateData.metaDescription = body.metaDescription || null;
+  if (body.focusKeyphrase !== undefined) updateData.focusKeyphrase = body.focusKeyphrase || null;
+  if (body.canonicalUrl !== undefined) updateData.canonicalUrl = body.canonicalUrl || null;
+  if (body.noIndex !== undefined) updateData.noIndex = body.noIndex;
+  if (body.noFollow !== undefined) updateData.noFollow = body.noFollow;
+  if (body.ogTitle !== undefined) updateData.ogTitle = body.ogTitle || null;
+  if (body.ogDescription !== undefined) updateData.ogDescription = body.ogDescription || null;
+  if (body.ogImageUrl !== undefined) updateData.ogImageUrl = body.ogImageUrl || null;
+  if (body.seoScore !== undefined) updateData.seoScore = body.seoScore;
 
   const updated = await db
     .update(qurbanPackages)
@@ -533,6 +716,10 @@ app.patch("/packages/:id", async (c) => {
             price: period.price,
             stock: period.stock || 0,
             isAvailable: period.isAvailable ?? true,
+            executionDateOverride: period.executionDateOverride ? new Date(period.executionDateOverride) : null,
+            executionTimeNote: period.executionTimeNote || null,
+            executionLocation: period.executionLocation || null,
+            executionNotes: period.executionNotes || null,
             updatedAt: new Date(),
           })
           .where(eq(qurbanPackagePeriods.id, existing.id));
@@ -547,22 +734,30 @@ app.patch("/packages/:id", async (c) => {
           stockSold: 0,
           slotsFilled: 0,
           isAvailable: period.isAvailable ?? true,
+          executionDateOverride: period.executionDateOverride ? new Date(period.executionDateOverride) : null,
+          executionTimeNote: period.executionTimeNote || null,
+          executionLocation: period.executionLocation || null,
+          executionNotes: period.executionNotes || null,
         });
       }
     }
 
     // Delete period associations that are no longer in the list
-    // Only delete if there are no orders referencing them
+    // Only delete if there are no qurban transactions referencing them
     for (const existing of existingPeriods) {
       if (!incomingPeriodIds.has(existing.periodId)) {
-        // Check if there are orders for this package-period
-        const orders = await db
-          .select({ id: qurbanOrders.id })
-          .from(qurbanOrders)
-          .where(eq(qurbanOrders.packagePeriodId, existing.id))
+        const linkedTransactions = await db
+          .select({ id: transactions.id })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.productType, "qurban"),
+              eq(transactions.productId, existing.id)
+            )
+          )
           .limit(1);
 
-        if (orders.length === 0) {
+        if (linkedTransactions.length === 0) {
           // No orders, safe to delete
           await db.delete(qurbanPackagePeriods).where(eq(qurbanPackagePeriods.id, existing.id));
         } else {
@@ -583,9 +778,42 @@ app.patch("/packages/:id", async (c) => {
 });
 
 // Delete package
-app.delete("/packages/:id", async (c) => {
+app.delete("/packages/:id", requireRole("super_admin", "admin_campaign", "mitra"), async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const { id } = c.req.param();
+
+  // If mitra, verify package ownership
+  const isMitra = user?.roles?.length === 1 && user?.roles?.includes("mitra");
+  if (isMitra) {
+    const mitraRecord = await db.query.mitra.findFirst({
+      where: eq(mitra.userId, user!.id),
+    });
+    if (!mitraRecord) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+    const pkgRow = await db
+      .select({ id: qurbanPackages.id, createdBy: qurbanPackages.createdBy })
+      .from(qurbanPackages)
+      .where(eq(qurbanPackages.id, id))
+      .limit(1);
+    if (pkgRow.length === 0) {
+      return c.json({ error: "Package not found" }, 404);
+    }
+    if (pkgRow[0].createdBy && pkgRow[0].createdBy !== user!.id) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+    if (!pkgRow[0].createdBy) {
+      const pkgPeriods = await db.select({ periodId: qurbanPackagePeriods.periodId }).from(qurbanPackagePeriods).where(eq(qurbanPackagePeriods.packageId, id));
+      if (pkgPeriods.length > 0) {
+        const periodIds = pkgPeriods.map(p => p.periodId);
+        const mitraPeriods = await db.select({ id: qurbanPeriods.id }).from(qurbanPeriods).where(and(inArray(qurbanPeriods.id, periodIds), eq(qurbanPeriods.mitraId, mitraRecord.id)));
+        if (mitraPeriods.length === 0) {
+          return c.json({ error: "Forbidden" }, 403);
+        }
+      }
+    }
+  }
 
   const deleted = await db
     .delete(qurbanPackages)
@@ -604,10 +832,24 @@ app.delete("/packages/:id", async (c) => {
 // ============================================================
 
 // Add package to a period with specific pricing
-app.post("/packages/:packageId/periods", async (c) => {
+app.post("/packages/:packageId/periods", requireRole("super_admin", "admin_campaign", "mitra"), async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const { packageId } = c.req.param();
   const body = await c.req.json();
+
+  // If mitra, verify package ownership
+  const isMitra = user?.roles?.length === 1 && user?.roles?.includes("mitra");
+  if (isMitra) {
+    const pkgOwner = await db
+      .select({ id: qurbanPackages.id, createdBy: qurbanPackages.createdBy })
+      .from(qurbanPackages)
+      .where(eq(qurbanPackages.id, packageId))
+      .limit(1);
+    if (pkgOwner.length > 0 && pkgOwner[0].createdBy && pkgOwner[0].createdBy !== user!.id) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+  }
 
   // Check if package exists
   const pkg = await db
@@ -620,6 +862,35 @@ app.post("/packages/:packageId/periods", async (c) => {
     return c.json({ error: "Package not found" }, 404);
   }
 
+  if (isMitra) {
+    if (pkg[0].createdBy && pkg[0].createdBy !== user!.id) {
+      return c.json({ error: "Forbidden" }, 403);
+    }
+    if (!pkg[0].createdBy) {
+      const mitraRecord = await db.query.mitra.findFirst({
+        where: eq(mitra.userId, user!.id),
+      });
+      if (!mitraRecord) {
+        return c.json({ error: "Forbidden" }, 403);
+      }
+      const pkgPeriods = await db
+        .select({ periodId: qurbanPackagePeriods.periodId })
+        .from(qurbanPackagePeriods)
+        .where(eq(qurbanPackagePeriods.packageId, packageId));
+      const periodIds = pkgPeriods.map((p) => p.periodId);
+      if (periodIds.length === 0) {
+        return c.json({ error: "Forbidden" }, 403);
+      }
+      const mitraPeriods = await db
+        .select({ id: qurbanPeriods.id })
+        .from(qurbanPeriods)
+        .where(and(inArray(qurbanPeriods.id, periodIds), eq(qurbanPeriods.mitraId, mitraRecord.id)));
+      if (mitraPeriods.length === 0) {
+        return c.json({ error: "Forbidden" }, 403);
+      }
+    }
+  }
+
   // Check if period exists
   const period = await db
     .select()
@@ -629,6 +900,9 @@ app.post("/packages/:packageId/periods", async (c) => {
 
   if (period.length === 0) {
     return c.json({ error: "Period not found" }, 404);
+  }
+  if (period[0].mitraId) {
+    return c.json({ error: "Period mitra tidak didukung. Gunakan periode global." }, 400);
   }
 
   // Check if association already exists
@@ -659,6 +933,10 @@ app.post("/packages/:packageId/periods", async (c) => {
       stockSold: 0,
       slotsFilled: 0,
       isAvailable: body.isAvailable ?? true,
+      executionDateOverride: body.executionDateOverride ? new Date(body.executionDateOverride) : null,
+      executionTimeNote: body.executionTimeNote || null,
+      executionLocation: body.executionLocation || null,
+      executionNotes: body.executionNotes || null,
     })
     .returning();
 
@@ -669,16 +947,59 @@ app.post("/packages/:packageId/periods", async (c) => {
 });
 
 // Update package-period association (price, stock, availability for specific period)
-app.patch("/package-periods/:id", async (c) => {
+app.patch("/package-periods/:id", requireRole("super_admin", "admin_campaign", "mitra"), async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const { id } = c.req.param();
   const body = await c.req.json();
+
+  // If mitra, verify package ownership
+  const isMitra = user?.roles?.length === 1 && user?.roles?.includes("mitra");
+  if (isMitra) {
+    const pp = await db
+      .select({ packageId: qurbanPackagePeriods.packageId, periodId: qurbanPackagePeriods.periodId })
+      .from(qurbanPackagePeriods)
+      .where(eq(qurbanPackagePeriods.id, id))
+      .limit(1);
+    if (pp.length > 0) {
+      const pkgOwner = await db
+        .select({ createdBy: qurbanPackages.createdBy })
+        .from(qurbanPackages)
+        .where(eq(qurbanPackages.id, pp[0].packageId))
+        .limit(1);
+      if (pkgOwner.length > 0 && pkgOwner[0].createdBy && pkgOwner[0].createdBy !== user!.id) {
+        return c.json({ error: "Forbidden" }, 403);
+      }
+      if (pkgOwner.length > 0 && !pkgOwner[0].createdBy) {
+        const mitraRecord = await db.query.mitra.findFirst({
+          where: eq(mitra.userId, user!.id),
+        });
+        if (!mitraRecord) {
+          return c.json({ error: "Forbidden" }, 403);
+        }
+        const period = await db
+          .select({ mitraId: qurbanPeriods.mitraId })
+          .from(qurbanPeriods)
+          .where(eq(qurbanPeriods.id, pp[0].periodId))
+          .limit(1);
+        if (period.length === 0 || period[0].mitraId !== mitraRecord.id) {
+          return c.json({ error: "Forbidden" }, 403);
+        }
+      }
+    }
+  }
 
   const updateData: any = { updatedAt: new Date() };
 
   if (body.price !== undefined) updateData.price = body.price;
   if (body.stock !== undefined) updateData.stock = body.stock;
   if (body.isAvailable !== undefined) updateData.isAvailable = body.isAvailable;
+  if (body.executionDateOverride !== undefined) {
+    updateData.executionDateOverride = body.executionDateOverride ? new Date(body.executionDateOverride) : null;
+  }
+  if (body.executionTimeNote !== undefined) updateData.executionTimeNote = body.executionTimeNote || null;
+  if (body.executionLocation !== undefined) updateData.executionLocation = body.executionLocation || null;
+  if (body.executionNotes !== undefined) updateData.executionNotes = body.executionNotes || null;
 
   const updated = await db
     .update(qurbanPackagePeriods)
@@ -697,18 +1018,60 @@ app.patch("/package-periods/:id", async (c) => {
 });
 
 // Remove package from a period
-app.delete("/package-periods/:id", async (c) => {
+app.delete("/package-periods/:id", requireRole("super_admin", "admin_campaign", "mitra"), async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const { id } = c.req.param();
 
-  // Check if there are existing orders for this package-period
-  const orders = await db
-    .select({ id: qurbanOrders.id })
-    .from(qurbanOrders)
-    .where(eq(qurbanOrders.packagePeriodId, id))
+  // If mitra, verify package ownership
+  const isMitra = user?.roles?.length === 1 && user?.roles?.includes("mitra");
+  if (isMitra) {
+    const pp = await db
+      .select({ packageId: qurbanPackagePeriods.packageId, periodId: qurbanPackagePeriods.periodId })
+      .from(qurbanPackagePeriods)
+      .where(eq(qurbanPackagePeriods.id, id))
+      .limit(1);
+    if (pp.length > 0) {
+      const pkgOwner = await db
+        .select({ createdBy: qurbanPackages.createdBy })
+        .from(qurbanPackages)
+        .where(eq(qurbanPackages.id, pp[0].packageId))
+        .limit(1);
+      if (pkgOwner.length > 0 && pkgOwner[0].createdBy && pkgOwner[0].createdBy !== user!.id) {
+        return c.json({ error: "Forbidden" }, 403);
+      }
+      if (pkgOwner.length > 0 && !pkgOwner[0].createdBy) {
+        const mitraRecord = await db.query.mitra.findFirst({
+          where: eq(mitra.userId, user!.id),
+        });
+        if (!mitraRecord) {
+          return c.json({ error: "Forbidden" }, 403);
+        }
+        const period = await db
+          .select({ mitraId: qurbanPeriods.mitraId })
+          .from(qurbanPeriods)
+          .where(eq(qurbanPeriods.id, pp[0].periodId))
+          .limit(1);
+        if (period.length === 0 || period[0].mitraId !== mitraRecord.id) {
+          return c.json({ error: "Forbidden" }, 403);
+        }
+      }
+    }
+  }
+
+  // Check if there are existing qurban transactions for this package-period
+  const linkedTransactions = await db
+    .select({ id: transactions.id })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.productType, "qurban"),
+        eq(transactions.productId, id)
+      )
+    )
     .limit(1);
 
-  if (orders.length > 0) {
+  if (linkedTransactions.length > 0) {
     return c.json({
       error: "Cannot delete package-period association with existing orders",
     }, 400);
@@ -747,6 +1110,10 @@ app.get("/periods/:periodId/packages", async (c) => {
       stock: qurbanPackagePeriods.stock,
       stockSold: qurbanPackagePeriods.stockSold,
       slotsFilled: qurbanPackagePeriods.slotsFilled,
+      executionDateOverride: qurbanPackagePeriods.executionDateOverride,
+      executionTimeNote: qurbanPackagePeriods.executionTimeNote,
+      executionLocation: qurbanPackagePeriods.executionLocation,
+      executionNotes: qurbanPackagePeriods.executionNotes,
       isAvailable: sql<boolean>`${qurbanPackages.isAvailable} AND ${qurbanPackagePeriods.isAvailable}`,
       createdAt: qurbanPackagePeriods.createdAt,
     })
@@ -1048,7 +1415,7 @@ app.get("/orders/by-number/:orderNumber", async (c) => {
 });
 
 // Create order manually
-app.post("/orders", async (c) => {
+app.post("/orders", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const body = await c.req.json();
 
@@ -1186,7 +1553,7 @@ app.post("/orders", async (c) => {
 });
 
 // Confirm order
-app.post("/orders/:id/confirm", async (c) => {
+app.post("/orders/:id/confirm", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
 
@@ -1208,7 +1575,7 @@ app.post("/orders/:id/confirm", async (c) => {
 });
 
 // Cancel order
-app.post("/orders/:id/cancel", async (c) => {
+app.post("/orders/:id/cancel", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
 
@@ -1249,7 +1616,7 @@ app.post("/orders/:id/cancel", async (c) => {
 });
 
 // Update order
-app.put("/orders/:id", async (c) => {
+app.put("/orders/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const body = await c.req.json();
@@ -1309,7 +1676,7 @@ app.put("/orders/:id", async (c) => {
 });
 
 // Add payment proof
-app.post("/orders/:id/payment-proof", async (c) => {
+app.post("/orders/:id/payment-proof", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const body = await c.req.json();
@@ -1364,7 +1731,7 @@ app.post("/orders/:id/payment-proof", async (c) => {
 });
 
 // Approve order payment (set status to processing -> paid)
-app.post("/orders/:id/approve-payment", async (c) => {
+app.post("/orders/:id/approve-payment", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const user = c.get("user");
@@ -1441,7 +1808,7 @@ app.post("/orders/:id/approve-payment", async (c) => {
 });
 
 // Reject order payment
-app.post("/orders/:id/reject-payment", async (c) => {
+app.post("/orders/:id/reject-payment", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const user = c.get("user");
@@ -1550,7 +1917,7 @@ app.get("/payments", async (c) => {
 });
 
 // Verify payment
-app.post("/payments/:id/verify", async (c) => {
+app.post("/payments/:id/verify", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const user = c.get("user");
@@ -1647,7 +2014,7 @@ app.post("/payments/:id/verify", async (c) => {
 });
 
 // Reject payment
-app.post("/payments/:id/reject", async (c) => {
+app.post("/payments/:id/reject", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const user = c.get("user");
@@ -1668,7 +2035,7 @@ app.post("/payments/:id/reject", async (c) => {
 });
 
 // Update payment
-app.put("/payments/:id", async (c) => {
+app.put("/payments/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const body = await c.req.json();
@@ -1722,85 +2089,28 @@ app.put("/payments/:id", async (c) => {
 // Get all shared groups with members
 app.get("/shared-groups", async (c) => {
   const db = c.get("db");
-  const { transactions } = await import("@bantuanku/db");
 
-  // Get all paid qurban transactions
-  const paidTransactions = await db
-    .select()
-    .from(transactions)
-    .where(
-      and(
-        eq(transactions.productType, "qurban"),
-        eq(transactions.paymentStatus, "paid")
-      )
-    )
-    .orderBy(transactions.createdAt);
-
-  // Get package-period details
-  const packagePeriods = await db
+  // Read directly from the authoritative qurbanSharedGroups table
+  const groups = await db
     .select({
-      id: qurbanPackagePeriods.id,
-      packageId: qurbanPackagePeriods.packageId,
-      periodId: qurbanPackagePeriods.periodId,
-      packageName: qurbanPackages.name,
-      animalType: qurbanPackages.animalType,
-      packageType: qurbanPackages.packageType,
-      periodName: qurbanPeriods.name,
+      id: qurbanSharedGroups.id,
+      package_id: qurbanSharedGroups.packageId,
+      package_period_id: qurbanSharedGroups.packagePeriodId,
+      group_number: qurbanSharedGroups.groupNumber,
+      max_slots: qurbanSharedGroups.maxSlots,
+      slots_filled: qurbanSharedGroups.slotsFilled,
+      status: qurbanSharedGroups.status,
+      created_at: qurbanSharedGroups.createdAt,
+      package_name: qurbanPackages.name,
+      animal_type: qurbanPackages.animalType,
+      period_id: qurbanPackagePeriods.periodId,
+      period_name: qurbanPeriods.name,
     })
-    .from(qurbanPackagePeriods)
-    .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
-    .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id));
-
-  const packageMap = new Map();
-  packagePeriods.forEach((pp: any) => {
-    packageMap.set(pp.id, pp);
-  });
-
-  // Group transactions by shared group
-  const groupsMap = new Map<string, any>();
-
-  paidTransactions.forEach((t: any) => {
-    const typeData = t.typeSpecificData || {};
-
-    // Only process shared packages
-    if (typeData.package_type !== "shared") return;
-
-    const groupKey = typeData.shared_group_id || `${t.productId}-${typeData.group_number}`;
-    const pkgInfo = packageMap.get(t.productId);
-
-    if (!groupsMap.has(groupKey)) {
-      groupsMap.set(groupKey, {
-        id: groupKey,
-        package_id: t.productId,
-        period_id: pkgInfo?.periodId || null,
-        group_number: typeData.group_number || 0,
-        max_slots: typeData.group_max_slots || 7,
-        slots_filled: 0,
-        package_name: pkgInfo?.packageName || t.productName,
-        period_name: pkgInfo?.periodName || null,
-        animal_type: pkgInfo?.animalType || typeData.animal_type || "cow",
-        members: [],
-        created_at: t.createdAt,
-      });
-    }
-
-    const group = groupsMap.get(groupKey);
-    group.slots_filled++;
-    group.members.push(t);
-  });
-
-  // Calculate status for each group
-  const groups = Array.from(groupsMap.values()).map((group) => {
-    let status = "open";
-    if (group.slots_filled >= group.max_slots) {
-      status = "full";
-    }
-    return {
-      ...group,
-      status,
-      members: undefined, // Don't include members in list view
-    };
-  });
+    .from(qurbanSharedGroups)
+    .leftJoin(qurbanPackages, eq(qurbanSharedGroups.packageId, qurbanPackages.id))
+    .leftJoin(qurbanPackagePeriods, eq(qurbanSharedGroups.packagePeriodId, qurbanPackagePeriods.id))
+    .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
+    .orderBy(desc(qurbanSharedGroups.createdAt));
 
   return c.json({ data: groups });
 });
@@ -1809,77 +2119,54 @@ app.get("/shared-groups", async (c) => {
 app.get("/shared-groups/:id", async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
-  const { transactions } = await import("@bantuanku/db");
 
-  // Get all paid qurban transactions
-  const paidTransactions = await db
+  // Get group from authoritative table
+  const groupRows = await db
+    .select({
+      id: qurbanSharedGroups.id,
+      package_id: qurbanSharedGroups.packageId,
+      package_period_id: qurbanSharedGroups.packagePeriodId,
+      group_number: qurbanSharedGroups.groupNumber,
+      max_slots: qurbanSharedGroups.maxSlots,
+      slots_filled: qurbanSharedGroups.slotsFilled,
+      status: qurbanSharedGroups.status,
+      created_at: qurbanSharedGroups.createdAt,
+      package_name: qurbanPackages.name,
+      animal_type: qurbanPackages.animalType,
+      period_id: qurbanPackagePeriods.periodId,
+      period_name: qurbanPeriods.name,
+    })
+    .from(qurbanSharedGroups)
+    .leftJoin(qurbanPackages, eq(qurbanSharedGroups.packageId, qurbanPackages.id))
+    .leftJoin(qurbanPackagePeriods, eq(qurbanSharedGroups.packagePeriodId, qurbanPackagePeriods.id))
+    .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
+    .where(eq(qurbanSharedGroups.id, id))
+    .limit(1);
+
+  if (groupRows.length === 0) {
+    return c.json({ error: "Group not found" }, 404);
+  }
+
+  const group = groupRows[0];
+
+  // Find all transactions (any status) assigned to this shared group
+  const memberTransactions = await db
     .select()
     .from(transactions)
     .where(
       and(
         eq(transactions.productType, "qurban"),
-        eq(transactions.paymentStatus, "paid")
+        sql`${transactions.typeSpecificData} ->> 'shared_group_id' = ${id}`
       )
     )
     .orderBy(transactions.createdAt);
 
-  // Get package-period details
-  const packagePeriods = await db
-    .select({
-      id: qurbanPackagePeriods.id,
-      packageId: qurbanPackagePeriods.packageId,
-      periodId: qurbanPackagePeriods.periodId,
-      packageName: qurbanPackages.name,
-      animalType: qurbanPackages.animalType,
-      packageType: qurbanPackages.packageType,
-      periodName: qurbanPeriods.name,
-    })
-    .from(qurbanPackagePeriods)
-    .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
-    .leftJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id));
-
-  const packageMap = new Map();
-  packagePeriods.forEach((pp: any) => {
-    packageMap.set(pp.id, pp);
-  });
-
-  // Find transactions for this group
-  const groupTransactions = paidTransactions.filter((t: any) => {
-    const typeData = t.typeSpecificData || {};
-    if (typeData.package_type !== "shared") return false;
-
-    const groupKey = typeData.shared_group_id || `${t.productId}-${typeData.group_number}`;
-    return groupKey === id;
-  });
-
-  if (groupTransactions.length === 0) {
-    return c.json({ error: "Group not found" }, 404);
-  }
-
-  const firstTx = groupTransactions[0];
-  const typeData = firstTx.typeSpecificData || {};
-  const pkgInfo = packageMap.get(firstTx.productId);
-
-  const group = {
-    id: id,
-    package_id: firstTx.productId,
-    period_id: pkgInfo?.periodId || null,
-    group_number: typeData.group_number || 0,
-    max_slots: typeData.group_max_slots || 7,
-    slots_filled: groupTransactions.length,
-    status: groupTransactions.length >= (typeData.group_max_slots || 7) ? "full" : "open",
-    created_at: firstTx.createdAt,
-    package_name: pkgInfo?.packageName || firstTx.productName,
-    period_name: pkgInfo?.periodName || null,
-    animal_type: pkgInfo?.animalType || typeData.animal_type || "cow",
-  };
-
-  // Map transactions to members format
-  const members = groupTransactions.map((t: any) => ({
+  const members = memberTransactions.map((t: any) => ({
     order_id: t.id,
     order_number: t.transactionNumber,
     donor_name: t.donorName,
     donor_phone: t.donorPhone || "",
+    on_behalf_of: (t.typeSpecificData as any)?.onBehalfOf || t.donorName,
     order_status: t.paymentStatus,
     payment_status: t.paymentStatus,
     total_amount: t.totalAmount,
@@ -1888,64 +2175,8 @@ app.get("/shared-groups/:id", async (c) => {
   }));
 
   return c.json({
-    group: group,
-    members: members,
-  });
-});
-
-// ============================================================
-// SAVINGS MANAGEMENT
-// ============================================================
-
-// Get all savings
-app.get("/savings", async (c) => {
-  const db = c.get("db");
-  const { status, period_id } = c.req.query();
-
-  let query = db
-    .select()
-    .from(qurbanSavings)
-    .orderBy(desc(qurbanSavings.createdAt))
-    .$dynamic();
-
-  if (status) {
-    query = query.where(eq(qurbanSavings.status, status as any));
-  }
-  if (period_id) {
-    query = query.where(eq(qurbanSavings.targetPeriodId, period_id));
-  }
-
-  const savings = await query;
-  return c.json({ data: savings });
-});
-
-// Get single savings detail with transactions
-app.get("/savings/:id", async (c) => {
-  const db = c.get("db");
-  const { id } = c.req.param();
-
-  const savingsData = await db
-    .select()
-    .from(qurbanSavings)
-    .where(eq(qurbanSavings.id, id))
-    .limit(1);
-
-  if (savingsData.length === 0) {
-    return c.json({ error: "Savings not found" }, 404);
-  }
-
-  // Get transactions
-  const transactions = await db
-    .select()
-    .from(qurbanSavingsTransactions)
-    .where(eq(qurbanSavingsTransactions.savingsId, id))
-    .orderBy(desc(qurbanSavingsTransactions.createdAt));
-
-  return c.json({
-    data: {
-      savings: savingsData[0],
-      transactions,
-    },
+    group,
+    members,
   });
 });
 
@@ -1980,7 +2211,7 @@ app.get("/donaturs", async (c) => {
 });
 
 // Create donatur (simplified for qurban orders)
-app.post("/donaturs", async (c) => {
+app.post("/donaturs", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const body = await c.req.json();
 
@@ -2011,6 +2242,166 @@ app.post("/donaturs", async (c) => {
     .returning();
 
   return c.json({ data: newDonatur[0], message: "Donatur created successfully" });
+});
+
+// Get qurban period summary (total sapi, kambing, funds)
+app.get("/periods/:id/summary", async (c) => {
+  const db = c.get("db");
+  const user = c.get("user");
+  const { id } = c.req.param();
+  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+
+  // Get all package_period_ids for this period
+  const packagePeriods = await db
+    .select({
+      id: qurbanPackagePeriods.id,
+      packageId: qurbanPackagePeriods.packageId,
+      price: qurbanPackagePeriods.price,
+    })
+    .from(qurbanPackagePeriods)
+    .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+    .where(
+      and(
+        eq(qurbanPackagePeriods.periodId, id),
+        ...(isMitra && user ? [eq(qurbanPackages.createdBy, user.id)] : [])
+      )
+    );
+
+  const packagePeriodIds = packagePeriods.map((pp: any) => pp.id);
+
+  if (packagePeriodIds.length === 0) {
+    return c.json({
+      data: {
+        totalSapi: 0,
+        totalKambing: 0,
+        totalCollected: 0,
+        collectedAdmin: 0,
+        totalDisbursed: 0,
+        availableSapi: 0,
+        availableKambing: 0,
+        availableAdmin: 0,
+      },
+    });
+  }
+
+  // Get transactions for this period
+  const rawTransactions = await db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.productType, "qurban"),
+        inArray(transactions.productId, packagePeriodIds),
+        eq(transactions.paymentStatus, "paid"),
+        sql<boolean>`coalesce((${transactions.typeSpecificData} ->> 'is_admin_fee_entry')::boolean, false) = false`
+      )
+    );
+
+  // Get package details
+  const packages = await db
+    .select()
+    .from(qurbanPackages)
+    .leftJoin(qurbanPackagePeriods, eq(qurbanPackages.id, qurbanPackagePeriods.packageId))
+    .where(inArray(qurbanPackagePeriods.id, packagePeriodIds));
+
+  const packageMap = new Map();
+  packages.forEach((p: any) => {
+    packageMap.set(p.qurban_package_periods.id, {
+      animalType: p.qurban_packages.animalType,
+      price: p.qurban_package_periods.price,
+    });
+  });
+
+  // Count animals and funds
+  let totalSapi = 0;
+  let totalKambing = 0;
+  let collectedSapi = 0;
+  let collectedKambing = 0;
+
+  rawTransactions.forEach((t: any) => {
+    const pkgInfo = packageMap.get(t.productId);
+    const quantity = t.quantity || 1;
+    const itemAmount = Number(pkgInfo?.price || 0) * Number(quantity);
+
+    if (pkgInfo?.animalType === 'sapi' || pkgInfo?.animalType === 'cow') {
+      totalSapi += quantity;
+      collectedSapi += itemAmount;
+    } else if (pkgInfo?.animalType === 'kambing' || pkgInfo?.animalType === 'goat') {
+      totalKambing += quantity;
+      collectedKambing += itemAmount;
+    }
+  });
+
+  // Get disbursements
+  const { disbursements } = await import("@bantuanku/db");
+  const allDisbursements = await db
+    .select()
+    .from(disbursements)
+    .where(
+      and(
+        eq(disbursements.referenceType, "qurban_period"),
+        eq(disbursements.referenceId, id),
+        eq(disbursements.status, "paid"),
+        ...(isMitra && user ? [eq(disbursements.createdBy, user.id)] : [])
+      )
+    );
+
+  let disbursedSapi = 0;
+  let disbursedKambing = 0;
+  let disbursedAdmin = 0;
+
+  allDisbursements.forEach((d: any) => {
+    const typeData = d.typeSpecificData || {};
+    const category = typeData.qurban_category || d.category;
+
+    if (category === 'sapi' || category === 'pembelian_sapi' || category === 'qurban_purchase_sapi') {
+      disbursedSapi += d.amount || 0;
+    } else if (category === 'kambing' || category === 'pembelian_kambing' || category === 'qurban_purchase_kambing') {
+      disbursedKambing += d.amount || 0;
+    } else if (category === 'administrasi' || category === 'qurban_execution_fee') {
+      disbursedAdmin += d.amount || 0;
+    }
+  });
+
+  // Calculate available qurban admin pool after revenue-share split.
+  // Mitra sees mitra share pool, admin sees owner-app amil net pool.
+  const collectedAdminExpr = isMitra
+    ? sql<number>`coalesce(sum(${revenueShares.mitraAmount}), 0)`
+    : sql<number>`coalesce(sum(${revenueShares.amilNetAmount}), 0)`;
+
+  const [adminShareSummary] = await db
+    .select({
+      collectedAdmin: collectedAdminExpr,
+    })
+    .from(revenueShares)
+    .innerJoin(transactions, eq(revenueShares.transactionId, transactions.id))
+    .where(
+      and(
+        eq(transactions.productType, "qurban"),
+        inArray(transactions.productId, packagePeriodIds),
+        eq(transactions.paymentStatus, "paid")
+      )
+    );
+
+  const collectedAdmin = Number(adminShareSummary?.collectedAdmin || 0);
+
+  return c.json({
+    data: {
+      totalSapi,
+      totalKambing,
+      collectedSapi,
+      collectedKambing,
+      collectedAdmin,
+      totalCollected: collectedSapi + collectedKambing,
+      disbursedSapi,
+      disbursedKambing,
+      disbursedAdmin,
+      totalDisbursed: disbursedSapi + disbursedKambing + disbursedAdmin,
+      availableSapi: collectedSapi - disbursedSapi,
+      availableKambing: collectedKambing - disbursedKambing,
+      availableAdmin: collectedAdmin - disbursedAdmin,
+    },
+  });
 });
 
 export default app;

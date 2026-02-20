@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/lib/auth';
-import { formatRupiahFull } from '@/lib/format';
 import { Button, Input, Checkbox } from '@/components/atoms';
 import { InputField, TextareaField } from '@/components/molecules/FormField';
 import { Header, Footer } from '@/components/organisms';
-import toast from 'react-hot-toast';
+import toast from '@/lib/feedback-toast';
+import { getReferralCode } from '@/lib/referral';
+import { useI18n } from '@/lib/i18n/provider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
@@ -48,13 +49,23 @@ interface CheckoutFormData {
   whatsapp: string;
   message: string;
   hideMyName: boolean;
-  onBehalfOf: string; // For qurban orders
+  onBehalfOf: string; // For qurban and zakat donations
 }
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { items, getCartTotal, clearCart } = useCart();
   const { user, isHydrated } = useAuth();
+  const { t, locale } = useI18n();
+  const activeLocale = locale === 'id' ? 'id-ID' : 'en-US';
+
+  const formatAmount = (amount: number | null | undefined) =>
+    new Intl.NumberFormat(activeLocale, {
+      style: 'currency',
+      currency: 'IDR',
+      maximumFractionDigits: 0,
+    }).format(Number(amount || 0));
 
   const [formData, setFormData] = useState<CheckoutFormData>({
     name: '',
@@ -71,8 +82,17 @@ export default function CheckoutPage() {
   const [isAutoFilled, setIsAutoFilled] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const [fundraiserRefCode, setFundraiserRefCode] = useState<string | null>(null);
 
   useEffect(() => { setIsMounted(true); }, []);
+
+  // Capture fundraiser referral code from sessionStorage
+  useEffect(() => {
+    const stored = getReferralCode();
+    if (stored) {
+      setFundraiserRefCode(stored);
+    }
+  }, []);
 
   // Redirect if cart is empty (but not during submission or after successful checkout)
   useEffect(() => {
@@ -85,7 +105,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (isHydrated && user) {
       // Find donatur ID for logged-in user first
-      checkExistingDonatur(user.email, user.phone);
+      checkExistingDonatur(user.email ?? undefined, user.phone ?? undefined);
 
       setFormData(prev => ({
         ...prev,
@@ -126,7 +146,7 @@ export default function CheckoutPage() {
               whatsapp: donatur.whatsappNumber || prev.whatsapp,
             }));
             setIsAutoFilled(true);
-            toast.success('Data Anda ditemukan! Nama telah diisi otomatis.');
+            toast.success(t('checkout.main.toasts.donorFound'));
           }
         }
       }
@@ -153,7 +173,7 @@ export default function CheckoutPage() {
         ...prev,
         whatsapp: prev.phone,
       }));
-      toast.success('WhatsApp diisi otomatis dari nomor telepon');
+      toast.success(t('checkout.main.toasts.whatsappAutoFilled'));
     }
   };
 
@@ -161,22 +181,22 @@ export default function CheckoutPage() {
 
     // Validation
     if (!formData.name || formData.name.trim().length < 2) {
-      toast.error('Nama lengkap harus diisi minimal 2 karakter');
+      toast.error(t('checkout.main.validation.invalidName'));
       return;
     }
 
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      toast.error('Email tidak valid');
+      toast.error(t('checkout.main.validation.invalidEmail'));
       return;
     }
 
     if (!formData.phone || normalizePhone(formData.phone).length < 10) {
-      toast.error('Nomor telepon tidak valid');
+      toast.error(t('checkout.main.validation.invalidPhone'));
       return;
     }
 
     if (items.length === 0) {
-      toast.error('Keranjang bantuan kosong');
+      toast.error(t('checkout.main.validation.emptyCart'));
       return;
     }
 
@@ -184,14 +204,18 @@ export default function CheckoutPage() {
     // Check minimum donation amount for campaign items
     const invalidCampaignItem = items.find(item => item.itemType === 'campaign' && item.amount < 10000);
     if (invalidCampaignItem) {
-      toast.error(`Nominal donasi minimal Rp 10.000 untuk ${invalidCampaignItem.title}`);
+      toast.error(
+        t('checkout.main.validation.minDonation', { title: invalidCampaignItem.title })
+      );
       return;
     }
 
     // Check minimum amount for zakat items
     const invalidZakatItem = items.find(item => item.itemType === 'zakat' && item.amount < 10000);
     if (invalidZakatItem) {
-      toast.error(`Nominal zakat minimal Rp 10.000 untuk ${invalidZakatItem.title}`);
+      toast.error(
+        t('checkout.main.validation.minZakat', { title: invalidZakatItem.title })
+      );
       return;
     }
 
@@ -211,6 +235,7 @@ export default function CheckoutPage() {
       const qurbanItems = items.filter(item => item.itemType === 'qurban');
 
       const allResults: any[] = [];
+      const refCode = fundraiserRefCode || undefined;
 
       // Create donations for campaign items
       if (campaignItems.length > 0) {
@@ -230,6 +255,7 @@ export default function CheckoutPage() {
             total_amount: item.amount,
             message: formData.message.trim() || undefined,
             user_id: user?.id || undefined,
+            referred_by_fundraiser_code: refCode,
             type_specific_data: item.fidyahData ? {
               fidyah_person_count: item.fidyahData.personCount,
               fidyah_day_count: item.fidyahData.dayCount,
@@ -269,24 +295,38 @@ export default function CheckoutPage() {
         const zakatTypesData = await zakatTypesResponse.json();
         const zakatTypes = zakatTypesData?.data || [];
 
-        // Create a mapping from zakatType to zakatTypeId
+        // Create mappings for zakat type lookup.
         const zakatTypeMap: Record<string, string> = {};
         zakatTypes.forEach((type: any) => {
           const slug = type.slug; // e.g., "zakat-fitrah"
           const shortSlug = slug.replace('zakat-', ''); // "fitrah"
           zakatTypeMap[shortSlug] = type.id;
+          zakatTypeMap[slug] = type.id;
         });
 
+        console.log('DEBUG zakatItems:', JSON.stringify(zakatItems, null, 2));
+
         const zakatPromises = zakatItems.map(async (item) => {
-          const zakatTypeId = zakatTypeMap[item.zakatData?.zakatType || ''];
+          const zakatTypeId =
+            item.zakatData?.zakatTypeId ||
+            (item.zakatData?.zakatTypeSlug ? zakatTypeMap[item.zakatData.zakatTypeSlug] : undefined) ||
+            zakatTypeMap[item.zakatData?.zakatType || ''];
 
           if (!zakatTypeId) {
-            throw new Error(`Zakat type not found for ${item.title}`);
+            throw new Error(
+              t('checkout.main.validation.zakatTypeNotFound', { title: item.title })
+            );
+          }
+
+          if (!item.zakatData?.periodId) {
+            throw new Error(
+              t('checkout.main.validation.periodNotFound', { title: item.title })
+            );
           }
 
           const transactionData = {
             product_type: 'zakat',
-            product_id: zakatTypeId,
+            product_id: item.zakatData.periodId,
             product_name: item.title,
             donor_name: formData.name.trim(),
             donor_email: normalizedEmail,
@@ -299,10 +339,14 @@ export default function CheckoutPage() {
             total_amount: item.amount,
             message: formData.message.trim() || undefined,
             user_id: user?.id || undefined,
+            referred_by_fundraiser_code: refCode,
             type_specific_data: item.zakatData ? {
               zakat_type: item.zakatData.zakatType,
+              zakat_type_id: zakatTypeId,
               quantity: item.zakatData.quantity,
               price_per_unit: item.zakatData.pricePerUnit,
+              period_id: item.zakatData.periodId,
+              on_behalf_of: formData.onBehalfOf.trim() || formData.name.trim(),
             } : undefined,
           };
 
@@ -316,7 +360,10 @@ export default function CheckoutPage() {
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || `Failed to create zakat donation for ${item.title}`);
+            throw new Error(
+              errorData.error ||
+              t('checkout.main.toasts.createZakatFailed', { title: item.title })
+            );
           }
 
           const result = await response.json();
@@ -336,7 +383,9 @@ export default function CheckoutPage() {
       if (qurbanItems.length > 0) {
         const qurbanPromises = qurbanItems.map(async (item) => {
           if (!item.qurbanData) {
-            throw new Error(`Qurban data missing for ${item.title}`);
+            throw new Error(
+              t('checkout.main.validation.qurbanDataMissing', { title: item.title })
+            );
           }
 
           // Calculate unit price (price per slot/ekor)
@@ -360,11 +409,12 @@ export default function CheckoutPage() {
             total_amount: totalAmount,
             notes: formData.message.trim() || undefined,
             user_id: user?.id || undefined,
+            referred_by_fundraiser_code: refCode,
             type_specific_data: {
               period_id: item.qurbanData.periodId,
               package_id: item.qurbanData.packageId,
               package_period_id: item.qurbanData.packagePeriodId,
-              on_behalf_of: formData.onBehalfOf.trim() || formData.name.trim(),
+              onBehalfOf: formData.onBehalfOf.trim() || formData.name.trim(),
               animal_type: item.qurbanData.animalType,
               package_type: item.qurbanData.packageType,
             },
@@ -380,7 +430,10 @@ export default function CheckoutPage() {
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || `Failed to create qurban transaction for ${item.title}`);
+            throw new Error(
+              errorData.message ||
+              t('checkout.main.toasts.createQurbanFailed', { title: item.title })
+            );
           }
 
           const result = await response.json();
@@ -422,17 +475,17 @@ export default function CheckoutPage() {
       const hasZakat = zakatItems.length > 0;
       const hasCampaign = campaignItems.length > 0;
 
-      let successMessage = 'Transaksi berhasil dibuat!';
+      let successMessage = t('checkout.main.toasts.successDefault');
       if (hasQurban && (hasZakat || hasCampaign)) {
-        successMessage = 'Donasi dan pesanan qurban berhasil dibuat!';
+        successMessage = t('checkout.main.toasts.successQurbanAndOthers');
       } else if (hasQurban) {
-        successMessage = 'Pesanan qurban berhasil dibuat!';
+        successMessage = t('checkout.main.toasts.successQurban');
       } else if (hasZakat && hasCampaign) {
-        successMessage = 'Zakat dan donasi berhasil dibuat!';
+        successMessage = t('checkout.main.toasts.successZakatAndCampaign');
       } else if (hasZakat) {
-        successMessage = 'Zakat berhasil dibuat!';
+        successMessage = t('checkout.main.toasts.successZakat');
       } else if (hasCampaign) {
-        successMessage = 'Donasi berhasil dibuat!';
+        successMessage = t('checkout.main.toasts.successCampaign');
       }
 
       toast.success(successMessage);
@@ -468,7 +521,7 @@ export default function CheckoutPage() {
 
     } catch (error: any) {
       console.error('Error creating orders:', error);
-      toast.error(error.message || 'Gagal membuat pesanan. Silakan coba lagi.');
+      toast.error(error?.message || t('checkout.main.toasts.createOrderFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -492,9 +545,11 @@ export default function CheckoutPage() {
         <div className="container mx-auto px-4">
           {/* Page Title */}
           <div className="mb-8">
-            <h1 className="section-title text-gray-900 mb-2">Checkout</h1>
+            <h1 className="section-title text-gray-900 mb-2">
+              {t('checkout.main.title')}
+            </h1>
             <p className="text-gray-600" style={{ fontSize: '15px' }}>
-              Lengkapi data Anda untuk melanjutkan ke pembayaran
+              {t('checkout.main.subtitle')}
             </p>
           </div>
 
@@ -513,19 +568,19 @@ export default function CheckoutPage() {
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">
-                          Login sebagai: {user.name}
+                          {t('checkout.main.loginAs', { name: user.name })}
                         </p>
                         <p className="text-xs text-gray-600">{user.email}</p>
                       </div>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-600">
-                      Sudah punya akun?{' '}
+                      {t('checkout.main.alreadyHaveAccount')}{' '}
                       <Link
                         href="/login"
                         className="font-medium text-primary-600 hover:text-primary-700"
                       >
-                        Login di sini
+                        {t('checkout.main.loginHere')}
                       </Link>
                     </p>
                   )}
@@ -535,7 +590,7 @@ export default function CheckoutPage() {
                   {/* Nama Lengkap */}
                   <div className="form-field">
                     <label className="form-label">
-                      Nama Lengkap <span className="text-red-600">*</span>
+                      {t('checkout.main.labels.fullName')} <span className="text-red-600">*</span>
                     </label>
                     <Input
                       type="text"
@@ -546,17 +601,17 @@ export default function CheckoutPage() {
                           setIsAutoFilled(false);
                         }
                       }}
-                      placeholder="Masukkan nama lengkap Anda"
+                      placeholder={t('checkout.main.placeholders.fullName')}
                       required
                     />
                     {isAutoFilled && user && (
                       <p className="text-xs text-green-600 mt-1">
-                        Data diisi otomatis dari akun Anda (dapat diubah)
+                        {t('checkout.main.hints.autoFilledFromAccount')}
                       </p>
                     )}
                     {isAutoFilled && !user && (
                       <p className="text-xs text-green-600 mt-1">
-                        Data ditemukan dari riwayat donasi (dapat diubah)
+                        {t('checkout.main.hints.autoFilledFromHistory')}
                       </p>
                     )}
                   </div>
@@ -569,14 +624,14 @@ export default function CheckoutPage() {
                       onChange={(e) => setFormData({ ...formData, hideMyName: e.target.checked })}
                     />
                     <label htmlFor="hideMyName" className="text-sm text-gray-700">
-                      Sembunyikan nama saya (akan ditampilkan sebagai &ldquo;Hamba Allah&rdquo;)
+                      {t('checkout.main.hideName')}
                     </label>
                   </div>
 
                   {/* Email */}
                   <div className="form-field">
                     <label className="form-label">
-                      Email <span className="text-red-600">*</span>
+                      {t('checkout.main.labels.email')} <span className="text-red-600">*</span>
                     </label>
                     <Input
                       type="email"
@@ -586,18 +641,18 @@ export default function CheckoutPage() {
                         setIsAutoFilled(false);
                       }}
                       onBlur={handleEmailBlur}
-                      placeholder="contoh@email.com"
+                      placeholder={t('checkout.main.placeholders.email')}
                       required
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Bukti donasi akan dikirim ke email ini
+                      {t('checkout.main.hints.donationProofEmail')}
                     </p>
                   </div>
 
                   {/* Nomor Telepon */}
                   <div className="form-field">
                     <label className="form-label">
-                      Nomor Telepon <span className="text-red-600">*</span>
+                      {t('checkout.main.labels.phone')} <span className="text-red-600">*</span>
                     </label>
                     <Input
                       type="tel"
@@ -607,7 +662,7 @@ export default function CheckoutPage() {
                         setIsAutoFilled(false);
                       }}
                       onBlur={handlePhoneBlur}
-                      placeholder="08xxxxxxxxxx"
+                      placeholder={t('checkout.main.placeholders.phone')}
                       required
                     />
                   </div>
@@ -615,14 +670,14 @@ export default function CheckoutPage() {
                   {/* WhatsApp */}
                   <div className="form-field">
                     <label className="form-label">
-                      Nomor WhatsApp
+                      {t('checkout.main.labels.whatsapp')}
                     </label>
                     <div className="flex gap-2">
                       <Input
                         type="tel"
                         value={formData.whatsapp}
                         onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                        placeholder="08xxxxxxxxxx"
+                        placeholder={t('checkout.main.placeholders.whatsapp')}
                         className="flex-1"
                       />
                       <Button
@@ -632,28 +687,30 @@ export default function CheckoutPage() {
                         onClick={handleWhatsappFromPhone}
                         disabled={!formData.phone}
                       >
-                        Sama dengan No. HP
+                        {t('checkout.main.whatsappSameAsPhone')}
                       </Button>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      Untuk notifikasi dan konfirmasi pembayaran
+                      {t('checkout.main.hints.whatsappNotification')}
                     </p>
                   </div>
 
-                  {/* Atas Nama - Only for Qurban */}
-                  {items.some(item => item.itemType === 'qurban') && (
+                  {/* Atas Nama - For Qurban and Zakat */}
+                  {items.some(item => item.itemType === 'qurban' || item.itemType === 'zakat') && (
                     <div className="form-field">
                       <label className="form-label">
-                        Atas Nama (untuk Qurban)
+                        {t('checkout.main.labels.onBehalfOf')}
                       </label>
                       <Input
                         type="text"
                         value={formData.onBehalfOf}
                         onChange={(e) => setFormData({ ...formData, onBehalfOf: e.target.value })}
-                        placeholder="Nama orang yang diwakafkan qurban ini (opsional)"
+                        placeholder={t('checkout.main.placeholders.onBehalfOf')}
                       />
                       <p className="text-xs text-gray-500 mt-1">
-                        Atas nama siapa qurban ini disembelih (opsional, bisa diisi kemudian)
+                        {items.some(item => item.itemType === 'qurban')
+                          ? t('checkout.main.hints.onBehalfQurbanZakat')
+                          : t('checkout.main.hints.onBehalfZakat')}
                       </p>
                     </div>
                   )}
@@ -661,14 +718,14 @@ export default function CheckoutPage() {
                   {/* Doa atau Catatan */}
                   <div className="form-field">
                     <label className="form-label">
-                      Doa atau Catatan
+                      {t('checkout.main.labels.note')}
                     </label>
                     <textarea
                       className="form-textarea"
                       rows={4}
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      placeholder="Tulis doa atau catatan untuk donasi Anda..."
+                      placeholder={t('checkout.main.placeholders.note')}
                     />
                   </div>
 
@@ -676,13 +733,13 @@ export default function CheckoutPage() {
                   {!user && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                       <h4 className="section-title text-blue-900 mb-2">
-                        Manfaat Membuat Akun
+                        {t('checkout.main.benefitsTitle')}
                       </h4>
                       <ul className="text-sm text-blue-800 space-y-1">
-                        <li>• Lacak riwayat donasi Anda</li>
-                        <li>• Checkout lebih cepat di lain waktu</li>
-                        <li>• Dapatkan notifikasi perkembangan program</li>
-                        <li>• Unduh bukti donasi kapan saja</li>
+                        <li>• {t('checkout.main.benefits.trackHistory')}</li>
+                        <li>• {t('checkout.main.benefits.fasterCheckout')}</li>
+                        <li>• {t('checkout.main.benefits.progressUpdate')}</li>
+                        <li>• {t('checkout.main.benefits.downloadProof')}</li>
                       </ul>
                     </div>
                   )}
@@ -696,10 +753,10 @@ export default function CheckoutPage() {
                         </svg>
                         <div>
                           <h4 className="section-title text-green-900 mb-1">
-                            Donasi Tercatat di Akun Anda
+                            {t('checkout.main.loggedInTitle')}
                           </h4>
                           <p className="text-sm text-green-800">
-                            Donasi ini akan tersimpan di riwayat akun Anda. Anda dapat melacak dan mengunduh bukti donasi kapan saja.
+                            {t('checkout.main.loggedInDesc')}
                           </p>
                         </div>
                       </div>
@@ -716,7 +773,7 @@ export default function CheckoutPage() {
                       disabled={isSubmitting}
                       className="flex-1"
                     >
-                      Kembali ke Keranjang
+                      {t('checkout.main.actions.backToCart')}
                     </Button>
                     <Button
                       type="submit"
@@ -724,7 +781,9 @@ export default function CheckoutPage() {
                       disabled={isSubmitting}
                       className="flex-1"
                     >
-                      {isSubmitting ? 'Memproses...' : 'Pilih Metode Pembayaran'}
+                      {isSubmitting
+                        ? t('checkout.common.processing')
+                        : t('checkout.main.actions.choosePaymentMethod')}
                     </Button>
                   </div>
                 </form>
@@ -735,7 +794,7 @@ export default function CheckoutPage() {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 sticky top-24">
                 <h2 className="section-title text-gray-900 mb-6">
-                  Ringkasan Donasi
+                  {t('checkout.main.summaryTitle')}
                 </h2>
 
                 {/* Items List */}
@@ -748,19 +807,23 @@ export default function CheckoutPage() {
                             {item.title}
                           </p>
                           <span className="text-xs text-gray-500">
-                            {item.programType === 'wakaf' ? 'Wakaf' :
-                             item.programType === 'zakat' ? 'Zakat' :
-                             item.programType === 'qurban' ? 'Qurban' : 'Donasi'}
+                            {item.programType === 'wakaf'
+                              ? t('checkout.main.programType.wakaf')
+                              : item.programType === 'zakat'
+                                ? t('checkout.main.programType.zakat')
+                                : item.programType === 'qurban'
+                                  ? t('checkout.main.programType.qurban')
+                                  : t('checkout.main.programType.donation')}
                           </span>
                         </div>
                         <span className="text-sm font-medium text-gray-900 mono whitespace-nowrap">
-                          {formatRupiahFull(item.amount)}
+                          {formatAmount(item.amount)}
                         </span>
                       </div>
                       {/* Show quantity breakdown for zakat with quantity */}
                       {item.itemType === 'zakat' && item.zakatData?.quantity && item.zakatData?.pricePerUnit && (
                         <div className="text-xs text-gray-500 mt-1 ml-1">
-                          {item.zakatData.quantity} x {formatRupiahFull(item.zakatData.pricePerUnit)}
+                          {item.zakatData.quantity} x {formatAmount(item.zakatData.pricePerUnit)}
                         </div>
                       )}
                     </div>
@@ -771,10 +834,10 @@ export default function CheckoutPage() {
                 <div className="mb-6">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-semibold text-gray-900">
-                      Total Donasi
+                      {t('checkout.main.totalDonation')}
                     </span>
                     <span className="text-2xl font-bold text-primary-600 mono">
-                      {formatRupiahFull(cartTotal)}
+                      {formatAmount(cartTotal)}
                     </span>
                   </div>
                 </div>
@@ -795,7 +858,7 @@ export default function CheckoutPage() {
                     </svg>
                     <div>
                       <p className="text-xs text-gray-600" style={{ fontSize: '13px', lineHeight: '1.6' }}>
-                        Setelah checkout, Anda akan mendapatkan instruksi pembayaran melalui email dan WhatsApp.
+                        {t('checkout.main.afterCheckoutInfo')}
                       </p>
                     </div>
                   </div>
@@ -818,7 +881,7 @@ export default function CheckoutPage() {
               disabled={isSubmitting}
               className="w-full"
             >
-              Kembali ke Keranjang
+              {t('checkout.main.actions.backToCart')}
             </Button>
             <Button
               type="button"
@@ -827,7 +890,9 @@ export default function CheckoutPage() {
               disabled={isSubmitting}
               className="w-full"
             >
-              {isSubmitting ? 'Memproses...' : 'Pilih Metode Pembayaran'}
+              {isSubmitting
+                ? t('checkout.common.processing')
+                : t('checkout.main.actions.choosePaymentMethod')}
             </Button>
           </div>
         </div>,

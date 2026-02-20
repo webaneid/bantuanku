@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { formatRupiah } from '@/lib/format';
+import { useI18n } from '@/lib/i18n/provider';
 import './QurbanCard.css';
 
 export interface QurbanCardProps {
@@ -12,6 +13,7 @@ export interface QurbanCardProps {
   slug: string;
   name: string;
   category: 'sapi' | 'kambing';
+  ownerName?: string | null;
   price: number;
   image: string;
   description?: string;
@@ -24,12 +26,14 @@ export const QurbanCard: React.FC<QurbanCardProps> = ({
   slug,
   name,
   category,
+  ownerName,
   price,
   image,
   description,
   badge,
   onAddToCart,
 }) => {
+  const { t } = useI18n();
   return (
     <div className="qurban-card">
       <Link href={`/qurban/${slug}`} className="qurban-card__link">
@@ -68,8 +72,14 @@ export const QurbanCard: React.FC<QurbanCardProps> = ({
             category === 'sapi' && "qurban-card__category--sapi",
             category === 'kambing' && "qurban-card__category--kambing"
           )}>
-            {category === 'sapi' ? 'Sapi' : 'Kambing'}
+            {category === 'sapi' ? t('qurbanPage.filters.cow') : t('qurbanPage.filters.goat')}
           </div>
+
+          {ownerName && (
+            <div className="qurban-card__owner">
+              <span className="qurban-card__owner-name">{ownerName}</span>
+            </div>
+          )}
 
           {/* Name */}
           <h3 className="qurban-card__name">{name}</h3>
@@ -82,7 +92,7 @@ export const QurbanCard: React.FC<QurbanCardProps> = ({
           {/* Price & Add to Cart */}
           <div className="qurban-card__footer">
             <div className="qurban-card__price">
-              <span className="qurban-card__price-label">Harga</span>
+              <span className="qurban-card__price-label">{t('qurbanCard.priceLabel')}</span>
               <span className="qurban-card__price-value mono">
                 Rp {formatRupiah(price)}
               </span>
@@ -95,7 +105,7 @@ export const QurbanCard: React.FC<QurbanCardProps> = ({
                 e.stopPropagation();
                 onAddToCart?.();
               }}
-              aria-label="Tambah ke keranjang"
+              aria-label={t('qurbanCard.addToCart')}
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 5v10M5 10h10" />

@@ -1,14 +1,68 @@
 import { eq, and, or, ilike, desc, sql } from "drizzle-orm";
-import { campaigns, zakatTypes, zakatPeriods, transactions, transactionPayments, settings, donatur, createId } from "@bantuanku/db";
+import { campaigns, zakatTypes, zakatPeriods, transactions, transactionPayments, settings, donatur, qurbanSavings, qurbanPackages, qurbanPackagePeriods, qurbanPeriods, createId } from "@bantuanku/db";
 import type { Database } from "@bantuanku/db";
 import { WhatsAppService } from "./whatsapp";
 import { TransactionService } from "./transaction";
+import { handleFlowStep, generateFirstFlowMessage, createZakatFlowState, createDonationFlowState, createFidyahFlowState, createQurbanFlowState, createQurbanSavingsFlowState, createQurbanSavingsDepositFlowState, type FlowState, type FlowContext } from "./whatsapp-flow";
+
+// ---------------------------------------------------------------------------
+// Gold Price Scraper (Pluang) with 1-hour cache
+// ---------------------------------------------------------------------------
+let _goldPriceCache: { price: number; fetchedAt: number } | null = null;
+const GOLD_CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+async function fetchGoldPriceFromPluang(): Promise<number | null> {
+  // Return cache if still fresh
+  if (_goldPriceCache && Date.now() - _goldPriceCache.fetchedAt < GOLD_CACHE_TTL) {
+    return _goldPriceCache.price;
+  }
+
+  try {
+    const res = await fetch("https://pluang.com/asset/gold", {
+      headers: { "User-Agent": "Bantuanku-ZakatBot/1.0" },
+      signal: AbortSignal.timeout(5000), // 5s timeout
+    });
+    if (!res.ok) return null;
+
+    const html = await res.text();
+    // Extract __NEXT_DATA__ JSON
+    const match = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    if (!match?.[1]) return null;
+
+    const nextData = JSON.parse(match[1]);
+    const priceText = nextData?.props?.pageProps?.goldAssetPerformance?.currentMidPrice;
+    if (!priceText) return null;
+
+    // "Rp2.735.207" → 2735207
+    const numericPrice = Number(priceText.replace(/[^0-9]/g, ""));
+    if (!numericPrice || numericPrice < 100000) return null; // sanity check
+
+    _goldPriceCache = { price: numericPrice, fetchedAt: Date.now() };
+    console.log(`[Zakat] Gold price from Pluang: Rp ${numericPrice.toLocaleString("id-ID")}/gram`);
+    return numericPrice;
+  } catch (err) {
+    console.warn("[Zakat] Pluang scrape failed, will use DB setting:", (err as Error).message);
+    return null;
+  }
+}
+
+export async function getGoldPrice(db: Database): Promise<number> {
+  // 1. Try live Pluang price
+  const livePrice = await fetchGoldPriceFromPluang();
+  if (livePrice) return livePrice;
+
+  // 2. Fallback to DB setting
+  const row = await db.query.settings.findFirst({
+    where: eq(settings.key, "zakat_gold_price"),
+  });
+  return Number(row?.value) || 1_000_000;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function getFrontendUrl(db: Database, envFrontendUrl?: string): Promise<string> {
+export async function getFrontendUrl(db: Database, envFrontendUrl?: string): Promise<string> {
   if (envFrontendUrl) return envFrontendUrl.replace(/\/+$/, "");
   const row = await db.query.settings.findFirst({
     where: eq(settings.key, "organization_website"),
@@ -25,12 +79,8 @@ interface ConversationContext {
   profileName: string;
   history: Array<{ role: "user" | "assistant"; content: string }>;
   donaturId?: string;
-  pendingAction?: {
-    type: "donate" | "zakat" | "qurban";
-    campaignId?: string;
-    amount?: number;
-    step: string;
-  };
+  donorName?: string;
+  flowState?: FlowState;
   lastActivity: number;
 }
 
@@ -48,6 +98,10 @@ interface ToolContext {
   imageBuffer?: Buffer;
   imageMimeType?: string;
   phone?: string;
+}
+
+interface ExecutionState {
+  flowTrigger?: FlowState;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,6 +179,109 @@ async function searchCampaigns(
     .join("\n\n");
 }
 
+async function getProgramOverview(db: Database): Promise<string> {
+  const lines: string[] = [];
+
+  // 1. Campaign donasi (non-fidyah, non-wakaf)
+  const donasi = await db
+    .select({ id: campaigns.id, title: campaigns.title, pillar: campaigns.pillar })
+    .from(campaigns)
+    .where(eq(campaigns.status, "active"))
+    .orderBy(desc(campaigns.donorCount))
+    .limit(50);
+
+  const donasiRegular = donasi.filter((c) => c.pillar !== "fidyah" && c.pillar !== "wakaf");
+  const fidyahList = donasi.filter((c) => c.pillar === "fidyah");
+  const wakafList = donasi.filter((c) => c.pillar === "wakaf");
+
+  // 2. Zakat types
+  const zakatList = await db
+    .select({ id: zakatTypes.id, name: zakatTypes.name, calculatorType: zakatTypes.calculatorType })
+    .from(zakatTypes)
+    .where(eq(zakatTypes.isActive, true));
+
+  // 3. Qurban packages (active periods)
+  const qurbanList = await db
+    .select({
+      ppId: qurbanPackagePeriods.id,
+      price: qurbanPackagePeriods.price,
+      pkgName: qurbanPackages.name,
+      animalType: qurbanPackages.animalType,
+      packageType: qurbanPackages.packageType,
+    })
+    .from(qurbanPackagePeriods)
+    .innerJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+    .innerJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
+    .where(
+      and(
+        eq(qurbanPeriods.status, "active"),
+        eq(qurbanPackagePeriods.isAvailable, true),
+        eq(qurbanPackages.isAvailable, true)
+      )
+    );
+
+  // Build summary
+  lines.push("RINGKASAN PROGRAM YANG TERSEDIA:");
+  lines.push("");
+
+  // Donasi
+  if (donasiRegular.length > 0) {
+    lines.push(`DONASI (${donasiRegular.length} program aktif):`);
+    donasiRegular.slice(0, 5).forEach((c, i) => {
+      lines.push(`  ${i + 1}. ${c.title}`);
+    });
+    if (donasiRegular.length > 5) lines.push(`  ... dan ${donasiRegular.length - 5} program lainnya`);
+    lines.push("");
+  }
+
+  // Zakat
+  if (zakatList.length > 0) {
+    lines.push(`ZAKAT (${zakatList.length} jenis):`);
+    zakatList.forEach((z, i) => {
+      lines.push(`  ${i + 1}. ${z.name}`);
+    });
+    lines.push("");
+  }
+
+  // Qurban
+  if (qurbanList.length > 0) {
+    lines.push(`QURBAN (${qurbanList.length} paket tersedia):`);
+    qurbanList.slice(0, 5).forEach((q, i) => {
+      const type = q.animalType === "cow" ? "Sapi" : "Kambing";
+      const shared = q.packageType === "shared" ? " (Patungan)" : "";
+      lines.push(`  ${i + 1}. ${q.pkgName} — ${type}${shared} Rp ${q.price.toLocaleString("id-ID")}`);
+    });
+    if (qurbanList.length > 5) lines.push(`  ... dan ${qurbanList.length - 5} paket lainnya`);
+    lines.push("  Bisa bayar langsung atau cicil (Tabungan Qurban).");
+    lines.push("");
+  }
+
+  // Fidyah
+  if (fidyahList.length > 0) {
+    lines.push(`FIDYAH (${fidyahList.length} program):`);
+    fidyahList.forEach((c, i) => {
+      lines.push(`  ${i + 1}. ${c.title}`);
+    });
+    lines.push("");
+  }
+
+  // Wakaf
+  if (wakafList.length > 0) {
+    lines.push(`WAKAF (${wakafList.length} program):`);
+    wakafList.forEach((c, i) => {
+      lines.push(`  ${i + 1}. ${c.title}`);
+    });
+    lines.push("");
+  }
+
+  if (lines.length <= 2) {
+    return "Belum ada program yang tersedia saat ini.";
+  }
+
+  lines.push("Donatur bisa bertanya lebih detail tentang kategori mana yang diminati.");
+  return lines.join("\n");
+}
+
 async function getCampaignDetail(
   db: Database,
   params: { campaignId: string }
@@ -200,7 +357,7 @@ async function checkTransactionStatus(
   }
 
   if (!txs || txs.length === 0) {
-    return "Tidak ditemukan riwayat transaksi.";
+    return "TIDAK ADA transaksi ditemukan untuk nomor ini. JANGAN langsung bilang 'transaksi tidak ditemukan' ke donatur. Sebagai gantinya, sampaikan dengan SOPAN bahwa kamu belum menemukan transaksi yang cocok, lalu minta donatur: (1) kirimkan bukti transfer berupa foto/screenshot, atau (2) sebutkan nomor transaksi (TRX-...) jika ada. Contoh: 'Mohon maaf, kami belum menemukan transaksi atas nama Bapak/Ibu. Bisa tolong kirimkan bukti transfer berupa foto/screenshot? Atau jika ada nomor transaksi (TRX-...), mohon disebutkan.'";
   }
 
   const statusMap: Record<string, string> = {
@@ -244,8 +401,8 @@ const calcTypeLabelMap: Record<string, string> = {
   "zakat-peternakan": "Zakat Peternakan",
   "zakat-bisnis": "Zakat Bisnis",
 };
-const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
-const truncateText = (text: string, max: number) => text.length > max ? text.slice(0, max).trimEnd() + "..." : text;
+export const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+export const truncateText = (text: string, max: number) => text.length > max ? text.slice(0, max).trimEnd() + "..." : text;
 
 // Tool 1: Menu jenis zakat (tanpa parameter) — dipanggil jika user bilang "zakat" saja
 async function getZakatMenu(db: Database): Promise<string> {
@@ -325,7 +482,36 @@ async function getZakatPrograms(
     return `Tidak ada program ${calcTypeLabelMap[ct] || ct} yang tersedia saat ini.`;
   }
 
-  // Format clean text like searchCampaigns — AI will formulate natural response
+  // If only 1 program → auto-select, tell AI to proceed directly
+  if (types.length === 1) {
+    const z = types[0];
+    const label = calcTypeLabelMap[ct] || calcTypeLabelMap[withoutPrefix] || ct;
+    const desc = z.description ? truncateText(stripHtml(z.description), 80) : "";
+    return [
+      `PROGRAM OTOMATIS DIPILIH (hanya 1 program ${label}):`,
+      `Nama: ${z.name}`,
+      desc ? `Deskripsi: ${desc}` : "",
+      `zakatTypeId: ${z.id}`,
+      `calculatorType: ${withoutPrefix}`,
+      ``,
+      `INSTRUKSI: Program sudah terpilih otomatis. JANGAN tampilkan daftar ke donatur. LANGSUNG lanjut ke langkah berikutnya:`,
+      withoutPrefix === "fitrah"
+        ? `→ Tanya donatur: "Zakat fitrah ini untuk berapa jiwa/orang?"`
+        : withoutPrefix === "maal"
+        ? `→ Tanya donatur: "Berapa total harta Anda? Dan apakah ada hutang yang perlu dikurangkan?"`
+        : withoutPrefix === "penghasilan" || withoutPrefix === "profesi"
+        ? `→ Tanya donatur: "Berapa penghasilan bulanan Anda?"`
+        : withoutPrefix === "pertanian"
+        ? `→ Tanya donatur: "Berapa nilai hasil panen Anda? Dan apakah menggunakan irigasi?"`
+        : withoutPrefix === "peternakan"
+        ? `→ Tanya donatur: "Berapa total nilai ternak Anda?"`
+        : withoutPrefix === "bisnis"
+        ? `→ Tanya donatur: "Berapa modal usaha, keuntungan, piutang, dan hutang usaha Anda?"`
+        : `→ Tanyakan data yang diperlukan untuk kalkulator ${label}.`,
+    ].filter(Boolean).join("\n");
+  }
+
+  // Multiple programs — show list for user to choose
   return types
     .map((z, i) => {
       const desc = z.description ? truncateText(stripHtml(z.description), 80) : "";
@@ -544,12 +730,21 @@ async function calculateZakat(
     case "penghasilan":
     case "profesi": {
       const penghasilan = Number(p.penghasilan) || 0;
-      const goldPrice = Number(getSetting("zakat_gold_price")) || 1_000_000;
-      const nisabGold = Number(getSetting("zakat_nisab_gold")) || 85;
-      const nisab = nisabGold * goldPrice;
+      if (penghasilan <= 0) {
+        return "Mohon informasikan penghasilan bulanan Anda (angka).";
+      }
+      const goldPriceProfesi = await getGoldPrice(db);
+      const nisabGoldProfesi = Number(getSetting("zakat_nisab_gold")) || 85;
+      const nisabProfesi = nisabGoldProfesi * goldPriceProfesi;
       const pctProfesi = Number(getSetting("zakat_profession_percentage")) || 2.5;
-      if (penghasilan < nisab / 12) {
-        return `Penghasilan Rp ${penghasilan.toLocaleString("id-ID")}/bulan belum mencapai nisab (≈ Rp ${Math.round(nisab / 12).toLocaleString("id-ID")}/bulan). Tidak wajib zakat penghasilan, tapi boleh bersedekah.`;
+      if (penghasilan < nisabProfesi / 12) {
+        return [
+          `Penghasilan Rp ${penghasilan.toLocaleString("id-ID")}/bulan belum mencapai nisab.`,
+          ``,
+          `Nisab zakat penghasilan: ${nisabGoldProfesi} gram emas × Rp ${goldPriceProfesi.toLocaleString("id-ID")} = Rp ${nisabProfesi.toLocaleString("id-ID")}/tahun (≈ Rp ${Math.round(nisabProfesi / 12).toLocaleString("id-ID")}/bulan).`,
+          ``,
+          `Tidak wajib zakat penghasilan, namun Anda tetap bisa beramal melalui infaq atau sedekah untuk program-program kami. Apakah Anda tertarik berdonasi?`,
+        ].join("\n");
       }
       result = Math.round(penghasilan * (pctProfesi / 100));
       explanation = `${pctProfesi}% × Rp ${penghasilan.toLocaleString("id-ID")} = Rp ${result.toLocaleString("id-ID")}`;
@@ -558,13 +753,34 @@ async function calculateZakat(
     case "maal": {
       const totalHarta = Number(p.total_harta) || 0;
       const hutang = Number(p.hutang) || 0;
+      if (totalHarta <= 0) {
+        return "Mohon informasikan total harta Anda (angka). Contoh: 500000000 untuk Rp 500 juta.";
+      }
       const nett = totalHarta - hutang;
-      const pctMaal = Number(getSetting("zakat_mal_percentage")) || 2.5;
       if (nett <= 0) {
-        return "Total harta setelah dikurangi hutang tidak mencukupi untuk zakat maal.";
+        return "Total harta setelah dikurangi hutang bernilai negatif atau nol. Tidak ada kewajiban zakat maal.";
+      }
+      // Nisab check: nett harta harus >= 85 gram emas
+      const goldPriceMaal = await getGoldPrice(db);
+      const nisabGoldMaal = Number(getSetting("zakat_nisab_gold")) || 85;
+      const nisabMaal = nisabGoldMaal * goldPriceMaal;
+      const pctMaal = Number(getSetting("zakat_mal_percentage")) || 2.5;
+      if (nett < nisabMaal) {
+        return [
+          `Total harta bersih Anda: Rp ${nett.toLocaleString("id-ID")} (harta Rp ${totalHarta.toLocaleString("id-ID")} - hutang Rp ${hutang.toLocaleString("id-ID")}).`,
+          ``,
+          `Nisab zakat maal: ${nisabGoldMaal} gram emas × Rp ${goldPriceMaal.toLocaleString("id-ID")}/gram = *Rp ${nisabMaal.toLocaleString("id-ID")}*`,
+          `(Harga emas terkini dari Pluang)`,
+          ``,
+          `Harta bersih Anda belum mencapai nisab, sehingga tidak wajib zakat maal. Namun Anda tetap bisa beramal melalui infaq atau sedekah untuk program-program kami. Apakah Anda tertarik berdonasi?`,
+        ].join("\n");
       }
       result = Math.round(nett * (pctMaal / 100));
-      explanation = `${pctMaal}% × (Rp ${totalHarta.toLocaleString("id-ID")} - Rp ${hutang.toLocaleString("id-ID")}) = Rp ${result.toLocaleString("id-ID")}`;
+      explanation = [
+        `Harta bersih: Rp ${totalHarta.toLocaleString("id-ID")} - Rp ${hutang.toLocaleString("id-ID")} = Rp ${nett.toLocaleString("id-ID")}`,
+        `Nisab: ${nisabGoldMaal}g emas × Rp ${goldPriceMaal.toLocaleString("id-ID")} = Rp ${nisabMaal.toLocaleString("id-ID")} ✓`,
+        `Zakat: ${pctMaal}% × Rp ${nett.toLocaleString("id-ID")} = Rp ${result.toLocaleString("id-ID")}`,
+      ].join("\n");
       break;
     }
     case "pertanian": {
@@ -608,14 +824,9 @@ async function calculateZakat(
     }
   }
 
-  return [
-    `*Kalkulator Zakat ${zakatType.name}*`,
-    "",
-    `Perhitungan: ${explanation}`,
-    `*Zakat yang harus dibayar: Rp ${result.toLocaleString("id-ID")}*`,
-    "",
-    `Gunakan tool create_zakat_payment untuk membuat transaksi pembayaran zakat.`,
-  ].join("\n");
+  // Return ONLY the calculation data — no instructions, no "gunakan tool", no formatting
+  // The system prompt (LANGKAH 5) handles what the AI should say/do next (konfirmasi)
+  return `Perhitungan: ${explanation}. Total zakat: Rp ${result.toLocaleString("id-ID")}. Nama program: ${zakatType.name}.`;
 }
 
 async function registerDonatur(
@@ -996,9 +1207,12 @@ async function executeTool(
   toolName: string,
   params: Record<string, any>,
   envFrontendUrl?: string,
-  context?: ToolContext
+  context?: ToolContext,
+  execState?: ExecutionState
 ): Promise<string> {
   switch (toolName) {
+    case "get_program_overview":
+      return getProgramOverview(db);
     case "search_campaigns":
       return searchCampaigns(db, params as any);
     case "get_campaign_detail":
@@ -1009,24 +1223,168 @@ async function executeTool(
       return getZakatMenu(db);
     case "get_zakat_programs":
       return getZakatPrograms(db, params as any);
-    case "create_donation":
-      return createDonation(db, params as any, envFrontendUrl);
-    case "create_zakat_payment":
-      return createZakatPayment(db, params as any, envFrontendUrl);
     case "get_payment_link":
       return getPaymentLink(db, params as any, envFrontendUrl);
-    case "calculate_zakat":
-      return calculateZakat(db, params as any);
     case "register_donatur":
       return registerDonatur(db, params as any);
     case "get_bank_details":
       return getBankDetails(db, params as any);
     case "send_qris":
       return sendQrisToWhatsapp(db, params as any);
-    case "confirm_payment":
+    case "confirm_payment": {
+      // GUARD RAIL: REQUIRE image proof before processing payment confirmation
+      if (!context?.imageBuffer) {
+        console.warn("[WA AI] GUARD RAIL: confirm_payment called WITHOUT image proof. Blocked.");
+        return "GAGAL: Bukti transfer belum dikirim. Donatur HARUS mengirim foto/screenshot bukti transfer terlebih dahulu. Sampaikan ke donatur: 'Mohon kirimkan bukti transfer berupa foto/screenshot agar kami dapat memproses konfirmasi pembayaran Anda.'";
+      }
       return confirmPayment(db, params as any, context);
-    case "respond_to_user":
-      return (params as any).message || "";
+    }
+    case "respond_to_user": {
+      const msg = (params as any).message || "";
+      // GUARD RAIL: Prevent AI from confirming payment without actually calling confirm_payment
+      const lowerMsg = msg.toLowerCase();
+      const paymentConfirmPhrases = [
+        "telah kami terima",
+        "telah diterima",
+        "pembayaran diterima",
+        "sedang diverifikasi",
+        "sedang dalam proses verifikasi",
+        "pembayaran berhasil",
+        "pembayaran anda berhasil",
+        "sudah kami terima",
+        "sudah diterima",
+        "berhasil diverifikasi",
+        "verifikasi berhasil",
+      ];
+      if (paymentConfirmPhrases.some((p) => lowerMsg.includes(p))) {
+        console.warn("[WA AI] GUARD RAIL: AI tried to confirm payment via respond_to_user without calling confirm_payment. Blocked.");
+        return "Terima kasih atas informasinya. Untuk proses verifikasi pembayaran, mohon kirimkan *bukti transfer berupa foto/screenshot* ya. Kami perlu bukti transfer untuk memproses konfirmasi pembayaran Anda.";
+      }
+      return msg;
+    }
+
+    // --- Flow trigger tools (deterministic state machine takes over) ---
+    case "start_zakat_flow": {
+      // Check donor registration
+      if (context?.phone) {
+        const ph = context.phone.replace(/[^0-9]/g, "");
+        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
+      }
+      if (execState) execState.flowTrigger = createZakatFlowState(params as any);
+      return "FLOW_ACTIVATED";
+    }
+    case "start_donation_flow": {
+      if (!params.campaignId || !params.campaignName) return "Parameter campaignId dan campaignName diperlukan.";
+      // Check donor registration
+      if (context?.phone) {
+        const ph = context.phone.replace(/[^0-9]/g, "");
+        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
+      }
+      if (execState) execState.flowTrigger = createDonationFlowState(params as any);
+      return "FLOW_ACTIVATED";
+    }
+    case "start_fidyah_flow": {
+      if (!params.campaignId || !params.campaignName) return "Parameter campaignId dan campaignName diperlukan.";
+      // Check donor registration
+      if (context?.phone) {
+        const ph = context.phone.replace(/[^0-9]/g, "");
+        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
+      }
+      if (execState) execState.flowTrigger = createFidyahFlowState(params as any);
+      return "FLOW_ACTIVATED";
+    }
+    case "start_qurban_flow": {
+      // Check donor registration
+      if (context?.phone) {
+        const ph = context.phone.replace(/[^0-9]/g, "");
+        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
+      }
+      if (execState) execState.flowTrigger = createQurbanFlowState();
+      return "FLOW_ACTIVATED";
+    }
+    case "start_qurban_savings_flow": {
+      // Check donor registration
+      if (context?.phone) {
+        const ph = context.phone.replace(/[^0-9]/g, "");
+        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
+      }
+      if (execState) execState.flowTrigger = createQurbanSavingsFlowState();
+      return "FLOW_ACTIVATED";
+    }
+    case "check_qurban_savings": {
+      if (!context?.phone) return "Nomor HP tidak tersedia.";
+      const ph = context.phone.replace(/[^0-9]/g, "");
+
+      // Look up donatur for precise filtering
+      const donaturForSavings = await db.query.donatur.findFirst({
+        where: ilike(donatur.phone, `%${ph.slice(-10)}%`),
+      });
+
+      let savingsList = await db
+        .select({
+          id: qurbanSavings.id,
+          savingsNumber: qurbanSavings.savingsNumber,
+          donorName: qurbanSavings.donorName,
+          donorEmail: qurbanSavings.donorEmail,
+          targetAmount: qurbanSavings.targetAmount,
+          currentAmount: qurbanSavings.currentAmount,
+          installmentFrequency: qurbanSavings.installmentFrequency,
+          installmentCount: qurbanSavings.installmentCount,
+          installmentAmount: qurbanSavings.installmentAmount,
+          status: qurbanSavings.status,
+          pkgName: qurbanPackages.name,
+        })
+        .from(qurbanSavings)
+        .leftJoin(qurbanPackagePeriods, eq(qurbanSavings.targetPackagePeriodId, qurbanPackagePeriods.id))
+        .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+        .where(ilike(qurbanSavings.donorPhone, `%${ph.slice(-10)}%`));
+
+      // Narrow down by donatur email/name to avoid showing other donors' savings
+      if (savingsList.length > 1 && donaturForSavings?.email) {
+        const byEmail = savingsList.filter((s) => s.donorEmail === donaturForSavings.email);
+        if (byEmail.length > 0) savingsList = byEmail;
+      }
+      if (savingsList.length > 1 && donaturForSavings?.name) {
+        const byName = savingsList.filter((s) => s.donorName === donaturForSavings.name);
+        if (byName.length > 0) savingsList = byName;
+      }
+
+      if (savingsList.length === 0) {
+        return "Tidak ditemukan tabungan qurban untuk nomor ini.";
+      }
+
+      const lines: string[] = [];
+      for (const s of savingsList) {
+        const pct = s.targetAmount > 0 ? Math.round((s.currentAmount / s.targetAmount) * 100) : 0;
+        const freqLabel = s.installmentFrequency === "monthly" ? "bulan" : "minggu";
+        const statusMap: Record<string, string> = {
+          active: "Aktif", paused: "Dijeda", completed: "Selesai", converted: "Terkonversi", cancelled: "Dibatalkan",
+        };
+        lines.push(`No: ${s.savingsNumber}`);
+        lines.push(`Paket: ${s.pkgName || "-"}`);
+        lines.push(`Status: ${statusMap[s.status] || s.status}`);
+        lines.push(`Progress: Rp ${s.currentAmount.toLocaleString("id-ID")} / Rp ${s.targetAmount.toLocaleString("id-ID")} (${pct}%)`);
+        lines.push(`Cicilan: ${s.installmentCount}x @ Rp ${s.installmentAmount.toLocaleString("id-ID")}/${freqLabel}`);
+        lines.push("---");
+      }
+      return lines.join("\n");
+    }
+    case "start_savings_deposit_flow": {
+      // Check donor registration
+      if (context?.phone) {
+        const ph = context.phone.replace(/[^0-9]/g, "");
+        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
+      }
+      if (execState) execState.flowTrigger = createQurbanSavingsDepositFlowState();
+      return "FLOW_ACTIVATED";
+    }
+
     default:
       return `Tool "${toolName}" belum diimplementasikan.`;
   }
@@ -1038,8 +1396,16 @@ async function executeTool(
 
 const TOOL_DEFINITIONS = [
   {
+    name: "get_program_overview",
+    description: "Tampilkan ringkasan SEMUA program yang tersedia: donasi, zakat, qurban, fidyah, wakaf. Gunakan ketika donatur bertanya 'ada program apa?', 'program apa saja?', 'mau berdonasi tapi bingung', atau pertanyaan umum tentang program.",
+    parameters: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
     name: "search_campaigns",
-    description: "Cari program/campaign donasi yang tersedia",
+    description: "Cari program/campaign donasi SPESIFIK yang tersedia. Gunakan jika donatur sudah tahu mau cari program tertentu (misal 'program bencana', 'program yatim').",
     parameters: {
       type: "object",
       properties: {
@@ -1092,32 +1458,73 @@ const TOOL_DEFINITIONS = [
     },
   },
   {
-    name: "create_donation",
-    description: "Buat transaksi donasi baru",
+    name: "start_zakat_flow",
+    description: "Mulai proses pembayaran zakat. Panggil ketika donatur ingin MEMBAYAR zakat. Jika donatur sudah sebut jenis zakat, isi calculatorType.",
+    parameters: {
+      type: "object",
+      properties: {
+        calculatorType: {
+          type: "string",
+          description: "Jenis zakat jika sudah diketahui: fitrah, maal, penghasilan, profesi, pertanian, peternakan, bisnis. Kosongkan jika belum tahu.",
+        },
+      },
+    },
+  },
+  {
+    name: "start_donation_flow",
+    description: "Mulai proses donasi untuk campaign tertentu (BUKAN fidyah). Panggil setelah donatur pilih program dan ingin MEMBAYAR.",
     parameters: {
       type: "object",
       properties: {
         campaignId: { type: "string", description: "ID campaign" },
-        amount: { type: "number", description: "Nominal donasi" },
-        donorName: { type: "string", description: "Nama donatur" },
-        donorPhone: { type: "string", description: "Nomor HP donatur" },
+        campaignName: { type: "string", description: "Nama campaign" },
+        amount: { type: "number", description: "Nominal donasi jika sudah disebutkan" },
       },
-      required: ["campaignId", "amount", "donorName", "donorPhone"],
+      required: ["campaignId", "campaignName"],
     },
   },
   {
-    name: "create_zakat_payment",
-    description: "Buat transaksi pembayaran zakat. Untuk zakat fitrah dengan banyak jiwa, isi quantity sesuai jumlah jiwa dan amount = total nominal (jumlah jiwa × harga per jiwa dari kalkulator).",
+    name: "start_fidyah_flow",
+    description: "Mulai proses pembayaran fidyah. Panggil ketika donatur ingin MEMBAYAR fidyah. Sistem akan menanyakan jumlah orang, jumlah hari, dan atas nama siapa secara otomatis.",
     parameters: {
       type: "object",
       properties: {
-        zakatTypeId: { type: "string", description: "ID program zakat (dari get_zakat_programs)" },
-        amount: { type: "number", description: "Total nominal zakat (sudah dikalikan jumlah jiwa jika fitrah)" },
-        donorName: { type: "string", description: "Nama lengkap donatur" },
-        donorPhone: { type: "string", description: "Nomor WhatsApp donatur" },
-        quantity: { type: "number", description: "Jumlah jiwa (khusus zakat fitrah). Default 1 jika tidak diisi." },
+        campaignId: { type: "string", description: "ID campaign fidyah" },
+        campaignName: { type: "string", description: "Nama campaign fidyah" },
       },
-      required: ["zakatTypeId", "amount", "donorName", "donorPhone"],
+      required: ["campaignId", "campaignName"],
+    },
+  },
+  {
+    name: "start_qurban_flow",
+    description: "Mulai proses pemesanan qurban LANGSUNG (bayar lunas). Panggil ketika donatur ingin MEMESAN qurban. Sistem akan menampilkan periode, paket (kambing/sapi, individu/patungan), jumlah, dan atas nama siapa secara otomatis.",
+    parameters: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "start_qurban_savings_flow",
+    description: "Mulai proses TABUNGAN/CICILAN qurban. Panggil ketika donatur ingin MENABUNG/MENCICIL qurban, BUKAN bayar langsung. Sistem akan menampilkan periode, paket, lalu tanya frekuensi (bulanan/mingguan), jumlah cicilan, dan jadwal pengingat secara otomatis.",
+    parameters: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "check_qurban_savings",
+    description: "Cek status dan progress tabungan qurban donatur. Panggil ketika donatur bertanya 'cek tabungan', 'tabungan saya', atau ingin tahu progress cicilan qurban.",
+    parameters: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "start_savings_deposit_flow",
+    description: "Mulai proses setoran/cicilan tabungan qurban. Panggil ketika donatur ingin 'setor tabungan' atau 'bayar cicilan qurban'. Sistem akan menampilkan info tabungan, progress, dan nominal cicilan secara otomatis.",
+    parameters: {
+      type: "object",
+      properties: {},
     },
   },
   {
@@ -1130,21 +1537,6 @@ const TOOL_DEFINITIONS = [
         method: { type: "string", description: "Metode pembayaran (opsional)" },
       },
       required: ["transactionId"],
-    },
-  },
-  {
-    name: "calculate_zakat",
-    description: "Hitung zakat berdasarkan jenis dan parameter",
-    parameters: {
-      type: "object",
-      properties: {
-        zakatTypeId: { type: "string", description: "ID jenis zakat" },
-        params: {
-          type: "object",
-          description: "Parameter perhitungan (jumlah_jiwa, penghasilan, total_harta, hutang, dll)",
-        },
-      },
-      required: ["zakatTypeId"],
     },
   },
   {
@@ -1272,7 +1664,8 @@ async function callGemini(
   userMessage: string,
   db: Database,
   envFrontendUrl?: string,
-  context?: ToolContext
+  context?: ToolContext,
+  execState?: ExecutionState
 ): Promise<string> {
   const currentContents: any[] = [];
 
@@ -1363,8 +1756,11 @@ async function callGemini(
     }
 
     // Execute the actual tool
-    const toolResult = await executeTool(db, toolName, toolArgs, envFrontendUrl, context);
+    const toolResult = await executeTool(db, toolName, toolArgs, envFrontendUrl, context, execState);
     lastToolResult = toolResult;
+
+    // Check if a deterministic flow was triggered — break AI loop
+    if (execState?.flowTrigger) return "";
 
     // Append model's function call + tool result to conversation for next round
     currentContents.push({
@@ -1384,7 +1780,7 @@ async function callGemini(
     });
 
     // Continue loop — Gemini will process the tool result and either:
-    // - Call another tool (e.g., send_qris after create_donation)
+    // - Call another tool (e.g., send_qris after start_donation_flow)
     // - Call respond_to_user to format and return the final message
   }
 
@@ -1400,7 +1796,8 @@ async function callClaude(
   userMessage: string,
   db: Database,
   envFrontendUrl?: string,
-  context?: ToolContext
+  context?: ToolContext,
+  execState?: ExecutionState
 ): Promise<string> {
   const currentMessages: any[] = [];
 
@@ -1484,8 +1881,11 @@ async function callClaude(
     }
 
     // Execute tool
-    const toolResult = await executeTool(db, toolUseBlock.name, toolUseBlock.input || {}, envFrontendUrl, context);
+    const toolResult = await executeTool(db, toolUseBlock.name, toolUseBlock.input || {}, envFrontendUrl, context, execState);
     lastToolResult = toolResult;
+
+    // Check if a deterministic flow was triggered — break AI loop
+    if (execState?.flowTrigger) return "";
 
     // Append assistant response + tool result for next round
     currentMessages.push({ role: "assistant", content: data.content });
@@ -1512,7 +1912,8 @@ async function callGrok(
   userMessage: string,
   db: Database,
   envFrontendUrl?: string,
-  context?: ToolContext
+  context?: ToolContext,
+  execState?: ExecutionState
 ): Promise<string> {
   const currentMessages: any[] = [
     { role: "system", content: systemPrompt },
@@ -1603,8 +2004,11 @@ async function callGrok(
     }
 
     // Execute tool
-    const toolResult = await executeTool(db, toolName, toolArgs, envFrontendUrl, context);
+    const toolResult = await executeTool(db, toolName, toolArgs, envFrontendUrl, context, execState);
     lastToolResult = toolResult;
+
+    // Check if a deterministic flow was triggered — break AI loop
+    if (execState?.flowTrigger) return "";
 
     // Append assistant message + tool result for next round
     currentMessages.push(assistantMsg);
@@ -1660,6 +2064,38 @@ export async function processIncomingMessage(
   });
   const donorName = donaturRow?.name || msg.profileName;
   const donorPhone = msg.from;
+
+  // Cache donor info on context for flow handlers
+  ctx.donorName = donorName;
+  ctx.donaturId = donaturRow?.id;
+
+  // ---- FLOW STATE INTERCEPTION ----
+  // If a deterministic flow is active, route to state machine (skip AI entirely)
+  console.log(`[Flow] Check flowState for ${msg.from}: ${ctx.flowState ? `ACTIVE type=${ctx.flowState.type} step=${ctx.flowState.step}` : "NONE"} | text="${msg.text?.substring(0, 50)}" imageUrl=${!!msg.imageUrl}`);
+  if (ctx.flowState) {
+    if (msg.imageUrl) {
+      // Image during flow = likely payment proof → exit flow, fall through to AI
+      console.log(`[Flow] Image received during flow → exiting flow for ${msg.from}`);
+      ctx.flowState = undefined;
+    } else {
+      try {
+        const flowCtx: FlowContext = { phone: msg.from, donorName, donaturId: donaturRow?.id, flowState: ctx.flowState };
+        await handleFlowStep(db, flowCtx, msg.text, wa, envFrontendUrl);
+        // Sync flowState back (may have been cleared by flow completion)
+        ctx.flowState = flowCtx.flowState;
+        console.log(`[Flow] After step for ${msg.from}: ${ctx.flowState ? `type=${ctx.flowState.type} step=${ctx.flowState.step}` : "CLEARED"}`);
+        ctx.history.push({ role: "user", content: msg.text });
+        ctx.history.push({ role: "assistant", content: "[Flow otomatis]" });
+        if (ctx.history.length > 20) ctx.history = ctx.history.slice(-20);
+      } catch (err) {
+        console.error("[Flow] Step error for", msg.from, ":", err);
+        ctx.flowState = undefined;
+        await wa.sendMessage(msg.from, "Maaf, terjadi kesalahan. Silakan mulai ulang.");
+      }
+      return; // DO NOT proceed to AI
+    }
+  }
+  // ---- END FLOW INTERCEPTION ----
 
   // Download image early if available (before it expires)
   let imageBuffer: Buffer | undefined;
@@ -1755,105 +2191,106 @@ ATURAN:
 - JANGAN pernah mengarang data. Selalu gunakan tool untuk mengambil data real.
 - Format mata uang selalu "Rp X.XXX"
 - Jangan sebutkan nominal minimum donasi kepada donatur.
-- Jangan bahas topik di luar donasi/zakat/qurban
+- Jangan bahas topik di luar donasi/zakat/fidyah/qurban
 - Untuk cek status transaksi, langsung gunakan tool check_transaction_status dengan nomor HP donatur yang sudah diketahui.
 - DILARANG KERAS: Jangan pernah bilang "mohon tunggu", "sebentar ya", "akan saya kirimkan", "akan saya buatkan" atau sejenisnya TANPA memanggil tool. Jika kamu ingin melakukan aksi, HARUS langsung panggil tool. Jangan pernah merespons dengan teks yang menjanjikan aksi — langsung panggil tool-nya.
 - DILARANG KERAS: Jangan pernah merespons dengan HANYA teks ketika user meminta aksi (bayar, transfer, QRIS, kirim, buat transaksi). Kamu WAJIB memanggil tool.
-- Ketika donatur sudah konfirmasi nominal dan siap bayar, LANGSUNG panggil tool create_donation atau create_zakat_payment.
+- Ketika donatur ingin MEMBAYAR donasi → panggil start_donation_flow. Ketika ingin MEMBAYAR zakat → panggil start_zakat_flow. Ketika ingin MEMBAYAR fidyah → cari campaign fidyah dulu (search_campaigns "fidyah"), lalu panggil start_fidyah_flow. Proses selanjutnya otomatis oleh sistem.
 - Ketika donatur pilih QRIS, LANGSUNG panggil tool send_qris. Ketika pilih transfer bank, LANGSUNG panggil tool get_bank_details.
 - ID Transaksi dari tool sebelumnya ada di riwayat percakapan. Ambil dari sana.
-- Jangan pernah memanggil create_donation atau create_zakat_payment lebih dari SATU KALI untuk permintaan donasi yang sama. Jika transaksi sudah dibuat, gunakan ID Transaksi yang sudah ada.
-- DILARANG KERAS: Jangan pernah menjawab "Transaksi tidak ditemukan" atau pesan error sejenis ketika pesan donatur tidak jelas, typo, atau ambigu. Jika kamu TIDAK YAKIN apa maksud donatur, WAJIB klarifikasi dengan sopan, misalnya: "Maaf, boleh saya tahu apa yang Bapak/Ibu maksud?" atau "Mohon maaf, saya kurang memahami pesan Anda. Bisa dijelaskan lebih lanjut?". Jawaban "Transaksi tidak ditemukan" HANYA boleh digunakan jika tool check_transaction_status sudah dipanggil dan hasilnya memang kosong.
-- WAJIB REGISTRASI DULU: Sebelum membuat transaksi apapun (donasi, zakat, qurban), pastikan donatur SUDAH TERDAFTAR (lihat INFO DONATUR). Jika "Terdaftar: Belum", WAJIB jalankan FLOW REGISTRASI terlebih dahulu. JANGAN pernah panggil create_donation, create_zakat_payment, atau tool transaksi lainnya sebelum donatur terdaftar.
+- DILARANG KERAS: Jangan pernah memanggil start_donation_flow, start_zakat_flow, atau start_fidyah_flow lebih dari SATU KALI untuk permintaan yang sama. Jika transaksi sudah dibuat (ada TRX- di percakapan), gunakan ID Transaksi yang sudah ada. JANGAN buat transaksi baru.
+- Jika donatur bilang "baik" / "ok" / "terima kasih" setelah transaksi dibuat, itu artinya dia menerima info, BUKAN meminta transaksi baru. Tanyakan metode pembayaran atau beri info link invoice.
+- DILARANG KERAS: Jangan pernah menjawab "Transaksi tidak ditemukan" kepada donatur. Jika check_transaction_status tidak menemukan transaksi, JANGAN forward pesan error mentah. Sebagai gantinya, sampaikan dengan SOPAN dan BANTU donatur: minta bukti transfer berupa foto/screenshot, atau minta nomor transaksi (TRX-...). Jangan pernah membuat donatur merasa diabaikan.
+- WAJIB REGISTRASI DULU: Sebelum membuat transaksi apapun (donasi, zakat, fidyah, qurban), pastikan donatur SUDAH TERDAFTAR (cek status di bagian "DONATUR YANG SEDANG CHAT"). Jika statusnya "Belum terdaftar", WAJIB jalankan FLOW REGISTRASI terlebih dahulu. JANGAN pernah panggil start_donation_flow, start_zakat_flow, start_fidyah_flow, atau tool transaksi lainnya sebelum donatur terdaftar.
 
-FLOW REGISTRASI (WAJIB jika donatur belum terdaftar — lihat INFO DONATUR "Terdaftar: Belum"):
+FLOW REGISTRASI (WAJIB jika donatur belum terdaftar):
 1. Sapa donatur, JANGAN gunakan nama profil WhatsApp karena bisa tidak akurat.
    Contoh: "Assalamualaikum, selamat datang di {store_name}! Sebelum melanjutkan, kami perlu mendaftarkan data Anda terlebih dahulu."
 2. Minta data berikut secara WAJIB: Nama Lengkap dan Email
-3. Nomor WhatsApp sudah diketahui dari INFO DONATUR (tidak perlu ditanyakan lagi)
-4. Setelah Nama dan Email terkumpul, panggil tool register_donatur dengan nama, email, dan nomor HP dari INFO DONATUR
+3. Nomor WhatsApp sudah diketahui (tidak perlu ditanyakan lagi)
+4. Setelah Nama dan Email terkumpul, panggil tool register_donatur dengan nama, email, dan nomor HP donatur
 5. Baru lanjutkan ke flow donasi/zakat/qurban
 
+PERTANYAAN UMUM TENTANG PROGRAM:
+- Jika donatur bertanya "ada program apa?", "program apa saja?", "mau donasi tapi bingung", atau pertanyaan umum → panggil get_program_overview()
+- Tool ini menampilkan SEMUA kategori: donasi, zakat, qurban, fidyah, wakaf.
+- Setelah donatur tahu kategorinya, arahkan ke flow yang sesuai.
+- JANGAN hanya jawab dengan campaign donasi saja jika pertanyaannya umum!
+
 FLOW DONASI (HANYA jika donatur sudah terdaftar):
-1. Tanya/cari program yang diminati (gunakan tool search_campaigns)
-2. WAJIB tanyakan nominal donasi: "Berapa nominal yang ingin Anda donasikan untuk program [nama program]?"
-3. Tunggu donatur menyebutkan nominal, baru LANGSUNG panggil tool create_donation
-4. Setelah tool mengembalikan data transaksi, sampaikan detail dengan format informatif:
-   - Tampilkan: No. Transaksi, Program, Nominal, Kode Unik (jika ada), Total Transfer, Status
-   - Lalu sampaikan link invoice dan opsi pembayaran:
-   "Bapak/Ibu dapat melakukan pembayaran melalui link invoice berikut: [link]
-   Atau jika ingin langsung bayar, silakan pilih: *Transfer Bank* atau *QRIS*?"
-   - Jangan tampilkan link invoice 2 kali.
-5. Jika donatur pilih Transfer Bank → LANGSUNG panggil tool get_bank_details dengan transactionId
-6. Jika donatur pilih QRIS → LANGSUNG panggil tool send_qris dengan transactionId dan phone
+1. Tanya/cari program yang diminati (gunakan tool search_campaigns untuk cari spesifik)
+2. Jika campaign dengan pillar "fidyah" → gunakan FLOW FIDYAH, BUKAN flow donasi biasa.
+3. Donatur pilih program dan ingin MEMBAYAR → panggil start_donation_flow({ campaignId, campaignName, amount? })
+4. Proses selanjutnya OTOMATIS oleh sistem (tanya nominal, konfirmasi, buat transaksi).
+5. DILARANG panggil start_donation_flow lebih dari 1x untuk permintaan yang sama.
+
+FLOW FIDYAH (HANYA jika donatur sudah terdaftar):
+- Donatur bilang "fidyah" / "mau bayar fidyah" → cari campaign fidyah: search_campaigns("fidyah")
+- Setelah dapat campaign fidyah → LANGSUNG panggil start_fidyah_flow({ campaignId, campaignName })
+- Proses selanjutnya OTOMATIS oleh sistem (tanya jumlah orang, jumlah hari, atas nama siapa, hitung, konfirmasi, buat transaksi).
+- DILARANG panggil start_fidyah_flow lebih dari 1x untuk permintaan yang sama.
 
 FLOW ZAKAT (HANYA jika donatur sudah terdaftar — jika belum, jalankan FLOW REGISTRASI dulu):
-Ada 2 tool zakat yang BERBEDA — pilih yang TEPAT:
-- get_zakat_menu → tampilkan menu jenis zakat. HANYA jika donatur bilang "zakat" tanpa jenis.
-- get_zakat_programs → tampilkan program untuk jenis tertentu. Jika donatur SUDAH sebut jenis.
+- Donatur bilang "zakat" TANPA jenis → LANGSUNG panggil start_zakat_flow() tanpa calculatorType. Sistem akan menampilkan menu jenis zakat secara otomatis.
+- Donatur bilang "zakat fitrah" / "zakat maal" / dll (sudah sebut jenis) → LANGSUNG panggil start_zakat_flow({ calculatorType: "fitrah" / "maal" / dst })
+- Proses selanjutnya (pilih jenis, pilih program, tanya data, hitung, konfirmasi, buat transaksi) OTOMATIS oleh sistem.
+- DILARANG mengarang/mengetik daftar jenis zakat sendiri. Semua HARUS melalui start_zakat_flow.
+- DILARANG panggil start_zakat_flow lebih dari 1x untuk permintaan yang sama.
+- get_zakat_menu HANYA untuk pertanyaan informasi (misal "apa saja jenis zakat?"), BUKAN untuk proses pembayaran.
 
-Contoh:
-- "saya ingin zakat fitrah" → panggil get_zakat_programs({ calculatorType: "fitrah" })
-- "mau bayar zakat maal" → panggil get_zakat_programs({ calculatorType: "maal" })
-- "saya mau zakat" (tanpa jenis) → panggil get_zakat_menu()
+FLOW QURBAN (HANYA jika donatur sudah terdaftar):
+- Donatur bilang "qurban" / "mau qurban" / "pesan qurban" / "beli qurban" → LANGSUNG panggil start_qurban_flow()
+- Proses selanjutnya OTOMATIS oleh sistem (pilih periode, pilih paket kambing/sapi, jumlah, atas nama siapa, konfirmasi, buat transaksi).
+- DILARANG panggil start_qurban_flow lebih dari 1x untuk permintaan yang sama.
 
-1. HANYA jika donatur bilang "zakat" TANPA menyebut jenis:
-   → Panggil tool get_zakat_menu() → tampilkan menu jenis zakat
-   → Tanya donatur mau zakat apa
-2. Jika donatur SUDAH menyebut jenis zakat (misal "zakat fitrah", "zakat penghasilan", "zakat maal"):
-   → Panggil tool get_zakat_programs({ calculatorType: "fitrah" })
-   → Jika HANYA 1 program → langsung lanjut ke langkah 3 (tidak perlu tanya pilih program)
-   → Jika LEBIH DARI 1 program → tampilkan daftar, tanya donatur mau disalurkan ke program mana
-3. Setelah program dipilih (punya zakatTypeId/ID program):
-   → KHUSUS ZAKAT FITRAH: Sebelum menghitung, WAJIB tanya dulu:
-     "Zakat fitrah ini untuk berapa jiwa/orang? Anda bisa membayarkan zakat fitrah tidak hanya untuk diri sendiri, tapi juga untuk keluarga atau orang lain."
-     Tunggu jawaban donatur (misal: 1, 3, 5 orang).
-   → Jika jenis zakat punya kalkulator (fitrah, penghasilan, maal, dll):
-     - Untuk FITRAH: panggil calculate_zakat({ zakatTypeId: ID_PROGRAM, params: { jumlah_jiwa: N } })
-     - Untuk PENGHASILAN/PROFESI: tanyakan penghasilan bulanan, panggil calculate_zakat
-     - Untuk MAAL: tanyakan total harta dan hutang, panggil calculate_zakat
-     - Untuk jenis lain: tanyakan data yang diperlukan sesuai kalkulator
-     - Sampaikan hasil perhitungan, konfirmasi nominal
-   → Jika donatur langsung sebut nominal tanpa mau pakai kalkulator, boleh langsung lanjut
-4. Setelah nominal dikonfirmasi → LANGSUNG panggil tool create_zakat_payment({ zakatTypeId: ID_PROGRAM, amount, donorName, donorPhone, quantity: JUMLAH_JIWA })
-   - Untuk FITRAH: quantity = jumlah jiwa yang tadi disebutkan donatur
-   - Untuk jenis lain: quantity = 1
-5. Setelah transaksi dibuat → sampaikan detail transaksi + opsi pembayaran PERSIS SAMA seperti FLOW DONASI langkah 4-6:
-   - Tampilkan: No. Transaksi, Jenis Zakat, Nominal, Kode Unik (jika ada), Total Transfer, Status
-   - Sampaikan link invoice dan opsi: "Bapak/Ibu dapat melakukan pembayaran melalui link invoice berikut: [link]. Atau jika ingin langsung bayar, silakan pilih: *Transfer Bank* atau *QRIS*?"
-6. Jika donatur pilih Transfer Bank → LANGSUNG panggil tool get_bank_details dengan transactionId
-7. Jika donatur pilih QRIS → LANGSUNG panggil tool send_qris dengan transactionId dan phone
+FLOW TABUNGAN QURBAN (HANYA jika donatur sudah terdaftar):
+- Donatur bilang "nabung qurban" / "cicil qurban" / "tabungan qurban" / "menabung qurban" → panggil start_qurban_savings_flow()
+- Proses selanjutnya OTOMATIS oleh sistem (pilih periode, paket, frekuensi bulanan/mingguan, jumlah cicilan, hari pengingat, konfirmasi, buka tabungan).
+- DILARANG panggil start_qurban_savings_flow lebih dari 1x untuk permintaan yang sama.
+- Jika donatur bilang "setor tabungan" / "bayar cicilan" → panggil start_savings_deposit_flow(). Sistem akan menampilkan info tabungan, progress, dan nominal cicilan otomatis.
+- Jika donatur bilang "cek tabungan" / "tabungan saya" → panggil check_qurban_savings (ini AI tool, bukan flow).
+
+PENTING — PEMBUATAN TRANSAKSI:
+- DILARANG membuat transaksi langsung. Semua transaksi HARUS melalui start_zakat_flow, start_donation_flow, start_fidyah_flow, start_qurban_flow, start_qurban_savings_flow, atau start_savings_deposit_flow.
+- Setelah flow selesai dan transaksi dibuat, donatur bisa pilih metode pembayaran:
+  - Transfer Bank → panggil get_bank_details
+  - QRIS → panggil send_qris
+  - Jika donatur bilang "baik" / "ok" / "terima kasih" TANPA memilih metode → JANGAN buat transaksi baru. Tanya metode pembayaran atau arahkan ke link invoice.
 
 FLOW KIRIM ULANG / CEK TRANSAKSI:
 - Jika donatur minta kirim ulang QRIS, cek status, atau mau bayar transaksi sebelumnya:
-  1. PERTAMA panggil tool check_transaction_status dengan nomor HP donatur (dari INFO DONATUR)
+  1. PERTAMA panggil tool check_transaction_status dengan nomor HP donatur
   2. Tampilkan daftar transaksi yang ditemukan (terutama yang berstatus "Menunggu Pembayaran")
   3. Tanyakan transaksi mana yang ingin dibayar (jika ada lebih dari 1 yang pending)
   4. Setelah donatur konfirmasi, panggil tool send_qris atau get_bank_details dengan ID Transaksi yang benar
 - JANGAN pernah bilang "transaksi tidak ditemukan" tanpa memanggil tool check_transaction_status terlebih dahulu.
 
-FLOW KONFIRMASI PEMBAYARAN (jika donatur mengirim gambar/foto bukti transfer ATAU bilang "sudah bayar"):
-ATURAN WAJIB: JANGAN PERNAH bilang "pembayaran diterima/sedang diverifikasi" TANPA memanggil tool confirm_payment terlebih dahulu. Respons verifikasi HANYA boleh dikirim SETELAH tool confirm_payment berhasil dipanggil.
-1. Jika donatur kirim gambar → analisis gambar, ekstrak: nominal, tanggal, bank pengirim
-2. Jika donatur bilang "sudah bayar" tanpa gambar → tetap lanjut ke langkah 3
-3. WAJIB panggil tool check_transaction_status dengan nomor HP donatur (dari INFO DONATUR) untuk cari transaksi pending
-4. Cocokkan nominal (dari gambar atau dari transaksi pending):
+FLOW KONFIRMASI PEMBAYARAN:
+ATURAN UTAMA: Konfirmasi pembayaran WAJIB disertai bukti transfer berupa foto/screenshot. JANGAN PERNAH bilang "pembayaran diterima/sedang diverifikasi" TANPA memanggil tool confirm_payment terlebih dahulu.
+
+1. Jika donatur kirim GAMBAR bukti transfer → analisis gambar, ekstrak: nominal, tanggal, bank pengirim → lanjut ke langkah 3
+2. Jika donatur bilang "sudah bayar" / "sudah transfer" TANPA gambar → MINTA bukti transfer:
+   "Terima kasih atas informasinya. Untuk proses verifikasi, mohon kirimkan bukti transfer berupa foto/screenshot ya."
+   → TUNGGU donatur kirim gambar. JANGAN proses confirm_payment tanpa bukti gambar.
+3. WAJIB panggil tool check_transaction_status dengan nomor HP donatur untuk cari transaksi pending
+4. Cocokkan nominal (dari gambar dengan transaksi pending):
    - Jika ada 1 transaksi pending dan nominal cocok (selisih ≤ Rp 1.000) → LANGSUNG panggil tool confirm_payment({ transactionId: ID_TRANSAKSI, amount: NOMINAL, paymentDate: TANGGAL })
-   - Jika nominal TIDAK COCOK → beritahu donatur
-   - Jika ada LEBIH DARI 1 transaksi pending → tanya yang mana dulu
-   - Jika TIDAK ADA transaksi pending → beritahu donatur
+   - Jika nominal TIDAK COCOK → beritahu donatur bahwa nominal tidak sesuai, minta klarifikasi
+   - Jika ada LEBIH DARI 1 transaksi pending → tampilkan daftar, tanya yang mana
+   - Jika TIDAK ADA transaksi pending → sampaikan dengan SOPAN: "Mohon maaf, kami belum menemukan transaksi atas nama Bapak/Ibu. Bisa tolong kirimkan bukti transfer berupa foto/screenshot? Atau jika ada nomor transaksi (TRX-...), mohon disebutkan agar kami bisa membantu."
 5. HANYA SETELAH confirm_payment berhasil → barulah sampaikan: "Bukti pembayaran Anda telah kami terima dan sedang dalam proses verifikasi oleh admin."
 - Jika gambar bukan bukti transfer, beritahu donatur dengan sopan.
 - DILARANG KERAS merespons "sudah diterima/diverifikasi" tanpa memanggil confirm_payment.
+- DILARANG KERAS langsung bilang "Transaksi tidak ditemukan" tanpa memberikan solusi/arahan.
 
 INFO LEMBAGA:
 - Nama: {store_name}
 - Website: {store_website}
 - WhatsApp: {store_whatsapp}
 
-INFO DONATUR:
-- Nama: ${donaturRow ? donorName : "(belum diketahui)"}
-- Nomor: ${donorPhone}${donaturRow ? `\n- Terdaftar: Ya\n- Total Donasi: ${donaturRow.totalDonations || 0} kali\n- Total Nominal: Rp ${(donaturRow.totalAmount || 0).toLocaleString("id-ID")}` : "\n- Terdaftar: Belum"}`;
+DONATUR YANG SEDANG CHAT:
+Donatur ini bernama ${donaturRow ? donorName : "(belum diketahui)"}, nomor HP ${donorPhone}.${donaturRow ? `\nStatus: Sudah terdaftar. Total donasi: ${donaturRow.totalDonations || 0} kali, total nominal: Rp ${(donaturRow.totalAmount || 0).toLocaleString("id-ID")}.` : "\nStatus: Belum terdaftar. WAJIB registrasi dulu sebelum transaksi."}
+Gunakan nama "${donaturRow ? donorName : "Bapak/Ibu"}" langsung saat menyapa. JANGAN pernah menulis kode atau variabel seperti INFO DONATUR.Nama — tulis nama aslinya langsung.`;
 
   const systemPrompt = await buildSystemPrompt(
     db,
@@ -1861,6 +2298,7 @@ INFO DONATUR:
     envFrontendUrl
   );
 
+  const execState: ExecutionState = {};
   let reply: string;
 
   try {
@@ -1873,7 +2311,8 @@ INFO DONATUR:
         msg.text,
         db,
         envFrontendUrl,
-        toolContext
+        toolContext,
+        execState
       );
     } else if (aiConfig.provider === "grok") {
       reply = await callGrok(
@@ -1884,7 +2323,8 @@ INFO DONATUR:
         msg.text,
         db,
         envFrontendUrl,
-        toolContext
+        toolContext,
+        execState
       );
     } else {
       // Default to Gemini
@@ -1896,12 +2336,32 @@ INFO DONATUR:
         msg.text,
         db,
         envFrontendUrl,
-        toolContext
+        toolContext,
+        execState
       );
     }
   } catch (err: any) {
     console.error("AI call error:", err?.message || err, err?.stack || "");
     reply = "Maaf, terjadi gangguan pada sistem kami. Silakan coba lagi nanti.";
+  }
+
+  // Handle flow trigger from AI tool call
+  if (execState.flowTrigger) {
+    ctx.flowState = execState.flowTrigger;
+    ctx.history.push({ role: "user", content: msg.text });
+    const flowCtx: FlowContext = {
+      phone: msg.from,
+      donorName: ctx.donorName || donorName,
+      donaturId: ctx.donaturId,
+      flowState: ctx.flowState,
+    };
+    const firstMsg = await generateFirstFlowMessage(db, flowCtx, wa, envFrontendUrl);
+    ctx.flowState = flowCtx.flowState;
+    ctx.history.push({ role: "assistant", content: firstMsg });
+    if (ctx.history.length > 20) {
+      ctx.history = ctx.history.slice(-20);
+    }
+    return;
   }
 
   // Update conversation history

@@ -10,7 +10,7 @@ import { EyeIcon, PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/ou
 import Modal from "@/components/Modal";
 import Autocomplete from "@/components/Autocomplete";
 import Pagination from "@/components/Pagination";
-import { toast } from "react-hot-toast";
+import FeedbackDialog from "@/components/FeedbackDialog";
 import { formatRupiah } from "@/lib/format";
 import { useAuth } from "@/lib/auth";
 
@@ -24,6 +24,16 @@ export default function CampaignsPage() {
   // Bulk selection states
   const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
+  const [feedback, setFeedback] = useState({
+    open: false,
+    type: "success" as "success" | "error",
+    title: "",
+    message: "",
+  });
+
+  const showFeedback = (type: "success" | "error", title: string, message: string) => {
+    setFeedback({ open: true, type, title, message });
+  };
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -68,17 +78,35 @@ export default function CampaignsPage() {
     },
   });
 
-  // Fetch current user's employee record if program_coordinator
+  // Fetch current user's employee record if program_coordinator or employee
+  const needsEmployeeRecord = user?.roles?.includes("program_coordinator") || user?.roles?.includes("employee");
   const { data: currentEmployee } = useQuery({
     queryKey: ["current-employee"],
     queryFn: async () => {
-      if (!user?.roles?.includes("program_coordinator")) return null;
+      if (!needsEmployeeRecord) return null;
       const response = await api.get("/admin/employees");
       const employees = response.data.data;
-      return employees.find((emp: any) => emp.userId === user.id);
+      return employees.find((emp: any) => emp.userId === user?.id);
     },
-    enabled: !!user?.roles?.includes("program_coordinator"),
+    enabled: !!needsEmployeeRecord,
   });
+
+  const isMitra = user?.roles?.includes("mitra") && user.roles.length === 1;
+  const isEmployeeOnly = user?.roles?.includes("employee") &&
+    !user?.roles?.includes("super_admin") &&
+    !user?.roles?.includes("admin_campaign") &&
+    !user?.roles?.includes("admin_finance");
+
+  // Fetch mitra record to check approval status
+  const { data: mitraRecord } = useQuery({
+    queryKey: ["my-mitra-record"],
+    queryFn: async () => {
+      const response = await api.get("/admin/mitra/me");
+      return response.data?.data || null;
+    },
+    enabled: !!isMitra,
+  });
+  const isMitraApproved = mitraRecord?.status === "verified";
 
   // Helper to check if user can edit/delete a campaign
   const canEditCampaign = (campaign: any) => {
@@ -88,17 +116,26 @@ export default function CampaignsPage() {
     if (user?.roles?.includes("program_coordinator") && currentEmployee) {
       return campaign.coordinatorId === currentEmployee.id || campaign.createdBy === user.id;
     }
+    // Employee can edit campaigns where they are the coordinator (penanggung jawab)
+    if (isEmployeeOnly && currentEmployee) {
+      return campaign.coordinatorId === currentEmployee.id;
+    }
+    // Mitra can edit all their own campaigns (already filtered by API)
+    if (isMitra) {
+      return true;
+    }
     return false;
   };
 
   const canDeleteCampaign = (campaign: any) => {
-    return user?.roles?.includes("super_admin");
+    return user?.roles?.includes("super_admin") || user?.roles?.includes("admin_campaign");
   };
 
   const canCreateCampaign = () => {
     return user?.roles?.includes("super_admin") ||
            user?.roles?.includes("admin_campaign") ||
-           user?.roles?.includes("program_coordinator");
+           user?.roles?.includes("program_coordinator") ||
+           (isMitra && isMitraApproved);
   };
 
   // Filter campaigns based on search and filters
@@ -135,10 +172,10 @@ export default function CampaignsPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-campaigns"] });
       setIsDeleteModalOpen(false);
       setSelectedCampaign(null);
-      toast.success("Campaign berhasil dihapus!");
+      showFeedback("success", "Berhasil", "Campaign berhasil dihapus!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal menghapus campaign");
+      showFeedback("error", "Gagal", error.response?.data?.message || "Gagal menghapus campaign");
     },
   });
 
@@ -178,10 +215,10 @@ export default function CampaignsPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-campaigns"] });
       setIsBulkDeleteModalOpen(false);
       setSelectedCampaigns([]);
-      toast.success(`${selectedCampaigns.length} campaign berhasil dihapus!`);
+      showFeedback("success", "Berhasil", `${selectedCampaigns.length} campaign berhasil dihapus!`);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal menghapus campaigns");
+      showFeedback("error", "Gagal", error.response?.data?.message || "Gagal menghapus campaigns");
     },
   });
 
@@ -193,10 +230,10 @@ export default function CampaignsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-campaigns"] });
       setSelectedCampaigns([]);
-      toast.success(`${selectedCampaigns.length} campaign berhasil dijadikan unggulan!`);
+      showFeedback("success", "Berhasil", `${selectedCampaigns.length} campaign berhasil dijadikan unggulan!`);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal mengubah status featured");
+      showFeedback("error", "Gagal", error.response?.data?.message || "Gagal mengubah status featured");
     },
   });
 
@@ -208,10 +245,10 @@ export default function CampaignsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-campaigns"] });
       setSelectedCampaigns([]);
-      toast.success(`${selectedCampaigns.length} campaign berhasil dijadikan mendesak!`);
+      showFeedback("success", "Berhasil", `${selectedCampaigns.length} campaign berhasil dijadikan mendesak!`);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal mengubah status urgent");
+      showFeedback("error", "Gagal", error.response?.data?.message || "Gagal mengubah status urgent");
     },
   });
 
@@ -275,8 +312,8 @@ export default function CampaignsPage() {
         )}
       </div>
 
-      {/* Bulk Actions Bar */}
-      {selectedCampaigns.length > 0 && (
+      {/* Bulk Actions Bar (hidden for mitra) */}
+      {!isMitra && selectedCampaigns.length > 0 && (
         <div className="mb-4 flex items-center justify-between bg-primary-50 border border-primary-200 rounded-lg px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium text-primary-900">
@@ -357,17 +394,19 @@ export default function CampaignsPage() {
         <table className="table">
           <thead>
             <tr>
-              <th className="w-12">
-                <input
-                  type="checkbox"
-                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                  checked={isAllSelected}
-                  ref={(input) => {
-                    if (input) input.indeterminate = isSomeSelected;
-                  }}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                />
-              </th>
+              {!isMitra && (
+                <th className="w-12">
+                  <input
+                    type="checkbox"
+                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    checked={isAllSelected}
+                    ref={(input) => {
+                      if (input) input.indeterminate = isSomeSelected;
+                    }}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                  />
+                </th>
+              )}
               <th className="sortable">Campaign</th>
               <th className="sortable">Goal</th>
               <th className="sortable">Collected</th>
@@ -389,14 +428,16 @@ export default function CampaignsPage() {
 
               return (
                 <tr key={campaign.id}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      checked={selectedCampaigns.includes(campaign.id)}
-                      onChange={(e) => handleSelectCampaign(campaign.id, e.target.checked)}
-                    />
-                  </td>
+                  {!isMitra && (
+                    <td>
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        checked={selectedCampaigns.includes(campaign.id)}
+                        onChange={(e) => handleSelectCampaign(campaign.id, e.target.checked)}
+                      />
+                    </td>
+                  )}
                   <td>
                     <div>
                       <div className="font-medium text-gray-900">
@@ -484,7 +525,9 @@ export default function CampaignsPage() {
           <div className="text-center py-12">
             <p className="text-gray-500">
               {campaigns?.length === 0
-                ? "Belum ada campaign. Buat campaign pertama Anda!"
+                ? (isEmployeeOnly
+                    ? "Tidak ada campaign yang berada dibawah tanggung jawab Anda."
+                    : "Belum ada campaign. Buat campaign pertama Anda!")
                 : "Tidak ada campaign yang sesuai dengan filter."}
             </p>
           </div>
@@ -498,12 +541,14 @@ export default function CampaignsPage() {
             return (
               <div key={campaign.id} className="table-card">
                 <div className="flex items-start gap-3 mb-3">
-                  <input
-                    type="checkbox"
-                    className="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                    checked={selectedCampaigns.includes(campaign.id)}
-                    onChange={(e) => handleSelectCampaign(campaign.id, e.target.checked)}
-                  />
+                  {!isMitra && (
+                    <input
+                      type="checkbox"
+                      className="mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      checked={selectedCampaigns.includes(campaign.id)}
+                      onChange={(e) => handleSelectCampaign(campaign.id, e.target.checked)}
+                    />
+                  )}
                   <div className="flex-1">
                     <div className="table-card-header">
                       <div className="table-card-header-left">
@@ -672,6 +717,14 @@ export default function CampaignsPage() {
           </div>
         </div>
       </Modal>
+
+      <FeedbackDialog
+        open={feedback.open}
+        type={feedback.type}
+        title={feedback.title}
+        message={feedback.message}
+        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import jsQR from "jsqr";
 import SettingsLayout from "@/components/SettingsLayout";
 import api from "@/lib/api";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
@@ -60,6 +61,46 @@ const paymentProviders: Array<{ id: PaymentProvider; name: string; description: 
   },
 ];
 
+// QRIS EMV helpers
+function parseQrisTlv(payload: string) {
+  const entries: Array<{ tag: string; value: string }> = [];
+  let i = 0;
+  while (i < payload.length) {
+    if (i + 4 > payload.length) break;
+    const tag = payload.substring(i, i + 2);
+    const len = parseInt(payload.substring(i + 2, i + 4), 10);
+    if (isNaN(len) || i + 4 + len > payload.length) break;
+    entries.push({ tag, value: payload.substring(i + 4, i + 4 + len) });
+    i += 4 + len;
+  }
+  return entries;
+}
+
+function validateQrisCrc(payload: string): boolean {
+  if (payload.length < 8) return false;
+  const withoutCrc = payload.substring(0, payload.length - 4);
+  const existingCrc = payload.substring(payload.length - 4).toUpperCase();
+  let crc = 0xffff;
+  for (let i = 0; i < withoutCrc.length; i++) {
+    crc ^= withoutCrc.charCodeAt(i) << 8;
+    for (let j = 0; j < 8; j++) {
+      if (crc & 0x8000) crc = ((crc << 1) ^ 0x1021) & 0xffff;
+      else crc = (crc << 1) & 0xffff;
+    }
+  }
+  return existingCrc === crc.toString(16).toUpperCase().padStart(4, "0");
+}
+
+function parseQrisMerchantInfo(payload: string) {
+  const entries = parseQrisTlv(payload);
+  const tag59 = entries.find((e) => e.tag === "59");
+  const tag60 = entries.find((e) => e.tag === "60");
+  return {
+    merchantName: tag59?.value || "",
+    merchantCity: tag60?.value || "",
+  };
+}
+
 export default function PaymentsSettingsPage() {
   const queryClient = useQueryClient();
   const [activeProvider, setActiveProvider] = useState<PaymentProvider | null>(null);
@@ -70,6 +111,8 @@ export default function PaymentsSettingsPage() {
     title: "",
     message: "",
   });
+  const [deleteBankAccountId, setDeleteBankAccountId] = useState<string | null>(null);
+  const [deleteQrisId, setDeleteQrisId] = useState<string | null>(null);
 
   const showFeedback = (type: "success" | "error", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
@@ -91,16 +134,16 @@ export default function PaymentsSettingsPage() {
     retry: 1,
   });
 
-  // Fetch COA accounts for bank selection
+  // Fetch COA accounts for bank selection (including cash)
   const { data: coaAccounts } = useQuery({
     queryKey: ["coa-bank-accounts"],
     queryFn: async () => {
       try {
         const response = await api.get("/admin/coa?type=asset");
         const accounts = response.data?.data || [];
-        // Filter only bank accounts (1110-1129)
+        // Filter bank and cash accounts (6201-6210)
         return accounts.filter((acc: any) =>
-          acc.code >= "1110" && acc.code <= "1129"
+          acc.code >= "6201" && acc.code <= "6210"
         );
       } catch (error: any) {
         console.error("COA API error:", error);
@@ -156,7 +199,7 @@ export default function PaymentsSettingsPage() {
     accountNumber: "",
     accountName: "",
     branch: "",
-    coaCode: "1020",
+    coaCode: "6201",
     programs: ["general"] as string[],
   });
 
@@ -166,7 +209,7 @@ export default function PaymentsSettingsPage() {
     accountNumber: "",
     accountName: "",
     branch: "",
-    coaCode: "1020",
+    coaCode: "6201",
     programs: ["general"] as string[],
   });
 
@@ -196,26 +239,76 @@ export default function PaymentsSettingsPage() {
     Array<{
       id: string;
       name: string;
-      nmid: string;
       imageUrl: string;
+      coaCode?: string;
       programs: string[];
+      emvPayload?: string;
+      merchantName?: string;
+      merchantCity?: string;
+      isDynamic?: boolean;
     }>
   >([]);
   const [newQrisForm, setNewQrisForm] = useState({
     name: "",
-    nmid: "",
     imageUrl: "",
+    coaCode: "6201",
     programs: ["general"] as string[],
+    emvPayload: "",
+    merchantName: "",
+    merchantCity: "",
+    isDynamic: false,
   });
   const [editingQrisId, setEditingQrisId] = useState<string | null>(null);
   const [editQrisForm, setEditQrisForm] = useState({
     name: "",
-    nmid: "",
     imageUrl: "",
+    coaCode: "6201",
     programs: ["general"] as string[],
+    emvPayload: "",
+    merchantName: "",
+    merchantCity: "",
+    isDynamic: false,
   });
   const [showQrisMedia, setShowQrisMedia] = useState(false);
   const [qrisMediaTarget, setQrisMediaTarget] = useState<"new" | "edit">("new");
+  const [decodingQr, setDecodingQr] = useState(false);
+
+  const decodeQrFromImage = useCallback(async (imageUrl: string, target: "new" | "edit") => {
+    if (!imageUrl) return;
+    setDecodingQr(true);
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Gagal memuat gambar"));
+        img.src = imageUrl;
+      });
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Canvas tidak tersedia");
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (!code || !code.data) {
+        showFeedback("error", "QR Tidak Ditemukan", "Tidak dapat membaca QR code dari gambar ini. Pastikan gambar berisi QRIS yang jelas.");
+        return;
+      }
+      const payload = code.data;
+      if (!validateQrisCrc(payload)) {
+        showFeedback("error", "CRC Invalid", `QR berhasil dibaca tetapi CRC tidak valid. Payload: ${payload.substring(0, 50)}...`);
+        return;
+      }
+      handleEmvPayloadChange(payload, target);
+      showFeedback("success", "QR Berhasil Dibaca", `EMV Payload berhasil diekstrak dari gambar QRIS.`);
+    } catch (err: any) {
+      showFeedback("error", "Gagal Decode", err.message || "Gagal membaca QR dari gambar.");
+    } finally {
+      setDecodingQr(false);
+    }
+  }, []);
 
   // Load data from settings when available
   useEffect(() => {
@@ -291,9 +384,13 @@ export default function PaymentsSettingsPage() {
           const normalized = (parsed || []).map((acc: any) => ({
             id: acc.id || `qris-${Date.now()}`,
             name: acc.name || "",
-            nmid: acc.nmid || "",
             imageUrl: acc.imageUrl || "",
+            coaCode: acc.coaCode || "6201",
             programs: acc.programs && acc.programs.length > 0 ? acc.programs : ["general"],
+            emvPayload: acc.emvPayload || "",
+            merchantName: acc.merchantName || "",
+            merchantCity: acc.merchantCity || "",
+            isDynamic: acc.isDynamic || false,
           }));
           setQrisAccounts(normalized);
         } catch (e) {
@@ -473,17 +570,21 @@ export default function PaymentsSettingsPage() {
       accountNumber: "",
       accountName: "",
       branch: "",
-      coaCode: "1020",
+      coaCode: "6201",
       programs: ["general"],
     });
   };
 
   const handleRemoveBankAccount = (id: string) => {
-    if (confirm("Hapus rekening bank ini?")) {
-      const updatedAccounts = bankAccounts.filter((acc) => acc.id !== id);
-      setBankAccounts(updatedAccounts);
-      saveBankAccountsMutation.mutate(updatedAccounts);
-    }
+    setDeleteBankAccountId(id);
+  };
+
+  const handleConfirmRemoveBankAccount = () => {
+    if (!deleteBankAccountId) return;
+    const updatedAccounts = bankAccounts.filter((acc) => acc.id !== deleteBankAccountId);
+    setBankAccounts(updatedAccounts);
+    saveBankAccountsMutation.mutate(updatedAccounts);
+    setDeleteBankAccountId(null);
   };
 
   const handleStartEditBank = (account: typeof bankAccounts[number]) => {
@@ -557,6 +658,10 @@ export default function PaymentsSettingsPage() {
 
   const handleAddQris = (e: React.FormEvent) => {
     e.preventDefault();
+    if (newQrisForm.emvPayload && !validateQrisCrc(newQrisForm.emvPayload)) {
+      showFeedback("error", "CRC Invalid", "EMV Payload QRIS tidak valid. Pastikan string payload benar.");
+      return;
+    }
     const newAcc = {
       id: `qris-${Date.now()}`,
       ...newQrisForm,
@@ -566,34 +671,50 @@ export default function PaymentsSettingsPage() {
     saveQrisAccountsMutation.mutate(updated);
     setNewQrisForm({
       name: "",
-      nmid: "",
       imageUrl: "",
+      coaCode: "6201",
       programs: ["general"],
+      emvPayload: "",
+      merchantName: "",
+      merchantCity: "",
+      isDynamic: false,
     });
   };
 
   const handleRemoveQris = (id: string) => {
-    if (confirm("Hapus QRIS ini?")) {
-      const updated = qrisAccounts.filter((acc) => acc.id !== id);
-      setQrisAccounts(updated);
-      saveQrisAccountsMutation.mutate(updated);
-      if (editingQrisId === id) setEditingQrisId(null);
-    }
+    setDeleteQrisId(id);
+  };
+
+  const handleConfirmRemoveQris = () => {
+    if (!deleteQrisId) return;
+    const updated = qrisAccounts.filter((acc) => acc.id !== deleteQrisId);
+    setQrisAccounts(updated);
+    saveQrisAccountsMutation.mutate(updated);
+    if (editingQrisId === deleteQrisId) setEditingQrisId(null);
+    setDeleteQrisId(null);
   };
 
   const handleStartEditQris = (acc: typeof qrisAccounts[number]) => {
     setEditingQrisId(acc.id);
     setEditQrisForm({
       name: acc.name,
-      nmid: acc.nmid,
       imageUrl: acc.imageUrl,
+      coaCode: acc.coaCode || "6201",
       programs: acc.programs || ["general"],
+      emvPayload: acc.emvPayload || "",
+      merchantName: acc.merchantName || "",
+      merchantCity: acc.merchantCity || "",
+      isDynamic: acc.isDynamic || false,
     });
   };
 
   const handleSaveEditQris = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingQrisId) return;
+    if (editQrisForm.emvPayload && !validateQrisCrc(editQrisForm.emvPayload)) {
+      showFeedback("error", "CRC Invalid", "EMV Payload QRIS tidak valid. Pastikan string payload benar.");
+      return;
+    }
     const updated = qrisAccounts.map((acc) =>
       acc.id === editingQrisId ? { ...acc, ...editQrisForm } : acc
     );
@@ -604,6 +725,25 @@ export default function PaymentsSettingsPage() {
 
   const handleCancelEditQris = () => {
     setEditingQrisId(null);
+  };
+
+  const handleEmvPayloadChange = (payload: string, target: "new" | "edit") => {
+    const info = payload ? parseQrisMerchantInfo(payload) : { merchantName: "", merchantCity: "" };
+    if (target === "new") {
+      setNewQrisForm((prev) => ({
+        ...prev,
+        emvPayload: payload,
+        merchantName: info.merchantName,
+        merchantCity: info.merchantCity,
+      }));
+    } else {
+      setEditQrisForm((prev) => ({
+        ...prev,
+        emvPayload: payload,
+        merchantName: info.merchantName,
+        merchantCity: info.merchantCity,
+      }));
+    }
   };
 
   return (
@@ -932,7 +1072,7 @@ export default function PaymentsSettingsPage() {
                                       ))}
                                     </select>
                                     <p className="text-xs text-gray-500 mt-1">
-                                      Pilih akun buku besar untuk rekening ini (contoh: 1020 - Bank Operasional)
+                                      Pilih akun buku besar untuk rekening ini (contoh: 6203 - Bank BCA)
                                     </p>
                                   </div>
                                   <div className="form-field">
@@ -991,7 +1131,7 @@ export default function PaymentsSettingsPage() {
                                     <form onSubmit={handleSaveEditQris} className="space-y-3">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         <div className="form-field">
-                                          <label className="form-label">Nama di QRIS</label>
+                                          <label className="form-label">Nama QRIS</label>
                                           <input
                                             type="text"
                                             className="form-input"
@@ -1001,14 +1141,23 @@ export default function PaymentsSettingsPage() {
                                           />
                                         </div>
                                         <div className="form-field">
-                                          <label className="form-label">NMID</label>
-                                          <input
-                                            type="text"
+                                          <label className="form-label">Kode Akun (COA)</label>
+                                          <select
                                             className="form-input"
-                                            value={editQrisForm.nmid}
-                                            onChange={(e) => setEditQrisForm({ ...editQrisForm, nmid: e.target.value })}
+                                            value={editQrisForm.coaCode}
+                                            onChange={(e) => setEditQrisForm({ ...editQrisForm, coaCode: e.target.value })}
                                             required
-                                          />
+                                          >
+                                            <option value="">Pilih Kode Akun</option>
+                                            {coaAccounts?.map((acc: any) => (
+                                              <option key={acc.id} value={acc.code}>
+                                                {acc.code} - {acc.name}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          <p className="text-xs text-gray-500 mt-1">
+                                            Bank tujuan untuk pencairan QRIS
+                                          </p>
                                         </div>
                                         <div className="form-field">
                                           <label className="form-label">Program</label>
@@ -1070,6 +1219,68 @@ export default function PaymentsSettingsPage() {
                                             )}
                                           </div>
                                         </div>
+                                        <div className="form-field md:col-span-2">
+                                          <div className="flex items-center justify-between mb-1">
+                                            <label className="form-label mb-0">EMV Payload</label>
+                                            {editQrisForm.imageUrl && (
+                                              <button
+                                                type="button"
+                                                className="text-xs text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50"
+                                                disabled={decodingQr}
+                                                onClick={() => decodeQrFromImage(editQrisForm.imageUrl, "edit")}
+                                              >
+                                                {decodingQr ? "Membaca QR..." : "Decode dari Gambar"}
+                                              </button>
+                                            )}
+                                          </div>
+                                          <textarea
+                                            className="form-input font-mono text-xs"
+                                            rows={3}
+                                            value={editQrisForm.emvPayload}
+                                            onChange={(e) => handleEmvPayloadChange(e.target.value, "edit")}
+                                            placeholder="Paste string EMV QRIS static di sini, atau klik 'Decode dari Gambar'..."
+                                          />
+                                          <p className="text-xs text-gray-500 mt-1">
+                                            Upload gambar QRIS di atas untuk auto-decode, atau paste manual string EMV payload.
+                                          </p>
+                                          {editQrisForm.emvPayload && !validateQrisCrc(editQrisForm.emvPayload) && (
+                                            <p className="text-xs text-red-500 mt-1 font-medium">CRC tidak valid. Pastikan payload benar.</p>
+                                          )}
+                                        </div>
+                                        <div className="form-field">
+                                          <label className="form-label">Merchant Name</label>
+                                          <input
+                                            type="text"
+                                            className="form-input bg-gray-50"
+                                            value={editQrisForm.merchantName}
+                                            readOnly
+                                            placeholder="Auto-parse dari EMV Payload"
+                                          />
+                                        </div>
+                                        <div className="form-field">
+                                          <label className="form-label">Merchant City</label>
+                                          <input
+                                            type="text"
+                                            className="form-input bg-gray-50"
+                                            value={editQrisForm.merchantCity}
+                                            readOnly
+                                            placeholder="Auto-parse dari EMV Payload"
+                                          />
+                                        </div>
+                                        <div className="form-field md:col-span-2">
+                                          <label className="flex items-center gap-3 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              className="w-4 h-4 text-primary-600 border-gray-300 rounded"
+                                              checked={editQrisForm.isDynamic}
+                                              onChange={(e) => setEditQrisForm({ ...editQrisForm, isDynamic: e.target.checked })}
+                                            />
+                                            <span className="text-sm font-medium text-gray-900">Dynamic Mode</span>
+                                          </label>
+                                          <p className="text-xs text-gray-500 mt-1 ml-7">
+                                            Jika aktif, sistem akan generate QR per-transaksi dengan nominal terkunci. Memerlukan EMV Payload.
+                                          </p>
+                                        </div>
                                       </div>
                                       <div className="flex justify-end gap-2">
                                         <button type="button" className="btn btn-secondary btn-sm" onClick={handleCancelEditQris}>
@@ -1092,8 +1303,18 @@ export default function PaymentsSettingsPage() {
                                             </div>
                                           )}
                                           <div>
-                                            <h5 className="font-semibold text-gray-900">{acc.name || "QRIS"}</h5>
-                                            <p className="text-sm text-gray-600">NMID: {acc.nmid || "-"}</p>
+                                            <div className="flex items-center gap-2">
+                                              <h5 className="font-semibold text-gray-900">{acc.name || "QRIS"}</h5>
+                                              {acc.isDynamic && (
+                                                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Dynamic</span>
+                                              )}
+                                            </div>
+                                            {acc.coaCode && (
+                                              <p className="text-sm text-gray-600">COA: {acc.coaCode}</p>
+                                            )}
+                                            {acc.merchantName && (
+                                              <p className="text-sm text-gray-600">Merchant: {acc.merchantName}{acc.merchantCity ? `, ${acc.merchantCity}` : ""}</p>
+                                            )}
                                           </div>
                                         </div>
                                         <div className="flex flex-wrap gap-2 mt-2">
@@ -1137,7 +1358,7 @@ export default function PaymentsSettingsPage() {
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="form-field">
                                   <label className="form-label">
-                                    Nama di QRIS <span className="text-danger-500">*</span>
+                                    Nama QRIS <span className="text-danger-500">*</span>
                                   </label>
                                   <input
                                     type="text"
@@ -1146,24 +1367,32 @@ export default function PaymentsSettingsPage() {
                                     onChange={(e) =>
                                       setNewQrisForm({ ...newQrisForm, name: e.target.value })
                                     }
-                                    placeholder="Nama merchant di QRIS"
+                                    placeholder="Contoh: QRIS BCA, QRIS BSI"
                                     required
                                   />
                                 </div>
                                 <div className="form-field">
                                   <label className="form-label">
-                                    NMID <span className="text-danger-500">*</span>
+                                    Kode Akun (COA) <span className="text-danger-500">*</span>
                                   </label>
-                                  <input
-                                    type="text"
+                                  <select
                                     className="form-input"
-                                    value={newQrisForm.nmid}
+                                    value={newQrisForm.coaCode}
                                     onChange={(e) =>
-                                      setNewQrisForm({ ...newQrisForm, nmid: e.target.value })
+                                      setNewQrisForm({ ...newQrisForm, coaCode: e.target.value })
                                     }
-                                    placeholder="Contoh: 0000123456789"
                                     required
-                                  />
+                                  >
+                                    <option value="">Pilih Kode Akun</option>
+                                    {coaAccounts?.map((acc: any) => (
+                                      <option key={acc.id} value={acc.code}>
+                                        {acc.code} - {acc.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Bank tujuan untuk pencairan QRIS
+                                  </p>
                                 </div>
                                 <div className="form-field">
                                   <label className="form-label">Program</label>
@@ -1225,6 +1454,68 @@ export default function PaymentsSettingsPage() {
                                       </button>
                                     )}
                                   </div>
+                                </div>
+                                <div className="form-field md:col-span-2">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <label className="form-label mb-0">EMV Payload</label>
+                                    {newQrisForm.imageUrl && (
+                                      <button
+                                        type="button"
+                                        className="text-xs text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50"
+                                        disabled={decodingQr}
+                                        onClick={() => decodeQrFromImage(newQrisForm.imageUrl, "new")}
+                                      >
+                                        {decodingQr ? "Membaca QR..." : "Decode dari Gambar"}
+                                      </button>
+                                    )}
+                                  </div>
+                                  <textarea
+                                    className="form-input font-mono text-xs"
+                                    rows={3}
+                                    value={newQrisForm.emvPayload}
+                                    onChange={(e) => handleEmvPayloadChange(e.target.value, "new")}
+                                    placeholder="Paste string EMV QRIS static di sini, atau klik 'Decode dari Gambar'..."
+                                  />
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Upload gambar QRIS di atas untuk auto-decode, atau paste manual string EMV payload.
+                                  </p>
+                                  {newQrisForm.emvPayload && !validateQrisCrc(newQrisForm.emvPayload) && (
+                                    <p className="text-xs text-red-500 mt-1 font-medium">CRC tidak valid. Pastikan payload benar.</p>
+                                  )}
+                                </div>
+                                <div className="form-field">
+                                  <label className="form-label">Merchant Name</label>
+                                  <input
+                                    type="text"
+                                    className="form-input bg-gray-50"
+                                    value={newQrisForm.merchantName}
+                                    readOnly
+                                    placeholder="Auto-parse dari EMV Payload"
+                                  />
+                                </div>
+                                <div className="form-field">
+                                  <label className="form-label">Merchant City</label>
+                                  <input
+                                    type="text"
+                                    className="form-input bg-gray-50"
+                                    value={newQrisForm.merchantCity}
+                                    readOnly
+                                    placeholder="Auto-parse dari EMV Payload"
+                                  />
+                                </div>
+                                <div className="form-field md:col-span-2">
+                                  <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      className="w-4 h-4 text-primary-600 border-gray-300 rounded"
+                                      checked={newQrisForm.isDynamic}
+                                      onChange={(e) => setNewQrisForm({ ...newQrisForm, isDynamic: e.target.checked })}
+                                    />
+                                    <span className="text-sm font-medium text-gray-900">Dynamic Mode</span>
+                                  </label>
+                                  <p className="text-xs text-gray-500 mt-1 ml-7">
+                                    Jika aktif, sistem akan generate QR per-transaksi dengan nominal terkunci. Memerlukan EMV Payload.
+                                  </p>
                                 </div>
                               </div>
 
@@ -1413,6 +1704,64 @@ export default function PaymentsSettingsPage() {
       </div>
     </SettingsLayout>
 
+    {deleteBankAccountId && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900">Hapus Rekening</h2>
+          </div>
+          <div className="p-6">
+            <p className="text-sm text-gray-700">Hapus rekening bank ini?</p>
+          </div>
+          <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+            <button
+              type="button"
+              className="btn btn-secondary btn-md"
+              onClick={() => setDeleteBankAccountId(null)}
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger btn-md"
+              onClick={handleConfirmRemoveBankAccount}
+            >
+              Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {deleteQrisId && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-xl font-bold text-gray-900">Hapus QRIS</h2>
+          </div>
+          <div className="p-6">
+            <p className="text-sm text-gray-700">Hapus QRIS ini?</p>
+          </div>
+          <div className="p-6 border-t border-gray-200 flex gap-3 justify-end">
+            <button
+              type="button"
+              className="btn btn-secondary btn-md"
+              onClick={() => setDeleteQrisId(null)}
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              className="btn btn-danger btn-md"
+              onClick={handleConfirmRemoveQris}
+            >
+              Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     <MediaLibrary
       isOpen={showQrisMedia}
       onClose={() => setShowQrisMedia(false)}
@@ -1423,6 +1772,8 @@ export default function PaymentsSettingsPage() {
           setNewQrisForm((prev) => ({ ...prev, imageUrl: url }));
         }
         setShowQrisMedia(false);
+        // Auto-decode QR from selected image
+        decodeQrFromImage(url, qrisMediaTarget);
       }}
       category="financial"
       selectedUrl={qrisMediaTarget === "edit" ? editQrisForm.imageUrl : newQrisForm.imageUrl}

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { zakatDistributions, zakatTypes, users, ledger, chartOfAccounts, eq, and, sql, desc } from "@bantuanku/db";
+import { zakatDistributions, zakatTypes, users, disbursements, chartOfAccounts, eq, and, sql, desc } from "@bantuanku/db";
 import type { Env, Variables } from "../../types";
 import { createId } from "@bantuanku/db";
 import { requireAuth, requireRoles } from "../../middleware/auth";
@@ -164,7 +164,7 @@ app.get("/:id", async (c) => {
  * POST /admin/zakat/distributions
  * Create new zakat distribution
  */
-app.post("/", async (c) => {
+app.post("/", requireRoles("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const body = await c.req.json();
   const user = c.get("user");
@@ -255,7 +255,7 @@ app.post("/", async (c) => {
  * PUT /admin/zakat/distributions/:id
  * Update zakat distribution (only if status is draft)
  */
-app.put("/:id", async (c) => {
+app.put("/:id", requireRoles("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const body = await c.req.json();
@@ -337,7 +337,7 @@ app.put("/:id", async (c) => {
  * Approve zakat distribution (authenticated admin only)
  * Body: { sourceBankId, sourceBankName, sourceBankAccount, targetBankName, targetBankAccount, targetBankAccountName, transferProof }
  */
-app.post("/:id/approve", async (c) => {
+app.post("/:id/approve", requireRoles("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const user = c.get("user");
@@ -412,7 +412,7 @@ app.post("/:id/approve", async (c) => {
  * POST /admin/zakat/distributions/:id/disburse
  * Mark distribution as disbursed (authenticated admin only)
  */
-app.post("/:id/disburse", async (c) => {
+app.post("/:id/disburse", requireRoles("super_admin", "admin_campaign"), async (c) => {
   try {
     const db = c.get("db");
     const { id } = c.req.param();
@@ -446,7 +446,7 @@ app.post("/:id/disburse", async (c) => {
       .where(eq(zakatDistributions.id, id))
       .returning();
 
-    // Auto-create ledger entry when disbursed
+    // Auto-create disbursement entry when disbursed
     const zakatType = await db
       .select()
       .from(zakatTypes)
@@ -472,18 +472,53 @@ app.post("/:id/disburse", async (c) => {
           .where(eq(chartOfAccounts.code, coaCode))
           .limit(1);
 
-        if (coaAccount.length > 0) {
-          await db.insert(ledger).values({
+        if (coaAccount.length > 0 && existing[0].sourceBankId) {
+          // Generate disbursement number
+          const disbursementNumber = `DIS-ZKT-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+
+          await db.insert(disbursements).values({
             id: createId(),
-            date: new Date(),
-            description: `Penyaluran ${zakatType[0].name} kepada ${existing[0].recipientName} (${existing[0].recipientCategory})`,
-            reference: existing[0].referenceId,
+            disbursementNumber,
+            disbursementType: "zakat",
             referenceType: "zakat_distribution",
             referenceId: existing[0].id,
-            coaId: coaAccount[0].id,
-            debit: existing[0].amount,
-            credit: 0,
+            referenceName: existing[0].recipientCategory,
+            amount: existing[0].amount,
+            transactionType: "expense",
+            category: "zakat",
+            bankAccountId: existing[0].sourceBankId,
+            sourceBankId: existing[0].sourceBankId,
+            sourceBankName: existing[0].sourceBankName || null,
+            sourceBankAccount: existing[0].sourceBankAccount || null,
+            recipientType: existing[0].recipientType || null,
+            recipientId: existing[0].mustahiqId || existing[0].coordinatorId || null,
+            recipientName: existing[0].recipientName,
+            recipientContact: existing[0].recipientContact || null,
+            recipientBankName: existing[0].targetBankName || null,
+            recipientBankAccount: existing[0].targetBankAccount || null,
+            recipientBankAccountName: existing[0].targetBankAccountName || null,
+            purpose: existing[0].purpose,
+            description: `Penyaluran ${zakatType[0].name} kepada ${existing[0].recipientName} (${existing[0].recipientCategory})`,
+            notes: existing[0].notes || null,
+            transferProofUrl: existing[0].transferProof || null,
+            transferDate: new Date(),
             status: "paid",
+            expenseAccountId: coaAccount[0].id,
+            typeSpecificData: {
+              zakatTypeId: existing[0].zakatTypeId,
+              zakatTypeName: zakatType[0].name,
+              zakatTypeSlug: zakatType[0].slug,
+              asnaf: existing[0].recipientCategory,
+              coordinatorId: existing[0].coordinatorId || null,
+              mustahiqId: existing[0].mustahiqId || null,
+              distributionLocation: existing[0].distributionLocation || null,
+              recipientCount: existing[0].recipientCount || null,
+            },
+            createdBy: existing[0].createdBy,
+            approvedBy: existing[0].approvedBy || null,
+            paidBy: user.id,
+            paidAt: new Date(),
+            approvedAt: existing[0].approvedAt || null,
           });
         }
       }
@@ -508,7 +543,7 @@ app.post("/:id/disburse", async (c) => {
  * Add activity report for coordinator distribution (authenticated admin only)
  * Body: { reportDate, reportDescription, reportPhotos[] }
  */
-app.post("/:id/add-report", async (c) => {
+app.post("/:id/add-report", requireRoles("super_admin", "admin_campaign", "program_coordinator"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
   const user = c.get("user");
@@ -588,7 +623,7 @@ app.post("/:id/add-report", async (c) => {
  * DELETE /admin/zakat/distributions/:id
  * Delete zakat distribution (authenticated admin only, only if draft)
  */
-app.delete("/:id", async (c) => {
+app.delete("/:id", requireRoles("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
 

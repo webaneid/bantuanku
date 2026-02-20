@@ -18,6 +18,8 @@ export default function DashboardLayout({
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const isMitra = user?.roles?.includes("mitra") && user.roles.length === 1;
+
   const { data: groupedSettings } = useQuery({
     queryKey: ["settings"],
     queryFn: async () => {
@@ -25,6 +27,7 @@ export default function DashboardLayout({
       return response.data?.data || {};
     },
     staleTime: 5 * 60 * 1000,
+    enabled: !!user && !isMitra,
   });
 
   const organizationSettings = groupedSettings?.organization || [];
