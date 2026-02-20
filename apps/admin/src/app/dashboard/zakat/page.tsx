@@ -387,7 +387,7 @@ export default function ZakatDashboardPage() {
             <div className="content-card-header">
               <h2 className="content-card-title">Penyaluran Terbaru</h2>
               <Link
-                href="/dashboard/zakat/distributions"
+                href="/dashboard/disbursements?disbursement_type=zakat"
                 className="text-sm text-primary-600 hover:text-primary-700 hover:underline"
               >
                 Lihat semua
@@ -445,14 +445,14 @@ export default function ZakatDashboardPage() {
                 <span className="font-medium text-gray-700">Lihat Pembayaran</span>
               </Link>
               <Link
-                href="/dashboard/zakat/distributions/new"
+                href="/dashboard/disbursements/create?disbursement_type=zakat"
                 className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
               >
                 <ArrowUpCircleIcon className="h-5 w-5 text-gray-600" />
                 <span className="font-medium text-gray-700">Buat Penyaluran</span>
               </Link>
               <Link
-                href="/dashboard/zakat/reports"
+                href="/dashboard/reports/zakat"
                 className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
               >
                 <ScaleIcon className="h-5 w-5 text-gray-600" />
