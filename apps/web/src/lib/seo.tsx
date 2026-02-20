@@ -167,6 +167,10 @@ export interface JsonLdArticle {
       url: string;
     };
   };
+  mainEntityOfPage?: {
+    '@type': 'WebPage';
+    '@id': string;
+  };
 }
 
 export function generateOrganizationJsonLd(settings: Record<string, any>): JsonLdOrganization {
