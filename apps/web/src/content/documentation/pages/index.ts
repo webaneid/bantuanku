@@ -1,6 +1,6 @@
 // Re-export all documentation pages
 import { pengenalanDoc } from "./pengenalan";
-import { loginAksesDoc } from "./login-dan-akses";
+import { loginDanAksesDoc } from "./login-dan-akses";
 import { navigasiDashboardDoc } from "./navigasi-dashboard";
 import { uploadGambarDoc } from "./panduan-upload-gambar";
 import { konsepMitraDoc } from "./konsep-mitra";
@@ -21,7 +21,7 @@ import { whatsappAiDoc } from "./whatsapp-ai";
 
 export {
   pengenalanDoc,
-  loginAksesDoc,
+  loginDanAksesDoc,
   navigasiDashboardDoc,
   uploadGambarDoc,
   konsepMitraDoc,
@@ -43,7 +43,7 @@ export {
 
 export const documentationPages: Record<string, any> = {
   "pengenalan": pengenalanDoc,
-  "login-dan-akses": loginAksesDoc,
+  "login-dan-akses": loginDanAksesDoc,
   "navigasi-dashboard": navigasiDashboardDoc,
   "panduan-upload-gambar": uploadGambarDoc,
   "konsep-mitra": konsepMitraDoc,

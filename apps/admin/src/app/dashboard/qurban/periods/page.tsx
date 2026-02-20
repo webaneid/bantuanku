@@ -21,6 +21,17 @@ interface Period {
   description?: string;
 }
 
+type PeriodFormData = {
+  name: string;
+  hijriYear: string;
+  gregorianYear: number;
+  startDate: string;
+  endDate: string;
+  executionDate: string;
+  status: Period["status"];
+  description: string;
+};
+
 export default function PeriodsPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -30,14 +41,14 @@ export default function PeriodsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<Period | null>(null);
   const [deleteTargetPeriodId, setDeleteTargetPeriodId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PeriodFormData>({
     name: "",
     hijriYear: "",
     gregorianYear: new Date().getFullYear(),
     startDate: "",
     endDate: "",
     executionDate: "",
-    status: "draft" as const,
+    status: "draft",
     description: "",
   });
 
