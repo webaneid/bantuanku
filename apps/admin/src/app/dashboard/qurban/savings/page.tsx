@@ -42,6 +42,8 @@ interface BankAccount {
   accountName: string;
 }
 
+const ensureArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value : []);
+
 export default function QurbanSavingsPage() {
   const { user } = useAuth();
   const isMitra = user?.roles?.includes("mitra") && user.roles.length === 1;
@@ -81,7 +83,7 @@ export default function QurbanSavingsPage() {
     queryFn: async () => {
       const response = await api.get("/admin/qurban/periods");
       const result = response.data?.data || response.data;
-      return Array.isArray(result) ? result : [];
+      return ensureArray(result);
     },
   });
 
@@ -90,7 +92,7 @@ export default function QurbanSavingsPage() {
     queryKey: ["donatur-list"],
     queryFn: async () => {
       const response = await api.get("/admin/donatur");
-      return response.data.data || response.data;
+      return ensureArray(response.data?.data || response.data);
     },
     enabled: !isMitra && showAddSavingsModal,
   });
@@ -100,11 +102,12 @@ export default function QurbanSavingsPage() {
     queryKey: ["payment-bank-accounts"],
     queryFn: async () => {
       const response = await api.get("/admin/settings");
-      const settings = response.data?.data?.payment || [];
+      const settings = ensureArray<any>(response.data?.data?.payment);
       const bankAccountsSetting = settings.find((s: any) => s.key === "payment_bank_accounts");
       if (bankAccountsSetting?.value) {
         try {
-          return JSON.parse(bankAccountsSetting.value);
+          const parsed = JSON.parse(bankAccountsSetting.value);
+          return ensureArray<BankAccount>(parsed);
         } catch {
           return [];
         }
@@ -123,7 +126,7 @@ export default function QurbanSavingsPage() {
       if (filterPeriod) params.append("period_id", filterPeriod);
 
       const response = await api.get(`/admin/qurban/savings?${params.toString()}`);
-      return response.data.data || response.data;
+      return ensureArray(response.data?.data || response.data);
     },
   });
 
@@ -171,7 +174,7 @@ export default function QurbanSavingsPage() {
     queryFn: async () => {
       if (!savingsFormData.targetPeriodId) return [];
       const response = await api.get(`/admin/qurban/packages?period_id=${savingsFormData.targetPeriodId}`);
-      return response.data.data || response.data;
+      return ensureArray(response.data?.data || response.data);
     },
     enabled: !!savingsFormData.targetPeriodId && !isMitra,
   });
