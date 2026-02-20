@@ -3,14 +3,16 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import api from "@/lib/api";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const [email, setEmail] = useState("admin@bantuanku.org");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [organizationLogo, setOrganizationLogo] = useState("");
 
   // Reset loading state on mount (Firefox fix)
   useEffect(() => {
@@ -31,6 +33,18 @@ export default function LoginPage() {
       // If localStorage is corrupt, clear it
       localStorage.removeItem("auth-storage");
     }
+
+    const fetchOrganizationLogo = async () => {
+      try {
+        const response = await api.get("/settings");
+        const settings = response.data?.data || {};
+        setOrganizationLogo(typeof settings.organization_logo === "string" ? settings.organization_logo : "");
+      } catch {
+        setOrganizationLogo("");
+      }
+    };
+
+    fetchOrganizationLogo();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,7 +69,15 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700">
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Bantuanku</h1>
+          {organizationLogo ? (
+            <img
+              src={organizationLogo}
+              alt="Logo organisasi"
+              className="h-12 w-auto mx-auto object-contain"
+            />
+          ) : (
+            <h1 className="text-3xl font-bold text-gray-900">Bantuanku</h1>
+          )}
           <p className="text-gray-600 mt-2">Admin Dashboard</p>
         </div>
 
@@ -96,11 +118,6 @@ export default function LoginPage() {
             {isLoading ? "Logging in..." : "Login"}
           </button>
         </form>
-
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Default credentials:</p>
-          <p className="font-mono text-xs mt-1">admin@bantuanku.org / admin123</p>
-        </div>
 
         {isLoading && (
           <div className="mt-4 text-center">
