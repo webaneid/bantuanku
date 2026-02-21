@@ -42,6 +42,29 @@ interface BankAccount {
   accountName: string;
 }
 
+interface DonaturItem {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+}
+
+interface PeriodItem {
+  id: string;
+  name: string;
+}
+
+interface PackageItem {
+  id: string;
+  name: string;
+  animalType?: string;
+  packageType?: string;
+  maxSlots?: number;
+  periods?: Array<{
+    price?: number;
+  }>;
+}
+
 const ensureArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? value : []);
 
 export default function QurbanSavingsPage() {
@@ -78,21 +101,21 @@ export default function QurbanSavingsPage() {
   }>({ open: false, type: "success", title: "" });
 
   // Fetch periods for filter
-  const { data: periods = [] } = useQuery({
+  const { data: periods = [] } = useQuery<PeriodItem[]>({
     queryKey: ["qurban-periods-list"],
     queryFn: async () => {
       const response = await api.get("/admin/qurban/periods");
       const result = response.data?.data || response.data;
-      return ensureArray(result);
+      return ensureArray<PeriodItem>(result);
     },
   });
 
   // Fetch donatur list
-  const { data: donaturList = [] } = useQuery({
+  const { data: donaturList = [] } = useQuery<DonaturItem[]>({
     queryKey: ["donatur-list"],
     queryFn: async () => {
       const response = await api.get("/admin/donatur");
-      return ensureArray(response.data?.data || response.data);
+      return ensureArray<DonaturItem>(response.data?.data || response.data);
     },
     enabled: !isMitra && showAddSavingsModal,
   });
@@ -169,12 +192,12 @@ export default function QurbanSavingsPage() {
   ];
 
   // Fetch packages for selected period
-  const { data: packages = [] } = useQuery({
+  const { data: packages = [] } = useQuery<PackageItem[]>({
     queryKey: ["qurban-packages", savingsFormData.targetPeriodId],
     queryFn: async () => {
       if (!savingsFormData.targetPeriodId) return [];
       const response = await api.get(`/admin/qurban/packages?period_id=${savingsFormData.targetPeriodId}`);
-      return ensureArray(response.data?.data || response.data);
+      return ensureArray<PackageItem>(response.data?.data || response.data);
     },
     enabled: !!savingsFormData.targetPeriodId && !isMitra,
   });
@@ -192,19 +215,19 @@ export default function QurbanSavingsPage() {
     return Number.isFinite(num) ? num : 0;
   }, [amilSettings]);
 
-  const selectedPackage = useMemo(
-    () => packages.find((pkg: any) => pkg.id === savingsFormData.targetPackageId),
+  const selectedPackage = useMemo<PackageItem | undefined>(
+    () => packages.find((pkg) => pkg.id === savingsFormData.targetPackageId),
     [packages, savingsFormData.targetPackageId]
   );
 
-  const calculateAdminFee = (pkg?: any) => {
+  const calculateAdminFee = (pkg?: PackageItem) => {
     if (!pkg) return 0;
     const baseFee = pkg.animalType === "cow" ? adminQurbanSapi : adminQurbanPerEkor;
     const divisor = pkg.packageType === "shared" ? pkg.maxSlots || 1 : 1;
     return baseFee / divisor;
   };
 
-  const getPackagePrice = (pkg?: any): number => {
+  const getPackagePrice = (pkg?: PackageItem): number => {
     if (!pkg) return 0;
     return Number(pkg.periods?.[0]?.price) || 0;
   };
