@@ -271,37 +271,9 @@ app.get(
   requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator", "employee"),
   async (c) => {
   const db = c.get("db");
-  const pendingLegacyDeposits = await db
-    .select({
-      id: qurbanSavingsTransactions.id,
-      transactionNumber: qurbanSavingsTransactions.transactionNumber,
-      amount: qurbanSavingsTransactions.amount,
-      transactionType: qurbanSavingsTransactions.transactionType,
-      transactionDate: qurbanSavingsTransactions.transactionDate,
-      paymentMethod: qurbanSavingsTransactions.paymentMethod,
-      paymentChannel: qurbanSavingsTransactions.paymentChannel,
-      paymentProof: qurbanSavingsTransactions.paymentProof,
-      status: qurbanSavingsTransactions.status,
-      notes: qurbanSavingsTransactions.notes,
-      createdAt: qurbanSavingsTransactions.createdAt,
-      savingsId: qurbanSavings.id,
-      savingsNumber: qurbanSavings.savingsNumber,
-      donorName: qurbanSavings.donorName,
-      donorPhone: qurbanSavings.donorPhone,
-      currentAmount: qurbanSavings.currentAmount,
-      targetAmount: qurbanSavings.targetAmount,
-      periodName: qurbanPeriods.name,
-    })
-    .from(qurbanSavingsTransactions)
-    .leftJoin(qurbanSavings, eq(qurbanSavingsTransactions.savingsId, qurbanSavings.id))
-    .leftJoin(qurbanPeriods, eq(qurbanSavings.targetPeriodId, qurbanPeriods.id))
-    .where(
-      and(
-        eq(qurbanSavingsTransactions.status, "pending"),
-        eq(qurbanSavingsTransactions.transactionType, "deposit")
-      )
-    )
-    .orderBy(desc(qurbanSavingsTransactions.createdAt));
+  // NOTE: Pending deposits now use universal transactions only.
+  // Legacy qurban_savings_transactions is no longer used for this endpoint.
+  const pendingLegacyDeposits: any[] = [];
 
   const pendingUniversal = await getUniversalSavingsTransactions(db, { paymentStatus: "pending" });
   const pendingUniversalSavingsIds = Array.from(new Set(pendingUniversal.map((tx) => tx.savingsId)));
