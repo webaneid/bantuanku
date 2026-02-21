@@ -48,6 +48,21 @@ function mapCampaignToCardProps(campaign: any, defaultCategoryLabel: string) {
   };
 }
 
+function toAbsoluteUrl(appUrl: string, url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("data:")) return undefined;
+  if (url.startsWith("http")) return url;
+  return `${appUrl}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
+function resolveCampaignOgImage(appUrl: string, candidates: Array<string | null | undefined>): string | undefined {
+  for (const candidate of candidates) {
+    const normalized = toAbsoluteUrl(appUrl, candidate);
+    if (normalized) return normalized;
+  }
+  return undefined;
+}
+
 function pickRelatedCampaigns(allCampaigns: any[], currentCampaign: any, maxItems = 4): any[] {
   const currentCategory = normalizeCategory(currentCampaign.categoryName || currentCampaign.category);
   const pool = allCampaigns.filter((item) => item.id !== currentCampaign.id);
@@ -97,11 +112,8 @@ export async function generateMetadata({ params }: CampaignPageProps): Promise<M
     ]);
     const categoryLabel = campaign.categoryName || campaign.category || '';
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
-    const toAbsoluteUrl = (url: string) =>
-      url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
     const campaignUrl = `${appUrl}/program/${campaign.slug}`;
-    const imageUrl = getImageUrlByVariant(campaign.imageUrl, ['large', 'medium']);
-    const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${appUrl}${imageUrl}`;
+    const featureImage = getImageUrlByVariant(campaign.imageUrl, ['large', 'medium']);
 
     // Per-entity SEO fields with fallback chains
     const title = (campaign as any).metaTitle || campaign.title;
@@ -116,9 +128,12 @@ export async function generateMetadata({ params }: CampaignPageProps): Promise<M
     // OG fields with fallback
     const ogTitle = (campaign as any).ogTitle || title;
     const ogDescription = (campaign as any).ogDescription || description;
-    const ogImageUrl = (campaign as any).ogImageUrl
-      ? toAbsoluteUrl((campaign as any).ogImageUrl)
-      : fullImageUrl || (settings.og_image ? toAbsoluteUrl(settings.og_image) : undefined);
+    const ogImageUrl = resolveCampaignOgImage(appUrl, [
+      (campaign as any).ogImageUrl,
+      featureImage,
+      settings.og_image,
+      "/og-image.jpg",
+    ]);
 
     // Robots
     const noIndex = (campaign as any).noIndex === true;
@@ -247,17 +262,20 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
 
   // Generate JSON-LD Schema for Campaign
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
-  const imageUrl = getImageUrlByVariant(campaign.imageUrl, ['large', 'medium']);
-  const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${appUrl}${imageUrl}`;
+  const featureImage = getImageUrlByVariant(campaign.imageUrl, ['large', 'medium']);
+  const schemaImage = resolveCampaignOgImage(appUrl, [
+    (campaign as any).ogImageUrl,
+    featureImage,
+    settings.og_image,
+    "/og-image.jpg",
+  ]);
 
   const articleSchema: JsonLdArticle = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: (campaign as any).metaTitle || campaign.title,
     description: (campaign as any).metaDescription || campaign.description?.substring(0, 160),
-    image: (campaign as any).ogImageUrl
-      ? ((campaign as any).ogImageUrl.startsWith('http') ? (campaign as any).ogImageUrl : `${appUrl}${(campaign as any).ogImageUrl}`)
-      : fullImageUrl,
+    ...(schemaImage ? { image: schemaImage } : {}),
     datePublished: campaign.createdAt,
     dateModified: campaign.updatedAt || campaign.createdAt,
     author: {
