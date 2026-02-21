@@ -340,7 +340,55 @@ app.get(
   // Legacy qurban_savings_transactions is no longer used for this endpoint.
   const pendingLegacyDeposits: any[] = [];
 
-  const pendingUniversal = await getUniversalSavingsTransactions(db, { paymentStatus: "pending" });
+  let pendingUniversal: any[] = [];
+  try {
+    pendingUniversal = await getUniversalSavingsTransactions(db, { paymentStatus: "pending" });
+  } catch (_error) {
+    // Last-resort fallback for environments with partial legacy schema:
+    // derive pending savings deposits directly from universal transactions table.
+    const txRows = await db
+      .select({
+        id: transactions.id,
+        transactionNumber: transactions.transactionNumber,
+        totalAmount: transactions.totalAmount,
+        typeSpecificData: transactions.typeSpecificData,
+        notes: transactions.notes,
+        createdAt: transactions.createdAt,
+      })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.category, "qurban_savings"),
+          eq(transactions.productType, "qurban"),
+          eq(transactions.paymentStatus, "pending")
+        )
+      )
+      .orderBy(desc(transactions.createdAt));
+
+    pendingUniversal = txRows
+      .map((row: any) => {
+        const savingsId = row.typeSpecificData?.savings_id || row.typeSpecificData?.savingsId;
+        if (!savingsId) return null;
+        return {
+          id: row.id,
+          transactionId: row.id,
+          savingsId,
+          transactionNumber: row.transactionNumber,
+          amount: Number(row.totalAmount || 0),
+          transactionType: "deposit",
+          transactionDate: row.createdAt,
+          paymentMethod: null,
+          paymentChannel: null,
+          paymentProof: null,
+          status: "pending",
+          notes: row.notes || null,
+          createdAt: row.createdAt,
+          verifiedAt: null,
+          verifiedBy: null,
+        };
+      })
+      .filter(Boolean);
+  }
   const pendingUniversalSavingsIds = Array.from(new Set(pendingUniversal.map((tx) => tx.savingsId)));
 
   let savingsRows: any[] = [];
