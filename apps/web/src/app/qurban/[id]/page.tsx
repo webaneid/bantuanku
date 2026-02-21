@@ -8,7 +8,7 @@ import { QurbanCard } from '@/components/organisms/QurbanCard/QurbanCard';
 import { fetchPackageDetail, fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrl, getQurbanImageUrlByVariant } from '@/services/qurban';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchCompleteAddress, formatCompleteAddress } from '@/services/address';
-import { fetchSeoSettings, generateBreadcrumbJsonLd } from '@/lib/seo';
+import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl, toAbsoluteUrl as toAbsoluteSeoUrl } from '@/lib/seo';
 import { normalizeLocale, translate } from '@/lib/i18n';
 import QurbanTabs from './QurbanTabs';
 import QurbanSidebar from './QurbanSidebar';
@@ -29,8 +29,6 @@ export async function generateMetadata({ params }: QurbanPageProps): Promise<Met
     const settings = await fetchSeoSettings();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
     const siteName = settings.site_name || t('qurbanPage.defaults.organizationName');
-    const toAbsoluteUrl = (url: string) =>
-      url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
 
     // SEO Title: metaTitle > name
     const seoTitle = pkg.metaTitle || pkg.name;
@@ -44,8 +42,11 @@ export async function generateMetadata({ params }: QurbanPageProps): Promise<Met
     const canonicalUrl = pkg.canonicalUrl || `${appUrl}/qurban/${params.id}`;
 
     // OG Image
-    const rawOgImage = pkg.ogImageUrl || (pkg.imageUrl ? getQurbanImageUrl(pkg.imageUrl) : null) || settings.og_image;
-    const ogImageUrl = rawOgImage ? toAbsoluteUrl(rawOgImage) : undefined;
+    const ogImageUrl = resolveOgImageUrl(
+      appUrl,
+      [pkg.ogImageUrl, pkg.imageUrl ? getQurbanImageUrl(pkg.imageUrl) : null, settings.og_image],
+      '/og-image.jpg'
+    );
 
     // OG Title & Description
     const ogTitle = pkg.ogTitle || seoTitle;
@@ -265,8 +266,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
   // Generate JSON-LD
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
   const packageImageUrl = qurbanPackage.imageUrl ? getQurbanImageUrl(qurbanPackage.imageUrl) : null;
-  const toAbsoluteUrl = (url: string) =>
-    url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
+  const productImageUrl = toAbsoluteSeoUrl(appUrl, packageImageUrl);
 
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { name: t('qurbanDetail.breadcrumb.home'), url: appUrl },
@@ -281,7 +281,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
     description:
       qurbanPackage.description?.substring(0, 160) ||
       t('qurbanDetail.metadata.descriptionFallback', { name: qurbanPackage.name }),
-    ...(packageImageUrl && { image: toAbsoluteUrl(packageImageUrl) }),
+    ...(productImageUrl && { image: productImageUrl }),
     category: animalTypeLabel,
     offers: {
       '@type': 'Offer',

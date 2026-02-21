@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { Header, Footer } from '@/components/organisms';
 import { fetchZakatTypes, type ZakatType } from '@/services/zakat';
 import { fetchPublicSettings } from '@/services/settings';
-import { fetchSeoSettings, generateBreadcrumbJsonLd } from '@/lib/seo';
+import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
 import Link from 'next/link';
 import type { ComponentType } from 'react';
 import { normalizeLocale, translate } from '@/lib/i18n';
@@ -62,8 +62,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const settings = await fetchSeoSettings();
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
     const siteName = settings.site_name || 'Bantuanku';
-    const toAbsoluteUrl = (url: string) =>
-      url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
 
     const zt = zakatType as any;
 
@@ -76,8 +74,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const canonicalUrl = zt.canonicalUrl || `${appUrl}/zakat/${params.slug}`;
 
     // OG Image
-    const rawOgImage = zt.ogImageUrl || (zakatType.imageUrl || null) || settings.og_image;
-    const ogImageUrl = rawOgImage ? toAbsoluteUrl(rawOgImage) : undefined;
+    const ogImageUrl = resolveOgImageUrl(
+      appUrl,
+      [zt.ogImageUrl, zakatType.imageUrl || null, settings.og_image],
+      '/og-image.jpg'
+    );
 
     // OG Title & Description
     const ogTitle = zt.ogTitle || seoTitle;

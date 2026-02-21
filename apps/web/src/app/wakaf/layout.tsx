@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
-import { fetchSeoSettings, generateBreadcrumbJsonLd } from '@/lib/seo';
+import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSeoSettings();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
-  const toAbsoluteUrl = (url: string) =>
-    url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
 
   let seo: Record<string, any> = {};
   try {
@@ -27,9 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const ogTitle = seo.ogTitle || title;
   const ogDescription = seo.ogDescription || description;
-  const ogImageUrl = seo.ogImageUrl
-    ? toAbsoluteUrl(seo.ogImageUrl)
-    : (settings.og_image ? toAbsoluteUrl(settings.og_image) : undefined);
+  const ogImageUrl = resolveOgImageUrl(appUrl, [seo.ogImageUrl, settings.og_image], '/og-image.jpg');
 
   const noIndex = seo.noIndex === true;
   const noFollow = seo.noFollow === true;

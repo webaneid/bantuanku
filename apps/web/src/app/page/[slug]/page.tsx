@@ -7,7 +7,7 @@ import { fetchPageBySlug } from "@/services/pages";
 import { fetchCampaigns } from "@/services/campaigns";
 import { fetchZakatTypes } from "@/services/zakat";
 import { fetchActivePeriods, fetchPackagesByPeriod, getAnimalTypeLabel, getQurbanImageUrl } from "@/services/qurban";
-import { fetchSeoSettings, generateBreadcrumbJsonLd } from "@/lib/seo";
+import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from "@/lib/seo";
 
 interface StaticPageProps {
   params: Promise<{
@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.com";
     const siteName = settings.site_name || "Bantuanku";
     const toAbsoluteUrl = (url: string) =>
-      url.startsWith("http") ? url : `${appUrl}${url.startsWith("/") ? url : `/${url}`}`;
+      url.startsWith("data:") ? "" : url.startsWith("http") ? url : `${appUrl}${url.startsWith("/") ? url : `/${url}`}`;
 
     // SEO Title: metaTitle > title
     const seoTitle = page.metaTitle || page.title;
@@ -82,8 +82,11 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
     const canonicalUrl = page.canonicalUrl || `${appUrl}/page/${slug}`;
 
     // OG Image: ogImageUrl > featureImageUrl > site default
-    const rawOgImage = page.ogImageUrl || (page.featureImageUrl ? getImageUrl(page.featureImageUrl) : null) || settings.og_image;
-    const ogImageUrl = rawOgImage ? toAbsoluteUrl(rawOgImage) : undefined;
+    const ogImageUrl = resolveOgImageUrl(
+      appUrl,
+      [page.ogImageUrl, page.featureImageUrl ? getImageUrl(page.featureImageUrl) : null, settings.og_image],
+      "/og-image.jpg"
+    );
 
     // OG Title & Description: ogTitle > metaTitle > title
     const ogTitle = page.ogTitle || seoTitle;
@@ -227,7 +230,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
   const featureImage = page.featureImageUrl ? getImageUrl(page.featureImageUrl) : null;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.com";
   const toAbsoluteUrl = (url: string) =>
-    url.startsWith("http") ? url : `${appUrl}${url.startsWith("/") ? url : `/${url}`}`;
+    url.startsWith("data:") ? "" : url.startsWith("http") ? url : `${appUrl}${url.startsWith("/") ? url : `/${url}`}`;
 
   // JSON-LD: Breadcrumb
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
@@ -241,7 +244,11 @@ export default async function StaticPage({ params }: StaticPageProps) {
     settings = await fetchSeoSettings();
   } catch {}
   const siteName = settings.site_name || "Bantuanku";
-  const rawOgImage = page.ogImageUrl || (featureImage ? featureImage : null) || settings.og_image;
+  const rawOgImage = resolveOgImageUrl(
+    appUrl,
+    [page.ogImageUrl, featureImage ? featureImage : null, settings.og_image],
+    "/og-image.jpg"
+  );
 
   const webPageJsonLd = {
     "@context": "https://schema.org",
@@ -249,7 +256,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
     name: page.metaTitle || page.title,
     description: page.metaDescription || page.excerpt || page.title,
     url: `${appUrl}/page/${slug}`,
-    ...(rawOgImage && { image: toAbsoluteUrl(rawOgImage) }),
+    ...(rawOgImage && { image: rawOgImage }),
     ...(page.publishedAt && { datePublished: page.publishedAt }),
     ...(page.updatedAt && { dateModified: page.updatedAt }),
     isPartOf: {

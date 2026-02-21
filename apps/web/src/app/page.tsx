@@ -19,7 +19,7 @@ import { fetchPublicStats } from '@/services/stats';
 import { fetchCompleteAddress, formatCompleteAddress } from '@/services/address';
 import { fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrlByVariant } from '@/services/qurban';
 import { fetchCategories } from '@/services/categories';
-import { fetchSeoSettings } from '@/lib/seo';
+import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
 import { normalizeLocale, translate } from '@/lib/i18n';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -36,7 +36,7 @@ export async function generateMetadata(): Promise<Metadata> {
         ? JSON.parse(settings.seo_page_home)
         : settings.seo_page_home;
     }
-  } catch {}
+  } catch { }
 
   const siteName = settings.site_name || 'Bantuanku';
   const siteTagline = settings.site_tagline || 'Platform Donasi Terpercaya';
@@ -50,15 +50,13 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const ogTitle = seo.ogTitle || title;
   const ogDescription = seo.ogDescription || description;
-  const ogImageUrl = seo.ogImageUrl
-    ? toAbsoluteUrl(seo.ogImageUrl)
-    : (settings.og_image ? toAbsoluteUrl(settings.og_image) : undefined);
+  const ogImageUrl = resolveOgImageUrl(appUrl, [seo.ogImageUrl, settings.og_image], '/og-image.jpg');
 
   const noIndex = seo.noIndex === true || seo.noIndex === 'true';
   const noFollow = seo.noFollow === true || seo.noFollow === 'true';
 
   return {
-    title,
+    title: { absolute: title },
     description,
     keywords,
     alternates: { canonical },

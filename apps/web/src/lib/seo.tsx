@@ -5,6 +5,25 @@ let cachedSettings: Record<string, any> | null = null;
 let cacheTime: number = 0;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+export function toAbsoluteUrl(appUrl: string, url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("data:")) return undefined;
+  if (url.startsWith("http")) return url;
+  return `${appUrl}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
+export function resolveOgImageUrl(
+  appUrl: string,
+  candidates: Array<string | null | undefined>,
+  fallback: string = "/og-image.jpg"
+): string | undefined {
+  for (const candidate of candidates) {
+    const normalized = toAbsoluteUrl(appUrl, candidate);
+    if (normalized) return normalized;
+  }
+  return toAbsoluteUrl(appUrl, fallback);
+}
+
 export async function fetchSeoSettings(): Promise<Record<string, any>> {
   const now = Date.now();
 
@@ -54,17 +73,14 @@ export async function fetchSeoSettings(): Promise<Record<string, any>> {
 export async function generateSiteMetadata(overrides?: Partial<Metadata>): Promise<Metadata> {
   const settings = await fetchSeoSettings();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
-  const toAbsoluteUrl = (url: string) =>
-    url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
 
   const title = overrides?.title || `${settings.site_name} - ${settings.site_tagline}`;
   const description = overrides?.description || settings.site_description;
   const keywords = settings.site_keywords ? settings.site_keywords.split(',').map((k: string) => k.trim()) : [];
-  const ogImage = settings.og_image || '/og-image.jpg';
-  const fullOgImageUrl = toAbsoluteUrl(ogImage);
+  const fullOgImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], "/og-image.jpg") || `${appUrl}/og-image.jpg`;
   const favicon =
     settings.organization_favicon || settings.organization_logo || '/logo.svg';
-  const fullFaviconUrl = toAbsoluteUrl(favicon);
+  const fullFaviconUrl = toAbsoluteUrl(appUrl, favicon) || `${appUrl}/logo.svg`;
 
   return {
     title: overrides?.title ? {

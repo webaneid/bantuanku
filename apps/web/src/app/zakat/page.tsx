@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Header, Footer } from '@/components/organisms';
 import { fetchZakatTypes, type ZakatType } from '@/services/zakat';
 import { fetchPublicSettings } from '@/services/settings';
-import { fetchSeoSettings, generateBreadcrumbJsonLd } from '@/lib/seo';
+import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
 import { normalizeLocale, translate } from '@/lib/i18n';
 import ZakatArchive from './ZakatArchive';
 
@@ -17,8 +17,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = (key: string, params?: Record<string, string | number>) => translate(locale, key, params);
   const settings = await fetchSeoSettings();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
-  const toAbsoluteUrl = (url: string) =>
-    url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
 
   let seo: Record<string, any> = {};
   try {
@@ -45,9 +43,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const ogTitle = seo.ogTitle || title;
   const ogDescription = seo.ogDescription || description;
-  const ogImageUrl = seo.ogImageUrl
-    ? toAbsoluteUrl(seo.ogImageUrl)
-    : (settings.og_image ? toAbsoluteUrl(settings.og_image) : undefined);
+  const ogImageUrl = resolveOgImageUrl(appUrl, [seo.ogImageUrl, settings.og_image], '/og-image.jpg');
 
   const noIndex = seo.noIndex === true;
   const noFollow = seo.noFollow === true;
