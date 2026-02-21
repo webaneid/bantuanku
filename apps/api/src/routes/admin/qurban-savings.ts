@@ -63,40 +63,105 @@ const getUniversalSavingsTransactions = async (
   ];
 
   if (options.savingsId) {
-    txWhere.push(sql`${transactions.typeSpecificData} ->> 'savings_id' = ${options.savingsId}`);
+    txWhere.push(
+      sql`(${transactions.typeSpecificData} ->> 'savings_id' = ${options.savingsId} OR ${transactions.typeSpecificData} ->> 'savingsId' = ${options.savingsId})`
+    );
   }
 
-  const txRows = await db.query.transactions.findMany({
-    where: and(...txWhere),
-    with: {
-      payments: true,
-    },
-    orderBy: [desc(transactions.createdAt)],
-  });
+  let rows: any[] = [];
+  try {
+    rows = await db
+      .select({
+        txId: transactions.id,
+        txNumber: transactions.transactionNumber,
+        txAmount: transactions.totalAmount,
+        txPaymentMethodId: transactions.paymentMethodId,
+        txPaymentStatus: transactions.paymentStatus,
+        txTypeSpecificData: transactions.typeSpecificData,
+        txNotes: transactions.notes,
+        txCreatedAt: transactions.createdAt,
+        paymentId: transactionPayments.id,
+        paymentNumber: transactionPayments.paymentNumber,
+        paymentAmount: transactionPayments.amount,
+        paymentDate: transactionPayments.paymentDate,
+        paymentMethod: transactionPayments.paymentMethod,
+        paymentChannel: transactionPayments.paymentChannel,
+        paymentProof: transactionPayments.paymentProof,
+        paymentStatus: transactionPayments.status,
+        paymentNotes: transactionPayments.notes,
+        paymentCreatedAt: transactionPayments.createdAt,
+        paymentVerifiedAt: transactionPayments.verifiedAt,
+        paymentVerifiedBy: transactionPayments.verifiedBy,
+      })
+      .from(transactions)
+      .leftJoin(transactionPayments, eq(transactionPayments.transactionId, transactions.id))
+      .where(and(...txWhere))
+      .orderBy(desc(transactions.createdAt), desc(transactionPayments.createdAt));
+  } catch (_error) {
+    // Fallback to transaction-level data if payment table is not ready in target DB.
+    rows = await db
+      .select({
+        txId: transactions.id,
+        txNumber: transactions.transactionNumber,
+        txAmount: transactions.totalAmount,
+        txPaymentMethodId: transactions.paymentMethodId,
+        txPaymentStatus: transactions.paymentStatus,
+        txTypeSpecificData: transactions.typeSpecificData,
+        txNotes: transactions.notes,
+        txCreatedAt: transactions.createdAt,
+        paymentId: sql<string | null>`NULL`,
+        paymentNumber: sql<string | null>`NULL`,
+        paymentAmount: sql<number | null>`NULL`,
+        paymentDate: sql<Date | null>`NULL`,
+        paymentMethod: sql<string | null>`NULL`,
+        paymentChannel: sql<string | null>`NULL`,
+        paymentProof: sql<string | null>`NULL`,
+        paymentStatus: sql<string | null>`NULL`,
+        paymentNotes: sql<string | null>`NULL`,
+        paymentCreatedAt: sql<Date | null>`NULL`,
+        paymentVerifiedAt: sql<Date | null>`NULL`,
+        paymentVerifiedBy: sql<string | null>`NULL`,
+      })
+      .from(transactions)
+      .where(and(...txWhere))
+      .orderBy(desc(transactions.createdAt));
+  }
 
-  const normalized = txRows.flatMap((tx: any) => {
-    const savingsId = tx.typeSpecificData?.savings_id;
+  const normalized = rows.flatMap((row: any) => {
+    const savingsId = row.txTypeSpecificData?.savings_id || row.txTypeSpecificData?.savingsId;
     if (!savingsId) return [];
 
-    const payments = Array.isArray(tx.payments) ? tx.payments : [];
-    const mapped = payments.map((payment: any) => ({
-      source: "universal" as const,
-      id: payment.id,
-      transactionId: tx.id,
-      savingsId,
-      transactionNumber: payment.paymentNumber || tx.transactionNumber,
-      amount: Number(payment.amount || tx.totalAmount || 0),
-      transactionType: "deposit",
-      transactionDate: payment.paymentDate || tx.createdAt,
-      paymentMethod: payment.paymentMethod || tx.paymentMethodId || null,
-      paymentChannel: payment.paymentChannel || null,
-      paymentProof: payment.paymentProof || null,
-      status: payment.status === "verified" ? "verified" : payment.status === "rejected" ? "rejected" : "pending",
-      notes: payment.notes || tx.notes || null,
-      createdAt: payment.createdAt || tx.createdAt,
-      verifiedAt: payment.verifiedAt || null,
-      verifiedBy: payment.verifiedBy || null,
-    }));
+    const mappedStatus =
+      row.paymentStatus === "verified"
+        ? "verified"
+        : row.paymentStatus === "rejected"
+        ? "rejected"
+        : row.txPaymentStatus === "paid"
+        ? "verified"
+        : row.txPaymentStatus === "cancelled"
+        ? "rejected"
+        : "pending";
+
+    const mapped = [
+      {
+        source: "universal" as const,
+        id: row.paymentId || row.txId,
+        transactionId: row.txId,
+        savingsId,
+        transactionNumber: row.paymentNumber || row.txNumber,
+        amount: Number(row.paymentAmount || row.txAmount || 0),
+        transactionType: "deposit",
+        transactionDate: row.paymentDate || row.txCreatedAt,
+        paymentMethod: row.paymentMethod || row.txPaymentMethodId || null,
+        paymentChannel: row.paymentChannel || null,
+        paymentProof: row.paymentProof || null,
+        status: mappedStatus,
+        notes: row.paymentNotes || row.txNotes || null,
+        createdAt: row.paymentCreatedAt || row.txCreatedAt,
+        verifiedAt: row.paymentVerifiedAt || null,
+        verifiedBy: row.paymentVerifiedBy || null,
+      },
+    ];
 
     if (options.paymentStatus) {
       return mapped.filter((item: any) => item.status === options.paymentStatus);
