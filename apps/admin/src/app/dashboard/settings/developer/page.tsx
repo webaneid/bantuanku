@@ -9,8 +9,6 @@ import SettingsLayout from "@/components/SettingsLayout";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 
-const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3002";
-
 export default function DeveloperSettingsPage() {
   const { user } = useAuth();
   const isDeveloper = Boolean(user?.isDeveloper);
@@ -18,6 +16,7 @@ export default function DeveloperSettingsPage() {
   const [activeTab, setActiveTab] = useState<"info" | "rekening" | "pendapatan">("info");
   const [bankAccountsFormData, setBankAccountsFormData] = useState<BankAccountValue[]>([]);
   const [saveMessage, setSaveMessage] = useState("");
+  const [webUrl, setWebUrl] = useState(() => process.env.NEXT_PUBLIC_WEB_URL?.trim().replace(/\/+$/, "") || "");
 
   const normalizeBankAccounts = (items: any[] = []): BankAccountValue[] =>
     items.map((account) => ({
@@ -53,6 +52,17 @@ export default function DeveloperSettingsPage() {
       setActiveTab("info");
     }
   }, [activeTab, isDeveloper]);
+
+  useEffect(() => {
+    if (webUrl || typeof window === "undefined") return;
+
+    const { protocol, hostname, origin } = window.location;
+    if (hostname.startsWith("admin.")) {
+      setWebUrl(`${protocol}//${hostname.replace(/^admin\./, "")}`);
+      return;
+    }
+    setWebUrl(origin);
+  }, [webUrl]);
 
   useEffect(() => {
     if (!developerBankAccountsQuery.data) return;
@@ -175,7 +185,7 @@ export default function DeveloperSettingsPage() {
                   Tentang Webane
                 </a>
                 <a
-                  href={`${WEB_URL}/documentation`}
+                  href={`${webUrl || ""}/documentation`}
                   target="_blank"
                   rel="noreferrer"
                   className="btn btn-primary"
