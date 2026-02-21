@@ -228,7 +228,7 @@ async function getProgramOverview(db: Database): Promise<string> {
   if (donasiRegular.length > 0) {
     lines.push(`DONASI (${donasiRegular.length} program aktif):`);
     donasiRegular.slice(0, 5).forEach((c, i) => {
-      lines.push(`  ${i + 1}. ${c.title}`);
+      lines.push(`  ${i + 1}. ${c.title} [ID: ${c.id}]`);
     });
     if (donasiRegular.length > 5) lines.push(`  ... dan ${donasiRegular.length - 5} program lainnya`);
     lines.push("");
@@ -238,7 +238,7 @@ async function getProgramOverview(db: Database): Promise<string> {
   if (zakatList.length > 0) {
     lines.push(`ZAKAT (${zakatList.length} jenis):`);
     zakatList.forEach((z, i) => {
-      lines.push(`  ${i + 1}. ${z.name}`);
+      lines.push(`  ${i + 1}. ${z.name} [ID: ${z.id}, type: ${z.calculatorType || "general"}]`);
     });
     lines.push("");
   }
@@ -249,7 +249,7 @@ async function getProgramOverview(db: Database): Promise<string> {
     qurbanList.slice(0, 5).forEach((q, i) => {
       const type = q.animalType === "cow" ? "Sapi" : "Kambing";
       const shared = q.packageType === "shared" ? " (Patungan)" : "";
-      lines.push(`  ${i + 1}. ${q.pkgName} — ${type}${shared} Rp ${q.price.toLocaleString("id-ID")}`);
+      lines.push(`  ${i + 1}. ${q.pkgName} — ${type}${shared} Rp ${q.price.toLocaleString("id-ID")} [ID: ${q.ppId}]`);
     });
     if (qurbanList.length > 5) lines.push(`  ... dan ${qurbanList.length - 5} paket lainnya`);
     lines.push("  Bisa bayar langsung atau cicil (Tabungan Qurban).");
@@ -260,7 +260,7 @@ async function getProgramOverview(db: Database): Promise<string> {
   if (fidyahList.length > 0) {
     lines.push(`FIDYAH (${fidyahList.length} program):`);
     fidyahList.forEach((c, i) => {
-      lines.push(`  ${i + 1}. ${c.title}`);
+      lines.push(`  ${i + 1}. ${c.title} [ID: ${c.id}]`);
     });
     lines.push("");
   }
@@ -269,7 +269,7 @@ async function getProgramOverview(db: Database): Promise<string> {
   if (wakafList.length > 0) {
     lines.push(`WAKAF (${wakafList.length} program):`);
     wakafList.forEach((c, i) => {
-      lines.push(`  ${i + 1}. ${c.title}`);
+      lines.push(`  ${i + 1}. ${c.title} [ID: ${c.id}]`);
     });
     lines.push("");
   }
@@ -2213,9 +2213,21 @@ FLOW REGISTRASI (WAJIB jika donatur belum terdaftar):
 
 PERTANYAAN UMUM TENTANG PROGRAM:
 - Jika donatur bertanya "ada program apa?", "program apa saja?", "mau donasi tapi bingung", atau pertanyaan umum → panggil get_program_overview()
-- Tool ini menampilkan SEMUA kategori: donasi, zakat, qurban, fidyah, wakaf.
+- Tool ini menampilkan SEMUA kategori: donasi, zakat, qurban, fidyah, wakaf. Setiap item disertai [ID: xxx].
 - Setelah donatur tahu kategorinya, arahkan ke flow yang sesuai.
 - JANGAN hanya jawab dengan campaign donasi saja jika pertanyaannya umum!
+- PENTING: Ketika donatur memilih program dengan NOMOR URUT (misal "2" atau "pilih nomor 2"), kamu HARUS mencocokkan nomor tersebut dengan daftar yang sudah ditampilkan sebelumnya dan gunakan ID yang sesuai [ID: xxx] untuk memanggil tool. JANGAN gunakan angka nomor urut sebagai campaign ID.
+
+FORMAT TAMPILAN PROGRAM — WAJIB KONSISTEN:
+- Ketika menampilkan daftar program ke donatur, SELALU gunakan format LIST BERNOMOR. JANGAN pernah menuliskan program dalam bentuk narasi/paragraf.
+- Contoh format yang BENAR:
+  "Berikut program yang tersedia:
+  1. Berbagi Takjil di Bulan Ramadhan
+  2. Kado Cinta Yatim
+  Ketik nomor untuk memilih."
+- Contoh format yang SALAH:
+  "Kami memiliki program 'Berbagi Takjil' dan 'Kado Cinta Yatim'. Mana yang diminati?"
+- Jangan sertakan [ID: xxx] di pesan ke donatur — ID hanya untuk internal kamu.
 
 FLOW DONASI (HANYA jika donatur sudah terdaftar):
 1. Tanya/cari program yang diminati (gunakan tool search_campaigns untuk cari spesifik)
