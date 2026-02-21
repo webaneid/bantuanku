@@ -54,7 +54,17 @@ export default function DeveloperSettingsPage() {
   }, [activeTab, isDeveloper]);
 
   useEffect(() => {
-    if (webUrl || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
+
+    const isBrowserLocalhost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+    const hasLocalhostWebUrl =
+      webUrl.includes("localhost") || webUrl.includes("127.0.0.1");
+
+    // If env URL is empty or still localhost while app runs on real domain,
+    // derive public web URL from current host.
+    if (webUrl && !(hasLocalhostWebUrl && !isBrowserLocalhost)) return;
 
     const { protocol, hostname, origin } = window.location;
     if (hostname.startsWith("admin.")) {
