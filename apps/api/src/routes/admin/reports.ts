@@ -4,6 +4,7 @@ import {
   campaigns,
   transactions,
   disbursements,
+  revenueShares,
   mitra,
   fundraisers,
   donatur,
@@ -15,10 +16,12 @@ import {
   qurbanExecutions,
   qurbanSharedGroups,
   users,
+  chartOfAccounts,
 } from "@bantuanku/db";
 import { success, error } from "../../lib/response";
 import { requireRole } from "../../middleware/auth";
 import type { Env, Variables } from "../../types";
+import { RevenueShareService } from "../../services/revenue-share";
 
 const reportsAdmin = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -105,8 +108,6 @@ const QURBAN_EXPENSE_CATEGORIES = [
 
 const CAMPAIGN_INCOME_CATEGORIES = ["campaign_donation"] as const;
 const CAMPAIGN_EXPENSE_CATEGORIES = ["campaign_to_beneficiary", "campaign_to_vendor"] as const;
-const REVENUE_SHARE_CATEGORIES = ["revenue_share_mitra", "revenue_share_fundraiser", "revenue_share_developer"] as const;
-
 const findInvalidCategories = (rows: Array<{ category: string | null | undefined }>, allowed: readonly string[]) => {
   const allowedSet = new Set(allowed);
   return Array.from(new Set(
@@ -716,24 +717,11 @@ reportsAdmin.get("/cash-flow", requireRole("super_admin", "admin_finance"), asyn
     // Add time to make endDate inclusive (end of day)
     const endDateTime = `${endDate} 23:59:59`;
 
-    // Build filters
-    const refTypeFilter = refType === 'donation'
-      ? `AND 'donation' IS NOT NULL`
-      : refType === 'disbursement'
-        ? `AND 'disbursement' IS NOT NULL`
-        : '';
-
-    // Sanitize search input to prevent SQL injection
-    const sanitizedSearch = search ? search.replace(/\\/g, "\\\\").replace(/'/g, "''") : '';
-    const searchFilter = search ? `
-      AND (
-        donor_name ILIKE '%${sanitizedSearch}%'
-        OR donor_email ILIKE '%${sanitizedSearch}%'
-        OR campaign_title ILIKE '%${sanitizedSearch}%'
-        OR purpose ILIKE '%${sanitizedSearch}%'
-        OR recipient_name ILIKE '%${sanitizedSearch}%'
-      )
-    ` : '';
+    const STANDARD_CASH_ACCOUNT_CODES = new Set(["6201", "6202", "6203", "6204", "6205", "6206", "6210"]);
+    const normalizeBankId = (value?: string | null) => {
+      if (!value) return null;
+      return value.startsWith("bank_") ? value.replace("bank_", "") : value;
+    };
 
     // Opening balance is always 0 for now (we don't track historical balance yet)
     const openingBalance = 0;
@@ -754,15 +742,18 @@ reportsAdmin.get("/cash-flow", requireRole("super_admin", "admin_finance"), asyn
           t.donor_name,
           t.donor_email,
           t.payment_method_id as payment_method,
+          t.bank_account_id as bank_account_id,
           t.product_name as campaign_title,
           NULL as purpose,
           NULL as recipient_name,
+          NULL as source_bank_id,
+          NULL as source_bank_name,
+          NULL as source_bank_account,
           EXISTS(SELECT 1 FROM transaction_payments tp WHERE tp.transaction_id = t.id AND tp.payment_proof IS NOT NULL) as has_evidence
         FROM transactions t
         WHERE t.payment_status = 'paid'
           AND COALESCE(t.paid_at, t.created_at) >= '${startDate}'::timestamp
           AND COALESCE(t.paid_at, t.created_at) <= '${endDateTime}'::timestamp
-          ${refType === 'disbursement' || refType === 'zakat_distribution' ? 'AND FALSE' : ''}
 
         UNION ALL
 
@@ -783,15 +774,18 @@ reportsAdmin.get("/cash-flow", requireRole("super_admin", "admin_finance"), asyn
           NULL as donor_name,
           NULL as donor_email,
           d.payment_method,
+          d.bank_account_id as bank_account_id,
           COALESCE(d.reference_name, '') as campaign_title,
           d.purpose,
           d.recipient_name,
+          d.source_bank_id,
+          d.source_bank_name,
+          d.source_bank_account,
           d.payment_proof IS NOT NULL as has_evidence
         FROM disbursements d
         WHERE d.status = 'paid'
           AND COALESCE(d.paid_at, d.created_at) >= '${startDate}'::timestamp
           AND COALESCE(d.paid_at, d.created_at) <= '${endDateTime}'::timestamp
-          ${refType === 'donation' || refType === 'campaign' || refType === 'zakat' || refType === 'qurban' ? 'AND FALSE' : ''}
 
         UNION ALL
 
@@ -807,19 +801,20 @@ reportsAdmin.get("/cash-flow", requireRole("super_admin", "admin_finance"), asyn
           t2.donor_name,
           t2.donor_email,
           t2.payment_method_id as payment_method,
+          t2.bank_account_id as bank_account_id,
           t2.product_name as campaign_title,
           NULL as purpose,
           NULL as recipient_name,
+          NULL as source_bank_id,
+          NULL as source_bank_name,
+          NULL as source_bank_account,
           false as has_evidence
         FROM transactions t2
         WHERE t2.payment_status = 'paid'
           AND t2.unique_code > 0
           AND COALESCE(t2.paid_at, t2.created_at) >= '${startDate}'::timestamp
           AND COALESCE(t2.paid_at, t2.created_at) <= '${endDateTime}'::timestamp
-          ${refType === 'disbursement' || refType === 'zakat_distribution' ? 'AND FALSE' : ''}
       ) AS all_transactions
-      WHERE 1=1
-        ${searchFilter}
       ORDER BY transaction_date DESC
     `));
 
@@ -838,65 +833,129 @@ reportsAdmin.get("/cash-flow", requireRole("super_admin", "admin_finance"), asyn
         console.error('[Cash Flow] Error parsing bank accounts:', e);
       }
     }
+    const bankById = new Map<string, any>();
+    for (const account of bankAccounts) {
+      if (!account?.id) continue;
+      bankById.set(String(account.id), account);
+    }
+    const coaRows = await db
+      .select({
+        code: chartOfAccounts.code,
+        name: chartOfAccounts.name,
+      })
+      .from(chartOfAccounts)
+      .where(inArray(chartOfAccounts.code, Array.from(STANDARD_CASH_ACCOUNT_CODES)));
+    const coaNameByCode = new Map<string, string>();
+    for (const coa of coaRows) {
+      coaNameByCode.set(String(coa.code), String(coa.name));
+    }
 
     // Step 4: Format transactions and calculate totals
-    let totalIn = 0;
-    let totalOut = 0;
+    type CashFlowRow = {
+      id: string;
+      date: Date;
+      type: string;
+      description: string;
+      kasIn: number;
+      kasOut: number;
+      debit: number;
+      kredit: number;
+      account: string;
+      accountCode: string;
+      paymentMethod: string;
+      hasEvidence: boolean;
+      refId: string;
+      zakatTypeName: string | null;
+    };
 
-    const formattedTransactions = result.rows.map((row: any) => {
+    const resolveAccountFromRow = (row: any) => {
+      const paymentMethod = row.payment_method ? String(row.payment_method) : "";
+      const transactionBankId = normalizeBankId(paymentMethod) || normalizeBankId(row.bank_account_id);
+      let sourceBank = transactionBankId ? (bankById.get(transactionBankId) || null) : null;
+
+      if (!sourceBank && row.source_bank_id) {
+        const disbursementBankId = normalizeBankId(String(row.source_bank_id));
+        sourceBank = disbursementBankId ? (bankById.get(disbursementBankId) || null) : null;
+      }
+
+      if (!sourceBank && row.source_bank_name && row.source_bank_account) {
+        sourceBank = bankAccounts.find((b: any) =>
+          b.bankName === row.source_bank_name && b.accountNumber === row.source_bank_account
+        ) || null;
+      }
+
+      const fallbackIsGateway =
+        paymentMethod.length > 0 &&
+        !paymentMethod.startsWith("bank_") &&
+        !paymentMethod.startsWith("manual_");
+      const paymentMethodLower = paymentMethod.toLowerCase();
+      const fallbackIsCash = paymentMethodLower.includes("cash");
+
+      if (sourceBank?.coaCode && STANDARD_CASH_ACCOUNT_CODES.has(String(sourceBank.coaCode))) {
+        const code = String(sourceBank.coaCode);
+        return {
+          accountCode: code,
+          accountName: coaNameByCode.get(code) || `Akun ${code}`,
+          paymentMethodLabel: `${sourceBank.bankName} - ${sourceBank.accountNumber}`,
+        };
+      }
+
+      if (fallbackIsCash) {
+        return {
+          accountCode: "6210",
+          accountName: coaNameByCode.get("6210") || "Cash",
+          paymentMethodLabel: "Cash",
+        };
+      }
+
+      if (fallbackIsGateway) {
+        return {
+          accountCode: "6206",
+          accountName: coaNameByCode.get("6206") || "Payment Gateway",
+          paymentMethodLabel: "Payment Gateway",
+        };
+      }
+
+      return null;
+    };
+
+    const formattedTransactionsRaw: CashFlowRow[] = [];
+    for (const row of result.rows as any[]) {
+      const account = resolveAccountFromRow(row);
+      if (!account) continue;
+
       const kasIn = Number(row.kas_masuk || 0);
       const kasOut = Number(row.kas_keluar || 0);
 
-      totalIn += kasIn;
-      totalOut += kasOut;
-
       let description = '';
-      let paymentMethod = '';
-
-      // Helper to map bank/channel id to readable label
-      const mapBankLabel = (val: string | null) => {
-        if (!val) return '';
-        const bankId = val.startsWith('bank_') ? val.replace('bank_', '') : val;
-        const bank = bankAccounts.find((b: any) => b.id === bankId);
-        return bank ? `${bank.bankName} - ${bank.accountNumber}` : val;
-      };
+      let paymentMethod = account.paymentMethodLabel || "";
 
       if (row.transaction_type === 'campaign') {
         description = `Donasi ${row.campaign_title || 'Campaign'} dari ${row.donor_name || row.donor_email || 'Anonim'}`;
-        paymentMethod = mapBankLabel(row.payment_method) || row.payment_method || 'Transfer Bank';
       } else if (row.transaction_type === 'zakat') {
         description = `Pembayaran ${row.campaign_title || 'Zakat'} dari ${row.donor_name || row.donor_email || 'Anonim'}`;
-        paymentMethod = mapBankLabel(row.payment_method) || row.payment_method || 'Transfer Bank';
       } else if (row.transaction_type === 'qurban') {
         description = `Pembayaran Qurban ${row.campaign_title || ''} dari ${row.donor_name || row.donor_email || 'Anonim'}`;
-        paymentMethod = mapBankLabel(row.payment_method) || row.payment_method || 'Transfer Bank';
       } else if (row.transaction_type === 'qurban_savings_deposit') {
         description = `Setoran Tabungan Qurban ${row.campaign_title || ''} oleh ${row.donor_name || 'Anonim'}`;
-        paymentMethod = mapBankLabel(row.payment_method) || row.payment_method || 'Transfer Bank';
       } else if (row.transaction_type === 'qurban_savings_withdrawal') {
         description = `Penarikan Tabungan Qurban ${row.campaign_title || ''} (${row.donor_name || '-'})`;
-        paymentMethod = mapBankLabel(row.payment_method) || row.payment_method || 'Transfer Bank';
       } else if (row.transaction_type === 'disbursement') {
         description = `${row.purpose || 'Penyaluran'} ke ${row.recipient_name || '-'}`;
-        paymentMethod = row.payment_method || 'Transfer Bank';
       } else if (row.transaction_type === 'zakat_distribution') {
         description = `Penyaluran ${row.campaign_title || 'Zakat'} - ${row.purpose || 'Asnaf'} ke ${row.recipient_name || '-'}`;
-        paymentMethod = row.payment_method || 'Transfer Bank';
       } else if (row.transaction_type === 'qurban_disbursement') {
         description = `${row.purpose || 'Pembelian Qurban'} ke ${row.recipient_name || '-'}`;
-        paymentMethod = row.payment_method || 'Transfer Bank';
       } else if (row.transaction_type === 'campaign_disbursement') {
         description = `${row.purpose || 'Penyaluran Campaign'} ${row.campaign_title || ''} ke ${row.recipient_name || '-'}`;
-        paymentMethod = row.payment_method || 'Transfer Bank';
       } else if (row.transaction_type === 'unique_code') {
         description = `Kode Unik - ${row.campaign_title || 'Transaksi'} (${row.donor_name || 'Anonim'})`;
-        paymentMethod = mapBankLabel(row.payment_method) || 'Transfer Bank';
       } else {
         description = 'Transaksi';
-        paymentMethod = '-';
+        paymentMethod = paymentMethod || '-';
       }
 
-      return {
+      formattedTransactionsRaw.push({
         id: row.transaction_id,
         date: row.transaction_date,
         type: row.transaction_type,
@@ -905,14 +964,58 @@ reportsAdmin.get("/cash-flow", requireRole("super_admin", "admin_finance"), asyn
         kasOut,
         debit: kasOut,
         kredit: kasIn,
-        account: row.account_name,
-        accountCode: row.account_code,
+        account: account.accountName,
+        accountCode: account.accountCode,
         paymentMethod,
         hasEvidence: Boolean(row.has_evidence),
         refId: row.transaction_id,
         zakatTypeName: row.campaign_title || null,
-      };
+      });
+    }
+
+    const filteredByRefType = formattedTransactionsRaw.filter((row) => {
+      if (!refType) return true;
+      if (refType === "donation") {
+        return row.kasIn > 0;
+      }
+      if (refType === "zakat_donation") {
+        return row.type === "zakat";
+      }
+      if (refType === "disbursement") {
+        return row.kasOut > 0;
+      }
+      if (refType === "zakat_distribution") {
+        return row.type === "zakat_distribution";
+      }
+      return true;
     });
+
+    const filteredByAccount = accountCode
+      ? filteredByRefType.filter((row) => row.accountCode === accountCode)
+      : filteredByRefType;
+
+    const normalizedSearch = (search || "").trim().toLowerCase();
+    const formattedTransactions = normalizedSearch.length
+      ? filteredByAccount.filter((row) => {
+          const searchable = [
+            row.description,
+            row.account,
+            row.paymentMethod,
+            row.type,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          return searchable.includes(normalizedSearch);
+        })
+      : filteredByAccount;
+
+    let totalIn = 0;
+    let totalOut = 0;
+    for (const row of formattedTransactions) {
+      totalIn += Number(row.kasIn || 0);
+      totalOut += Number(row.kasOut || 0);
+    }
 
     const closingBalance = openingBalance + totalIn - totalOut;
     const total = formattedTransactions.length;
@@ -1662,98 +1765,42 @@ reportsAdmin.get("/unique-codes", requireRole("super_admin", "admin_finance"), a
 
 /**
  * GET /admin/reports/revenue-sharing
- * Strict source: disbursements category revenue_share_*
+ * Source of truth: revenue_shares snapshot generated from paid universal transactions
  */
 reportsAdmin.get("/revenue-sharing", requireRole("super_admin", "admin_finance"), async (c) => {
   const db = c.get("db");
   const startDate = c.req.query("startDate");
   const endDate = c.req.query("endDate");
-  const { page, limit, offset } = parsePagination(c.req.query("page"), c.req.query("limit"), 50, 200);
+  const { page, limit } = parsePagination(c.req.query("page"), c.req.query("limit"), 50, 100);
+  const parseDateStart = (input?: string) => {
+    if (!input) return undefined;
+    const date = new Date(`${input}T00:00:00.000`);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+  };
+  const parseDateEnd = (input?: string) => {
+    if (!input) return undefined;
+    const date = new Date(`${input}T23:59:59.999`);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+  };
 
-  const conds: any[] = [
-    inArray(disbursements.category, ["revenue_share_mitra", "revenue_share_fundraiser", "revenue_share_developer"]),
-    inArray(disbursements.status, ["submitted", "approved", "paid"]),
-  ];
-  if (startDate) conds.push(gte(disbursements.createdAt, new Date(startDate)));
-  if (endDate) conds.push(lte(disbursements.createdAt, new Date(endDate)));
-
-  const rows = await db
-    .select({
-      id: disbursements.id,
-      disbursementNumber: disbursements.disbursementNumber,
-      referenceType: disbursements.referenceType,
-      purpose: disbursements.purpose,
-      referenceName: disbursements.referenceName,
-      recipientName: disbursements.recipientName,
-      category: disbursements.category,
-      amount: disbursements.amount,
-      createdAt: disbursements.createdAt,
-    })
-    .from(disbursements)
-    .where(and(...conds))
-    .orderBy(desc(disbursements.createdAt));
-
-  const invalidCategories = findInvalidCategories(rows, REVENUE_SHARE_CATEGORIES);
-  if (invalidCategories.length > 0) {
-    return error(c, "Invalid category mapping detected for revenue-sharing report", 422, {
-      endpoint: "/admin/reports/revenue-sharing",
-      invalidCategories,
-    });
-  }
-
-  const mapped = rows.map((r) => {
-    const amount = Number(r.amount || 0);
-    return {
-      id: r.id,
-      transactionId: r.id,
-      transactionNumber: r.disbursementNumber,
-      productType: r.referenceType,
-      productName: r.referenceName || r.purpose || "-",
-      donationAmount: amount,
-      amilPercentage: 0,
-      developerAmount: r.category === "revenue_share_developer" ? amount : 0,
-      fundraiserAmount: r.category === "revenue_share_fundraiser" ? amount : 0,
-      fundraiserCode: null,
-      mitraAmount: r.category === "revenue_share_mitra" ? amount : 0,
-      mitraName: r.category === "revenue_share_mitra" ? (r.recipientName || null) : null,
-      amilNetAmount: 0,
-      programAmount: 0,
-      calculatedAt: r.createdAt,
-    };
-  });
-
-  const total = mapped.length;
-  const paged = mapped.slice(offset, offset + limit);
-
-  const summary = mapped.reduce((acc, row) => ({
-    totalRecords: acc.totalRecords + 1,
-    totalDonationAmount: acc.totalDonationAmount + Number(row.donationAmount || 0),
-    totalAmilAmount: 0,
-    totalAmilNet: 0,
-    totalDeveloper: acc.totalDeveloper + Number(row.developerAmount || 0),
-    totalFundraiser: acc.totalFundraiser + Number(row.fundraiserAmount || 0),
-    totalMitra: acc.totalMitra + Number(row.mitraAmount || 0),
-    totalProgram: 0,
-  }), {
-    totalRecords: 0,
-    totalDonationAmount: 0,
-    totalAmilAmount: 0,
-    totalAmilNet: 0,
-    totalDeveloper: 0,
-    totalFundraiser: 0,
-    totalMitra: 0,
-    totalProgram: 0,
-  });
+  const service = new RevenueShareService(db);
+  const [listResult, summary] = await Promise.all([
+    service.list({
+      page,
+      limit,
+      dateFrom: parseDateStart(startDate),
+      dateTo: parseDateEnd(endDate),
+    }),
+    service.summary({
+      dateFrom: parseDateStart(startDate),
+      dateTo: parseDateEnd(endDate),
+    }),
+  ]);
 
   return success(c, {
     summary,
-    rows: paged,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.max(1, Math.ceil(total / limit)),
-    },
+    rows: listResult.data,
+    pagination: listResult.pagination,
   });
 });
 
@@ -2008,26 +2055,24 @@ reportsAdmin.get("/mitra-summary", requireRole("super_admin", "admin_finance"), 
 
     const countMap = Object.fromEntries(campaignCounts.map(c => [c.mitraId, Number(c.count)]));
 
-    const incomeRows = await db
-      .select({
-        mitraId: campaigns.mitraId,
-        totalIncome: sql<number>`coalesce(sum(${transactions.totalAmount}), 0)`,
-      })
-      .from(transactions)
-      .innerJoin(campaigns, and(
-        eq(transactions.productType, "campaign"),
-        eq(transactions.productId, campaigns.id)
-      ))
-      .where(and(
-        eq(transactions.paymentStatus, "paid"),
-        sql`${campaigns.mitraId} IS NOT NULL`
-      ))
-      .groupBy(campaigns.mitraId);
-
+    // Source of truth: revenue_shares (hasil bagi dari transaksi paid)
     const shareRows = await db
       .select({
+        mitraId: revenueShares.mitraId,
+        totalIncome: sql<number>`coalesce(sum(${revenueShares.donationAmount}), 0)`,
+        totalShare: sql<number>`coalesce(sum(${revenueShares.mitraAmount}), 0)`,
+      })
+      .from(revenueShares)
+      .where(and(
+        sql`${revenueShares.mitraId} IS NOT NULL`,
+        sql`${revenueShares.mitraAmount} > 0`
+      ))
+      .groupBy(revenueShares.mitraId);
+
+    // Payout yang sudah/sedang diproses tetap dibaca dari universal disbursements
+    const paidRows = await db
+      .select({
         recipientId: disbursements.recipientId,
-        totalShare: sql<number>`coalesce(sum(${disbursements.amount}), 0)`,
         totalPaid: sql<number>`coalesce(sum(case when ${disbursements.status} = 'paid' then ${disbursements.amount} else 0 end), 0)`,
       })
       .from(disbursements)
@@ -2038,18 +2083,26 @@ reportsAdmin.get("/mitra-summary", requireRole("super_admin", "admin_finance"), 
       ))
       .groupBy(disbursements.recipientId);
 
-    const incomeMap = Object.fromEntries(incomeRows.map(r => [r.mitraId, Number(r.totalIncome)]));
-    const shareMap = Object.fromEntries(shareRows.map(r => [r.recipientId, { totalShare: Number(r.totalShare), totalPaid: Number(r.totalPaid) }]));
+    const shareMap = Object.fromEntries(
+      shareRows.map((r) => [
+        r.mitraId,
+        {
+          totalIncome: Number(r.totalIncome),
+          totalShare: Number(r.totalShare),
+        },
+      ])
+    );
+    const paidMap = Object.fromEntries(paidRows.map((r) => [r.recipientId, { totalPaid: Number(r.totalPaid) }]));
 
     const result = allMitras.map(m => ({
       id: m.id,
       name: m.name,
       status: m.status,
       campaignCount: countMap[m.id] || 0,
-      totalIncome: incomeMap[m.id] || 0,
+      totalIncome: shareMap[m.id]?.totalIncome || 0,
       totalRevenueShare: shareMap[m.id]?.totalShare || 0,
-      totalPaid: shareMap[m.id]?.totalPaid || 0,
-      remainingBalance: (shareMap[m.id]?.totalShare || 0) - (shareMap[m.id]?.totalPaid || 0),
+      totalPaid: paidMap[m.id]?.totalPaid || 0,
+      remainingBalance: (shareMap[m.id]?.totalShare || 0) - (paidMap[m.id]?.totalPaid || 0),
     }));
 
     const totals = result.reduce((acc, m) => ({
@@ -2093,30 +2146,29 @@ reportsAdmin.get("/mitra-detail", requireRole("super_admin", "admin_finance"), a
     const [mitraData] = await db.select().from(mitra).where(eq(mitra.id, mitraId));
     if (!mitraData) return error(c, "Mitra not found", 404);
 
-    // Revenue-share obligations from disbursements category (strict source)
+    // Source of truth: revenue_shares per transaksi paid
     const shareConds: any[] = [
-      eq(disbursements.recipientType, "mitra"),
-      eq(disbursements.recipientId, mitraId),
-      eq(disbursements.category, "revenue_share_mitra"),
-      inArray(disbursements.status, ["submitted", "approved", "paid"]),
+      eq(revenueShares.mitraId, mitraId),
+      sql`${revenueShares.mitraAmount} > 0`,
     ];
-    if (startDate) shareConds.push(gte(disbursements.createdAt, new Date(startDate)));
-    if (endDate) shareConds.push(lte(disbursements.createdAt, new Date(endDate)));
+    if (startDate) shareConds.push(gte(revenueShares.calculatedAt, new Date(startDate)));
+    if (endDate) shareConds.push(lte(revenueShares.calculatedAt, new Date(endDate)));
 
     const shares = await db
       .select({
-        id: disbursements.id,
-        transactionId: sql<string>`NULL`,
-        donationAmount: disbursements.amount,
-        mitraAmount: disbursements.amount,
-        calculatedAt: disbursements.createdAt,
-        transactionNumber: disbursements.disbursementNumber,
-        productName: sql<string>`coalesce(${disbursements.purpose}, ${disbursements.referenceName}, '-')`,
-        productType: disbursements.referenceType,
+        id: revenueShares.id,
+        transactionId: revenueShares.transactionId,
+        donationAmount: revenueShares.donationAmount,
+        mitraAmount: revenueShares.mitraAmount,
+        calculatedAt: revenueShares.calculatedAt,
+        transactionNumber: sql<string>`coalesce(${transactions.transactionNumber}, '-')`,
+        productName: sql<string>`coalesce(${transactions.productName}, '-')`,
+        productType: sql<string>`coalesce(${transactions.productType}, '-')`,
       })
-      .from(disbursements)
+      .from(revenueShares)
+      .leftJoin(transactions, eq(revenueShares.transactionId, transactions.id))
       .where(and(...shareConds))
-      .orderBy(desc(disbursements.createdAt))
+      .orderBy(desc(revenueShares.calculatedAt))
       .limit(200);
 
     // Disbursements to mitra

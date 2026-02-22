@@ -52,12 +52,6 @@ const periodOptions = [
   { value: "custom", label: "Custom" },
 ];
 
-const accountOptions = [
-  { value: "", label: "Semua Akun" },
-  { value: "1010", label: "1010 - Kas" },
-  { value: "1020", label: "1020 - Bank Operasional" },
-];
-
 const refTypeOptions = [
   { value: "", label: "Semua" },
   { value: "donation", label: "Donasi Umum Masuk" },
@@ -88,6 +82,26 @@ export default function CashFlowReportPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<CashFlowTransaction | null>(null);
+
+  // Fetch akun kas/bank dari COA aktif (sesuai blueprint: 62xx + cash)
+  const { data: coaAccountsData } = useQuery({
+    queryKey: ["cash-flow-coa-asset-accounts"],
+    queryFn: async () => {
+      const response = await api.get("/admin/coa?type=asset&active=true");
+      return response.data?.data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const accountOptions = [
+    { value: "", label: "Semua Akun" },
+    ...((coaAccountsData || [])
+      .filter((acc: any) => typeof acc?.code === "string" && acc.code.startsWith("62"))
+      .map((acc: any) => ({
+        value: String(acc.code),
+        label: `${acc.code} - ${acc.name}`,
+      }))),
+  ];
 
   // Fetch cash flow report
   const { data: reportData, isLoading } = useQuery({
@@ -411,7 +425,7 @@ export default function CashFlowReportPage() {
                           {transaction.kasOut > 0 ? formatRupiah(transaction.kasOut) : '—'}
                         </td>
                         <td className="text-sm text-gray-600">
-                          {transaction.account}
+                          {transaction.accountCode} - {transaction.account}
                         </td>
                         <td className="text-sm text-gray-600">
                           {transaction.paymentMethod}
