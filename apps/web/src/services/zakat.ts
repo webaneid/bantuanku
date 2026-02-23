@@ -88,10 +88,11 @@ export async function fetchZakatConfig(): Promise<ZakatConfig> {
   }
 }
 
-// Get active zakat periods
-export async function fetchZakatPeriods(): Promise<ZakatPeriod[]> {
+// Get active zakat periods, optionally filtered by zakat type
+export async function fetchZakatPeriods(zakatTypeId?: string): Promise<ZakatPeriod[]> {
   try {
-    const response = await fetch(`${API_URL}/zakat/periods`, {
+    const params = zakatTypeId ? `?zakatTypeId=${zakatTypeId}` : '';
+    const response = await fetch(`${API_URL}/zakat/periods${params}`, {
       cache: 'no-store',
     });
 

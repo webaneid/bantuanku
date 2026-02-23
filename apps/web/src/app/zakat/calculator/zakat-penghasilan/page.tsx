@@ -61,7 +61,7 @@ export default function ZakatPenghasilanPage() {
       const [configData, zakatTypesData, periodsData, settingsData] = await Promise.all([
         fetchZakatConfig(),
         fetchZakatTypes(),
-        fetchZakatPeriods(),
+        fetchZakatPeriods(displayMeta?.id || undefined),
         fetchPublicSettings(),
       ]);
       setConfig(configData);

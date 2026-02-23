@@ -236,6 +236,10 @@ async function seed() {
     { key: "rice_price_per_kg", value: "20000", label: "Harga Beras per KG (IDR)", category: "zakat", type: "number", isPublic: true },
     { key: "fidyah_amount_per_day", value: "45000", label: "Fidyah per Hari (IDR)", category: "zakat", type: "number", isPublic: true },
     { key: "minimum_donation", value: "10000", label: "Donasi Minimum (IDR)", category: "payment", type: "number", isPublic: true },
+    // Organization settings - used by WA notifications, invoices, etc.
+    { key: "organization_name", value: "Bantuanku", label: "Nama Organisasi", category: "organization", type: "string", isPublic: true },
+    { key: "organization_website", value: process.env.FRONTEND_URL || "https://donasimui.jalaseo.com", label: "Website Organisasi", category: "organization", type: "string", isPublic: true },
+    { key: "organization_whatsapp", value: "08123456789", label: "WhatsApp Organisasi", category: "organization", type: "string", isPublic: true },
   ];
 
   console.log("Seeding settings...");

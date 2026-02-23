@@ -61,7 +61,11 @@ const CORE_EXISTING: MigrationEntry[] = [
     optional: true,
   },
   { file: "packages/db/migrations/029_add_whatsapp_to_users.sql" },
+  { file: "packages/db/migrations/030b_create_zakat_types.sql" },
   { file: "packages/db/migrations/035_add_default_pillars.sql" },
+  { file: "packages/db/migrations/044_add_coordinator_to_campaigns.sql" },
+  { file: "packages/db/migrations/045_add_user_id_to_employees.sql" },
+  { file: "packages/db/migrations/045b_create_zakat_distributions.sql" },
   { file: "packages/db/migrations/037_create_qurban_tables_new_schema.sql" },
   {
     file: "packages/db/migrations/038_seed_qurban_data_new_schema.sql",
@@ -69,9 +73,12 @@ const CORE_EXISTING: MigrationEntry[] = [
   },
   { file: "packages/db/migrations/041_add_package_period_id_to_shared_groups.sql" },
   { file: "packages/db/migrations/042_fix_shared_groups_unique_constraint.sql" },
+  { file: "packages/db/migrations/045d_add_admin_fee_to_qurban_orders.sql" },
+  { file: "packages/db/migrations/045e_add_transaction_date_to_qurban_savings_transactions.sql" },
   { file: "packages/db/migrations/050_create_transactions_table.sql" },
   { file: "packages/db/migrations/051_create_transaction_payments_table.sql" },
   { file: "packages/db/migrations/052_create_transaction_indexes.sql" },
+  { file: "packages/db/migrations/045c_update_qurban_executions_schema.sql" },
   {
     file: "packages/db/migrations/053_add_rejected_fields_to_transaction_payments.sql",
   },
@@ -152,6 +159,10 @@ const CORE_EXISTING: MigrationEntry[] = [
   { file: "packages/db/migrations/101_add_seo_fields_to_categories.sql" },
   { file: "packages/db/migrations/102_add_seo_fields_to_pillars.sql" },
   { file: "packages/db/migrations/103_add_is_developer_to_users.sql" },
+  { file: "packages/db/migrations/104_cleanup_legacy_coa.sql" },
+  {
+    file: "packages/db/migrations/105_fix_transaction_payment_status_constraint.sql",
+  },
 ];
 
 const args = process.argv.slice(2);

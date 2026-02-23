@@ -68,7 +68,7 @@ export default function ZakatMaalPage() {
       const [configData, zakatTypesData, periodsData, campaignsData, settingsData] = await Promise.all([
         fetchZakatConfig(),
         fetchZakatTypes(),
-        fetchZakatPeriods(),
+        fetchZakatPeriods(displayMeta?.id || undefined),
         fetch(`${API_URL}/campaigns?limit=20&status=active`).then(r => r.json()),
         fetchPublicSettings(),
       ]);

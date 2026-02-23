@@ -52,7 +52,7 @@ export default function ZakatFitrahPage() {
     try {
       const [configData, periodsData, zakatTypesData, settingsData] = await Promise.all([
         fetchZakatConfig(),
-        fetchZakatPeriods(),
+        fetchZakatPeriods(displayMeta?.id || undefined),
         fetchZakatTypes(),
         fetchPublicSettings(),
       ]);

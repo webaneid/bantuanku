@@ -46,11 +46,18 @@ zakat.get("/config", async (c) => {
 });
 
 // GET /zakat/periods - Get active zakat periods
+// Optional query: ?zakatTypeId=xxx to filter by zakat type
 zakat.get("/periods", async (c) => {
   const db = c.get("db");
+  const zakatTypeId = c.req.query("zakatTypeId");
+
+  const conditions = [eq(zakatPeriods.status, "active")];
+  if (zakatTypeId) {
+    conditions.push(eq(zakatPeriods.zakatTypeId, zakatTypeId));
+  }
 
   const periods = await db.query.zakatPeriods.findMany({
-    where: eq(zakatPeriods.status, "active"),
+    where: and(...conditions),
     orderBy: [desc(zakatPeriods.year)],
   });
 

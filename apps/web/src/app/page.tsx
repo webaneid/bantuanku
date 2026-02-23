@@ -200,7 +200,6 @@ function mapQurbanPackageToCardProps(pkg: any) {
     category: pkg.animalType === 'cow' ? ('sapi' as const) : ('kambing' as const),
     price: pkg.price,
     image: getQurbanImageUrlByVariant(pkg.imageUrl, ['medium', 'thumbnail', 'large']),
-    description: pkg.description || undefined,
     badge: pkg.isFeatured ? 'Unggulan' : undefined,
   };
 }
