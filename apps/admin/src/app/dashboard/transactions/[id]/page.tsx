@@ -543,7 +543,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
               Upload Bukti Pembayaran
             </button>
           )}
-          {transaction.paymentStatus === "processing" && (
+          {(transaction.paymentStatus === "processing" || transaction.paymentStatus === "pending") && (
             <>
               <button
                 onClick={() => setShowRejectModal(true)}

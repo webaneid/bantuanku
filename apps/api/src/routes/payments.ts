@@ -518,6 +518,8 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
     const token = formData.token as string;
     payload = JSON.parse(dataStr);
     signature = token;
+    console.log("[Flip Webhook] payload:", JSON.stringify(payload));
+    console.log("[Flip Webhook] token:", token);
   } else {
     payload = await c.req.json();
     signature = c.req.header("X-Callback-Token") || c.req.header("X-Signature") || c.req.header("X-Ipaymu-Signature");

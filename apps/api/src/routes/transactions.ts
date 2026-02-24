@@ -1012,7 +1012,7 @@ app.post(
       );
     }
 
-    if (transaction.paymentStatus !== "processing" && transaction.paymentStatus !== "partial") {
+    if (!["pending", "processing", "partial"].includes(transaction.paymentStatus)) {
       return c.json(
         {
           success: false,
@@ -1295,7 +1295,7 @@ app.post(
       );
     }
 
-    if (transaction.paymentStatus !== "processing" && transaction.paymentStatus !== "partial") {
+    if (!["pending", "processing", "partial"].includes(transaction.paymentStatus)) {
       return c.json(
         {
           success: false,
