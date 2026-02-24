@@ -374,7 +374,7 @@ paymentsRoute.post("/create", paymentRateLimit, zValidator("json", createPayment
 
   const result = await adapter.createPayment({
     donationId: txn.id,
-    amount: txn.totalAmount,
+    amount: txn.totalAmount + (txn.uniqueCode || 0),
     donorName: txn.donorName,
     donorEmail: txn.donorEmail || undefined,
     donorPhone: txn.donorPhone || undefined,
@@ -392,7 +392,7 @@ paymentsRoute.post("/create", paymentRateLimit, zValidator("json", createPayment
     id: paymentId,
     paymentNumber,
     transactionId: txn.id,
-    amount: txn.totalAmount,
+    amount: txn.totalAmount + (txn.uniqueCode || 0),
     paymentMethod: method?.name || gatewayCode,
     paymentChannel: methodCode,
     externalId: result.externalId,
@@ -578,7 +578,7 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
         .set({
           paymentStatus: newPaymentStatus,
           paidAt: parsed.paidAt,
-          paidAmount: parsed.status === "success" ? txn.totalAmount : 0,
+          paidAmount: parsed.status === "success" ? txn.totalAmount + (txn.uniqueCode || 0) : 0,
           updatedAt: new Date(),
         })
         .where(eq(transactions.id, txn.id));
