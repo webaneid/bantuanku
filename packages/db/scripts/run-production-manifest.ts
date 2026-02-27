@@ -163,6 +163,9 @@ const CORE_EXISTING: MigrationEntry[] = [
   {
     file: "packages/db/migrations/105_fix_transaction_payment_status_constraint.sql",
   },
+  {
+    file: "packages/db/migrations/106_update_activity_reports_address.sql",
+  },
 ];
 
 const args = process.argv.slice(2);
