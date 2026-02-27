@@ -33,6 +33,10 @@ export type { QurbanCarouselProps } from './QurbanCarousel';
 export { QurbanSection } from './QurbanSection';
 export type { QurbanSectionProps } from './QurbanSection';
 
+// Breadcrumb
+export { Breadcrumb } from './Breadcrumb';
+export type { BreadcrumbProps, BreadcrumbItem } from './Breadcrumb';
+
 // Zakat Card
 export { ZakatCard } from './ZakatCard';
 export type { ZakatCardProps } from './ZakatCard';

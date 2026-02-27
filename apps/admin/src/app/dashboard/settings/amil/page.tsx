@@ -177,8 +177,8 @@ export default function AmilSettingsPage() {
         value: form.fundraiserPercentage || "",
         category: "amil",
         type: "number" as const,
-        label: "Prosentase Fundraiser",
-        description: "Persentase alokasi untuk fundraiser",
+        label: "Prosentase Influencer",
+        description: "Persentase alokasi untuk influencer",
       },
       {
         key: "amil_mitra_percentage",
@@ -311,7 +311,7 @@ export default function AmilSettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                Prosentase Fundraiser (%)
+                Prosentase Influencer (%)
               </label>
               <input
                 type="number"
@@ -359,7 +359,7 @@ export default function AmilSettingsPage() {
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                Prosentase Developer (%)
+                Prosentase Platform Provider (%)
               </label>
               <input
                 type="number"

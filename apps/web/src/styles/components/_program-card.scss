@@ -32,7 +32,7 @@
   &__image-wrapper {
     position: relative;
     width: 100%;
-    padding-bottom: 60%; // 5:3 aspect ratio
+    aspect-ratio: 5 / 3;
     background: $gray-200;
     overflow: hidden;
     flex-shrink: 0;
@@ -40,13 +40,13 @@
     // Mobile: flexible height
     @include mobile {
       width: 170px;
-      padding-bottom: 0;
+      aspect-ratio: unset;
       height: 100%;
     }
   }
 
   &__image {
-    object-fit: contain;
+    object-fit: cover;
     transition: transform 0.5s ease;
 
     .program-card:hover & {
@@ -108,25 +108,23 @@
     display: flex;
     align-items: center;
     gap: $spacing-1;
-    padding: $spacing-2 $spacing-3;
+    padding: 0.3rem 0.5rem;
     background: rgba(black, 0.7);
     backdrop-filter: blur(8px);
     border-radius: $radius-full;
     color: white;
-    font-size: $font-sm;
+    font-size: 0.65rem;
     font-weight: 600;
     z-index: 1;
+
+    svg {
+      width: 0.65rem;
+      height: 0.65rem;
+    }
 
     @include mobile {
       bottom: $spacing-2;
       right: $spacing-2;
-      padding: 4px $spacing-2;
-      font-size: $font-xs;
-
-      svg {
-        width: 12px;
-        height: 12px;
-      }
     }
   }
 
@@ -264,10 +262,10 @@
   // Variants
   &--compact {
     .program-card__image-wrapper {
-      padding-bottom: 50%;
+      aspect-ratio: 2 / 1;
 
       @include mobile {
-        padding-bottom: 0;
+        aspect-ratio: unset;
         height: 100%;
       }
     }
@@ -292,10 +290,10 @@
     box-shadow: 0 4px 16px rgba(black, 0.12);
 
     .program-card__image-wrapper {
-      padding-bottom: 50%;
+      aspect-ratio: 2 / 1;
 
       @include mobile {
-        padding-bottom: 0;
+        aspect-ratio: unset;
         height: 100%;
       }
     }

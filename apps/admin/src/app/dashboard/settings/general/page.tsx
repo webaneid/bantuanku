@@ -42,6 +42,8 @@ export default function GeneralSettingsPage() {
 
   // Form state for organization
   const [orgForm, setOrgForm] = useState({
+    siteName: "",
+    siteTagline: "",
     organizationName: "",
     organizationLogo: "",
     organizationFavicon: "",
@@ -134,6 +136,17 @@ export default function GeneralSettingsPage() {
   // Load existing settings into form when data is fetched
   useEffect(() => {
     if (groupedSettings) {
+      // Load site-wide settings (site_name, site_tagline)
+      const generalSettings = groupedSettings.general || [];
+      const siteData: any = {};
+      generalSettings.forEach((setting: any) => {
+        if (setting.key === "site_name") siteData.siteName = setting.value;
+        if (setting.key === "site_tagline") siteData.siteTagline = setting.value;
+      });
+      if (Object.keys(siteData).length > 0) {
+        setOrgForm((prev) => ({ ...prev, ...siteData }));
+      }
+
       // Load organization settings
       const orgSettings = groupedSettings.organization || [];
       const orgData: any = {};
@@ -280,6 +293,24 @@ export default function GeneralSettingsPage() {
       const normalizedContact = normalizeContactData(data.contactData);
       
       const settingsPayload = [
+        {
+          key: "site_name",
+          value: data.siteName || data.organizationName,
+          category: "general",
+          type: "string" as const,
+          label: "Nama Situs",
+          description: "Nama yang tampil di title browser dan SEO",
+          isPublic: true,
+        },
+        {
+          key: "site_tagline",
+          value: data.siteTagline || "",
+          category: "general",
+          type: "string" as const,
+          label: "Tagline",
+          description: "Tagline yang tampil di title browser",
+          isPublic: true,
+        },
         {
           key: "organization_name",
           value: data.organizationName,
@@ -981,6 +1012,39 @@ export default function GeneralSettingsPage() {
                         </p>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="form-field">
+                    <label className="form-label">
+                      Nama Situs <span className="text-danger-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={orgForm.siteName}
+                      onChange={(e) => setOrgForm({ ...orgForm, siteName: e.target.value })}
+                      placeholder="Contoh: JalaDana"
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Tampil di judul tab browser, SEO, dan header website
+                    </p>
+                  </div>
+
+                  <div className="form-field">
+                    <label className="form-label">
+                      Tagline
+                    </label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={orgForm.siteTagline}
+                      onChange={(e) => setOrgForm({ ...orgForm, siteTagline: e.target.value })}
+                      placeholder="Contoh: Platform Donasi Terpercaya"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Tampil setelah nama situs di title: &quot;Nama Situs - Tagline&quot;
+                    </p>
                   </div>
 
                   <div className="form-field md:col-span-2">

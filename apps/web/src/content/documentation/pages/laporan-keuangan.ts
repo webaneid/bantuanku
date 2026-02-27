@@ -5,7 +5,7 @@ export const laporanKeuanganDoc: DocumentationPage = {
     title: "Laporan Keuangan & Analitik",
     category: "Keuangan",
     summary:
-        "Panduan lengkap membaca dan mengekspor laporan keuangan, kas, dan performa setiap entitas (Program, Mitra, Fundraiser, Rekening).",
+        "Panduan lengkap membaca dan mengekspor laporan keuangan, kas, dan performa setiap entitas (Program, Mitra, Influencer, Rekening).",
     updatedAt: "2026-02-20",
     sections: [
         {
@@ -62,7 +62,7 @@ export const laporanKeuanganDoc: DocumentationPage = {
                             <td className="py-2 px-4"><strong>Per Mitra:</strong> <em>Settlement statement</em> per mitra (Hak mitra vs yang sudah dibayar).</td>
                         </tr>
                          <tr className="border-b">
-                            <td className="py-2 px-4"><strong>Per Fundraiser:</strong> Riwayat referral dan komisi per fundraiser.</td>
+                            <td className="py-2 px-4"><strong>Per Influencer:</strong> Riwayat referral dan komisi per influencer.</td>
                         </tr>
                          <tr className="border-b">
                             <td className="py-2 px-4"><strong>Per Rekening:</strong> Mutasi gaya "buku tabungan" untuk setiap rekening bank yayasan.</td>

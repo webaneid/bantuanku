@@ -19,7 +19,7 @@ export const alurPencairanDoc: DocumentationPage = {
         '<li><strong>Qurban</strong> — Pembayaran ke vendor/penyedia hewan qurban</li>' +
         '<li><strong>Operational</strong> — Biaya operasional lembaga</li>' +
         '<li><strong>Vendor</strong> — Pembayaran ke vendor/supplier</li>' +
-        '<li><strong>Revenue Share</strong> — Pencairan komisi ke fundraiser/mitra</li>' +
+        '<li><strong>Revenue Share</strong> — Pencairan komisi ke influencer/mitra</li>' +
         '</ul>' +
         '<img src="/docs/screenshot-disbursements.png" alt="Halaman Disbursements" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
         '<p><em>Tampilan daftar pencairan pada admin panel.</em></p>',

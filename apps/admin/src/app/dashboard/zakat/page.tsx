@@ -274,7 +274,7 @@ export default function ZakatDashboardPage() {
                             <h3 className="font-semibold text-gray-900">{type.name}</h3>
                           </div>
                           <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                            {type.description}
+                            {type.description?.replace(/<[^>]*>/g, '') || ''}
                           </p>
                         </div>
                       </div>

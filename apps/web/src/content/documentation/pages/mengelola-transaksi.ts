@@ -56,8 +56,8 @@ export const mengelolaTransaksiDoc: DocumentationPage = {
                 '<ul>' +
                 '<li><strong>Program</strong> — Dana untuk program yang dituju</li>' +
                 '<li><strong>Amil</strong> — Bagian operasional lembaga</li>' +
-                '<li><strong>Developer</strong> — Fee platform (jika diset)</li>' +
-                '<li><strong>Fundraiser</strong> — Komisi referral (jika ada fundraiser)</li>' +
+                '<li><strong>Platform Provider</strong> — Fee platform (jika diset)</li>' +
+                '<li><strong>Influencer</strong> — Komisi referral (jika ada influencer)</li>' +
                 '<li><strong>Mitra</strong> — Bagian lembaga partner (jika campaign milik mitra)</li>' +
                 '</ul>' +
                 '<p>Konfigurasi persentase bisa diatur di menu <strong>Settings</strong>.</p>',

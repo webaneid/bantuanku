@@ -132,6 +132,11 @@
     }
   }
 
+  // CTA section title override
+  .cta-section .section-title {
+    font-size: 3rem;
+  }
+
   // Mobile section spacing overrides
   @media (max-width: 768px) {
     section.py-16 {

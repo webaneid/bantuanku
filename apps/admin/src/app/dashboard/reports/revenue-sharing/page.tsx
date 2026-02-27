@@ -108,8 +108,8 @@ export default function RevenueSharingReportPage() {
         { header: "Produk", key: "product", width: 25 },
         { header: "Tipe", key: "productType", width: 12 },
         { header: "Basis", key: "basis", width: 18, format: "currency" },
-        { header: "Developer", key: "developer", width: 16, format: "currency" },
-        { header: "Fundraiser", key: "fundraiser", width: 16, format: "currency" },
+        { header: "Platform Provider", key: "developer", width: 16, format: "currency" },
+        { header: "Influencer", key: "fundraiser", width: 16, format: "currency" },
         { header: "Mitra", key: "mitra", width: 16, format: "currency" },
         { header: "Amil Net", key: "amilNet", width: 16, format: "currency" },
         { header: "Dana Program", key: "program", width: 16, format: "currency" },
@@ -133,7 +133,7 @@ export default function RevenueSharingReportPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Laporan Bagi Hasil Amil</h1>
-          <p className="text-gray-600 mt-1">Snapshot pembagian amil, developer, fundraiser, dan mitra.</p>
+          <p className="text-gray-600 mt-1">Snapshot pembagian amil, platform provider, influencer, dan mitra.</p>
         </div>
         <ExportButton
           onExportExcel={handleExportExcel}
@@ -156,7 +156,7 @@ export default function RevenueSharingReportPage() {
             </p>
           </div>
           <div className="card">
-            <p className="text-sm font-medium text-gray-600">Developer + Fundraiser</p>
+            <p className="text-sm font-medium text-gray-600">Platform Provider + Influencer</p>
             <p className="mt-2 text-2xl font-bold text-info-600 mono">
               Rp {formatRupiah((summary?.totalDeveloper || 0) + (summary?.totalFundraiser || 0))}
             </p>
@@ -188,8 +188,8 @@ export default function RevenueSharingReportPage() {
                   <th>Transaksi</th>
                   <th>Produk</th>
                   <th className="text-right">Basis</th>
-                  <th className="text-right">Developer</th>
-                  <th className="text-right">Fundraiser</th>
+                  <th className="text-right">Platform Provider</th>
+                  <th className="text-right">Influencer</th>
                   <th className="text-right">Mitra</th>
                   <th className="text-right">Amil Net</th>
                   <th className="text-right">Dana Program</th>
@@ -273,11 +273,11 @@ export default function RevenueSharingReportPage() {
                 <span className="table-card-row-value mono">Rp {formatRupiah(row.donationAmount || 0)}</span>
               </div>
               <div className="table-card-row">
-                <span className="table-card-row-label">Developer</span>
+                <span className="table-card-row-label">Platform Provider</span>
                 <span className="table-card-row-value mono text-info-700">Rp {formatRupiah(row.developerAmount || 0)}</span>
               </div>
               <div className="table-card-row">
-                <span className="table-card-row-label">Fundraiser</span>
+                <span className="table-card-row-label">Influencer</span>
                 <span className="table-card-row-value mono text-amber-700">Rp {formatRupiah(row.fundraiserAmount || 0)}</span>
               </div>
               <div className="table-card-row">

@@ -151,7 +151,7 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
         open: true,
         type: "success",
         title: "Berhasil",
-        message: "Fundraiser berhasil di-approve",
+        message: "Influencer berhasil di-approve",
       });
       refetch();
     },
@@ -171,7 +171,7 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
         open: true,
         type: "success",
         title: "Berhasil",
-        message: "Fundraiser berhasil di-suspend",
+        message: "Influencer berhasil di-suspend",
       });
       refetch();
     },
@@ -191,7 +191,7 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
         open: true,
         type: "success",
         title: "Berhasil",
-        message: "Fundraiser berhasil diaktifkan",
+        message: "Influencer berhasil diaktifkan",
       });
       refetch();
     },
@@ -211,7 +211,7 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
         open: true,
         type: "success",
         title: "Berhasil",
-        message: "Fundraiser berhasil diupdate",
+        message: "Influencer berhasil diupdate",
       });
       setShowEditModal(false);
       refetch();
@@ -233,7 +233,7 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
         open: true,
         type: "success",
         title: "Berhasil",
-        message: "Fundraiser berhasil dihapus",
+        message: "Influencer berhasil dihapus",
       });
       setShowDeleteModal(false);
     },
@@ -289,7 +289,7 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
     return (
       <div className="dashboard-container">
         <div className="card text-center py-12">
-          <p className="text-gray-600">Fundraiser tidak ditemukan</p>
+          <p className="text-gray-600">Influencer tidak ditemukan</p>
         </div>
       </div>
     );
@@ -312,7 +312,7 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
           <ArrowLeftIcon className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">Detail Fundraiser</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Detail Influencer</h1>
           <p className="text-gray-600">{name} - {data.code}</p>
         </div>
         <div className="flex gap-2">
@@ -476,7 +476,7 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Fundraiser Info */}
             <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold mb-4">Informasi Fundraiser</h3>
+              <h3 className="text-lg font-semibold mb-4">Informasi Influencer</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Kode</span>
@@ -648,7 +648,7 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold mb-4">Edit Fundraiser</h3>
+            <h3 className="text-lg font-semibold mb-4">Edit Influencer</h3>
             <form onSubmit={handleUpdate} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Komisi (%)</label>
@@ -695,9 +695,9 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold mb-4">Hapus Fundraiser</h3>
+            <h3 className="text-lg font-semibold mb-4">Hapus Influencer</h3>
             <p className="text-sm text-gray-600 mb-6">
-              Apakah Anda yakin ingin menghapus fundraiser ini?
+              Apakah Anda yakin ingin menghapus influencer ini?
             </p>
             <div className="flex justify-end gap-3">
               <button

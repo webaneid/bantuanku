@@ -6,6 +6,7 @@ import Autocomplete from "@/components/Autocomplete";
 type Option = { value: string; label: string };
 
 interface QurbanReportFiltersProps {
+  tab: string;
   initialProgram: string;
   initialPeriodId: string;
   programOptions: Option[];
@@ -13,6 +14,7 @@ interface QurbanReportFiltersProps {
 }
 
 export default function QurbanReportFilters({
+  tab,
   initialProgram,
   initialPeriodId,
   programOptions,
@@ -27,18 +29,19 @@ export default function QurbanReportFilters({
   );
 
   const mergedPeriodOptions = useMemo(
-    () => [{ value: "", label: "Semua Periode" }, ...periodOptions],
+    () => [{ value: "", label: "Pilih Periode" }, ...periodOptions],
     [periodOptions]
   );
 
   return (
     <form className="bg-white border border-gray-200 rounded-xl p-4" method="GET">
+      <input type="hidden" name="tab" value={tab} />
       <input type="hidden" name="program" value={program} />
       <input type="hidden" name="periodId" value={periodId} />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
         <div>
-          <label className="block text-sm text-gray-700 mb-1">Program</label>
+          <label className="block text-sm text-gray-700 mb-1">Mitra / Program</label>
           <Autocomplete
             options={mergedProgramOptions}
             value={program}

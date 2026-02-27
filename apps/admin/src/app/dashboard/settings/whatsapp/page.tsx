@@ -295,7 +295,7 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
     ],
   },
   {
-    title: "Notifikasi Mitra & Fundraiser",
+    title: "Notifikasi Mitra & Influencer",
     templates: [
       {
         key: "wa_tpl_mitra_donation_received",
@@ -305,8 +305,8 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
       },
       {
         key: "wa_tpl_fundraiser_referral",
-        label: "Referral Fundraiser Berhasil",
-        description: "Dikirim ke fundraiser saat ada donasi melalui link referralnya",
+        label: "Referral Influencer Berhasil",
+        description: "Dikirim ke influencer saat ada donasi melalui link referralnya",
         variables: [...GLOBAL_VARS, ...FUNDRAISER_VARS, "product_name", "donor_name", "donation_amount"],
       },
     ],

@@ -29,8 +29,10 @@ export const QurbanSection: React.FC<QurbanSectionProps> = ({
     onAddToCart: () => handleAddToCart(item),
   }));
 
+  if (itemsWithHandler.length === 0) return null;
+
   return (
-    <section className="py-16 bg-gradient-to-br from-amber-50 to-orange-50">
+    <section id="section-qurban" className="section-qurban py-16 bg-gradient-to-br from-amber-50 to-orange-50">
       <div className="container">
         <div className="text-center mb-4">
           <h2 className="section-title text-gray-900">
@@ -41,32 +43,24 @@ export const QurbanSection: React.FC<QurbanSectionProps> = ({
           </p>
         </div>
 
-        {itemsWithHandler.length > 0 ? (
-          <>
-            <QurbanCarousel items={itemsWithHandler} />
+        <QurbanCarousel items={itemsWithHandler} />
 
-            <div className="text-center mt-4">
-              <Link href="/qurban">
-                <Button size="lg" className="bg-amber-600 hover:bg-amber-700">
-                  Lihat Semua Paket Qurban
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                    <path
-                      d="M7 4l6 6-6 6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </Button>
-              </Link>
-            </div>
-          </>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500">Belum ada paket qurban tersedia saat ini</p>
-          </div>
-        )}
+        <div className="text-center mt-4">
+          <Link href="/qurban">
+            <Button size="lg" className="bg-amber-600 hover:bg-amber-700">
+              Lihat Semua Paket Qurban
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M7 4l6 6-6 6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Button>
+          </Link>
+        </div>
       </div>
     </section>
   );

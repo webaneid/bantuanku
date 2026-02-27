@@ -127,8 +127,8 @@ export const kategoriKeuanganDoc: DocumentationPage = {
                             <li>Pembelian Hewan (Sapi/Kambing/Domba)</li>
                             <li>Biaya Penyembelihan & Distribusi</li>
                             <li>Pencairan Bagi Hasil Mitra</li>
-                            <li>Pencairan Komisi Fundraiser</li>
-                            <li>Pencairan Fee Developer</li>
+                            <li>Pencairan Komisi Influencer</li>
+                            <li>Pencairan Fee Platform Provider</li>
                         </ul>
                     </div>
                 </div>

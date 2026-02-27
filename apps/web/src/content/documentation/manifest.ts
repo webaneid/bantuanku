@@ -83,7 +83,7 @@ export const documentationManifest: DocumentationManifest = {
         },
         {
           slug: "fundraiser",
-          title: "Sistem Fundraiser",
+          title: "Sistem Influencer",
         },
         {
           slug: "seo",

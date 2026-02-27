@@ -55,8 +55,8 @@ const EXPENSE_CATEGORIES = {
   ],
   revenue_share: [
     { value: 'revenue_share_mitra', label: 'Pencairan Bagi Hasil Mitra' },
-    { value: 'revenue_share_fundraiser', label: 'Pencairan Komisi Fundraiser' },
-    { value: 'revenue_share_developer', label: 'Pencairan Fee Developer' },
+    { value: 'revenue_share_fundraiser', label: 'Pencairan Komisi Influencer' },
+    { value: 'revenue_share_developer', label: 'Pencairan Fee Platform Provider' },
   ],
 } as const;
 

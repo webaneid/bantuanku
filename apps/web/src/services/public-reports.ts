@@ -27,6 +27,18 @@ export interface PublicZakatActivityRow {
   programName: string;
 }
 
+export interface PublicQurbanActivityRow {
+  id: string;
+  title: string;
+  activityDate: string | null;
+  referenceType: string;
+  referenceId: string;
+  periodId: string | null;
+  periodName: string | null;
+  programKey: string;
+  programName: string;
+}
+
 export interface PublicQurbanReportRow {
   id: string;
   paidAt: string | null;
@@ -101,6 +113,28 @@ export async function fetchPublicZakatActivities(params: {
   };
 }
 
+export interface PublicQurbanDisbursementRow {
+  id: string;
+  disbursementNumber: string;
+  recipientName: string;
+  amount: number;
+  category: string | null;
+  paidAt: string | null;
+}
+
+export interface PublicQurbanExecutionRow {
+  id: string;
+  executionNumber: string;
+  executionDate: string;
+  location: string;
+  animalType: string;
+  animalWeight: number | null;
+  animalCondition: string | null;
+  distributionMethod: string | null;
+  recipientCount: number | null;
+  photos: string | null;
+}
+
 export async function fetchPublicQurbanReport(params: {
   periodId?: string;
   program?: string;
@@ -123,6 +157,13 @@ export async function fetchPublicQurbanReport(params: {
       periods: Array<{ id: string; name: string }>;
       programs: Array<{ key: string; label: string }>;
     };
+    stats: {
+      totalGoats: number;
+      totalCows: number;
+    };
     rows: PublicQurbanReportRow[];
+    disbursements: PublicQurbanDisbursementRow[];
+    executions: PublicQurbanExecutionRow[];
+    activities: PublicQurbanActivityRow[];
   };
 }

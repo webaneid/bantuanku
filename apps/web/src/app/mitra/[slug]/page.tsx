@@ -2,8 +2,7 @@ import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Header, Footer } from '@/components/organisms';
-import { ProgramCard } from '@/components/organisms';
+import { Header, Footer, Breadcrumb, ProgramCard } from '@/components/organisms';
 import { getImageUrl } from '@/lib/image';
 import { calculateDaysLeft } from '@/services/campaigns';
 import { fetchPublicSettings } from '@/services/settings';
@@ -135,24 +134,11 @@ export default async function MitraProfilePage({ params, searchParams }: MitraPa
       <Header />
 
       <main className="flex-1 bg-gray-50">
-        {/* Breadcrumb */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="container py-3">
-            <nav className="flex items-center gap-2 text-sm text-gray-600">
-              <Link href="/" className="hover:text-primary-600">
-                Beranda
-              </Link>
-              <span>/</span>
-              <Link href="/program" className="hover:text-primary-600">
-                Program
-              </Link>
-              <span>/</span>
-              <span className="text-gray-900 font-medium line-clamp-1">
-                {mitraData.name}
-              </span>
-            </nav>
-          </div>
-        </div>
+        <Breadcrumb items={[
+          { label: 'Beranda', href: '/' },
+          { label: 'Program', href: '/program' },
+          { label: mitraData.name },
+        ]} />
 
         {/* Mitra Header */}
         <div className="bg-white border-b border-gray-200">

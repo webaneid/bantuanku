@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Header, Footer } from '@/components/organisms';
+import { Header, Footer, Breadcrumb } from '@/components/organisms';
 import ProgramListTemplate from '@/components/templates/ProgramListTemplate';
 
 interface PageProps {
@@ -54,6 +54,7 @@ export default async function PillarArchivePage({ params }: PageProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
+      <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Program', href: '/program' }, { label: pillar.name }]} />
       <main className="flex-1">
         <ProgramListTemplate
           initialPillarSlug={params.slug}

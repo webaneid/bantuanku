@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { Header, Footer } from '@/components/organisms';
+import { Header, Footer, Breadcrumb } from '@/components/organisms';
 import { QurbanCard } from '@/components/organisms/QurbanCard/QurbanCard';
 import { fetchPackageDetail, fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrl, getQurbanImageUrlByVariant } from '@/services/qurban';
 import { fetchPublicSettings } from '@/services/settings';
@@ -314,24 +314,11 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
       <Header />
 
       <main className="flex-1 bg-gray-50">
-        {/* Breadcrumb */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="container py-3">
-            <nav className="flex items-center gap-2 text-sm text-gray-600">
-              <Link href="/" className="hover:text-primary-600">
-                {t('qurbanDetail.breadcrumb.home')}
-              </Link>
-              <span>/</span>
-              <Link href="/qurban" className="hover:text-primary-600">
-                {t('qurbanDetail.breadcrumb.qurban')}
-              </Link>
-              <span>/</span>
-              <span className="text-gray-900 font-medium line-clamp-1">
-                {qurbanPackage.name}
-              </span>
-            </nav>
-          </div>
-        </div>
+        <Breadcrumb items={[
+          { label: t('qurbanDetail.breadcrumb.home'), href: '/' },
+          { label: t('qurbanDetail.breadcrumb.qurban'), href: '/qurban' },
+          { label: qurbanPackage.name },
+        ]} />
 
         {/* Qurban Content */}
         <div className="container py-8 pb-24 lg:pb-8">

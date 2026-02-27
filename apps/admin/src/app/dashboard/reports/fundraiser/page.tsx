@@ -106,8 +106,8 @@ export default function FundraiserReportPage() {
         { header: "Dibayar", key: "paid", width: 18, format: "currency" },
         { header: "Sisa", key: "balance", width: 18, format: "currency" },
       ],
-      filename: `Laporan-Per-Fundraiser-${new Date().toISOString().slice(0, 10)}`,
-      title: "Laporan Per Fundraiser",
+      filename: `Laporan-Per-Influencer-${new Date().toISOString().slice(0, 10)}`,
+      title: "Laporan Per Influencer",
     });
   };
 
@@ -115,8 +115,8 @@ export default function FundraiserReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Laporan Per Fundraiser</h1>
-          <p className="text-gray-600 mt-1">Tracking komisi dan referral per fundraiser</p>
+          <h1 className="text-2xl font-bold text-gray-900">Laporan Per Influencer</h1>
+          <p className="text-gray-600 mt-1">Tracking komisi dan referral per influencer</p>
         </div>
         <ExportButton onExportExcel={handleExportSummary} onPrint={() => window.print()} />
       </div>
@@ -125,7 +125,7 @@ export default function FundraiserReportPage() {
         {/* Summary */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="card">
-            <p className="text-sm font-medium text-gray-600">Jumlah Fundraiser</p>
+            <p className="text-sm font-medium text-gray-600">Jumlah Influencer</p>
             <p className="mt-2 text-2xl font-bold text-gray-900">{summary.fundraiserCount}</p>
           </div>
           <div className="card">
@@ -152,7 +152,7 @@ export default function FundraiserReportPage() {
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>Fundraiser</th>
+                      <th>Influencer</th>
                       <th className="text-center">Referral</th>
                       <th className="text-right">Total Donasi</th>
                       <th className="text-right">Komisi</th>
@@ -178,7 +178,7 @@ export default function FundraiserReportPage() {
                 </table>
               )}
               {!isLoading && fundraisers.length === 0 && (
-                <div className="p-6 text-center text-gray-500">Belum ada data fundraiser</div>
+                <div className="p-6 text-center text-gray-500">Belum ada data influencer</div>
               )}
 
               {totalPages > 1 && !selectedId && (

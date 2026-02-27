@@ -1,12 +1,59 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/hooks/useSettings";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/lib/i18n/provider";
+
+function useGravatarUrl(email: string | undefined, size = 80) {
+  const [hash, setHash] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!email) return;
+    const trimmed = email.trim().toLowerCase();
+    crypto.subtle
+      .digest("SHA-256", new TextEncoder().encode(trimmed))
+      .then((buf) => {
+        const hex = Array.from(new Uint8Array(buf))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+        setHash(hex);
+      })
+      .catch(() => {});
+  }, [email]);
+
+  if (!hash) return null;
+  return `https://www.gravatar.com/avatar/${hash}?s=${size}&d=404`;
+}
+
+function UserAvatar({ name, email, size = 40 }: { name: string; email?: string; size?: number }) {
+  const gravatarUrl = useGravatarUrl(email, size);
+  const [imgError, setImgError] = useState(false);
+
+  const showGravatar = gravatarUrl && !imgError;
+
+  return showGravatar ? (
+    <img
+      src={gravatarUrl}
+      alt={name}
+      width={size}
+      height={size}
+      className="rounded-full object-cover"
+      style={{ width: size, height: size }}
+      onError={() => setImgError(true)}
+    />
+  ) : (
+    <div
+      className="rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold"
+      style={{ width: size, height: size, fontSize: size * 0.4 }}
+    >
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
 
 const navigation = [
   {
@@ -76,6 +123,26 @@ export default function DashboardLayout({
   const { user, logout, isHydrated } = useAuth();
   const { settings } = useSettings();
   const { t } = useI18n();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close mobile menu on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMobileMenuOpen(false);
+      }
+    }
+    if (mobileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [mobileMenuOpen]);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   // Use logo from settings or fallback
   const logo = settings.organization_logo || '/logo.svg';
@@ -129,8 +196,59 @@ export default function DashboardLayout({
                 {t("account.layout.backToHome")}
               </Link>
               {user ? (
-                <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold">
-                  {user.name.charAt(0).toUpperCase()}
+                <div className="relative" ref={menuRef}>
+                  <button
+                    type="button"
+                    onClick={() => setMobileMenuOpen((v) => !v)}
+                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 lg:cursor-default"
+                  >
+                    <UserAvatar name={user.name} email={user.email} size={40} />
+                  </button>
+
+                  {/* Mobile dropdown menu */}
+                  {mobileMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-gray-200 shadow-lg py-2 z-50 lg:hidden">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                      </div>
+                      <div className="py-1">
+                        {navigation.map((item) => {
+                          const isActive = pathname === item.href;
+                          const label = t(`account.layout.nav.${item.key}`);
+
+                          if (item.isLogout) {
+                            return (
+                              <button
+                                key={item.key}
+                                onClick={() => { setMobileMenuOpen(false); logout(); }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger-700 hover:bg-danger-50"
+                              >
+                                {item.icon}
+                                {label}
+                              </button>
+                            );
+                          }
+
+                          return (
+                            <Link
+                              key={item.key}
+                              href={item.href}
+                              className={cn(
+                                "flex items-center gap-3 px-4 py-2.5 text-sm",
+                                isActive
+                                  ? "text-primary-700 bg-primary-50"
+                                  : "text-gray-700 hover:bg-gray-50"
+                              )}
+                            >
+                              {item.icon}
+                              {label}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Link

@@ -1,15 +1,31 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { ArrowLeftIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, PencilIcon, TrashIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import api from "@/lib/api";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import Modal from "@/components/Modal";
 import FeedbackDialog from "@/components/FeedbackDialog";
-import { useState } from "react";
+
+const getYouTubeEmbedUrl = (url: string): string | null => {
+  try {
+    const u = new URL(url);
+    let videoId: string | null = null;
+    if (u.hostname.includes("youtube.com") && u.pathname === "/watch") {
+      videoId = u.searchParams.get("v");
+    } else if (u.hostname.includes("youtu.be")) {
+      videoId = u.pathname.slice(1);
+    } else if (u.hostname.includes("youtube.com") && u.pathname.startsWith("/embed/")) {
+      videoId = u.pathname.split("/embed/")[1];
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  } catch {
+    return null;
+  }
+};
 
 const getReferenceTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
@@ -26,6 +42,7 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
   const queryClient = useQueryClient();
   const { id } = use(params);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState({
     open: false,
     type: "success" as "success" | "error",
@@ -223,23 +240,32 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
           </p>
         </div>
 
+        {/* Lokasi Kegiatan */}
+        {(report.provinceName || report.detailAddress) && (
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Lokasi Kegiatan</h3>
+            <p className="text-lg text-gray-900">
+              {[
+                report.detailAddress,
+                report.villageName,
+                report.districtName,
+                report.regencyName,
+                report.provinceName,
+              ].filter(Boolean).join(", ")}
+              {report.villagePostalCode && ` ${report.villagePostalCode}`}
+            </p>
+          </div>
+        )}
+
         {/* Type-Specific Data */}
-        {report.referenceType === "campaign" && (typeSpecificData.beneficiary_count || typeSpecificData.location) && (
+        {report.referenceType === "campaign" && typeSpecificData.beneficiary_count > 0 && (
           <div className="mb-6 bg-gray-50 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Detail Campaign</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {typeSpecificData.beneficiary_count > 0 && (
-                <div>
-                  <span className="text-sm text-gray-500">Jumlah Penerima Manfaat</span>
-                  <p className="font-medium">{typeSpecificData.beneficiary_count}</p>
-                </div>
-              )}
-              {typeSpecificData.location && (
-                <div>
-                  <span className="text-sm text-gray-500">Lokasi</span>
-                  <p className="font-medium">{typeSpecificData.location}</p>
-                </div>
-              )}
+              <div>
+                <span className="text-sm text-gray-500">Jumlah Penerima Manfaat</span>
+                <p className="font-medium">{typeSpecificData.beneficiary_count}</p>
+              </div>
             </div>
           </div>
         )}
@@ -264,22 +290,14 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
           </div>
         )}
 
-        {report.referenceType === "zakat_disbursement" && (typeSpecificData.recipient_count || typeSpecificData.location) && (
+        {report.referenceType === "zakat_disbursement" && typeSpecificData.recipient_count > 0 && (
           <div className="mb-6 bg-gray-50 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Detail Pencairan Zakat</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {typeSpecificData.recipient_count > 0 && (
-                <div>
-                  <span className="text-sm text-gray-500">Jumlah Penerima</span>
-                  <p className="font-medium">{typeSpecificData.recipient_count}</p>
-                </div>
-              )}
-              {typeSpecificData.location && (
-                <div>
-                  <span className="text-sm text-gray-500">Lokasi</span>
-                  <p className="font-medium">{typeSpecificData.location}</p>
-                </div>
-              )}
+              <div>
+                <span className="text-sm text-gray-500">Jumlah Penerima</span>
+                <p className="font-medium">{typeSpecificData.recipient_count}</p>
+              </div>
             </div>
           </div>
         )}
@@ -320,12 +338,6 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
                   <p className="font-medium">{typeSpecificData.total_recipients}</p>
                 </div>
               )}
-              {typeSpecificData.slaughter_location && (
-                <div>
-                  <span className="text-sm text-gray-500">Lokasi Penyembelihan</span>
-                  <p className="font-medium">{typeSpecificData.slaughter_location}</p>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -343,14 +355,26 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
         {report.videoUrl && (
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Video</h3>
-            <a
-              href={report.videoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary-600 hover:underline"
-            >
-              {report.videoUrl}
-            </a>
+            {getYouTubeEmbedUrl(report.videoUrl) ? (
+              <div className="aspect-video rounded-lg overflow-hidden border border-gray-200">
+                <iframe
+                  src={getYouTubeEmbedUrl(report.videoUrl)!}
+                  title="Video"
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <a
+                href={report.videoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-600 hover:underline"
+              >
+                {report.videoUrl}
+              </a>
+            )}
           </div>
         )}
 
@@ -360,19 +384,18 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Gallery Foto</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {report.gallery.map((url: string, index: number) => (
-                <a
+                <button
                   key={index}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block group"
+                  type="button"
+                  onClick={() => setLightboxIndex(index)}
+                  className="block group cursor-pointer"
                 >
                   <img
                     src={url}
                     alt={`Gallery ${index + 1}`}
-                    className="w-full h-48 object-cover rounded-lg border border-gray-200 group-hover:opacity-90 transition-opacity"
+                    className="w-full h-48 object-cover rounded-lg border border-gray-200 group-hover:opacity-80 transition-opacity"
                   />
-                </a>
+                </button>
               ))}
             </div>
           </div>
@@ -388,6 +411,64 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
           </div>
         )}
       </div>
+
+      {/* Image Lightbox */}
+      {lightboxIndex !== null && report.gallery && (
+        <div
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxIndex(null)}
+        >
+          {/* Close */}
+          <button
+            type="button"
+            onClick={() => setLightboxIndex(null)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
+          >
+            <XMarkIcon className="w-8 h-8" />
+          </button>
+
+          {/* Previous */}
+          {report.gallery.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex((lightboxIndex - 1 + report.gallery.length) % report.gallery.length);
+              }}
+              className="absolute left-4 text-white/80 hover:text-white z-10"
+            >
+              <ChevronLeftIcon className="w-10 h-10" />
+            </button>
+          )}
+
+          {/* Image */}
+          <img
+            src={report.gallery[lightboxIndex]}
+            alt={`Gallery ${lightboxIndex + 1}`}
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Next */}
+          {report.gallery.length > 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex((lightboxIndex + 1) % report.gallery.length);
+              }}
+              className="absolute right-4 text-white/80 hover:text-white z-10"
+            >
+              <ChevronRightIcon className="w-10 h-10" />
+            </button>
+          )}
+
+          {/* Counter */}
+          <div className="absolute bottom-4 text-white/70 text-sm">
+            {lightboxIndex + 1} / {report.gallery.length}
+          </div>
+        </div>
+      )}
 
       {/* Delete Modal */}
       <Modal

@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { ArrowLeftIcon, CheckIcon, XMarkIcon, BanknotesIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, CheckIcon, XMarkIcon, BanknotesIcon, CloudArrowUpIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import { use, useState, useEffect } from "react";
 import { getCategoryLabel } from "@/lib/category-utils";
 import MediaLibrary from "@/components/MediaLibrary";
@@ -168,7 +168,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
   useEffect(() => {
     if (disbursement) {
       setPaymentData({
-        destination_bank_id: disbursement.sourceBankId || "",
+        destination_bank_id: "",
         transfer_proof_url: "",
         transfer_date: new Date().toISOString().slice(0, 10),
         transferred_amount: disbursement.amount || 0,
@@ -301,20 +301,6 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
           </div>
 
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Bank Sumber</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500">Bank</p>
-                <p className="font-medium">{disbursement.sourceBankName}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Nomor Rekening</p>
-                <p className="font-medium">{disbursement.sourceBankAccount}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="card">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Penerima</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -437,6 +423,11 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
                   <p className="text-xs text-gray-500 mt-1">
                     Rekening yang digunakan untuk melakukan transfer
                   </p>
+                  {(disbursement.disbursementType === "zakat" || disbursement.category?.startsWith("zakat_to_")) && (
+                    <p className="text-sm text-orange-600 mt-1">
+                      Pencairan zakat harus menggunakan rekening zakat
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -571,6 +562,13 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
             <div className="space-y-2">
               {disbursement.status === "draft" && (
                 <>
+                  <button
+                    onClick={() => router.push(`/dashboard/disbursements/${disbursement.id}/edit`)}
+                    className="w-full btn btn-secondary"
+                  >
+                    <PencilSquareIcon className="w-5 h-5" />
+                    Edit
+                  </button>
                   <button
                     onClick={handleSubmit}
                     disabled={updateStatusMutation.isPending}

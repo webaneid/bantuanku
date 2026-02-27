@@ -48,7 +48,7 @@ const allMenuItems = [
     roles: ["super_admin"],
   },
   {
-    label: "Developer",
+    label: "Platform Provider",
     icon: CogIcon,
     href: "/dashboard/settings/developer",
     roles: ["super_admin", "admin_campaign", "admin_finance"],

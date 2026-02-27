@@ -2,6 +2,10 @@ import { pgTable, text, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { users } from "./user";
+import { indonesiaProvinces } from "./indonesia-provinces";
+import { indonesiaRegencies } from "./indonesia-regencies";
+import { indonesiaDistricts } from "./indonesia-districts";
+import { indonesiaVillages } from "./indonesia-villages";
 
 export const activityReports = pgTable("activity_reports", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -20,6 +24,13 @@ export const activityReports = pgTable("activity_reports", {
 
   // Type-Specific Data
   typeSpecificData: jsonb("type_specific_data"),
+
+  // Address - Indonesia Address System
+  detailAddress: text("detail_address"),
+  provinceCode: text("province_code").references(() => indonesiaProvinces.code),
+  regencyCode: text("regency_code").references(() => indonesiaRegencies.code),
+  districtCode: text("district_code").references(() => indonesiaDistricts.code),
+  villageCode: text("village_code").references(() => indonesiaVillages.code),
 
   // Status & Publishing
   status: text("status").default("draft").notNull(), // draft, published

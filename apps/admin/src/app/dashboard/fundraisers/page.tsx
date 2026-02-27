@@ -101,7 +101,7 @@ export default function FundraisersPage() {
       <div className="dashboard-container">
         <div className="card">
           <div className="text-center py-12 space-y-4">
-            <p className="text-gray-600">Gagal memuat data fundraiser.</p>
+            <p className="text-gray-600">Gagal memuat data influencer.</p>
             <button className="btn btn-secondary btn-md" onClick={() => refetch()}>
               Coba lagi
             </button>
@@ -116,8 +116,8 @@ export default function FundraisersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Fundraisers</h1>
-          <p className="text-gray-600 mt-1">Kelola penggalang dana dan referral</p>
+          <h1 className="text-2xl font-bold text-gray-900">Influencer</h1>
+          <p className="text-gray-600 mt-1">Kelola influencer dan referral</p>
         </div>
         <button
           type="button"
@@ -125,7 +125,7 @@ export default function FundraisersPage() {
           onClick={() => router.push("/dashboard/fundraisers/create")}
         >
           <PlusIcon className="w-5 h-5" />
-          Tambah Fundraiser
+          Tambah Influencer
         </button>
       </div>
 
@@ -133,7 +133,7 @@ export default function FundraisersPage() {
       {statsData && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-sm text-gray-500">Total Fundraiser</div>
+            <div className="text-sm text-gray-500">Total Influencer</div>
             <div className="text-2xl font-bold text-gray-900">{statsData.totalFundraisers || 0}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -157,7 +157,7 @@ export default function FundraisersPage() {
           <input
             type="text"
             className="form-input flex-1"
-            placeholder="Cari kode fundraiser..."
+            placeholder="Cari kode influencer..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
           />
@@ -208,8 +208,8 @@ export default function FundraisersPage() {
               <tr>
                 <td colSpan={9} className="text-center py-12 text-gray-500">
                   {isFilterApplied
-                    ? "Tidak ada fundraiser yang sesuai filter"
-                    : "Belum ada fundraiser"}
+                    ? "Tidak ada influencer yang sesuai filter"
+                    : "Belum ada influencer"}
                 </td>
               </tr>
             ) : (
@@ -262,7 +262,7 @@ export default function FundraisersPage() {
       <div className="table-mobile-cards">
         {isEmptyState ? (
           <div className="text-center py-12 text-gray-500">
-            {isFilterApplied ? "Tidak ada fundraiser yang sesuai filter" : "Belum ada fundraiser"}
+            {isFilterApplied ? "Tidak ada influencer yang sesuai filter" : "Belum ada influencer"}
           </div>
         ) : (
           fundraisers.map((f: any) => (

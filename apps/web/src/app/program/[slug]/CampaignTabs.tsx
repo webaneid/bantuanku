@@ -19,7 +19,15 @@ interface ActivityReport {
   description: string;
   activityDate: string;
   gallery: string[] | null;
+  videoUrl: string | null;
+  typeSpecificData: Record<string, any> | null;
   createdAt: string;
+  // Address
+  detailAddress: string | null;
+  provinceName: string | null;
+  regencyName: string | null;
+  districtName: string | null;
+  villageName: string | null;
 }
 
 interface CampaignTabsProps {
@@ -28,6 +36,7 @@ interface CampaignTabsProps {
   campaignVideoUrl?: string | null;
   donorCount: number;
   coordinatorName?: string;
+  ownerName?: string;
 }
 
 export default function CampaignTabs({
@@ -36,14 +45,16 @@ export default function CampaignTabs({
   campaignVideoUrl,
   donorCount,
   coordinatorName,
+  ownerName,
 }: CampaignTabsProps) {
   const { t, locale } = useI18n();
-  const [activeTab, setActiveTab] = useState<'detail' | 'updates' | 'donors' | 'partners'>('detail');
+  const [activeTab, setActiveTab] = useState<'detail' | 'updates' | 'donors'>('detail');
   const [donations, setDonations] = useState<Donation[]>([]);
   const [activityReports, setActivityReports] = useState<ActivityReport[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [donationsPage, setDonationsPage] = useState(1);
   const [donationsTotalPages, setDonationsTotalPages] = useState(1);
+  const [lightbox, setLightbox] = useState<{ reportIndex: number; imageIndex: number } | null>(null);
   const localeTag = locale === 'id' ? 'id-ID' : 'en-US';
 
   // Fetch data when tabs are active
@@ -177,16 +188,6 @@ export default function CampaignTabs({
               {donorCount}
             </span>
           </button>
-          <button
-            onClick={() => setActiveTab('partners')}
-            className={`px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap ${
-              activeTab === 'partners'
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-            }`}
-          >
-            {t('campaignDetail.tabs.partners')}
-          </button>
         </nav>
       </div>
 
@@ -219,7 +220,7 @@ export default function CampaignTabs({
               <p className="text-sm text-gray-600">
                 {t('campaignDetail.tabs.coordinatorLabel')}{" "}
                 <span className="font-medium text-gray-900">
-                  {coordinatorName || t('campaignDetail.tabs.coordinatorUnset')}
+                  {coordinatorName || ownerName || t('campaignDetail.tabs.coordinatorUnset')}
                 </span>
               </p>
             </div>
@@ -253,68 +254,120 @@ export default function CampaignTabs({
               </div>
             ) : (
               <div className="space-y-8">
-                {activityReports.map((report, index) => (
-                  <div key={report.id} className="relative">
-                    {/* Timeline line */}
-                    {index !== activityReports.length - 1 && (
-                      <div className="absolute left-6 top-12 bottom-0 w-0.5 bg-gray-200"></div>
-                    )}
+                {activityReports.map((report, rIndex) => {
+                  const tsd = report.typeSpecificData || {};
+                  const addressParts = [
+                    report.detailAddress,
+                    report.villageName,
+                    report.districtName,
+                    report.regencyName,
+                    report.provinceName,
+                  ].filter(Boolean);
 
-                    {/* Timeline content */}
-                    <div className="flex gap-6">
-                      {/* Timeline dot */}
-                      <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center relative z-10">
-                        <svg
-                          className="w-6 h-6 text-primary-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
+                  return (
+                    <div key={report.id} className="relative">
+                      {/* Timeline line */}
+                      {rIndex !== activityReports.length - 1 && (
+                        <div className="absolute left-6 top-12 bottom-0 w-0.5 bg-gray-200"></div>
+                      )}
 
-                      {/* Content */}
-                      <div className="flex-1 pb-8">
-                        <div className="mb-2">
-                          <time className="text-sm text-gray-500 font-medium">
-                            {formatDate(report.activityDate)}
-                          </time>
+                      {/* Timeline content */}
+                      <div className="flex gap-6">
+                        {/* Timeline dot */}
+                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center relative z-10">
+                          <svg
+                            className="w-6 h-6 text-primary-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-3">
-                          {report.title}
-                        </h3>
-                        <div
-                          className="prose prose-gray max-w-none mb-4 text-gray-600"
-                          dangerouslySetInnerHTML={{ __html: report.description }}
-                        />
 
-                        {/* Gallery */}
-                        {report.gallery && report.gallery.length > 0 && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                            {report.gallery.map((imageUrl, imgIndex) => (
-                              <div
-                                key={imgIndex}
-                                className="relative aspect-video rounded-lg overflow-hidden bg-gray-100"
-                              >
-                                  <img
-                                  src={getImageUrlByVariant(imageUrl, ['large', 'medium'])}
-                                  alt={t('campaignDetail.tabs.photoAlt', { title: report.title, number: imgIndex + 1 })}
-                                  className="w-full h-full object-contain bg-gray-100"
-                                />
-                              </div>
-                            ))}
+                        {/* Content */}
+                        <div className="flex-1 pb-8">
+                          <div className="mb-2">
+                            <time className="text-sm text-gray-500 font-medium">
+                              {formatDate(report.activityDate)}
+                            </time>
                           </div>
-                        )}
+                          <h3 className="text-xl font-bold text-gray-900 mb-3">
+                            {report.title}
+                          </h3>
+
+                          {/* Meta: Lokasi & Penerima */}
+                          {(addressParts.length > 0 || tsd.beneficiary_count > 0) && (
+                            <div className="flex flex-wrap gap-x-6 gap-y-2 mb-4 text-sm text-gray-500">
+                              {addressParts.length > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                  <span>{addressParts.join(', ')}</span>
+                                </div>
+                              )}
+                              {tsd.beneficiary_count > 0 && (
+                                <div className="flex items-center gap-1.5">
+                                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                  </svg>
+                                  <span>{tsd.beneficiary_count} Penerima Manfaat</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          <div
+                            className="prose prose-gray max-w-none mb-4 text-gray-600"
+                            dangerouslySetInnerHTML={{ __html: report.description }}
+                          />
+
+                          {/* Video Embed */}
+                          {report.videoUrl && getYoutubeEmbedUrl(report.videoUrl) && (
+                            <div className="aspect-video w-full overflow-hidden rounded-lg bg-black mb-4">
+                              <iframe
+                                src={getYoutubeEmbedUrl(report.videoUrl)!}
+                                title={report.title}
+                                className="w-full h-full"
+                                loading="lazy"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                referrerPolicy="strict-origin-when-cross-origin"
+                                allowFullScreen
+                              />
+                            </div>
+                          )}
+
+                          {/* Gallery */}
+                          {report.gallery && report.gallery.length > 0 && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
+                              {report.gallery.map((imageUrl, imgIndex) => (
+                                <button
+                                  key={imgIndex}
+                                  type="button"
+                                  onClick={() => setLightbox({ reportIndex: rIndex, imageIndex: imgIndex })}
+                                  className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 cursor-pointer group"
+                                >
+                                  <img
+                                    src={getImageUrlByVariant(imageUrl, ['large', 'medium'])}
+                                    alt={t('campaignDetail.tabs.photoAlt', { title: report.title, number: imgIndex + 1 })}
+                                    className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -479,26 +532,78 @@ export default function CampaignTabs({
           </div>
         )}
 
-        {/* Partners Tab */}
-        {activeTab === 'partners' && (
-          <div className="text-center py-12">
-            <svg
-              className="w-16 h-16 mx-auto text-gray-400 mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
-            <p className="text-gray-600">{t('campaignDetail.tabs.noPartners')}</p>
-          </div>
-        )}
       </div>
+
+      {/* Image Lightbox */}
+      {lightbox !== null && (() => {
+        const report = activityReports[lightbox.reportIndex];
+        const images = report?.gallery || [];
+        if (images.length === 0) return null;
+        const imgIdx = lightbox.imageIndex;
+
+        return (
+          <div
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+            onClick={() => setLightbox(null)}
+          >
+            {/* Close */}
+            <button
+              type="button"
+              onClick={() => setLightbox(null)}
+              className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Previous */}
+            {images.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightbox({ ...lightbox, imageIndex: (imgIdx - 1 + images.length) % images.length });
+                }}
+                className="absolute left-4 text-white/80 hover:text-white z-10"
+              >
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+
+            {/* Image */}
+            <img
+              src={images[imgIdx]}
+              alt={`Gallery ${imgIdx + 1}`}
+              className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+
+            {/* Next */}
+            {images.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightbox({ ...lightbox, imageIndex: (imgIdx + 1) % images.length });
+                }}
+                className="absolute right-4 text-white/80 hover:text-white z-10"
+              >
+                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+
+            {/* Counter */}
+            <div className="absolute bottom-4 text-white/70 text-sm">
+              {imgIdx + 1} / {images.length}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

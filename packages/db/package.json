@@ -28,6 +28,7 @@
     "migrate:cleanup-employees": "tsx scripts/run-migration.ts migrations/019_cleanup_employees_legacy_address.sql",
     "migrate:vendors-address": "tsx scripts/run-migration.ts migrations/022_update_vendors_address.sql",
     "migrate:cleanup-vendors": "tsx scripts/run-migration.ts migrations/023_cleanup_vendors_legacy_address.sql",
+    "migrate:activity-reports-address": "tsx scripts/run-migration.ts migrations/106_update_activity_reports_address.sql",
     "migrate:zakat-campaign": "tsx scripts/run-migration.ts migrations/030_add_zakat_campaign.sql",
     "migrate:zakat-types": "tsx scripts/run-migration.ts migrations/031_update_zakat_types_active.sql",
     "manifest:run": "tsx scripts/run-production-manifest.ts",

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Header, Footer } from '@/components/organisms';
+import { Header, Footer, Breadcrumb } from '@/components/organisms';
 import { QurbanCard } from '@/components/organisms/QurbanCard/QurbanCard';
 import { fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrlByVariant, type QurbanPackage, type QurbanPeriod } from '@/services/qurban';
 import { fetchPublicSettings } from '@/services/settings';
@@ -171,6 +171,7 @@ export default function QurbanPage() {
   return (
     <>
       <Header />
+      <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Qurban' }]} />
       <main className="min-h-screen bg-gray-50">
         {/* Page Header */}
         <section className="py-12 bg-gradient-to-br from-amber-50 to-amber-100">

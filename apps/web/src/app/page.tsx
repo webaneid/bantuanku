@@ -496,21 +496,11 @@ export default async function HomePage() {
             </div>
 
             {campaigns.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 mb-8">
-                  {campaigns.slice(0, Math.min(3, programsSectionData.limit)).map((campaign) => (
-                    <ProgramCard key={campaign.id} {...mapCampaign(campaign)} />
-                  ))}
-                </div>
-
-                {campaigns.length > 3 && programsSectionData.limit > 3 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
-                    {campaigns.slice(3, programsSectionData.limit).map((campaign) => (
-                      <ProgramCard key={campaign.id} {...mapCampaign(campaign)} variant="compact" />
-                    ))}
-                  </div>
-                )}
-              </>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+                {campaigns.slice(0, programsSectionData.limit).map((campaign) => (
+                  <ProgramCard key={campaign.id} {...mapCampaign(campaign)} />
+                ))}
+              </div>
             ) : (
               <div className="text-center py-12">
                 <p className="text-gray-500">{t('home.programs.empty')}</p>
@@ -536,12 +526,14 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Qurban Packages */}
-        <QurbanSection
-          items={qurbanPackages}
-          title={qurbanSectionData.title}
-          description={qurbanSectionData.description}
-        />
+        {/* Qurban Packages — only show when packages exist */}
+        {qurbanPackages.length > 0 && (
+          <QurbanSection
+            items={qurbanPackages}
+            title={qurbanSectionData.title}
+            description={qurbanSectionData.description}
+          />
+        )}
 
         {/* Stats */}
         <section className="funfact-section py-16 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 text-white relative overflow-hidden rounded-xl">
@@ -640,28 +632,48 @@ export default async function HomePage() {
         </section>
 
         {/* CTA */}
-        <section className="cta-section py-20 bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-t-xl">
-          <div className="container text-center">
-            <h2 className="text-[1.3rem] leading-[1.3] font-bold mb-2">
-              {ctaSectionData.title}
-            </h2>
-            <p className="text-base leading-[1.4rem] text-gray-300 max-w-full mx-auto" style={{ marginBottom: '1rem' }}>
-              {ctaSectionData.description}
-            </p>
-            <div className="flex gap-4 justify-center flex-wrap mt-4">
-              {ctaSectionData.buttons.map((button, index) => (
-                <Link key={index} href={button.url}>
-                  {button.variant === 'primary' ? (
-                    <Button size="lg" className="bg-primary-500 hover:bg-primary-600">
-                      {button.text}
-                    </Button>
-                  ) : (
-                    <Button size="lg" variant="outline" style={{ borderColor: 'white', color: 'white' }}>
-                      {button.text}
-                    </Button>
-                  )}
-                </Link>
-              ))}
+        <section className="cta-section py-16 md:py-24 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 text-white relative overflow-hidden">
+          {/* Decorative elements */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-24 -left-24 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-400/10 rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="container relative z-10">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-16">
+              {/* Left: Text */}
+              <div className="flex-1 text-center lg:text-left">
+                <h2 className="section-title text-white">
+                  {ctaSectionData.title}
+                </h2>
+                <p className="text-base md:text-lg text-primary-100 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                  {ctaSectionData.description}
+                </p>
+              </div>
+
+              {/* Right: Buttons */}
+              <div className="flex flex-col gap-3 w-full sm:w-auto shrink-0">
+                {ctaSectionData.buttons.map((button, index) => (
+                  <Link key={index} href={button.url}>
+                    {button.variant === 'primary' ? (
+                      <Button size="lg" className="w-full sm:w-64 !bg-white !text-primary-700 hover:!bg-primary-50 font-bold shadow-lg shadow-black/10">
+                        {button.text}
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="ml-2">
+                          <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </Button>
+                    ) : (
+                      <Button size="lg" variant="outline" className="w-full sm:w-64 !border-white !text-white hover:!bg-white hover:!text-primary-700 font-bold">
+                        {button.text}
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="ml-2">
+                          <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </Button>
+                    )}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </section>

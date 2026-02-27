@@ -94,7 +94,7 @@ const allMenuItems = [
   },
   {
     icon: Megaphone,
-    label: "Fundraisers",
+    label: "Influencer",
     href: "/dashboard/fundraisers",
     roles: ["super_admin", "admin_finance", "admin_campaign"]
   },
@@ -147,14 +147,14 @@ const allMenuItems = [
       { label: "Saldo Titipan Dana", href: "/dashboard/reports/liability-balance", roles: ["super_admin", "admin_finance"] },
       { label: "Per Program", href: "/dashboard/reports/program", roles: ["super_admin", "admin_finance"] },
       { label: "Per Mitra", href: "/dashboard/reports/mitra", roles: ["super_admin", "admin_finance"] },
-      { label: "Per Fundraiser", href: "/dashboard/reports/fundraiser", roles: ["super_admin", "admin_finance"] },
+      { label: "Per Influencer", href: "/dashboard/reports/fundraiser", roles: ["super_admin", "admin_finance"] },
       { label: "Per Rekening", href: "/dashboard/reports/rekening", roles: ["super_admin", "admin_finance"] },
       { label: "Per Donatur", href: "/dashboard/reports/donatur", roles: ["super_admin", "admin_finance"] },
     ]
   },
   {
     icon: Megaphone,
-    label: "My Fundraiser",
+    label: "Influencer Saya",
     href: "/dashboard/my-fundraiser",
     roles: ["employee", "program_coordinator"],
   },

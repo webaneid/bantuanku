@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { Header, Footer, ProgramCard } from '@/components/organisms';
+import { Header, Footer, ProgramCard, Breadcrumb } from '@/components/organisms';
 import { fetchCampaignBySlug, fetchCampaigns, calculateDaysLeft, getImageUrl, getImageUrlByVariant } from '@/services/campaigns';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchCompleteAddress, formatCompleteAddress } from '@/services/address';
@@ -313,23 +313,11 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
 
       <main className="flex-1 bg-gray-50">
         {/* Breadcrumb */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="container py-3">
-            <nav className="flex items-center gap-2 text-sm text-gray-600">
-              <Link href="/" className="hover:text-primary-600">
-                {t('campaignDetail.breadcrumb.home')}
-              </Link>
-              <span>/</span>
-              <Link href="/program" className="hover:text-primary-600">
-                {t('campaignDetail.breadcrumb.program')}
-              </Link>
-              <span>/</span>
-              <span className="text-gray-900 font-medium line-clamp-1">
-                {campaign.title}
-              </span>
-            </nav>
-          </div>
-        </div>
+        <Breadcrumb items={[
+          { label: t('campaignDetail.breadcrumb.home'), href: '/' },
+          { label: t('campaignDetail.breadcrumb.program'), href: '/program' },
+          { label: campaign.title },
+        ]} />
 
         {/* Campaign Content */}
         <div className="container py-8 pb-24 lg:pb-8">
@@ -350,6 +338,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
                 campaignVideoUrl={campaign.videoUrl}
                 donorCount={campaign.donorCount || 0}
                 coordinatorName={campaign.coordinatorName}
+                ownerName={campaign.mitraName || campaign.organizationName || settings.organization_name}
               />
             </div>
 

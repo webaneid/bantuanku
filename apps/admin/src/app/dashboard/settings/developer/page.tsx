@@ -168,7 +168,7 @@ export default function DeveloperSettingsPage() {
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">Webane Indonesia</h2>
                 <p className="text-sm text-gray-600 mt-1">
-                  JalaBagi Versi 1.0.1 - Februari 2026
+                  JalaDana Versi 1.0.1 - Februari 2026
                 </p>
               </div>
             </div>
@@ -210,9 +210,9 @@ export default function DeveloperSettingsPage() {
         {isDeveloper && activeTab === "rekening" && (
           <div className="rounded-lg border border-gray-200 p-5 space-y-5">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Rekening Developer</h3>
+              <h3 className="text-base font-semibold text-gray-900">Rekening Platform Provider</h3>
               <p className="text-sm text-gray-600 mt-1">
-                Kelola rekening penerimaan developer.
+                Kelola rekening penerimaan platform provider.
               </p>
             </div>
 
@@ -244,7 +244,7 @@ export default function DeveloperSettingsPage() {
         {isDeveloper && activeTab === "pendapatan" && (
           <div className="rounded-lg border border-gray-200 p-5 space-y-5">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Pendapatan Developer</h3>
+              <h3 className="text-base font-semibold text-gray-900">Pendapatan Platform Provider</h3>
               <p className="text-sm text-gray-600 mt-1">
                 Periode bulanan dihitung dari tanggal 20 ke tanggal 20 bulan berikutnya.
               </p>

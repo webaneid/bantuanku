@@ -586,7 +586,7 @@ export default function CreateDisbursementPage() {
         { value: "operational", label: "Operational Expense - Biaya operasional umum" },
         { value: "vendor", label: "Vendor Payment - Pembayaran ke vendor" },
         ...(canManageRevenueShare
-          ? [{ value: "revenue_share", label: "Revenue Share - Pencairan bagi hasil mitra/fundraiser/developer" }]
+          ? [{ value: "revenue_share", label: "Revenue Share - Pencairan bagi hasil mitra/influencer/developer" }]
           : []),
       ];
 
@@ -1106,38 +1106,6 @@ export default function CreateDisbursementPage() {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Bank Sumber (Opsional)
-            </label>
-            <AdminPaymentMethodList
-              value={formData.source_bank_id}
-              onChange={(value) => setFormData({ ...formData, source_bank_id: value })}
-              types={["bank_transfer"]}
-              programFilter={(() => {
-                if (formData.disbursement_type === "campaign") {
-                  const campaign = campaigns.find((c: any) => c.id === formData.reference_id);
-                  const pillar = campaign?.pillar;
-                  if (pillar === "wakaf") return "wakaf";
-                  return "infaq";
-                } else if (formData.disbursement_type === "zakat") {
-                  return "zakat";
-                } else if (formData.disbursement_type === "qurban") {
-                  return "qurban";
-                } else {
-                  return "general";
-                }
-              })()}
-              placeholder="Pilih Bank Sumber"
-              allowClear={false}
-            />
-            {(formData.disbursement_type === "zakat" || formData.category?.startsWith("zakat_to_")) && (
-              <p className="text-sm text-orange-600 mt-1">
-                ⚠️ Zakat harus dari rekening zakat!
-              </p>
-            )}
-          </div>
-
           {/* STEP 5: Recipient */}
           <div className="border-t pt-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Penerima</h3>
@@ -1267,9 +1235,9 @@ export default function CreateDisbursementPage() {
                     {formData.category === "revenue_share_mitra"
                       ? "Mitra"
                       : formData.category === "revenue_share_fundraiser"
-                        ? "Fundraiser"
+                        ? "Influencer"
                         : formData.category === "revenue_share_developer"
-                          ? "Developer"
+                          ? "Platform Provider"
                           : "-"}
                   </p>
                 </div>
@@ -1381,7 +1349,7 @@ export default function CreateDisbursementPage() {
               {formData.recipient_type === "fundraiser" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pilih Fundraiser <span className="text-red-500">*</span>
+                    Pilih Influencer <span className="text-red-500">*</span>
                   </label>
                   <Autocomplete
                     options={fundraisers.map((f: any) => ({
@@ -1390,7 +1358,7 @@ export default function CreateDisbursementPage() {
                     }))}
                     value={formData.recipient_id}
                     onChange={handleFundraiserChange}
-                    placeholder="Pilih fundraiser"
+                    placeholder="Pilih influencer"
                     allowClear={false}
                   />
                 </div>

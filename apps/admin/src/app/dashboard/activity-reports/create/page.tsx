@@ -8,6 +8,7 @@ import Autocomplete from "@/components/Autocomplete";
 import RichTextEditor from "@/components/RichTextEditor";
 import MediaLibrary from "@/components/MediaLibrary";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import { AddressForm, type AddressValue } from "@/components/forms/AddressForm";
 import api from "@/lib/api";
 
 const referenceTypeOptions = [
@@ -31,6 +32,7 @@ export default function CreateActivityReportPage() {
   const [videoUrl, setVideoUrl] = useState("");
   const [status, setStatus] = useState("draft");
   const [typeSpecificData, setTypeSpecificData] = useState<any>({});
+  const [addressFormData, setAddressFormData] = useState<Partial<AddressValue>>({});
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [feedback, setFeedback] = useState({
     open: false,
@@ -161,7 +163,6 @@ export default function CreateActivityReportPage() {
         },
         total_animals: (stats.totalGoats || 0) + (stats.totalCows || 0),
         total_recipients: 0,
-        slaughter_location: "",
       });
     }
   }, [qurbanPeriodDetail]);
@@ -250,6 +251,7 @@ export default function CreateActivityReportPage() {
       videoUrl: videoUrl || undefined,
       typeSpecificData: Object.keys(typeSpecificData).length > 0 ? typeSpecificData : undefined,
       status,
+      ...addressFormData,
     });
   };
 
@@ -344,6 +346,13 @@ export default function CreateActivityReportPage() {
               />
             </div>
 
+            {/* Lokasi Kegiatan */}
+            <AddressForm
+              onChange={setAddressFormData}
+              required={false}
+              showTitle={true}
+            />
+
             {/* Type-Specific Fields */}
             {referenceType === "zakat_period" && (
               <div className="form-section">
@@ -385,16 +394,6 @@ export default function CreateActivityReportPage() {
                       onChange={(e) => setTypeSpecificData({ ...typeSpecificData, recipient_count: parseInt(e.target.value) || 0 })}
                       className="form-input"
                       placeholder="0"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Lokasi</label>
-                    <input
-                      type="text"
-                      value={typeSpecificData.location || ""}
-                      onChange={(e) => setTypeSpecificData({ ...typeSpecificData, location: e.target.value })}
-                      className="form-input"
-                      placeholder="Contoh: Jakarta Selatan"
                     />
                   </div>
                 </div>
@@ -459,16 +458,6 @@ export default function CreateActivityReportPage() {
                       placeholder="0"
                     />
                   </div>
-                  <div className="form-field">
-                    <label className="form-label">Lokasi Penyembelihan</label>
-                    <input
-                      type="text"
-                      value={typeSpecificData.slaughter_location || ""}
-                      onChange={(e) => setTypeSpecificData({ ...typeSpecificData, slaughter_location: e.target.value })}
-                      className="form-input"
-                      placeholder="Contoh: RPH Pondok Ranggon"
-                    />
-                  </div>
                 </div>
               </div>
             )}
@@ -485,16 +474,6 @@ export default function CreateActivityReportPage() {
                       onChange={(e) => setTypeSpecificData({ ...typeSpecificData, beneficiary_count: parseInt(e.target.value) || 0 })}
                       className="form-input"
                       placeholder="0"
-                    />
-                  </div>
-                  <div className="form-field">
-                    <label className="form-label">Lokasi Kegiatan</label>
-                    <input
-                      type="text"
-                      value={typeSpecificData.location || ""}
-                      onChange={(e) => setTypeSpecificData({ ...typeSpecificData, location: e.target.value })}
-                      className="form-input"
-                      placeholder="Contoh: Jakarta Timur"
                     />
                   </div>
                 </div>

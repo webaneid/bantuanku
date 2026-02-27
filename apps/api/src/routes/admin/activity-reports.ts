@@ -2,7 +2,17 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq, desc, and } from "drizzle-orm";
-import { activityReports, transactions, settings, createId } from "@bantuanku/db";
+import {
+  activityReports,
+  transactions,
+  settings,
+  createId,
+  indonesiaProvinces,
+  indonesiaRegencies,
+  indonesiaDistricts,
+  indonesiaVillages,
+  users,
+} from "@bantuanku/db";
 import { success, error } from "../../lib/response";
 import { requireRole } from "../../middleware/auth";
 import { WhatsAppService } from "../../services/whatsapp";
@@ -30,6 +40,13 @@ const createSchema = z.object({
   videoUrl: z.preprocess((val) => val === '' ? undefined : val, z.string().url("URL video tidak valid").optional()),
   typeSpecificData: z.record(z.any()).optional(),
   status: z.enum(["draft", "published"]).optional().default("draft"),
+  // Address - Indonesia Address System
+  detailAddress: z.string().optional(),
+  provinceCode: z.string().optional(),
+  regencyCode: z.string().optional(),
+  districtCode: z.string().optional(),
+  villageCode: z.string().optional(),
+  postalCode: z.string().optional().nullable(), // From AddressForm, not stored in DB
 });
 
 const updateSchema = createSchema.partial();
@@ -86,22 +103,63 @@ activityReportsAdmin.get("/:id", requireRole("super_admin", "admin_finance", "ad
   const user = c.get("user");
   const id = c.req.param("id");
 
-  const report = await db.query.activityReports.findFirst({
-    where: eq(activityReports.id, id),
-    with: {
-      creator: {
-        columns: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-    },
-  });
+  const results = await db
+    .select({
+      id: activityReports.id,
+      referenceType: activityReports.referenceType,
+      referenceId: activityReports.referenceId,
+      referenceName: activityReports.referenceName,
+      title: activityReports.title,
+      activityDate: activityReports.activityDate,
+      description: activityReports.description,
+      gallery: activityReports.gallery,
+      videoUrl: activityReports.videoUrl,
+      typeSpecificData: activityReports.typeSpecificData,
+      status: activityReports.status,
+      publishedAt: activityReports.publishedAt,
+      createdBy: activityReports.createdBy,
+      createdAt: activityReports.createdAt,
+      updatedAt: activityReports.updatedAt,
+      campaignId: activityReports.campaignId,
+      // Address fields
+      detailAddress: activityReports.detailAddress,
+      provinceCode: activityReports.provinceCode,
+      regencyCode: activityReports.regencyCode,
+      districtCode: activityReports.districtCode,
+      villageCode: activityReports.villageCode,
+      // Address names from joins
+      provinceName: indonesiaProvinces.name,
+      regencyName: indonesiaRegencies.name,
+      districtName: indonesiaDistricts.name,
+      villageName: indonesiaVillages.name,
+      villagePostalCode: indonesiaVillages.postalCode,
+      // Creator
+      creatorName: users.name,
+      creatorEmail: users.email,
+    })
+    .from(activityReports)
+    .leftJoin(indonesiaProvinces, eq(activityReports.provinceCode, indonesiaProvinces.code))
+    .leftJoin(indonesiaRegencies, eq(activityReports.regencyCode, indonesiaRegencies.code))
+    .leftJoin(indonesiaDistricts, eq(activityReports.districtCode, indonesiaDistricts.code))
+    .leftJoin(indonesiaVillages, eq(activityReports.villageCode, indonesiaVillages.code))
+    .leftJoin(users, eq(activityReports.createdBy, users.id))
+    .where(eq(activityReports.id, id))
+    .limit(1);
 
-  if (!report) {
+  if (!results || results.length === 0) {
     return error(c, "Activity report not found", 404);
   }
+
+  const row = results[0];
+
+  // Reshape to include nested creator object for backward compatibility
+  const report = {
+    ...row,
+    creator: row.creatorName ? { id: row.createdBy, name: row.creatorName, email: row.creatorEmail } : null,
+  };
+  // Remove flat creator fields
+  delete (report as any).creatorName;
+  delete (report as any).creatorEmail;
 
   // Program coordinator can only view their own reports
   const isCoordinator = user?.roles?.includes("program_coordinator") && !user?.roles?.includes("super_admin") && !user?.roles?.includes("admin_finance") && !user?.roles?.includes("admin_campaign");
@@ -136,6 +194,12 @@ activityReportsAdmin.post("/", requireRole("super_admin", "admin_campaign", "pro
       createdBy: user.id,
       createdAt: new Date(),
       updatedAt: new Date(),
+      // Address fields
+      detailAddress: body.detailAddress || null,
+      provinceCode: body.provinceCode || null,
+      regencyCode: body.regencyCode || null,
+      districtCode: body.districtCode || null,
+      villageCode: body.villageCode || null,
     })
     .returning();
 
@@ -217,6 +281,12 @@ activityReportsAdmin.put("/:id", requireRole("super_admin", "admin_campaign", "p
   if (body.gallery !== undefined) updateData.gallery = body.gallery;
   if (body.videoUrl !== undefined) updateData.videoUrl = body.videoUrl;
   if (body.typeSpecificData !== undefined) updateData.typeSpecificData = body.typeSpecificData;
+  // Address fields
+  if (body.detailAddress !== undefined) updateData.detailAddress = body.detailAddress || null;
+  if (body.provinceCode !== undefined) updateData.provinceCode = body.provinceCode || null;
+  if (body.regencyCode !== undefined) updateData.regencyCode = body.regencyCode || null;
+  if (body.districtCode !== undefined) updateData.districtCode = body.districtCode || null;
+  if (body.villageCode !== undefined) updateData.villageCode = body.villageCode || null;
   if (body.status) {
     updateData.status = body.status;
     updateData.publishedAt = body.status === "published" ? new Date() : null;

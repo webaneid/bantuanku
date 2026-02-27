@@ -123,6 +123,7 @@ app.get("/periods/:id/detail", async (c) => {
           and(
             eq(transactions.productType, "qurban"),
             inArray(transactions.productId, packagePeriodIds),
+            eq(transactions.paymentStatus, "paid"),
             sql<boolean>`coalesce((${transactions.typeSpecificData} ->> 'is_admin_fee_entry')::boolean, false) = false`
           )
         )
@@ -171,7 +172,7 @@ app.get("/periods/:id/detail", async (c) => {
     };
   });
 
-  // Calculate stats
+  // Calculate stats (all orders are paid-only)
   const totalOrders = orders.length;
 
   // Kambing: sum quantity
@@ -190,8 +191,6 @@ app.get("/periods/:id/detail", async (c) => {
   ).size;
   const totalCows = individualCows + uniqueSharedGroups;
 
-  const paidOrders = orders.filter((o: any) => o.payment_status === "paid").length;
-  const pendingOrders = orders.filter((o: any) => o.payment_status === "pending" || o.payment_status === "partial").length;
   const totalRevenue = orders.reduce((sum: number, o: any) => sum + Number(o.price), 0);
 
   return c.json({
@@ -202,8 +201,6 @@ app.get("/periods/:id/detail", async (c) => {
       totalGoats,
       totalCows,
       totalRevenue,
-      paidOrders,
-      pendingOrders,
     },
   });
 });
@@ -2402,6 +2399,251 @@ app.get("/periods/:id/summary", async (c) => {
       availableAdmin: collectedAdmin - disbursedAdmin,
     },
   });
+});
+
+// ============================================================
+// EXECUTIONS (Penyembelihan) CRUD
+// ============================================================
+
+// Get executions for a period
+app.get("/executions", async (c) => {
+  const db = c.get("db");
+  const periodId = c.req.query("period_id");
+
+  if (!periodId) {
+    return c.json({ error: "period_id is required" }, 400);
+  }
+
+  // Get all package_period_ids for this period
+  const packagePeriods = await db
+    .select({ id: qurbanPackagePeriods.id })
+    .from(qurbanPackagePeriods)
+    .where(eq(qurbanPackagePeriods.periodId, periodId));
+
+  const ppIds = packagePeriods.map((pp) => pp.id);
+  if (ppIds.length === 0) {
+    return c.json({ data: [] });
+  }
+
+  // Get shared groups for this period
+  const groups = await db
+    .select()
+    .from(qurbanSharedGroups)
+    .where(inArray(qurbanSharedGroups.packagePeriodId, ppIds));
+
+  const groupIds = groups.map((g) => g.id);
+
+  // Get paid transactions for this period
+  const paidTransactions = await db
+    .select({ id: transactions.id })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.productType, "qurban"),
+        inArray(transactions.productId, ppIds),
+        eq(transactions.paymentStatus, "paid"),
+        sql<boolean>`coalesce((${transactions.typeSpecificData} ->> 'is_admin_fee_entry')::boolean, false) = false`
+      )
+    );
+
+  const txIds = paidTransactions.map((t) => t.id);
+
+  // Get all executions matching either shared groups or transactions
+  const conditions: any[] = [];
+  if (groupIds.length > 0) {
+    conditions.push(inArray(qurbanExecutions.sharedGroupId, groupIds));
+  }
+  if (txIds.length > 0) {
+    conditions.push(inArray(qurbanExecutions.transactionId, txIds));
+  }
+
+  if (conditions.length === 0) {
+    return c.json({ data: [] });
+  }
+
+  // Build OR condition for matching by group OR transaction
+  const { or } = await import("drizzle-orm");
+  const orCondition = conditions.length === 1 ? conditions[0] : or(...conditions);
+
+  const executions = await db
+    .select({
+      id: qurbanExecutions.id,
+      executionNumber: qurbanExecutions.executionNumber,
+      sharedGroupId: qurbanExecutions.sharedGroupId,
+      transactionId: qurbanExecutions.transactionId,
+      executionDate: qurbanExecutions.executionDate,
+      location: qurbanExecutions.location,
+      butcherName: qurbanExecutions.butcherName,
+      animalType: qurbanExecutions.animalType,
+      animalWeight: qurbanExecutions.animalWeight,
+      animalCondition: qurbanExecutions.animalCondition,
+      distributionMethod: qurbanExecutions.distributionMethod,
+      distributionNotes: qurbanExecutions.distributionNotes,
+      photos: qurbanExecutions.photos,
+      videoUrl: qurbanExecutions.videoUrl,
+      recipientCount: qurbanExecutions.recipientCount,
+      recipientList: qurbanExecutions.recipientList,
+      executedBy: qurbanExecutions.executedBy,
+      createdAt: qurbanExecutions.createdAt,
+      executorName: users.name,
+    })
+    .from(qurbanExecutions)
+    .leftJoin(users, eq(qurbanExecutions.executedBy, users.id))
+    .where(orCondition)
+    .orderBy(desc(qurbanExecutions.executionDate));
+
+  return c.json({ data: executions });
+});
+
+// Get single execution detail
+app.get("/executions/:id", async (c) => {
+  const db = c.get("db");
+  const { id } = c.req.param();
+
+  const execution = await db
+    .select({
+      id: qurbanExecutions.id,
+      executionNumber: qurbanExecutions.executionNumber,
+      sharedGroupId: qurbanExecutions.sharedGroupId,
+      transactionId: qurbanExecutions.transactionId,
+      executionDate: qurbanExecutions.executionDate,
+      location: qurbanExecutions.location,
+      butcherName: qurbanExecutions.butcherName,
+      animalType: qurbanExecutions.animalType,
+      animalWeight: qurbanExecutions.animalWeight,
+      animalCondition: qurbanExecutions.animalCondition,
+      distributionMethod: qurbanExecutions.distributionMethod,
+      distributionNotes: qurbanExecutions.distributionNotes,
+      photos: qurbanExecutions.photos,
+      videoUrl: qurbanExecutions.videoUrl,
+      recipientCount: qurbanExecutions.recipientCount,
+      recipientList: qurbanExecutions.recipientList,
+      executedBy: qurbanExecutions.executedBy,
+      createdAt: qurbanExecutions.createdAt,
+      executorName: users.name,
+    })
+    .from(qurbanExecutions)
+    .leftJoin(users, eq(qurbanExecutions.executedBy, users.id))
+    .where(eq(qurbanExecutions.id, id))
+    .limit(1);
+
+  if (execution.length === 0) {
+    return c.json({ error: "Execution not found" }, 404);
+  }
+
+  return c.json({ data: execution[0] });
+});
+
+// Create execution record
+app.post("/executions", requireRole("super_admin", "admin_campaign"), async (c) => {
+  const db = c.get("db");
+  const user = c.get("user");
+  const body = await c.req.json();
+
+  // Validate: one of shared_group_id or transaction_id must be set
+  if (!body.shared_group_id && !body.transaction_id) {
+    return c.json({ error: "Either shared_group_id or transaction_id is required" }, 400);
+  }
+
+  if (!body.execution_date || !body.location || !body.animal_type) {
+    return c.json({ error: "execution_date, location, and animal_type are required" }, 400);
+  }
+
+  // Check for duplicate execution
+  if (body.shared_group_id) {
+    const existing = await db
+      .select({ id: qurbanExecutions.id })
+      .from(qurbanExecutions)
+      .where(eq(qurbanExecutions.sharedGroupId, body.shared_group_id))
+      .limit(1);
+    if (existing.length > 0) {
+      return c.json({ error: "Penyembelihan untuk grup ini sudah dicatat" }, 400);
+    }
+  }
+  if (body.transaction_id) {
+    const existing = await db
+      .select({ id: qurbanExecutions.id })
+      .from(qurbanExecutions)
+      .where(eq(qurbanExecutions.transactionId, body.transaction_id))
+      .limit(1);
+    if (existing.length > 0) {
+      return c.json({ error: "Penyembelihan untuk transaksi ini sudah dicatat" }, 400);
+    }
+  }
+
+  // Generate execution number
+  const year = getCurrentYearWIB();
+  const countResult = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(qurbanExecutions)
+    .where(sql`extract(year from ${qurbanExecutions.createdAt}) = ${year}`);
+  const seq = (Number(countResult[0]?.count) || 0) + 1;
+  const executionNumber = `EXE-QBN-${year}-${String(seq).padStart(5, "0")}`;
+
+  const photosJson = body.photos ? JSON.stringify(body.photos) : null;
+  const recipientListJson = body.recipient_list ? JSON.stringify(body.recipient_list) : null;
+
+  const newExecution = await db
+    .insert(qurbanExecutions)
+    .values({
+      executionNumber,
+      sharedGroupId: body.shared_group_id || null,
+      transactionId: body.transaction_id || null,
+      executionDate: new Date(body.execution_date),
+      location: body.location,
+      butcherName: body.butcher_name || null,
+      animalType: body.animal_type,
+      animalWeight: body.animal_weight || null,
+      animalCondition: body.animal_condition || null,
+      distributionMethod: body.distribution_method || null,
+      distributionNotes: body.distribution_notes || null,
+      photos: photosJson,
+      videoUrl: body.video_url || null,
+      recipientCount: body.recipient_count || null,
+      recipientList: recipientListJson,
+      executedBy: user?.id || null,
+    })
+    .returning();
+
+  // Update shared group status to "executed" if applicable
+  if (body.shared_group_id) {
+    await db
+      .update(qurbanSharedGroups)
+      .set({ status: "executed", updatedAt: new Date() })
+      .where(eq(qurbanSharedGroups.id, body.shared_group_id));
+  }
+
+  return c.json({ data: newExecution[0], message: "Penyembelihan berhasil dicatat" });
+});
+
+// Delete execution record
+app.delete("/executions/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
+  const db = c.get("db");
+  const { id } = c.req.param();
+
+  const execution = await db
+    .select()
+    .from(qurbanExecutions)
+    .where(eq(qurbanExecutions.id, id))
+    .limit(1);
+
+  if (execution.length === 0) {
+    return c.json({ error: "Execution not found" }, 404);
+  }
+
+  // Revert shared group status if needed
+  if (execution[0].sharedGroupId) {
+    await db
+      .update(qurbanSharedGroups)
+      .set({ status: "confirmed", updatedAt: new Date() })
+      .where(eq(qurbanSharedGroups.id, execution[0].sharedGroupId));
+  }
+
+  await db
+    .delete(qurbanExecutions)
+    .where(eq(qurbanExecutions.id, id));
+
+  return c.json({ message: "Data penyembelihan berhasil dihapus" });
 });
 
 export default app;

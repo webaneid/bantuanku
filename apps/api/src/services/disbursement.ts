@@ -358,46 +358,8 @@ export class DisbursementService {
     const normalizedCategory = this.normalizeCategory(data.disbursement_type, data.category);
     this.validateCategory(data.disbursement_type, normalizedCategory);
 
-    let bankAccount: any = null;
-    if (data.source_bank_id) {
-      // Validate bank account exists - check from settings JSON
-      const allSettings = await this.db.query.settings.findMany();
-      const paymentSettings = allSettings.filter((s: any) => s.category === "payment");
-      const bankAccountsSetting = paymentSettings.find((s: any) => s.key === "payment_bank_accounts");
-
-      let bankAccounts: any[] = [];
-      if (bankAccountsSetting?.value) {
-        try {
-          bankAccounts = JSON.parse(bankAccountsSetting.value);
-        } catch (e) {
-          throw new Error("Failed to parse bank accounts from settings");
-        }
-      }
-
-      bankAccount = bankAccounts.find((b: any) => b.id === data.source_bank_id);
-      if (!bankAccount) {
-        throw new Error(`Bank account not found with ID: ${data.source_bank_id}`);
-      }
-
-      if (!bankAccount.coaCode || String(bankAccount.coaCode).trim().length === 0) {
-        throw new Error("COA rekening sumber belum diset. Lengkapi COA pada pengaturan metode pembayaran.");
-      }
-
-      const sourceCoa = await this.db.query.chartOfAccounts.findFirst({
-        where: eq(chartOfAccounts.code, String(bankAccount.coaCode)),
-      });
-      if (!sourceCoa) {
-        throw new Error(`COA rekening sumber tidak ditemukan: ${bankAccount.coaCode}`);
-      }
-
-      // CRITICAL: Validate zakat source bank
-      if (data.disbursement_type === "zakat" || normalizedCategory?.startsWith("zakat_to_")) {
-        const programs = bankAccount.programs || [];
-        if (!programs.includes("zakat")) {
-          throw new Error("Zakat disbursements must use a zakat-designated bank account");
-        }
-      }
-    }
+    // Source bank is now selected by admin finance during mark-as-paid step,
+    // not during creation. Validation moved to markAsPaid().
 
     if (data.disbursement_type === "revenue_share") {
       this.validateRevenueShareRecipient(normalizedCategory, data.recipient_type, data.recipient_id);
@@ -416,10 +378,10 @@ export class DisbursementService {
       amount: data.amount,
       transactionType: "expense",
       category: normalizedCategory,
-      bankAccountId: data.source_bank_id || "pending_source_bank", // Legacy field (NOT NULL)
-      sourceBankId: data.source_bank_id || null,
-      sourceBankName: bankAccount?.bankName || null,
-      sourceBankAccount: bankAccount?.accountNumber || null,
+      bankAccountId: "pending_source_bank", // Legacy field (NOT NULL), set during mark-as-paid
+      sourceBankId: null, // Set during mark-as-paid by admin finance
+      sourceBankName: null,
+      sourceBankAccount: null,
       recipientType: data.recipient_type,
       recipientId: data.recipient_id,
       recipientName: data.recipient_name,
@@ -580,9 +542,23 @@ export class DisbursementService {
       throw new Error(`COA rekening sumber tidak ditemukan: ${bankAccount.coaCode}`);
     }
 
-    // Update disbursement status to paid
+    // Validate zakat disbursements must use zakat-designated bank account
+    const normalizedCategory = existing.category || "";
+    if (existing.disbursementType === "zakat" || normalizedCategory.startsWith("zakat_to_")) {
+      const programs = bankAccount.programs || [];
+      if (!programs.includes("zakat")) {
+        throw new Error("Pencairan zakat harus menggunakan rekening zakat");
+      }
+    }
+
+    // Update disbursement status to paid + set source bank info
     const updateData: any = {
       status: "paid",
+      // Source bank info — set here by admin finance
+      bankAccountId: data.destination_bank_id,
+      sourceBankId: data.destination_bank_id,
+      sourceBankName: bankAccount.bankName || null,
+      sourceBankAccount: bankAccount.accountNumber || null,
       destinationBankId: data.destination_bank_id,
       transferProofUrl: data.transfer_proof_url,
       transferDate: data.transfer_date,

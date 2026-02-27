@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
-import { Header, Footer } from '@/components/organisms';
+import { Header, Footer, Breadcrumb } from '@/components/organisms';
 import { fetchZakatTypes, type ZakatType } from '@/services/zakat';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
@@ -198,6 +198,7 @@ export default async function ZakatPage() {
         ])
       ) }} />
       <Header />
+      <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Zakat' }]} />
       <main className="min-h-screen bg-gray-50">
         {/* Page Header */}
         <section className="py-12 bg-gradient-to-br from-emerald-50 to-emerald-100">

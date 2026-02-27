@@ -42,12 +42,12 @@ export const pengenalanDoc: DocumentationPage = {
                 '<ul>' +
                 '<li>✅ Multi-gateway pembayaran (Flip, iPaymu, Midtrans, Xendit, Manual, QRIS)</li>' +
                 '<li>✅ Double-entry ledger & Chart of Accounts</li>' +
-                '<li>✅ Revenue sharing otomatis (Amil, Developer, Fundraiser, Mitra)</li>' +
+                '<li>✅ Revenue sharing otomatis (Amil, Platform Provider, Influencer, Mitra)</li>' +
                 '<li>✅ RBAC — 6 role: super_admin, admin_finance, admin_campaign, program_coordinator, employee, mitra</li>' +
                 '<li>✅ Kalkulator zakat lengkap (penghasilan, maal, emas, perdagangan, fitrah, fidyah)</li>' +
                 '<li>✅ Sistem qurban (tabungan, cicilan, grup patungan, eksekusi)</li>' +
                 '<li>✅ Mitra / lembaga partner dengan data ownership</li>' +
-                '<li>✅ Fundraiser referral system dengan komisi</li>' +
+                '<li>✅ Influencer referral system dengan komisi</li>' +
                 '<li>✅ WhatsApp AI bot & notifikasi</li>' +
                 '<li>✅ Media library, SEO, sitemap, multi-bahasa</li>' +
                 '<li>✅ Laporan keuangan, export CSV/XLSX, audit log</li>' +

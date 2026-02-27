@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Header, Footer } from "@/components/organisms";
+import { Header, Footer, Breadcrumb } from "@/components/organisms";
 import { getImageUrl } from "@/lib/image";
 import { fetchPageBySlug } from "@/services/pages";
 import { fetchCampaigns } from "@/services/campaigns";
@@ -280,17 +280,10 @@ export default async function StaticPage({ params }: StaticPageProps) {
         <Header />
 
         <main className="flex-1 bg-gray-50">
-          <div className="bg-white border-b border-gray-200">
-            <div className="container py-3">
-              <nav className="flex items-center gap-2 text-sm text-gray-600">
-                <Link href="/" className="hover:text-primary-600">
-                  Beranda
-                </Link>
-                <span>/</span>
-                <span className="text-gray-900 font-medium line-clamp-1">{page.title}</span>
-              </nav>
-            </div>
-          </div>
+          <Breadcrumb items={[
+            { label: 'Beranda', href: '/' },
+            { label: page.title },
+          ]} />
 
         <div className="container py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

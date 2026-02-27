@@ -167,11 +167,11 @@ export default function MyFundraiserPage() {
       return api.post("/admin/fundraisers/me/apply", {});
     },
     onSuccess: () => {
-      toast.success("Pengajuan fundraiser berhasil dikirim! Menunggu persetujuan admin.");
+      toast.success("Pengajuan influencer berhasil dikirim! Menunggu persetujuan admin.");
       queryClient.invalidateQueries({ queryKey: ["my-fundraiser"] });
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || "Gagal mengajukan fundraiser");
+      toast.error(err.response?.data?.message || "Gagal mengajukan influencer");
     },
   });
 
@@ -220,7 +220,7 @@ export default function MyFundraiserPage() {
     return (
       <div className="dashboard-container">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">My Fundraiser</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Influencer Saya</h1>
           <p className="text-gray-600 mt-1">Dashboard penggalang dana Anda</p>
         </div>
 
@@ -232,10 +232,10 @@ export default function MyFundraiserPage() {
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Belum Terdaftar sebagai Fundraiser
+              Belum Terdaftar sebagai Influencer
             </h2>
             <p className="text-gray-600">
-              Ajukan diri Anda sebagai fundraiser untuk mulai mendapatkan komisi dari setiap donasi yang masuk melalui link referral Anda.
+              Ajukan diri Anda sebagai influencer untuk mulai mendapatkan komisi dari setiap donasi yang masuk melalui link referral Anda.
             </p>
           </div>
 
@@ -248,7 +248,7 @@ export default function MyFundraiserPage() {
                 onClick={() => applyMutation.mutate()}
                 disabled={applyMutation.isPending}
               >
-                {applyMutation.isPending ? "Mengirim..." : "Daftar sebagai Fundraiser"}
+                {applyMutation.isPending ? "Mengirim..." : "Daftar sebagai Influencer"}
               </button>
             </div>
           ) : (
@@ -276,7 +276,7 @@ export default function MyFundraiserPage() {
                 >
                   {saveBankMutation.isPending || applyMutation.isPending
                     ? "Memproses..."
-                    : "Simpan Rekening & Daftar Fundraiser"}
+                    : "Simpan Rekening & Daftar Influencer"}
                 </button>
               </div>
             </div>
@@ -299,7 +299,7 @@ export default function MyFundraiserPage() {
     <div className="dashboard-container">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Fundraiser</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Influencer Saya</h1>
         <p className="text-gray-600 mt-1">Dashboard penggalang dana Anda</p>
       </div>
 
@@ -307,7 +307,7 @@ export default function MyFundraiserPage() {
       {fundraiser.status === "pending" && (
         <div className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-warning-800">
-            Pengajuan fundraiser Anda sedang menunggu persetujuan admin. Anda akan mendapatkan link referral setelah disetujui.
+            Pengajuan influencer Anda sedang menunggu persetujuan admin. Anda akan mendapatkan link referral setelah disetujui.
           </p>
         </div>
       )}
@@ -316,7 +316,7 @@ export default function MyFundraiserPage() {
       {fundraiser.status === "suspended" && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-red-800">
-            Akun fundraiser Anda sedang ditangguhkan. Hubungi admin untuk informasi lebih lanjut.
+            Akun influencer Anda sedang ditangguhkan. Hubungi admin untuk informasi lebih lanjut.
           </p>
         </div>
       )}
@@ -333,7 +333,7 @@ export default function MyFundraiserPage() {
             </div>
           </div>
           <div className="text-right">
-            <span className="text-sm text-gray-500">Kode Fundraiser</span>
+            <span className="text-sm text-gray-500">Kode Influencer</span>
             <div className="text-2xl font-bold font-mono text-primary-600">{fundraiser.code}</div>
           </div>
         </div>
@@ -580,7 +580,7 @@ export default function MyFundraiserPage() {
           listEndpoint="/admin/fundraisers/me/disbursements"
           createEndpoint="/admin/fundraisers/me/disbursements"
           disbursementTypeLabel="Revenue Share"
-          categoryLabel="Pencairan Komisi Fundraiser"
+          categoryLabel="Pencairan Komisi Influencer"
           queryKeyPrefix="my-fundraiser-disbursements"
         />
       )}

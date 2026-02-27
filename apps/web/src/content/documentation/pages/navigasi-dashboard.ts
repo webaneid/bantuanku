@@ -48,7 +48,7 @@ export const navigasiDashboardDoc: DocumentationPage = {
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Pages</td><td style="padding:10px; border:1px solid #e5e7eb;">CMS halaman statis</td></tr>' +
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Laporan Kegiatan</td><td style="padding:10px; border:1px solid #e5e7eb;">Activity reports untuk disbursement</td></tr>' +
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Transactions</td><td style="padding:10px; border:1px solid #e5e7eb;">Semua transaksi masuk (campaign, zakat, qurban)</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Fundraisers</td><td style="padding:10px; border:1px solid #e5e7eb;">Kelola fundraiser dan komisi referral</td></tr>' +
+                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Influencer</td><td style="padding:10px; border:1px solid #e5e7eb;">Kelola influencer dan komisi referral</td></tr>' +
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Profile</td><td style="padding:10px; border:1px solid #e5e7eb;">Profil pengguna yang sedang login</td></tr>' +
                 '</tbody></table>' +
                 '<p>Menu tambahan tersedia di dashboard tergantung role: <em>Donatur, Users, Ledger, Master, Mitra, Disbursements, Reports, Settings</em>, dan lainnya.</p>',
