@@ -57,6 +57,7 @@ export class FlipAdapter implements PaymentGatewayAdapter {
       sender_email: request.donorEmail || "donor@bantuanku.org",
       sender_phone_number: request.donorPhone || "08123456789",
       expired_date: `${expiredDate.getFullYear()}-${String(expiredDate.getMonth() + 1).padStart(2, '0')}-${String(expiredDate.getDate()).padStart(2, '0')} ${String(expiredDate.getHours()).padStart(2, '0')}:${String(expiredDate.getMinutes()).padStart(2, '0')}`,
+      charge_fee: "1", // Charge transaction fee to customer/donor
     });
 
     try {
