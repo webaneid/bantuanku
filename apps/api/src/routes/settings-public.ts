@@ -1,6 +1,13 @@
 import { Hono } from "hono";
-import { eq, or } from "drizzle-orm";
-import { settings, bankAccounts } from "@bantuanku/db";
+import { eq, or, inArray } from "drizzle-orm";
+import {
+  settings,
+  bankAccounts,
+  indonesiaProvinces,
+  indonesiaRegencies,
+  indonesiaDistricts,
+  indonesiaVillages,
+} from "@bantuanku/db";
 import { success } from "../lib/response";
 import type { Env, Variables } from "../types";
 
@@ -30,6 +37,41 @@ settingsPublic.get("/", async (c) => {
     } else {
       settingsMap[s.key] = s.value;
     }
+  }
+
+  // Resolve address names from codes
+  const provinceCode = settingsMap.organization_province_code as string | undefined;
+  const regencyCode = settingsMap.organization_regency_code as string | undefined;
+  const districtCode = settingsMap.organization_district_code as string | undefined;
+  const villageCode = settingsMap.organization_village_code as string | undefined;
+
+  if (provinceCode) {
+    const row = await db.query.indonesiaProvinces.findFirst({
+      where: eq(indonesiaProvinces.code, provinceCode),
+      columns: { name: true },
+    });
+    if (row) settingsMap.organization_province_name = row.name;
+  }
+  if (regencyCode) {
+    const row = await db.query.indonesiaRegencies.findFirst({
+      where: eq(indonesiaRegencies.code, regencyCode),
+      columns: { name: true },
+    });
+    if (row) settingsMap.organization_regency_name = row.name;
+  }
+  if (districtCode) {
+    const row = await db.query.indonesiaDistricts.findFirst({
+      where: eq(indonesiaDistricts.code, districtCode),
+      columns: { name: true },
+    });
+    if (row) settingsMap.organization_district_name = row.name;
+  }
+  if (villageCode) {
+    const row = await db.query.indonesiaVillages.findFirst({
+      where: eq(indonesiaVillages.code, villageCode),
+      columns: { name: true },
+    });
+    if (row) settingsMap.organization_village_name = row.name;
   }
 
   return success(c, settingsMap);

@@ -31,6 +31,10 @@ export interface PublicSettings {
   organization_regency_code?: string;
   organization_district_code?: string;
   organization_village_code?: string;
+  organization_province_name?: string;
+  organization_regency_name?: string;
+  organization_district_name?: string;
+  organization_village_name?: string;
   gold_price_per_gram?: number;
   zakat_fitrah_amount?: number;
   fidyah_amount_per_day?: number;

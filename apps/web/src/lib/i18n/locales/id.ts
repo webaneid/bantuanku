@@ -739,7 +739,7 @@ export const idMessages: Messages = {
     fallbackTerms2:
       "Invoice ini adalah bukti transaksi yang sah dan dapat digunakan untuk keperluan administrasi.",
     fallbackTerms3:
-      "Untuk pertanyaan lebih lanjut, silakan hubungi kami di info@bantuanku.id",
+      "Untuk pertanyaan lebih lanjut, silakan hubungi kami melalui kontak yang tersedia.",
     statusPending: "Menunggu Pembayaran",
     statusProcessing: "Sedang Diverifikasi",
     statusPaid: "Lunas",

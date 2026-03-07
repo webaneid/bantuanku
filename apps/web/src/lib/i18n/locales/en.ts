@@ -738,7 +738,7 @@ export const enMessages: Messages = {
     fallbackTerms1: "Thank you for your donation through Bantuanku platform.",
     fallbackTerms2:
       "This invoice is a valid transaction proof for administration purposes.",
-    fallbackTerms3: "For further questions, contact us at info@bantuanku.id",
+    fallbackTerms3: "For further questions, please contact us through the available channels.",
     statusPending: "Pending Payment",
     statusProcessing: "Being Verified",
     statusPaid: "Paid",

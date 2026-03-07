@@ -224,15 +224,26 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                 <div className="mb-4">
                   <img
                     src={invoiceLogoSrc}
-                    alt={settings.site_name || 'Bantuanku'}
+                    alt={settings.organization_name || 'Bantuanku'}
                     className="h-12 w-auto mb-2 object-contain"
                   />
+                  {settings.organization_name && (
+                    <p className="font-semibold text-gray-900">{settings.organization_name}</p>
+                  )}
                 </div>
                 <div className="text-sm text-gray-700 space-y-1">
-                  <p>Jl. Contoh Alamat No. 123</p>
-                  <p>Jakarta, Indonesia 12345</p>
-                  <p>Email: info@bantuanku.id</p>
-                  <p>Telp: (021) 1234-5678</p>
+                  {settings.organization_detail_address && <p>{settings.organization_detail_address}</p>}
+                  {(() => {
+                    const parts = [
+                      settings.organization_village_name,
+                      settings.organization_district_name,
+                      settings.organization_regency_name,
+                      settings.organization_province_name,
+                    ].filter(Boolean);
+                    return parts.length > 0 ? <p>{parts.join(', ')}</p> : null;
+                  })()}
+                  {settings.organization_email && <p>Email: {settings.organization_email}</p>}
+                  {settings.organization_phone && <p>Telp: {settings.organization_phone}</p>}
                 </div>
               </div>
 
