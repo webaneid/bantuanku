@@ -46,3 +46,5 @@ export * from "./fundraiser";
 export * from "./fundraiser-referrals";
 export * from "./mitra";
 export * from "./revenue-shares";
+export * from "./job-categories";
+export * from "./income-ranges";

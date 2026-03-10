@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -170,6 +171,28 @@ export default function FundraiserPage() {
     return status;
   };
 
+  const { data: profileData } = useQuery({
+    queryKey: ["profile-me"],
+    queryFn: async () => {
+      const res = await api.get("/auth/me");
+      return res.data.data;
+    },
+    enabled: isHydrated && !!user,
+  });
+
+  const profileFields = ["name", "phone", "whatsappNumber", "detailAddress", "provinceCode", "jobTitleId", "incomeRangeId", "nik", "birthPlace", "birthDate", "gender"] as const;
+  const profileFilled = profileData
+    ? profileFields.filter((k) => { const v = profileData[k]; return v !== null && v !== undefined && v !== ""; }).length
+    : 0;
+  const profileComplete = profileFilled === profileFields.length;
+
+  // Mandatory fields for active influencer to use referral
+  const referralRequiredFields = ["nik", "birthPlace", "birthDate", "jobTitleId", "incomeRangeId"] as const;
+  const referralFieldsFilled = profileData
+    ? referralRequiredFields.filter((k) => { const v = profileData[k]; return v !== null && v !== undefined && v !== ""; }).length
+    : 0;
+  const referralDataComplete = referralFieldsFilled === referralRequiredFields.length;
+
   const { data: fundraiser, isLoading, isError } = useQuery<Fundraiser>({
     queryKey: ["fundraiser-me"],
     queryFn: async () => {
@@ -275,11 +298,37 @@ export default function FundraiserPage() {
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
             {t("account.fundraiser.registerDesc")}
           </p>
+
+          {!profileComplete && profileData && (
+            <div className="mb-6 mx-auto max-w-md">
+              <div className="bg-warning-50 border border-warning-200 rounded-xl p-4">
+                <p className="text-sm text-warning-800 mb-1 font-medium">
+                  {t("account.fundraiser.profileIncomplete")}
+                </p>
+                <p className="text-xs text-warning-700 mb-3">
+                  {t("account.fundraiser.profileIncompleteDesc", { filled: profileFilled, total: profileFields.length })}
+                </p>
+                <div className="w-full h-2 bg-warning-100 rounded-full overflow-hidden mb-3">
+                  <div
+                    className="h-full bg-warning-500 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.round((profileFilled / profileFields.length) * 100)}%` }}
+                  />
+                </div>
+                <Link
+                  href="/account/profile"
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-warning-800 bg-warning-100 rounded-lg hover:bg-warning-200 transition-colors"
+                >
+                  {t("account.dashboard.profileCompletion.cta")}
+                </Link>
+              </div>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => registerMutation.mutate()}
-            disabled={registerMutation.isPending}
-            className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+            disabled={registerMutation.isPending || !profileComplete}
+            className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {registerMutation.isPending ? t("account.fundraiser.registerProcessing") : t("account.fundraiser.registerAction")}
           </button>
@@ -316,6 +365,36 @@ export default function FundraiserPage() {
         </div>
       )}
 
+      {/* Referral data incomplete warning for active influencer */}
+      {fundraiser.status === "active" && !referralDataComplete && profileData && (
+        <div className="bg-warning-50 border border-warning-200 rounded-xl p-5">
+          <p className="text-sm text-warning-800 font-semibold mb-1">
+            {t("account.fundraiser.referralDataIncomplete")}
+          </p>
+          <p className="text-xs text-warning-700 mb-3">
+            {t("account.fundraiser.referralDataIncompleteDesc", { filled: referralFieldsFilled, total: referralRequiredFields.length })}
+          </p>
+          <div className="w-full h-2.5 bg-warning-100 rounded-full overflow-hidden mb-3">
+            <div
+              className="h-full bg-warning-500 rounded-full transition-all duration-500"
+              style={{ width: `${Math.round((referralFieldsFilled / referralRequiredFields.length) * 100)}%` }}
+            />
+          </div>
+          <ul className="text-xs text-warning-700 space-y-1 mb-3">
+            {!profileData.nik && <li>- {t("account.profile.labels.nik")}</li>}
+            {(!profileData.birthPlace || !profileData.birthDate) && <li>- {t("account.profile.labels.birthPlace")} & {t("account.profile.labels.birthDate")}</li>}
+            {!profileData.jobTitleId && <li>- {t("account.profile.labels.jobTitle")}</li>}
+            {!profileData.incomeRangeId && <li>- {t("account.profile.labels.incomeRange")}</li>}
+          </ul>
+          <Link
+            href="/account/profile"
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-warning-600 rounded-lg hover:bg-warning-700 transition-colors"
+          >
+            {t("account.dashboard.profileCompletion.cta")}
+          </Link>
+        </div>
+      )}
+
       {/* Status & Link Card */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
@@ -327,13 +406,15 @@ export default function FundraiserPage() {
               </span>
             </div>
           </div>
-          <div className="text-right">
-            <span className="text-sm text-gray-500">{t("account.fundraiser.code")}</span>
-            <div className="text-2xl font-bold font-mono text-primary-600">{fundraiser.code}</div>
-          </div>
+          {referralDataComplete && (
+            <div className="text-right">
+              <span className="text-sm text-gray-500">{t("account.fundraiser.code")}</span>
+              <div className="text-2xl font-bold font-mono text-primary-600">{fundraiser.code}</div>
+            </div>
+          )}
         </div>
 
-        {fundraiser.status === "active" && (
+        {fundraiser.status === "active" && referralDataComplete && (
           <div className="border-t border-gray-200 pt-4 mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">{t("account.fundraiser.referralLink")}</label>
             <div className="flex gap-2">
@@ -363,7 +444,7 @@ export default function FundraiserPage() {
       </div>
 
       {/* Stats */}
-      {fundraiser.status === "active" && (
+      {fundraiser.status === "active" && referralDataComplete && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl border border-gray-200 p-4">
             <div className="text-sm text-gray-500">{t("account.fundraiser.cards.totalReferral")}</div>
@@ -385,7 +466,7 @@ export default function FundraiserPage() {
       )}
 
       {/* Tabs: Share Program | Pendapatan */}
-      {fundraiser.status === "active" && (
+      {fundraiser.status === "active" && referralDataComplete && (
         <>
           <div className="border-b border-gray-200">
             <nav className="flex gap-0 -mb-px">

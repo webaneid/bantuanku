@@ -166,6 +166,18 @@ const CORE_EXISTING: MigrationEntry[] = [
   {
     file: "packages/db/migrations/106_update_activity_reports_address.sql",
   },
+  {
+    file: "packages/db/migrations/107_create_job_tables.sql",
+  },
+  {
+    file: "packages/db/migrations/108_create_income_ranges.sql",
+  },
+  {
+    file: "packages/db/migrations/109_add_donatur_personal_fields.sql",
+  },
+  {
+    file: "packages/db/migrations/110_add_mustahiq_personal_fields.sql",
+  },
 ];
 
 const args = process.argv.slice(2);

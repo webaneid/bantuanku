@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, or, sql } from "drizzle-orm";
 import {
   fundraisers,
   fundraiserReferrals,
@@ -66,6 +66,58 @@ async function getDefaultSourceBankFromSettings(db: any) {
   });
 
   return preferred || bankAccounts[0];
+}
+
+// Helper: find fundraiser for current user (checks both donatur and employee links)
+async function findMyFundraiser(db: any, user: { id: string; email?: string }) {
+  // Find donatur record
+  const donaturRecord = await db.query.donatur.findFirst({
+    where: eq(donatur.email, user.email || ""),
+  });
+
+  // Find employee record
+  const [empRecord] = await db
+    .select()
+    .from(employees)
+    .where(eq(employees.userId, user.id))
+    .limit(1);
+
+  // Build OR conditions for fundraiser lookup
+  const conditions = [];
+  if (donaturRecord) conditions.push(eq(fundraisers.donaturId, donaturRecord.id));
+  if (empRecord) conditions.push(eq(fundraisers.employeeId, empRecord.id));
+
+  if (conditions.length === 0) {
+    return { donaturRecord, empRecord, fundraiser: null };
+  }
+
+  const fundraiser = await db.query.fundraisers.findFirst({
+    where: conditions.length === 1 ? conditions[0] : or(...conditions),
+  });
+
+  return { donaturRecord, empRecord, fundraiser };
+}
+
+// Helper: get bank accounts for fundraiser (checks both donatur and employee entity types)
+async function getMyBankAccounts(db: any, donaturRecord: any, empRecord: any) {
+  const conditions = [];
+  if (donaturRecord) {
+    conditions.push(
+      and(eq(entityBankAccounts.entityType, "donatur"), eq(entityBankAccounts.entityId, donaturRecord.id))
+    );
+  }
+  if (empRecord) {
+    conditions.push(
+      and(eq(entityBankAccounts.entityType, "employee"), eq(entityBankAccounts.entityId, empRecord.id))
+    );
+  }
+  if (conditions.length === 0) return [];
+
+  return db
+    .select()
+    .from(entityBankAccounts)
+    .where(conditions.length === 1 ? conditions[0] : or(...conditions))
+    .orderBy(desc(entityBankAccounts.createdAt));
 }
 
 // GET /fundraisers/validate/:code - Public: validate code
@@ -147,11 +199,6 @@ app.post("/register", authMiddleware, async (c) => {
   const db = c.get("db");
   const user = c.get("user");
 
-  // Find donatur by user email/phone
-  const userDetails = await db.query.users.findFirst({
-    where: eq(donatur.id, user!.id),
-  });
-
   // Try to find donatur linked to this user
   const donaturRecord = await db.query.donatur.findFirst({
     where: eq(donatur.email, user!.email || ""),
@@ -161,21 +208,19 @@ app.post("/register", authMiddleware, async (c) => {
     return error(c, "Anda harus terdaftar sebagai donatur terlebih dahulu", 400);
   }
 
-  // Check if already registered
-  const existing = await db.query.fundraisers.findFirst({
-    where: eq(fundraisers.donaturId, donaturRecord.id),
-  });
+  // Check if already registered (by donaturId OR employeeId)
+  const { empRecord, fundraiser: existing } = await findMyFundraiser(db, user!);
   if (existing) {
     return error(c, "Anda sudah terdaftar sebagai fundraiser", 400);
   }
 
-  // Check auto-approve setting
-  let autoApprove = true;
+  // Check auto-approve setting (default: false, requires admin approval)
+  let autoApprove = false;
   const autoApproveSetting = await db.query.settings.findFirst({
     where: eq(settings.key, "fundraiser_auto_approve"),
   });
-  if (autoApproveSetting?.value === "false") {
-    autoApprove = false;
+  if (autoApproveSetting?.value === "true") {
+    autoApprove = true;
   }
 
   // Get default commission from settings
@@ -188,6 +233,7 @@ app.post("/register", authMiddleware, async (c) => {
     .insert(fundraisers)
     .values({
       donaturId: donaturRecord.id,
+      employeeId: empRecord?.id || null,
       code,
       slug: code.toLowerCase(),
       status: autoApprove ? "active" : "pending",
@@ -208,35 +254,14 @@ app.get("/me", authMiddleware, async (c) => {
   const db = c.get("db");
   const user = c.get("user");
 
-  // Find donatur
-  const donaturRecord = await db.query.donatur.findFirst({
-    where: eq(donatur.email, user!.email || ""),
-  });
-
-  if (!donaturRecord) {
-    return error(c, "Donatur tidak ditemukan", 404);
-  }
-
-  const [fundraiser] = await db
-    .select()
-    .from(fundraisers)
-    .where(eq(fundraisers.donaturId, donaturRecord.id))
-    .limit(1);
+  const { donaturRecord, empRecord, fundraiser } = await findMyFundraiser(db, user!);
 
   if (!fundraiser) {
     return error(c, "Anda belum terdaftar sebagai fundraiser", 404);
   }
 
-  // Get bank accounts
-  const bankAccounts = await db
-    .select()
-    .from(entityBankAccounts)
-    .where(
-      and(
-        eq(entityBankAccounts.entityType, "donatur"),
-        eq(entityBankAccounts.entityId, donaturRecord.id)
-      )
-    );
+  // Get bank accounts from both donatur and employee
+  const bankAccounts = await getMyBankAccounts(db, donaturRecord, empRecord);
 
   return success(c, { ...fundraiser, bankAccounts });
 });
@@ -249,18 +274,7 @@ app.get("/me/referrals", authMiddleware, async (c) => {
   const limit = parseInt(c.req.query("limit") || "10");
   const offset = (page - 1) * limit;
 
-  // Find donatur
-  const donaturRecord = await db.query.donatur.findFirst({
-    where: eq(donatur.email, user!.email || ""),
-  });
-
-  if (!donaturRecord) {
-    return error(c, "Donatur tidak ditemukan", 404);
-  }
-
-  const fundraiser = await db.query.fundraisers.findFirst({
-    where: eq(fundraisers.donaturId, donaturRecord.id),
-  });
+  const { fundraiser } = await findMyFundraiser(db, user!);
 
   if (!fundraiser) {
     return error(c, "Anda belum terdaftar sebagai fundraiser", 404);
@@ -302,32 +316,13 @@ app.get("/me/disbursement-availability", authMiddleware, async (c) => {
     const db = c.get("db");
     const user = c.get("user");
 
-    const donaturRecord = await db.query.donatur.findFirst({
-      where: eq(donatur.email, user!.email || ""),
-    });
-
-    if (!donaturRecord) {
-      return error(c, "Donatur tidak ditemukan", 404);
-    }
-
-    const fundraiser = await db.query.fundraisers.findFirst({
-      where: eq(fundraisers.donaturId, donaturRecord.id),
-    });
+    const { donaturRecord, empRecord, fundraiser } = await findMyFundraiser(db, user!);
 
     if (!fundraiser) {
       return error(c, "Anda belum terdaftar sebagai fundraiser", 404);
     }
 
-    const bankAccounts = await db
-      .select()
-      .from(entityBankAccounts)
-      .where(
-        and(
-          eq(entityBankAccounts.entityType, "donatur"),
-          eq(entityBankAccounts.entityId, donaturRecord.id)
-        )
-      )
-      .orderBy(desc(entityBankAccounts.createdAt));
+    const bankAccounts = await getMyBankAccounts(db, donaturRecord, empRecord);
 
     const service = new DisbursementService(db);
     const availability = await service.getRevenueShareAvailability("revenue_share_fundraiser", fundraiser.id);
@@ -338,6 +333,10 @@ app.get("/me/disbursement-availability", authMiddleware, async (c) => {
       sourceBank = null;
     }
 
+    // Use donatur or employee name
+    const recipientName = donaturRecord?.name || empRecord?.name || fundraiser.code;
+    const recipientContact = donaturRecord?.phone || empRecord?.phone || "";
+
     return success(c, {
       availability,
       fundraiser: {
@@ -346,8 +345,8 @@ app.get("/me/disbursement-availability", authMiddleware, async (c) => {
         status: fundraiser.status,
       },
       recipient: {
-        name: donaturRecord.name || fundraiser.code,
-        contact: donaturRecord.phone || "",
+        name: recipientName,
+        contact: recipientContact,
         bankAccount: bankAccounts[0] || null,
       },
       sourceBank: sourceBank
@@ -375,17 +374,7 @@ app.get("/me/disbursements", authMiddleware, async (c) => {
     const limit = parseInt(c.req.query("limit") || "10");
     const offset = (page - 1) * limit;
 
-    const donaturRecord = await db.query.donatur.findFirst({
-      where: eq(donatur.email, user!.email || ""),
-    });
-
-    if (!donaturRecord) {
-      return error(c, "Donatur tidak ditemukan", 404);
-    }
-
-    const fundraiser = await db.query.fundraisers.findFirst({
-      where: eq(fundraisers.donaturId, donaturRecord.id),
-    });
+    const { fundraiser } = await findMyFundraiser(db, user!);
 
     if (!fundraiser) {
       return error(c, "Anda belum terdaftar sebagai fundraiser", 404);
@@ -455,17 +444,7 @@ app.post("/me/disbursements", authMiddleware, async (c) => {
     });
     const body = bodySchema.parse(await c.req.json());
 
-    const donaturRecord = await db.query.donatur.findFirst({
-      where: eq(donatur.email, user!.email || ""),
-    });
-
-    if (!donaturRecord) {
-      return error(c, "Donatur tidak ditemukan", 404);
-    }
-
-    const fundraiser = await db.query.fundraisers.findFirst({
-      where: eq(fundraisers.donaturId, donaturRecord.id),
-    });
+    const { donaturRecord, empRecord, fundraiser } = await findMyFundraiser(db, user!);
 
     if (!fundraiser) {
       return error(c, "Anda belum terdaftar sebagai fundraiser", 404);
@@ -475,20 +454,14 @@ app.post("/me/disbursements", authMiddleware, async (c) => {
       return error(c, "Fundraiser harus aktif untuk mengajukan pencairan", 400);
     }
 
-    const recipientBankAccounts = await db
-      .select()
-      .from(entityBankAccounts)
-      .where(
-        and(
-          eq(entityBankAccounts.entityType, "donatur"),
-          eq(entityBankAccounts.entityId, donaturRecord.id)
-        )
-      )
-      .orderBy(desc(entityBankAccounts.createdAt));
+    const recipientBankAccounts = await getMyBankAccounts(db, donaturRecord, empRecord);
 
     if (recipientBankAccounts.length === 0) {
-      return error(c, "Tambahkan rekening bank terlebih dahulu di profil donatur", 400);
+      return error(c, "Tambahkan rekening bank terlebih dahulu di profil", 400);
     }
+
+    const recipientName = donaturRecord?.name || empRecord?.name || fundraiser.code;
+    const recipientContact = donaturRecord?.phone || empRecord?.phone || "";
 
     const sourceBank = await getDefaultSourceBankFromSettings(db);
     const service = new DisbursementService(db);
@@ -511,8 +484,8 @@ app.post("/me/disbursements", authMiddleware, async (c) => {
       source_bank_id: sourceBank.id,
       recipient_type: "fundraiser",
       recipient_id: fundraiser.id,
-      recipient_name: donaturRecord.name || fundraiser.code,
-      recipient_contact: donaturRecord.phone || "",
+      recipient_name: recipientName,
+      recipient_contact: recipientContact,
       recipient_bank_name: recipientBank.bankName,
       recipient_bank_account: recipientBank.accountNumber,
       recipient_bank_account_name: recipientBank.accountHolderName,
@@ -521,7 +494,7 @@ app.post("/me/disbursements", authMiddleware, async (c) => {
       notes: body.notes || undefined,
       payment_method: "bank_transfer",
       type_specific_data: {
-        request_source: "frontend_fundraiser_portal",
+        request_source: "fundraiser_portal",
       },
       created_by: user!.id,
     });

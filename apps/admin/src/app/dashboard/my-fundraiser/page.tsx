@@ -184,7 +184,7 @@ export default function MyFundraiserPage() {
 
   const handleCopyLink = () => {
     if (!fundraiser) return;
-    const link = `${window.location.origin}?ref=${fundraiser.code}`;
+    const link = `${WEB_URL}?ref=${fundraiser.code}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -288,9 +288,7 @@ export default function MyFundraiserPage() {
 
   const statusClass = statusBadgeMap[fundraiser.status] || "bg-gray-100 text-gray-700";
   const statusLabel = statusLabelMap[fundraiser.status] || fundraiser.status;
-  const referralLink = typeof window !== "undefined"
-    ? `${window.location.origin}?ref=${fundraiser.code}`
-    : "";
+  const referralLink = `${WEB_URL}?ref=${fundraiser.code}`;
 
   // Bank accounts from entity_bank_accounts
   const bankAccounts = fundraiser.bankAccounts || [];

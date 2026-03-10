@@ -4,6 +4,7 @@ import { z } from "zod";
 import { eq, desc, like, sql, and, or } from "drizzle-orm";
 import {
   donatur,
+  employees,
   transactions,
   users,
   userRoles,
@@ -14,6 +15,9 @@ import {
   indonesiaDistricts,
   indonesiaVillages,
   entityBankAccounts,
+  jobTitles,
+  jobCategories,
+  incomeRanges,
 } from "@bantuanku/db";
 import { hashPassword } from "../../lib/password";
 import { normalizeContactData } from "../../lib/contact-helpers";
@@ -46,6 +50,19 @@ const createDonaturSchema = z.object({
   villageCode: z.string().trim().optional(),
   postalCode: z.string().optional().nullable(),
 
+  // Job
+  jobTitleId: z.number().int().positive().optional().nullable(),
+
+  // Income range
+  incomeRangeId: z.number().int().positive().optional().nullable(),
+
+  // Personal
+  nik: z.string().max(16).optional().nullable(),
+  npwp: z.string().max(25).optional().nullable(),
+  birthPlace: z.string().max(100).optional().nullable(),
+  birthDate: z.string().optional().nullable(),
+  gender: z.enum(["laki-laki", "perempuan"]).optional().nullable(),
+
   // Bank accounts
   bankAccounts: z.array(bankAccountSchema).optional(),
 
@@ -65,6 +82,19 @@ const updateDonaturSchema = z.object({
   districtCode: z.string().optional(),
   villageCode: z.string().optional(),
   postalCode: z.string().optional().nullable(),
+
+  // Job
+  jobTitleId: z.number().int().positive().optional().nullable(),
+
+  // Income range
+  incomeRangeId: z.number().int().positive().optional().nullable(),
+
+  // Personal
+  nik: z.string().max(16).optional().nullable(),
+  npwp: z.string().max(25).optional().nullable(),
+  birthPlace: z.string().max(100).optional().nullable(),
+  birthDate: z.string().optional().nullable(),
+  gender: z.enum(["laki-laki", "perempuan"]).optional().nullable(),
 
   // Bank accounts
   bankAccounts: z.array(bankAccountSchema).optional(),
@@ -109,6 +139,13 @@ donaturAdmin.get("/", async (c) => {
         regencyCode: donatur.regencyCode,
         districtCode: donatur.districtCode,
         villageCode: donatur.villageCode,
+        jobTitleId: donatur.jobTitleId,
+        incomeRangeId: donatur.incomeRangeId,
+        nik: donatur.nik,
+        npwp: donatur.npwp,
+        birthPlace: donatur.birthPlace,
+        birthDate: donatur.birthDate,
+        gender: donatur.gender,
         avatar: donatur.avatar,
         totalDonations: donatur.totalDonations,
         totalAmount: donatur.totalAmount,
@@ -125,6 +162,11 @@ donaturAdmin.get("/", async (c) => {
         districtName: indonesiaDistricts.name,
         villageName: indonesiaVillages.name,
         villagePostalCode: indonesiaVillages.postalCode,
+        // Job title
+        jobTitleName: jobTitles.name,
+        jobCategoryName: jobCategories.name,
+        // Income range
+        incomeRangeLabel: incomeRanges.label,
       })
       .from(donatur)
       .leftJoin(
@@ -142,6 +184,18 @@ donaturAdmin.get("/", async (c) => {
       .leftJoin(
         indonesiaVillages,
         eq(donatur.villageCode, indonesiaVillages.code)
+      )
+      .leftJoin(
+        jobTitles,
+        eq(donatur.jobTitleId, jobTitles.id)
+      )
+      .leftJoin(
+        jobCategories,
+        eq(jobTitles.categoryId, jobCategories.id)
+      )
+      .leftJoin(
+        incomeRanges,
+        eq(donatur.incomeRangeId, incomeRanges.id)
       )
       .where(whereClause)
       .limit(limit)
@@ -245,6 +299,19 @@ donaturAdmin.post(
     if (donaturData.districtCode) insertData.districtCode = donaturData.districtCode;
     if (donaturData.villageCode) insertData.villageCode = donaturData.villageCode;
 
+    // Job title
+    if (donaturData.jobTitleId !== undefined) insertData.jobTitleId = donaturData.jobTitleId;
+
+    // Income range
+    if (donaturData.incomeRangeId !== undefined) insertData.incomeRangeId = donaturData.incomeRangeId;
+
+    // Personal
+    if (donaturData.nik !== undefined) insertData.nik = donaturData.nik;
+    if (donaturData.npwp !== undefined) insertData.npwp = donaturData.npwp;
+    if (donaturData.birthPlace !== undefined) insertData.birthPlace = donaturData.birthPlace;
+    if (donaturData.birthDate !== undefined) insertData.birthDate = donaturData.birthDate;
+    if (donaturData.gender !== undefined) insertData.gender = donaturData.gender;
+
     // Hash password if provided
     if (donaturData.password) {
       insertData.passwordHash = await hashPassword(donaturData.password);
@@ -287,6 +354,13 @@ donaturAdmin.get("/:id", async (c) => {
       regencyCode: donatur.regencyCode,
       districtCode: donatur.districtCode,
       villageCode: donatur.villageCode,
+      jobTitleId: donatur.jobTitleId,
+      incomeRangeId: donatur.incomeRangeId,
+      nik: donatur.nik,
+      npwp: donatur.npwp,
+      birthPlace: donatur.birthPlace,
+      birthDate: donatur.birthDate,
+      gender: donatur.gender,
       userId: donatur.userId,
       avatar: donatur.avatar,
       totalDonations: donatur.totalDonations,
@@ -304,6 +378,11 @@ donaturAdmin.get("/:id", async (c) => {
       districtName: indonesiaDistricts.name,
       villageName: indonesiaVillages.name,
       villagePostalCode: indonesiaVillages.postalCode,
+      // Job title
+      jobTitleName: jobTitles.name,
+      jobCategoryName: jobCategories.name,
+      // Income range
+      incomeRangeLabel: incomeRanges.label,
     })
     .from(donatur)
     .leftJoin(
@@ -321,6 +400,18 @@ donaturAdmin.get("/:id", async (c) => {
     .leftJoin(
       indonesiaVillages,
       eq(donatur.villageCode, indonesiaVillages.code)
+    )
+    .leftJoin(
+      jobTitles,
+      eq(donatur.jobTitleId, jobTitles.id)
+    )
+    .leftJoin(
+      jobCategories,
+      eq(jobTitles.categoryId, jobCategories.id)
+    )
+    .leftJoin(
+      incomeRanges,
+      eq(donatur.incomeRangeId, incomeRanges.id)
     )
     .where(eq(donatur.id, id))
     .limit(1);
@@ -401,6 +492,19 @@ donaturAdmin.put(
     if (donaturData.districtCode !== undefined) updateData.districtCode = donaturData.districtCode || null;
     if (donaturData.villageCode !== undefined) updateData.villageCode = donaturData.villageCode || null;
 
+    // Job title
+    if (donaturData.jobTitleId !== undefined) updateData.jobTitleId = donaturData.jobTitleId;
+
+    // Income range
+    if (donaturData.incomeRangeId !== undefined) updateData.incomeRangeId = donaturData.incomeRangeId;
+
+    // Personal
+    if (donaturData.nik !== undefined) updateData.nik = donaturData.nik;
+    if (donaturData.npwp !== undefined) updateData.npwp = donaturData.npwp;
+    if (donaturData.birthPlace !== undefined) updateData.birthPlace = donaturData.birthPlace;
+    if (donaturData.birthDate !== undefined) updateData.birthDate = donaturData.birthDate;
+    if (donaturData.gender !== undefined) updateData.gender = donaturData.gender;
+
     if (donaturData.isActive !== undefined) updateData.isActive = donaturData.isActive;
 
     if (donaturData.password) {
@@ -436,6 +540,41 @@ donaturAdmin.put(
 
         await db.insert(entityBankAccounts).values(bankAccountsToInsert);
       }
+    }
+
+    // Sync shared fields to employee if linked via userId
+    if (existing.userId) {
+      const linkedEmployee = await db.query.employees.findFirst({
+        where: eq(employees.userId, existing.userId),
+      });
+      if (linkedEmployee) {
+        const empSync: any = { updatedAt: new Date() };
+        if (updateData.name !== undefined) empSync.name = updateData.name;
+        if (updateData.phone !== undefined) empSync.phone = updateData.phone;
+        if (updateData.whatsappNumber !== undefined) empSync.whatsappNumber = updateData.whatsappNumber;
+        if (updateData.website !== undefined) empSync.website = updateData.website;
+        if (updateData.detailAddress !== undefined) empSync.detailAddress = updateData.detailAddress;
+        if (updateData.provinceCode !== undefined) empSync.provinceCode = updateData.provinceCode;
+        if (updateData.regencyCode !== undefined) empSync.regencyCode = updateData.regencyCode;
+        if (updateData.districtCode !== undefined) empSync.districtCode = updateData.districtCode;
+        if (updateData.villageCode !== undefined) empSync.villageCode = updateData.villageCode;
+        if (updateData.nik !== undefined) empSync.nationalId = updateData.nik;
+        if (updateData.npwp !== undefined) empSync.taxId = updateData.npwp;
+        await db
+          .update(employees)
+          .set(empSync)
+          .where(eq(employees.id, linkedEmployee.id));
+      }
+
+      // Sync to users table too
+      const userSync: any = { updatedAt: new Date() };
+      if (updateData.name !== undefined) userSync.name = updateData.name;
+      if (updateData.phone !== undefined) userSync.phone = updateData.phone;
+      if (updateData.whatsappNumber !== undefined) userSync.whatsappNumber = updateData.whatsappNumber;
+      await db
+        .update(users)
+        .set(userSync)
+        .where(eq(users.id, existing.userId));
     }
 
     return success(c, null, "Donatur berhasil diperbarui");

@@ -2,12 +2,42 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { formatRupiahFull } from "@/lib/format";
 import { Button } from "@/components/atoms";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/lib/i18n/provider";
+
+interface ProfileData {
+  name?: string;
+  phone?: string;
+  whatsappNumber?: string;
+  detailAddress?: string;
+  provinceCode?: string;
+  jobTitleId?: number | null;
+  incomeRangeId?: number | null;
+  nik?: string;
+  npwp?: string;
+  birthPlace?: string;
+  birthDate?: string;
+  gender?: string;
+}
+
+const PROFILE_FIELDS: (keyof ProfileData)[] = [
+  "name", "phone", "whatsappNumber", "detailAddress", "provinceCode",
+  "jobTitleId", "incomeRangeId", "nik", "npwp", "birthPlace", "birthDate", "gender",
+];
+
+function getProfileCompletion(profile: ProfileData | null): { filled: number; total: number; percent: number } {
+  if (!profile) return { filled: 0, total: PROFILE_FIELDS.length, percent: 0 };
+  const filled = PROFILE_FIELDS.filter((key) => {
+    const val = profile[key];
+    return val !== null && val !== undefined && val !== "";
+  }).length;
+  return { filled, total: PROFILE_FIELDS.length, percent: Math.round((filled / PROFILE_FIELDS.length) * 100) };
+}
 
 interface Stats {
   totalDonations: number;
@@ -29,9 +59,11 @@ interface Transaction {
 export default function DashboardPage() {
   const { user, isHydrated } = useAuth();
   const { t, locale } = useI18n();
+  const router = useRouter();
   const localeTag = locale === "id" ? "id-ID" : "en-US";
   const [stats, setStats] = useState<Stats>({ totalDonations: 0, totalAmount: 0, pendingDonations: 0 });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const statusConfig = {
     pending: { label: t("account.dashboard.status.pending"), color: "bg-warning-50 text-warning-700 border-warning-200" },
@@ -52,9 +84,10 @@ export default function DashboardPage() {
 
     const fetchData = async () => {
       try {
-        const [statsRes, transactionsRes] = await Promise.all([
+        const [statsRes, transactionsRes, profileRes] = await Promise.all([
           api.get("/account/stats"),
           api.get("/transactions/my?limit=5"),
+          api.get("/auth/me"),
         ]);
 
         if (statsRes.data.success) {
@@ -69,6 +102,10 @@ export default function DashboardPage() {
         if (transactionsRes.data.success) {
           setTransactions(transactionsRes.data.data);
         }
+
+        if (profileRes.data.success) {
+          setProfile(profileRes.data.data);
+        }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -78,6 +115,15 @@ export default function DashboardPage() {
 
     fetchData();
   }, [isHydrated, user]);
+
+  // Redirect to profile if required fields are missing
+  useEffect(() => {
+    if (isLoading || !profile) return;
+    const isIncomplete = !profile.jobTitleId || !profile.incomeRangeId || !profile.gender || !profile.provinceCode;
+    if (isIncomplete) {
+      router.replace("/account/profile");
+    }
+  }, [isLoading, profile, router]);
 
   if (isLoading) {
     return (
@@ -103,6 +149,39 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {/* Profile Completion */}
+      {(() => {
+        const completion = getProfileCompletion(profile);
+        if (completion.percent >= 100) return null;
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900">{t("account.dashboard.profileCompletion.title")}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">{t("account.dashboard.profileCompletion.description")}</p>
+              </div>
+              <Link href="/account/profile">
+                <Button size="sm">{t("account.dashboard.profileCompletion.cta")}</Button>
+              </Link>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all duration-500",
+                    completion.percent < 50 ? "bg-warning-500" : completion.percent < 80 ? "bg-primary-500" : "bg-success-500"
+                  )}
+                  style={{ width: `${completion.percent}%` }}
+                />
+              </div>
+              <span className="text-xs font-medium text-gray-600 whitespace-nowrap">
+                {completion.filled} {t("account.dashboard.profileCompletion.of")} {completion.total} {t("account.dashboard.profileCompletion.fields")}
+              </span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">

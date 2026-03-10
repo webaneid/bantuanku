@@ -337,6 +337,13 @@ auth.get("/me", authMiddleware, async (c) => {
     regencyCode: donaturProfile?.regencyCode,
     districtCode: donaturProfile?.districtCode,
     villageCode: donaturProfile?.villageCode,
+    jobTitleId: donaturProfile?.jobTitleId,
+    incomeRangeId: donaturProfile?.incomeRangeId,
+    nik: donaturProfile?.nik,
+    npwp: donaturProfile?.npwp,
+    birthPlace: donaturProfile?.birthPlace,
+    birthDate: donaturProfile?.birthDate,
+    gender: donaturProfile?.gender,
     province: donaturProfile?.province,
     regency: donaturProfile?.regency,
     district: donaturProfile?.district,
@@ -368,6 +375,13 @@ auth.patch("/me", authMiddleware, async (c) => {
     regencyCode,
     districtCode,
     villageCode,
+    jobTitleId,
+    incomeRangeId,
+    nik,
+    npwp,
+    birthPlace,
+    birthDate,
+    gender,
     bankAccounts,
   } = body;
 
@@ -411,6 +425,13 @@ auth.patch("/me", authMiddleware, async (c) => {
         regencyCode: regencyCode || undefined,
         districtCode: districtCode || undefined,
         villageCode: villageCode || undefined,
+        jobTitleId: jobTitleId !== undefined ? (jobTitleId || null) : undefined,
+        incomeRangeId: incomeRangeId !== undefined ? (incomeRangeId || null) : undefined,
+        nik: nik !== undefined ? (nik || null) : undefined,
+        npwp: npwp !== undefined ? (npwp || null) : undefined,
+        birthPlace: birthPlace !== undefined ? (birthPlace || null) : undefined,
+        birthDate: birthDate !== undefined ? (birthDate || null) : undefined,
+        gender: gender !== undefined ? (gender || null) : undefined,
         updatedAt: new Date(),
       })
       .where(eq(donatur.id, donaturProfile.id));
@@ -458,6 +479,13 @@ auth.patch("/me", authMiddleware, async (c) => {
       regencyCode,
       districtCode,
       villageCode,
+      jobTitleId: jobTitleId || null,
+      incomeRangeId: incomeRangeId || null,
+      nik: nik || null,
+      npwp: npwp || null,
+      birthPlace: birthPlace || null,
+      birthDate: birthDate || null,
+      gender: gender || null,
     }).returning();
 
     // Insert bank accounts for new donatur
@@ -473,6 +501,30 @@ auth.patch("/me", authMiddleware, async (c) => {
         }))
       );
     }
+  }
+
+  // Sync shared fields to employee if linked
+  const { employees } = await import("@bantuanku/db");
+  const linkedEmployee = await db.query.employees.findFirst({
+    where: eq(employees.userId, currentUser!.id),
+  });
+  if (linkedEmployee) {
+    const empSync: any = { updatedAt: new Date() };
+    if (name) empSync.name = name;
+    if (phone) empSync.phone = phone;
+    if (whatsappNumber) empSync.whatsappNumber = whatsappNumber;
+    if (website) empSync.website = website;
+    if (detailAddress) empSync.detailAddress = detailAddress;
+    if (provinceCode) empSync.provinceCode = provinceCode;
+    if (regencyCode) empSync.regencyCode = regencyCode;
+    if (districtCode) empSync.districtCode = districtCode;
+    if (villageCode) empSync.villageCode = villageCode;
+    if (nik !== undefined) empSync.nationalId = nik || null;
+    if (npwp !== undefined) empSync.taxId = npwp || null;
+    await db
+      .update(employees)
+      .set(empSync)
+      .where(eq(employees.id, linkedEmployee.id));
   }
 
   return success(c, null, "Profile updated");
@@ -555,6 +607,32 @@ auth.get("/me/profile-data", authMiddleware, async (c) => {
       .select()
       .from(entityBankAccounts)
       .where(and(eq(entityBankAccounts.entityType, "employee"), eq(entityBankAccounts.entityId, entityData.id)));
+
+    // Also fetch linked donatur personal data
+    const { jobTitles, jobCategories, incomeRanges } = await import("@bantuanku/db");
+    const donaturRecord = await db
+      .select({
+        nik: donatur.nik,
+        npwp: donatur.npwp,
+        birthPlace: donatur.birthPlace,
+        birthDate: donatur.birthDate,
+        gender: donatur.gender,
+        jobTitleId: donatur.jobTitleId,
+        incomeRangeId: donatur.incomeRangeId,
+        jobTitleName: jobTitles.name,
+        jobCategoryName: jobCategories.name,
+        incomeRangeLabel: incomeRanges.label,
+      })
+      .from(donatur)
+      .leftJoin(jobTitles, eq(donatur.jobTitleId, jobTitles.id))
+      .leftJoin(jobCategories, eq(jobTitles.categoryId, jobCategories.id))
+      .leftJoin(incomeRanges, eq(donatur.incomeRangeId, incomeRanges.id))
+      .where(eq(donatur.userId, currentUser!.id))
+      .limit(1);
+
+    if (donaturRecord.length > 0) {
+      entityData = { ...entityData, personalData: donaturRecord[0] };
+    }
   }
 
   // 2. Check mitra (if no employee found and user has mitra role)

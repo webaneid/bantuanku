@@ -40,6 +40,12 @@ const mustahiqSchema = z.object({
   nationalId: z.string().optional().or(z.literal("")),
   dateOfBirth: z.string().optional().or(z.literal("")),
   gender: z.string().optional().or(z.literal("")),
+  birthPlace: z.string().optional().or(z.literal("")),
+  motherName: z.string().optional().or(z.literal("")),
+  maritalStatus: z.string().optional().or(z.literal("")),
+  dependents: z.number().int().min(0).optional().nullable(),
+  jobTitleId: z.number().int().optional().nullable(),
+  incomeRangeId: z.number().int().optional().nullable(),
 
   // Bank accounts - handled separately
   bankAccounts: z.array(bankAccountSchema).optional(),
@@ -104,6 +110,8 @@ app.get("/", async (c) => {
         regency: true,
         district: true,
         village: true,
+        jobTitle: true,
+        incomeRange: true,
       },
     });
 
@@ -167,6 +175,8 @@ app.get("/:id", async (c) => {
         regency: true,
         district: true,
         village: true,
+        jobTitle: true,
+        incomeRange: true,
       },
     });
 
@@ -229,6 +239,12 @@ app.post("/", requireRole("super_admin", "admin_campaign"), async (c) => {
         nationalId: data.nationalId || null,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         gender: data.gender || null,
+        birthPlace: data.birthPlace || null,
+        motherName: data.motherName || null,
+        maritalStatus: data.maritalStatus || null,
+        dependents: data.dependents ?? null,
+        jobTitleId: data.jobTitleId ?? null,
+        incomeRangeId: data.incomeRangeId ?? null,
         bankName: data.bankName || null,
         bankAccount: data.bankAccount || null,
         bankAccountName: data.bankAccountName || null,
@@ -308,6 +324,12 @@ app.put("/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
         nationalId: data.nationalId || null,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         gender: data.gender || null,
+        birthPlace: data.birthPlace || null,
+        motherName: data.motherName || null,
+        maritalStatus: data.maritalStatus || null,
+        dependents: data.dependents ?? null,
+        jobTitleId: data.jobTitleId ?? null,
+        incomeRangeId: data.incomeRangeId ?? null,
         bankName: data.bankName || null,
         bankAccount: data.bankAccount || null,
         bankAccountName: data.bankAccountName || null,

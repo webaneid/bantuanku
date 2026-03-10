@@ -12,6 +12,7 @@ import {
   PencilIcon,
   TrashIcon,
   PlusIcon,
+  UserPlusIcon,
 } from "@heroicons/react/24/outline";
 import EmployeeModal from "@/components/modals/EmployeeModal";
 import Autocomplete from "@/components/Autocomplete";
@@ -76,6 +77,10 @@ export default function EmployeesPage() {
     title: string;
     message?: string;
   }>({ open: false, type: "success", title: "" });
+  const [isFromDonaturOpen, setIsFromDonaturOpen] = useState(false);
+  const [selectedDonaturId, setSelectedDonaturId] = useState("");
+  const [fromDonaturPosition, setFromDonaturPosition] = useState("");
+  const [fromDonaturDepartment, setFromDonaturDepartment] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["employees", searchQuery, departmentFilter, statusFilter],
@@ -109,6 +114,61 @@ export default function EmployeesPage() {
       });
     },
   });
+
+  const { data: donaturData } = useQuery({
+    queryKey: ["donatur-list-for-employee"],
+    queryFn: async () => {
+      const response = await api.get("/admin/donatur", { params: { limit: 200 } });
+      return response.data?.data || [];
+    },
+    enabled: isFromDonaturOpen,
+  });
+
+  const donaturOptions = (donaturData || []).map((d: any) => ({
+    value: d.id,
+    label: `${d.name || "Tanpa Nama"} - ${d.email || d.phone || ""}`,
+  }));
+
+  const fromDonaturMutation = useMutation({
+    mutationFn: (payload: any) => api.post("/admin/employees/from-donatur", payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      setIsFromDonaturOpen(false);
+      setSelectedDonaturId("");
+      setFromDonaturPosition("");
+      setFromDonaturDepartment("");
+      setFeedback({
+        open: true,
+        type: "success",
+        title: "Berhasil",
+        message: "Karyawan berhasil ditambahkan dari data donatur",
+      });
+    },
+    onError: (err: any) => {
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: err.response?.data?.error || "Gagal menambahkan karyawan dari donatur",
+      });
+    },
+  });
+
+  const handleFromDonaturSubmit = () => {
+    if (!selectedDonaturId) {
+      setFeedback({ open: true, type: "error", title: "Gagal", message: "Pilih donatur terlebih dahulu" });
+      return;
+    }
+    if (!fromDonaturPosition) {
+      setFeedback({ open: true, type: "error", title: "Gagal", message: "Posisi wajib diisi" });
+      return;
+    }
+    fromDonaturMutation.mutate({
+      donaturId: selectedDonaturId,
+      position: fromDonaturPosition,
+      department: fromDonaturDepartment || undefined,
+    });
+  };
 
   const employees = data?.data || [];
 
@@ -188,14 +248,24 @@ export default function EmployeesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
           <p className="text-gray-600 mt-1">Kelola data karyawan</p>
         </div>
-        <button
-          type="button"
-          onClick={handleCreate}
-          className="btn btn-primary btn-md"
-        >
-          <PlusIcon className="w-5 h-5" />
-          Tambah Karyawan
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setIsFromDonaturOpen(true)}
+            className="btn btn-secondary btn-md"
+          >
+            <UserPlusIcon className="w-5 h-5" />
+            Dari Donatur
+          </button>
+          <button
+            type="button"
+            onClick={handleCreate}
+            className="btn btn-primary btn-md"
+          >
+            <PlusIcon className="w-5 h-5" />
+            Tambah Karyawan
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -438,6 +508,73 @@ export default function EmployeesPage() {
                 disabled={deleteMutation.isPending}
               >
                 {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* From Donatur Modal */}
+      {isFromDonaturOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold mb-4">Tambah Karyawan dari Donatur</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Donatur</label>
+                <Autocomplete
+                  options={donaturOptions}
+                  value={selectedDonaturId}
+                  onChange={(value: string) => setSelectedDonaturId(value)}
+                  placeholder="Cari donatur..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Posisi <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="contoh: Staff, Coordinator"
+                  value={fromDonaturPosition}
+                  onChange={(e) => setFromDonaturPosition(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Departemen</label>
+                <Autocomplete
+                  options={[
+                    { value: "", label: "Pilih Departemen" },
+                    { value: "program", label: "Program" },
+                    { value: "finance", label: "Finance" },
+                    { value: "fundraising", label: "Fundraising" },
+                    { value: "admin", label: "Admin" },
+                  ]}
+                  value={fromDonaturDepartment}
+                  onChange={(value: string) => setFromDonaturDepartment(value)}
+                  placeholder="Pilih departemen..."
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                className="btn btn-secondary btn-md"
+                onClick={() => {
+                  setIsFromDonaturOpen(false);
+                  setSelectedDonaturId("");
+                  setFromDonaturPosition("");
+                  setFromDonaturDepartment("");
+                }}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary btn-md"
+                onClick={handleFromDonaturSubmit}
+                disabled={fromDonaturMutation.isPending}
+              >
+                {fromDonaturMutation.isPending ? "Menyimpan..." : "Simpan"}
               </button>
             </div>
           </div>

@@ -40,6 +40,8 @@ import mitraRoute from "./mitra";
 import revenueSharesRoute from "./revenue-shares";
 import whatsappRoute from "./whatsapp";
 import pagesRoute from "./pages";
+import incomeRangesRoute from "./income-ranges";
+import statisticsRoute from "./statistics";
 import transactionsRoute from "../transactions";
 
 const admin = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -77,6 +79,8 @@ admin.use("/transactions/*", staffOnly);
 admin.use("/revenue-shares/*", staffOnly);
 admin.use("/whatsapp/*", staffOnly);
 admin.use("/pages/*", requireRole("super_admin", "admin_campaign"));
+admin.use("/income-ranges/*", staffOnly);
+admin.use("/statistics/*", staffOnly);
 
 // === Routes yang BISA diakses mitra (tanpa staffOnly guard) ===
 // /campaigns    — mitra lihat & kelola campaign miliknya
@@ -129,5 +133,7 @@ admin.route("/transactions", transactionsRoute);
 admin.route("/revenue-shares", revenueSharesRoute);
 admin.route("/whatsapp", whatsappRoute);
 admin.route("/pages", pagesRoute);
+admin.route("/income-ranges", incomeRangesRoute);
+admin.route("/statistics", statisticsRoute);
 
 export default admin;

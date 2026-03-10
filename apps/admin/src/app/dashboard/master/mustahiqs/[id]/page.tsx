@@ -13,6 +13,9 @@ import {
   BanknotesIcon,
   HeartIcon,
   BuildingLibraryIcon,
+  BriefcaseIcon,
+  CurrencyDollarIcon,
+  UsersIcon,
 } from "@heroicons/react/24/outline";
 import api from "@/lib/api";
 import md5 from "crypto-js/md5";
@@ -99,6 +102,18 @@ export default function ViewMustahiqPage() {
       ibnus_sabil: "Ibnus Sabil",
     };
     return labels[category] || category;
+  };
+
+  const getMaritalStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      menikah: "Menikah",
+      belum_menikah: "Belum Menikah",
+      janda_cerai_hidup: "Janda (Cerai Hidup)",
+      janda_cerai_mati: "Janda (Cerai Mati)",
+      duda_cerai_hidup: "Duda (Cerai Hidup)",
+      duda_cerai_mati: "Duda (Cerai Mati)",
+    };
+    return labels[status] || status;
   };
 
   const getFullAddress = () => {
@@ -280,6 +295,80 @@ export default function ViewMustahiqPage() {
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">NIK / KTP</p>
                     <p className="font-medium text-gray-900">{mustahiqData.nationalId}</p>
+                  </div>
+                </div>
+              )}
+
+              {(mustahiqData.birthPlace || mustahiqData.dateOfBirth) && (
+                <div className="flex items-start gap-3">
+                  <CalendarIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500">Tempat, Tanggal Lahir</p>
+                    <p className="font-medium text-gray-900">
+                      {[mustahiqData.birthPlace, mustahiqData.dateOfBirth ? formatDate(mustahiqData.dateOfBirth) : null].filter(Boolean).join(", ")}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {mustahiqData.gender && (
+                <div className="flex items-start gap-3">
+                  <UserIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500">Jenis Kelamin</p>
+                    <p className="font-medium text-gray-900">
+                      {mustahiqData.gender === "male" ? "Laki-laki" : mustahiqData.gender === "female" ? "Perempuan" : mustahiqData.gender}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {mustahiqData.motherName && (
+                <div className="flex items-start gap-3">
+                  <UserIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500">Nama Ibu Kandung</p>
+                    <p className="font-medium text-gray-900">{mustahiqData.motherName}</p>
+                  </div>
+                </div>
+              )}
+
+              {mustahiqData.maritalStatus && (
+                <div className="flex items-start gap-3">
+                  <UsersIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500">Status Perkawinan</p>
+                    <p className="font-medium text-gray-900">{getMaritalStatusLabel(mustahiqData.maritalStatus)}</p>
+                  </div>
+                </div>
+              )}
+
+              {mustahiqData.dependents != null && (
+                <div className="flex items-start gap-3">
+                  <UsersIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500">Jumlah Tanggungan</p>
+                    <p className="font-medium text-gray-900">{mustahiqData.dependents} orang</p>
+                  </div>
+                </div>
+              )}
+
+              {mustahiqData.jobTitle && (
+                <div className="flex items-start gap-3">
+                  <BriefcaseIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500">Pekerjaan</p>
+                    <p className="font-medium text-gray-900">{mustahiqData.jobTitle.name}</p>
+                  </div>
+                </div>
+              )}
+
+              {mustahiqData.incomeRange && (
+                <div className="flex items-start gap-3">
+                  <CurrencyDollarIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-500">Penghasilan Bulanan</p>
+                    <p className="font-medium text-gray-900">{mustahiqData.incomeRange.label}</p>
                   </div>
                 </div>
               )}

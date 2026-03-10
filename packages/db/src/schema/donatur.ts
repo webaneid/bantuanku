@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, bigint } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, bigint, integer, varchar, date } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { indonesiaProvinces } from "./indonesia-provinces";
@@ -6,6 +6,8 @@ import { indonesiaRegencies } from "./indonesia-regencies";
 import { indonesiaDistricts } from "./indonesia-districts";
 import { indonesiaVillages } from "./indonesia-villages";
 import { users } from "./user";
+import { jobTitles } from "./job-categories";
+import { incomeRanges } from "./income-ranges";
 
 export const donatur = pgTable("donatur", {
   id: text("id")
@@ -26,6 +28,16 @@ export const donatur = pgTable("donatur", {
   villageCode: text("village_code").references(() => indonesiaVillages.code),
 
   userId: text("user_id").references(() => users.id),
+  jobTitleId: integer("job_title_id").references(() => jobTitles.id, { onDelete: "set null" }),
+  incomeRangeId: integer("income_range_id").references(() => incomeRanges.id, { onDelete: "set null" }),
+
+  // Personal
+  nik: varchar("nik", { length: 16 }),
+  npwp: varchar("npwp", { length: 25 }),
+  birthPlace: varchar("birth_place", { length: 100 }),
+  birthDate: date("birth_date", { mode: "string" }),
+  gender: varchar("gender", { length: 10 }),
+
   avatar: text("avatar"),
 
   // Stats
@@ -62,6 +74,14 @@ export const donaturRelations = relations(donatur, ({ one }) => ({
   village: one(indonesiaVillages, {
     fields: [donatur.villageCode],
     references: [indonesiaVillages.code],
+  }),
+  jobTitle: one(jobTitles, {
+    fields: [donatur.jobTitleId],
+    references: [jobTitles.id],
+  }),
+  incomeRange: one(incomeRanges, {
+    fields: [donatur.incomeRangeId],
+    references: [incomeRanges.id],
   }),
 }));
 

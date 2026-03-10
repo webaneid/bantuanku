@@ -25,7 +25,9 @@ donaturRoute.get("/search", async (c) => {
     conditions.push(eq(donatur.email, email.toLowerCase().trim()));
   }
   if (phone) {
-    conditions.push(eq(donatur.phone, phone.trim()));
+    const trimmedPhone = phone.trim();
+    conditions.push(eq(donatur.phone, trimmedPhone));
+    conditions.push(eq(donatur.whatsappNumber, trimmedPhone));
   }
 
   const found = await db.query.donatur.findFirst({
@@ -36,6 +38,7 @@ donaturRoute.get("/search", async (c) => {
       email: true,
       phone: true,
       whatsappNumber: true,
+      userId: true,
     },
   });
 

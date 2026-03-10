@@ -38,6 +38,8 @@ import zakatRoutes from "./routes/zakat";
 import fundraisersRoutes from "./routes/fundraisers";
 import mitraPublicRoutes from "./routes/mitra";
 import whatsappWebhookRoutes from "./routes/whatsapp";
+import jobsRoutes from "./routes/jobs";
+import incomeRangesRoutes from "./routes/income-ranges";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -175,6 +177,8 @@ app.route("/v1/zakat", zakatRoutes);
 app.route("/v1/fundraisers", fundraisersRoutes);
 app.route("/v1/mitra", mitraPublicRoutes);
 app.route("/v1/whatsapp", whatsappWebhookRoutes);
+app.route("/v1/jobs", jobsRoutes);
+app.route("/v1/income-ranges", incomeRangesRoutes);
 
 app.notFound((c) => {
   return c.json({ success: false, message: "Not found" }, 404);

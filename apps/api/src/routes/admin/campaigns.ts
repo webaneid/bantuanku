@@ -247,7 +247,7 @@ campaignsAdmin.post(
       isFeatured: body.isFeatured,
       isUrgent: body.isUrgent,
       createdBy: user!.id,
-      status: isMitra ? "draft" : (body.status || "draft"),
+      status: (isMitra || user?.roles?.includes("program_coordinator")) ? "draft" : (body.status || "draft"),
       // SEO fields
       metaTitle: body.metaTitle || null,
       metaDescription: body.metaDescription || null,
@@ -450,7 +450,14 @@ const updateCampaign = async (c: any) => {
   if (body.categoryId !== undefined) updateData.categoryId = body.categoryId;
   if (body.pillar !== undefined) updateData.pillar = body.pillar;
   if (body.coordinatorId !== undefined) updateData.coordinatorId = body.coordinatorId;
-  if (body.status !== undefined) updateData.status = body.status;
+  if (body.status !== undefined) {
+    // Only super_admin and admin_campaign can change status
+    const user = c.get("user");
+    const canChangeStatus = user?.roles?.includes("super_admin") || user?.roles?.includes("admin_campaign");
+    if (canChangeStatus) {
+      updateData.status = body.status;
+    }
+  }
   if (body.isFeatured !== undefined) updateData.isFeatured = body.isFeatured;
   if (body.isUrgent !== undefined) updateData.isUrgent = body.isUrgent;
   if (body.startDate !== undefined) updateData.startDate = body.startDate ? new Date(body.startDate) : null;

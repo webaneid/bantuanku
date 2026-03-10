@@ -127,6 +127,17 @@ const allMenuItems = [
       { label: "Vendors", href: "/dashboard/master/vendors", roles: ["super_admin", "admin_campaign", "admin_finance"] },
       { label: "Employees", href: "/dashboard/master/employees", roles: ["super_admin", "admin_campaign", "admin_finance"] },
       { label: "Mustahiq Zakat", href: "/dashboard/master/mustahiqs", roles: ["super_admin", "admin_campaign", "admin_finance"] },
+      { label: "Penghasilan Bulanan", href: "/dashboard/master/penghasilan-bulanan", roles: ["super_admin", "admin_campaign", "admin_finance"] },
+    ]
+  },
+  {
+    icon: BarChart3,
+    label: "Statistics",
+    href: "/dashboard/statistics",
+    roles: ["super_admin", "admin_finance", "admin_campaign"],
+    submenu: [
+      { label: "Statistik Donatur", href: "/dashboard/statistics/donatur", roles: ["super_admin", "admin_finance", "admin_campaign"] },
+      { label: "Statistik Mustahiq", href: "/dashboard/statistics/mustahiq", roles: ["super_admin", "admin_finance", "admin_campaign"] },
     ]
   },
   {

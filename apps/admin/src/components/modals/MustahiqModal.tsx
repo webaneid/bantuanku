@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import Autocomplete from "@/components/Autocomplete";
@@ -28,6 +28,12 @@ type Mustahiq = {
   nationalId?: string;
   dateOfBirth?: Date;
   gender?: string;
+  birthPlace?: string;
+  motherName?: string;
+  maritalStatus?: string;
+  dependents?: number | null;
+  jobTitleId?: number | null;
+  incomeRangeId?: number | null;
 
   // Bank accounts - new system
   bankAccounts?: BankAccountValue[];
@@ -59,12 +65,63 @@ const ASNAF_CATEGORIES = [
   { value: "ibnus_sabil", label: "Ibnus Sabil" },
 ];
 
+const MARITAL_STATUS_OPTIONS = [
+  { value: "menikah", label: "Menikah" },
+  { value: "belum_menikah", label: "Belum Menikah" },
+  { value: "janda_cerai_hidup", label: "Janda (Cerai Hidup)" },
+  { value: "janda_cerai_mati", label: "Janda (Cerai Mati)" },
+  { value: "duda_cerai_hidup", label: "Duda (Cerai Hidup)" },
+  { value: "duda_cerai_mati", label: "Duda (Cerai Mati)" },
+];
+
 export default function MustahiqModal({
   mustahiq,
   isViewMode = false,
   onClose,
   onSuccess,
 }: MustahiqModalProps) {
+  // Fetch job categories with titles
+  const { data: jobCategories } = useQuery({
+    queryKey: ["jobCategories"],
+    queryFn: async () => {
+      const res = await api.get("/jobs/categories");
+      return res.data.data as Array<{
+        id: number;
+        name: string;
+        titles: Array<{ id: number; name: string; isPopular: boolean }>;
+      }>;
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const jobTitleOptions = useMemo(
+    () => (jobCategories || []).flatMap((cat) =>
+      cat.titles.map((title) => ({
+        value: String(title.id),
+        label: `${title.name} — ${cat.name}`,
+      }))
+    ),
+    [jobCategories]
+  );
+
+  // Fetch income ranges
+  const { data: incomeRangesData } = useQuery({
+    queryKey: ["incomeRanges"],
+    queryFn: async () => {
+      const res = await api.get("/income-ranges");
+      return res.data.data as Array<{ id: number; label: string }>;
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const incomeRangeOptions = useMemo(
+    () => (incomeRangesData || []).map((r) => ({
+      value: String(r.id),
+      label: r.label,
+    })),
+    [incomeRangesData]
+  );
+
   const [formData, setFormData] = useState({
     mustahiqId: "",
     name: "",
@@ -72,6 +129,12 @@ export default function MustahiqModal({
     nationalId: "",
     dateOfBirth: "",
     gender: "",
+    birthPlace: "",
+    motherName: "",
+    maritalStatus: "",
+    dependents: null as number | null,
+    jobTitleId: null as number | null,
+    incomeRangeId: null as number | null,
     notes: "",
     isActive: true,
   });
@@ -108,6 +171,12 @@ export default function MustahiqModal({
         nationalId: mustahiq.nationalId || "",
         dateOfBirth: mustahiq.dateOfBirth ? new Date(mustahiq.dateOfBirth).toISOString().split("T")[0] : "",
         gender: mustahiq.gender || "",
+        birthPlace: mustahiq.birthPlace || "",
+        motherName: mustahiq.motherName || "",
+        maritalStatus: mustahiq.maritalStatus || "",
+        dependents: mustahiq.dependents ?? null,
+        jobTitleId: mustahiq.jobTitleId ?? null,
+        incomeRangeId: mustahiq.incomeRangeId ?? null,
         notes: mustahiq.notes || "",
         isActive: mustahiq.isActive ?? true,
       });
@@ -133,6 +202,12 @@ export default function MustahiqModal({
         nationalId: "",
         dateOfBirth: "",
         gender: "",
+        birthPlace: "",
+        motherName: "",
+        maritalStatus: "",
+        dependents: null,
+        jobTitleId: null,
+        incomeRangeId: null,
         notes: "",
         isActive: true,
       });
@@ -297,13 +372,84 @@ export default function MustahiqModal({
                 />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="form-label">Tempat Lahir</label>
+                  <input
+                    type="text"
+                    value={formData.birthPlace}
+                    onChange={(e) => setFormData({ ...formData, birthPlace: e.target.value })}
+                    className="form-input"
+                    placeholder="Contoh: Jakarta"
+                    disabled={isViewMode}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Tanggal Lahir</label>
+                  <input
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                    className="form-input"
+                    disabled={isViewMode}
+                  />
+                </div>
+              </div>
+
               <div className="form-group">
-                <label className="form-label">Tanggal Lahir</label>
+                <label className="form-label">Nama Ibu Kandung</label>
                 <input
-                  type="date"
-                  value={formData.dateOfBirth}
-                  onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                  type="text"
+                  value={formData.motherName}
+                  onChange={(e) => setFormData({ ...formData, motherName: e.target.value })}
                   className="form-input"
+                  placeholder="Nama ibu kandung"
+                  disabled={isViewMode}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Status Perkawinan</label>
+                <Autocomplete
+                  options={MARITAL_STATUS_OPTIONS}
+                  value={formData.maritalStatus}
+                  onChange={(value) => setFormData({ ...formData, maritalStatus: value })}
+                  placeholder="Pilih Status Perkawinan"
+                  disabled={isViewMode}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Jumlah Tanggungan</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.dependents ?? ""}
+                  onChange={(e) => setFormData({ ...formData, dependents: e.target.value ? Number(e.target.value) : null })}
+                  className="form-input"
+                  placeholder="0"
+                  disabled={isViewMode}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Pekerjaan</label>
+                <Autocomplete
+                  options={jobTitleOptions}
+                  value={String(formData.jobTitleId ?? "")}
+                  onChange={(value) => setFormData({ ...formData, jobTitleId: value ? Number(value) : null })}
+                  placeholder="Pilih Pekerjaan"
+                  disabled={isViewMode}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Penghasilan Bulanan</label>
+                <Autocomplete
+                  options={incomeRangeOptions}
+                  value={String(formData.incomeRangeId ?? "")}
+                  onChange={(value) => setFormData({ ...formData, incomeRangeId: value ? Number(value) : null })}
+                  placeholder="Pilih Penghasilan Bulanan"
                   disabled={isViewMode}
                 />
               </div>

@@ -18,11 +18,24 @@ interface ProfileData {
   regencyCode: string;
   districtCode: string;
   villageCode: string;
+  jobTitleId: number | null;
+  incomeRangeId: number | null;
+  nik: string;
+  npwp: string;
+  birthPlace: string;
+  birthDate: string;
+  gender: string;
   bankAccounts: Array<{
     bankName: string;
     accountNumber: string;
     accountHolderName: string;
   }>;
+}
+
+interface JobCategory {
+  id: number;
+  name: string;
+  titles: Array<{ id: number; name: string; isPopular: boolean }>;
 }
 
 export default function ProfilePage() {
@@ -40,9 +53,18 @@ export default function ProfilePage() {
     regencyCode: "",
     districtCode: "",
     villageCode: "",
+    jobTitleId: null,
+    incomeRangeId: null,
+    nik: "",
+    npwp: "",
+    birthPlace: "",
+    birthDate: "",
+    gender: "",
     bankAccounts: [],
   });
 
+  const [jobCategories, setJobCategories] = useState<JobCategory[]>([]);
+  const [incomeRanges, setIncomeRanges] = useState<Array<{ id: number; label: string }>>([]);
   const [provinces, setProvinces] = useState<any[]>([]);
   const [regencies, setRegencies] = useState<any[]>([]);
   const [districts, setDistricts] = useState<any[]>([]);
@@ -84,6 +106,13 @@ export default function ProfilePage() {
           regencyCode: data.regencyCode || "",
           districtCode: data.districtCode || "",
           villageCode: data.villageCode || "",
+          jobTitleId: data.jobTitleId || null,
+          incomeRangeId: data.incomeRangeId || null,
+          nik: data.nik || "",
+          npwp: data.npwp || "",
+          birthPlace: data.birthPlace || "",
+          birthDate: data.birthDate || "",
+          gender: data.gender || "",
           bankAccounts: data.bankAccounts?.map((ba: any) => ({
             bankName: ba.bankName,
             accountNumber: ba.accountNumber,
@@ -113,7 +142,7 @@ export default function ProfilePage() {
     fetchProfile();
   }, [isHydrated, user]);
 
-  // Fetch provinces on mount
+  // Fetch provinces and job categories on mount
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
@@ -124,7 +153,27 @@ export default function ProfilePage() {
       }
     };
 
+    const fetchJobCategories = async () => {
+      try {
+        const response = await api.get("/jobs/categories");
+        setJobCategories(response.data.data || []);
+      } catch (error) {
+        console.error("Error fetching job categories:", error);
+      }
+    };
+
+    const fetchIncomeRanges = async () => {
+      try {
+        const response = await api.get("/income-ranges");
+        setIncomeRanges(response.data.data || []);
+      } catch (error) {
+        console.error("Error fetching income ranges:", error);
+      }
+    };
+
     fetchProvinces();
+    fetchJobCategories();
+    fetchIncomeRanges();
   }, []);
 
   const fetchRegencies = async (provinceCode: string) => {
@@ -175,6 +224,24 @@ export default function ProfilePage() {
     [villages]
   );
 
+  const jobTitleOptions = useMemo(
+    () => jobCategories.flatMap((cat) =>
+      cat.titles.map((title) => ({
+        value: String(title.id),
+        label: `${title.name} — ${cat.name}`,
+      }))
+    ),
+    [jobCategories]
+  );
+
+  const incomeRangeOptions = useMemo(
+    () => incomeRanges.map((r) => ({
+      value: String(r.id),
+      label: r.label,
+    })),
+    [incomeRanges]
+  );
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setProfileData(prev => ({ ...prev, [name]: value }));
@@ -215,6 +282,18 @@ export default function ProfilePage() {
 
   const handleSubmitProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate required fields
+    const missing: string[] = [];
+    if (!profileData.jobTitleId) missing.push("Pekerjaan");
+    if (!profileData.incomeRangeId) missing.push("Penghasilan Bulanan");
+    if (!profileData.gender) missing.push("Jenis Kelamin");
+    if (!profileData.provinceCode) missing.push("Provinsi");
+    if (missing.length > 0) {
+      toast.error(`Data wajib belum diisi: ${missing.join(", ")}`);
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -291,6 +370,15 @@ export default function ProfilePage() {
     }));
   };
 
+  // Check required fields
+  const missingFields: string[] = [];
+  if (!profileData.jobTitleId) missingFields.push("Pekerjaan");
+  if (!profileData.incomeRangeId) missingFields.push("Penghasilan Bulanan");
+  if (!profileData.gender) missingFields.push("Jenis Kelamin");
+  if (!profileData.provinceCode) missingFields.push("Provinsi");
+
+  const hasIncompleteRequired = !isLoading && missingFields.length > 0;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -306,6 +394,25 @@ export default function ProfilePage() {
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t("account.profile.title")}</h1>
         <p className="text-sm text-gray-600 mt-1">{t("account.profile.subtitle")}</p>
       </div>
+
+      {/* Required fields warning */}
+      {hasIncompleteRequired && (
+        <div className="bg-warning-50 border border-warning-200 rounded-xl p-4">
+          <div className="flex gap-3">
+            <div className="flex-shrink-0">
+              <svg className="w-5 h-5 text-warning-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-1.333-2.694-1.333-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-warning-800">Lengkapi Data Wajib</h3>
+              <p className="text-sm text-warning-700 mt-1">
+                Data berikut wajib diisi: <strong>{missingFields.join(", ")}</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmitProfile} className="space-y-6">
         {/* Basic Info Card */}
@@ -336,6 +443,102 @@ export default function ProfilePage() {
                 className="bg-gray-50"
               />
               <p className="text-xs text-gray-500 mt-1">{t("account.profile.hints.emailImmutable")}</p>
+            </div>
+
+            <div>
+              <Label htmlFor="jobTitleId">{t("account.profile.labels.jobTitle")} <span className="text-red-500">*</span></Label>
+              <Autocomplete
+                options={jobTitleOptions}
+                value={String(profileData.jobTitleId ?? "")}
+                onChange={(value) => setProfileData(prev => ({ ...prev, jobTitleId: value ? Number(value) : null }))}
+                placeholder={t("account.profile.placeholders.jobTitle")}
+              />
+              {!profileData.jobTitleId && <p className="text-xs text-red-500 mt-1">Wajib diisi</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="incomeRangeId">{t("account.profile.labels.incomeRange")} <span className="text-red-500">*</span></Label>
+              <Autocomplete
+                options={incomeRangeOptions}
+                value={String(profileData.incomeRangeId ?? "")}
+                onChange={(value) => setProfileData(prev => ({ ...prev, incomeRangeId: value ? Number(value) : null }))}
+                placeholder={t("account.profile.placeholders.incomeRange")}
+              />
+              {!profileData.incomeRangeId && <p className="text-xs text-red-500 mt-1">Wajib diisi</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* Personal Info Card */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-6">{t("account.profile.personalInfo")}</h2>
+
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <Label htmlFor="nik">{t("account.profile.labels.nik")}</Label>
+                <Input
+                  id="nik"
+                  name="nik"
+                  type="text"
+                  value={profileData.nik}
+                  onChange={handleChange}
+                  placeholder={t("account.profile.placeholders.nik")}
+                  maxLength={16}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="npwp">{t("account.profile.labels.npwp")}</Label>
+                <Input
+                  id="npwp"
+                  name="npwp"
+                  type="text"
+                  value={profileData.npwp}
+                  onChange={handleChange}
+                  placeholder={t("account.profile.placeholders.npwp")}
+                  maxLength={25}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="birthPlace">{t("account.profile.labels.birthPlace")}</Label>
+                <Input
+                  id="birthPlace"
+                  name="birthPlace"
+                  type="text"
+                  value={profileData.birthPlace}
+                  onChange={handleChange}
+                  placeholder={t("account.profile.placeholders.birthPlace")}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="birthDate">{t("account.profile.labels.birthDate")}</Label>
+                <Input
+                  id="birthDate"
+                  name="birthDate"
+                  type="date"
+                  value={profileData.birthDate}
+                  onChange={handleChange}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="gender">{t("account.profile.labels.gender")} <span className="text-red-500">*</span></Label>
+                <select
+                  id="gender"
+                  name="gender"
+                  value={profileData.gender}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${!profileData.gender ? "border-red-300" : "border-gray-300"}`}
+                >
+                  <option value="">{t("account.profile.placeholders.gender")}</option>
+                  <option value="laki-laki">Laki-laki</option>
+                  <option value="perempuan">Perempuan</option>
+                </select>
+                {!profileData.gender && <p className="text-xs text-red-500 mt-1">Wajib diisi</p>}
+              </div>
             </div>
           </div>
         </div>
@@ -403,13 +606,14 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <Label htmlFor="provinceCode">{t("account.profile.labels.province")}</Label>
+                <Label htmlFor="provinceCode">{t("account.profile.labels.province")} <span className="text-red-500">*</span></Label>
                 <Autocomplete
                   options={provinceOptions}
                   value={profileData.provinceCode}
                   onChange={handleProvinceChange}
                   placeholder={t("account.profile.placeholders.province")}
                 />
+                {!profileData.provinceCode && <p className="text-xs text-red-500 mt-1">Wajib diisi</p>}
               </div>
 
               <div>

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, date } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, date, integer, varchar } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { zakatDistributions } from "./zakat-distributions";
@@ -6,6 +6,8 @@ import { indonesiaProvinces } from "./indonesia-provinces";
 import { indonesiaRegencies } from "./indonesia-regencies";
 import { indonesiaDistricts } from "./indonesia-districts";
 import { indonesiaVillages } from "./indonesia-villages";
+import { jobTitles } from "./job-categories";
+import { incomeRanges } from "./income-ranges";
 
 export const mustahiqs = pgTable("mustahiqs", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -36,7 +38,13 @@ export const mustahiqs = pgTable("mustahiqs", {
   // Personal Details (optional)
   nationalId: text("national_id"), // NIK/KTP
   dateOfBirth: date("date_of_birth", { mode: "date" }),
+  birthPlace: varchar("birth_place", { length: 100 }),
   gender: text("gender"), // male, female
+  motherName: varchar("mother_name", { length: 100 }),
+  maritalStatus: varchar("marital_status", { length: 30 }), // menikah, belum_menikah, janda_cerai_hidup, janda_cerai_mati, duda_cerai_hidup, duda_cerai_mati
+  dependents: integer("dependents"),
+  jobTitleId: integer("job_title_id").references(() => jobTitles.id, { onDelete: "set null" }),
+  incomeRangeId: integer("income_range_id").references(() => incomeRanges.id, { onDelete: "set null" }),
 
   // Banking Info - Legacy (will be deprecated, use entity_bank_accounts table instead)
   bankName: text("bank_name"),
@@ -70,6 +78,14 @@ export const mustahiqsRelations = relations(mustahiqs, ({ many, one }) => ({
   village: one(indonesiaVillages, {
     fields: [mustahiqs.villageCode],
     references: [indonesiaVillages.code],
+  }),
+  jobTitle: one(jobTitles, {
+    fields: [mustahiqs.jobTitleId],
+    references: [jobTitles.id],
+  }),
+  incomeRange: one(incomeRanges, {
+    fields: [mustahiqs.incomeRangeId],
+    references: [incomeRanges.id],
   }),
 }));
 

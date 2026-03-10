@@ -383,6 +383,65 @@ export default function ProfilePage() {
                 </div>
               )}
 
+              {/* Personal Data from donatur (for employee) */}
+              {entityType === "employee" && entity?.personalData && (
+                <div className="space-y-4 pt-2 border-t">
+                  <h3 className="text-sm font-semibold text-gray-900">Data Pribadi</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {entity.personalData.nik && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">NIK</label>
+                        <input type="text" value={entity.personalData.nik} className="form-input w-full bg-gray-100" disabled />
+                      </div>
+                    )}
+                    {entity.personalData.npwp && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">NPWP</label>
+                        <input type="text" value={entity.personalData.npwp} className="form-input w-full bg-gray-100" disabled />
+                      </div>
+                    )}
+                    {entity.personalData.gender && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Jenis Kelamin</label>
+                        <input type="text" value={entity.personalData.gender === "male" ? "Laki-laki" : entity.personalData.gender === "female" ? "Perempuan" : entity.personalData.gender} className="form-input w-full bg-gray-100" disabled />
+                      </div>
+                    )}
+                    {(entity.personalData.birthPlace || entity.personalData.birthDate) && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tempat / Tanggal Lahir</label>
+                        <input
+                          type="text"
+                          value={[
+                            entity.personalData.birthPlace,
+                            entity.personalData.birthDate ? new Date(entity.personalData.birthDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : null,
+                          ].filter(Boolean).join(", ")}
+                          className="form-input w-full bg-gray-100"
+                          disabled
+                        />
+                      </div>
+                    )}
+                    {entity.personalData.jobTitleName && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Pekerjaan</label>
+                        <input
+                          type="text"
+                          value={entity.personalData.jobCategoryName ? `${entity.personalData.jobTitleName} (${entity.personalData.jobCategoryName})` : entity.personalData.jobTitleName}
+                          className="form-input w-full bg-gray-100"
+                          disabled
+                        />
+                      </div>
+                    )}
+                    {entity.personalData.incomeRangeLabel && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Penghasilan Bulanan</label>
+                        <input type="text" value={entity.personalData.incomeRangeLabel} className="form-input w-full bg-gray-100" disabled />
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">Data pribadi dikelola melalui profil donatur di front-end</p>
+                </div>
+              )}
+
               {/* Mitra-specific fields */}
               {entityType === "mitra" && (
                 <div className="space-y-4 pt-2 border-t">

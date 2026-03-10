@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { AddressForm, type AddressValue } from "@/components/forms/AddressForm";
@@ -91,6 +91,17 @@ export default function EmployeeModal({
   const [bankAccountsFormData, setBankAccountsFormData] = useState<BankAccountValue[]>([]);
 
   const [activatePassword, setActivatePassword] = useState("");
+  const [selectedRoleSlug, setSelectedRoleSlug] = useState("employee");
+
+  // Fetch roles
+  const { data: rolesData } = useQuery({
+    queryKey: ["roles"],
+    queryFn: async () => {
+      const response = await api.get("/admin/roles");
+      return response.data.data || [];
+    },
+    enabled: isOpen && !!employee,
+  });
 
   const [feedback, setFeedback] = useState<{
     open: boolean;
@@ -166,14 +177,16 @@ export default function EmployeeModal({
   });
 
   const activateUserMutation = useMutation({
-    mutationFn: (payload: { email: string; password: string; roleSlug: string }) =>
+    mutationFn: (payload: { email?: string; password?: string; roleSlug: string }) =>
       api.post(`/admin/employees/${employee?.id}/activate-user`, payload),
     onSuccess: () => {
       setFeedback({
         open: true,
         type: "success",
-        title: "Akun employee berhasil diaktifkan",
-        message: "Employee sekarang bisa login ke dashboard.",
+        title: employee?.userId ? "Role berhasil diubah" : "Akun employee berhasil diaktifkan",
+        message: employee?.userId
+          ? "Role employee telah diperbarui."
+          : "Employee sekarang bisa login ke dashboard.",
         next: () => onSuccess(),
       });
       setActivatePassword("");
@@ -182,26 +195,29 @@ export default function EmployeeModal({
       setFeedback({
         open: true,
         type: "error",
-        title: "Gagal mengaktifkan akun",
+        title: "Gagal",
         message: error.response?.data?.message || "Terjadi kesalahan. Coba lagi.",
       });
     },
   });
 
+  // Handle activate for new user (no userId)
   const handleActivateUser = () => {
-    if (!activatePassword || activatePassword.length < 8) {
-      setFeedback({
-        open: true,
-        type: "error",
-        title: "Password tidak valid",
-        message: "Password minimal 8 karakter.",
-      });
-      return;
-    }
-    activateUserMutation.mutate({
+    const payload: any = {
       email: employee?.email || "",
-      password: activatePassword,
-      roleSlug: "employee",
+      roleSlug: selectedRoleSlug,
+    };
+    // Password only required if no existing user account for this email
+    if (activatePassword) {
+      payload.password = activatePassword;
+    }
+    activateUserMutation.mutate(payload);
+  };
+
+  // Handle change role (has userId)
+  const handleChangeRole = () => {
+    activateUserMutation.mutate({
+      roleSlug: selectedRoleSlug,
     });
   };
 
@@ -329,26 +345,35 @@ export default function EmployeeModal({
               />
             </div>
 
-            {/* Akun Login - only on edit */}
+            {/* Role Management - only on edit */}
             {employee && !isViewMode && (
               employee.userId ? (
                 <div className="form-section">
-                  <h3 className="form-section-title">Change Password</h3>
+                  <h3 className="form-section-title">Ubah Role</h3>
 
                   <div className="form-group">
-                    <label className="form-label">Password Baru</label>
-                    <input
-                      type="password"
-                      value={(formData as any).password || ""}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value } as any)}
+                    <label className="form-label">Role</label>
+                    <select
+                      value={selectedRoleSlug}
+                      onChange={(e) => setSelectedRoleSlug(e.target.value)}
                       className="form-input"
-                      placeholder="Kosongkan jika tidak ingin mengubah"
-                      minLength={8}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Kosongkan jika tidak ingin mengubah password
-                    </p>
+                    >
+                      {rolesData?.map((role: any) => (
+                        <option key={role.id} value={role.slug}>
+                          {role.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleChangeRole}
+                    disabled={activateUserMutation.isPending}
+                  >
+                    {activateUserMutation.isPending ? "Menyimpan..." : "Simpan Role"}
+                  </button>
                 </div>
               ) : (
                 <div className="form-section">
@@ -374,6 +399,21 @@ export default function EmployeeModal({
                       placeholder="Minimal 8 karakter"
                       minLength={8}
                     />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Role</label>
+                    <select
+                      value={selectedRoleSlug}
+                      onChange={(e) => setSelectedRoleSlug(e.target.value)}
+                      className="form-input"
+                    >
+                      {rolesData?.map((role: any) => (
+                        <option key={role.id} value={role.slug}>
+                          {role.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <button

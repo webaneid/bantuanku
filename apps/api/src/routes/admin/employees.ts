@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import {
   employees,
+  donatur,
   users,
   userRoles,
   roles,
@@ -213,6 +214,127 @@ app.get("/", async (c) => {
   }
 });
 
+// POST /admin/employees/from-donatur - Create employee from existing donatur
+app.post("/from-donatur", requireRoles("super_admin", "admin_campaign"), async (c) => {
+  try {
+    const db = c.get("db");
+    const body = await c.req.json();
+
+    const schema = z.object({
+      donaturId: z.string().min(1, "Donatur ID wajib diisi"),
+      position: z.string().min(1, "Posisi wajib diisi"),
+      department: z.string().optional(),
+      employmentType: z.string().optional(),
+      employeeId: z.string().optional(),
+      notes: z.string().optional(),
+    });
+
+    const validated = schema.parse(body);
+
+    // 1. Get donatur data
+    const donaturRecord = await db.query.donatur.findFirst({
+      where: eq(donatur.id, validated.donaturId),
+    });
+
+    if (!donaturRecord) {
+      return c.json({ error: "Donatur tidak ditemukan" }, 404);
+    }
+
+    // 2. Check if employee already exists with same userId
+    if (donaturRecord.userId) {
+      const existingEmployee = await db.query.employees.findFirst({
+        where: eq(employees.userId, donaturRecord.userId),
+      });
+      if (existingEmployee) {
+        return c.json({ error: "Donatur ini sudah terdaftar sebagai employee" }, 400);
+      }
+    }
+
+    // 3. Create employee with data from donatur
+    const [newEmployee] = await db
+      .insert(employees)
+      .values({
+        name: donaturRecord.name,
+        position: validated.position,
+        department: validated.department || null,
+        employmentType: validated.employmentType || null,
+        employeeId: validated.employeeId || null,
+        email: donaturRecord.email,
+        phone: donaturRecord.phone || null,
+        whatsappNumber: donaturRecord.whatsappNumber || null,
+        website: donaturRecord.website || null,
+        detailAddress: donaturRecord.detailAddress || null,
+        provinceCode: donaturRecord.provinceCode || null,
+        regencyCode: donaturRecord.regencyCode || null,
+        districtCode: donaturRecord.districtCode || null,
+        villageCode: donaturRecord.villageCode || null,
+        nationalId: donaturRecord.nik || null,
+        taxId: donaturRecord.npwp || null,
+        userId: donaturRecord.userId || null,
+        notes: validated.notes || null,
+        isActive: true,
+      })
+      .returning();
+
+    // 4. If donatur has userId, assign employee role
+    if (donaturRecord.userId) {
+      const employeeRole = await db.query.roles.findFirst({
+        where: eq(roles.slug, "employee"),
+      });
+      if (employeeRole) {
+        // Check if already has employee role
+        const existingRole = await db.query.userRoles.findFirst({
+          where: and(
+            eq(userRoles.userId, donaturRecord.userId),
+            eq(userRoles.roleId, employeeRole.id)
+          ),
+        });
+        if (!existingRole) {
+          await db.insert(userRoles).values({
+            id: createId(),
+            userId: donaturRecord.userId,
+            roleId: employeeRole.id,
+          });
+        }
+      }
+    }
+
+    // 5. Copy bank accounts from donatur to employee
+    const donaturBankAccounts = await db
+      .select()
+      .from(entityBankAccounts)
+      .where(
+        and(
+          eq(entityBankAccounts.entityType, "donatur"),
+          eq(entityBankAccounts.entityId, donaturRecord.id)
+        )
+      );
+
+    if (donaturBankAccounts.length > 0) {
+      await db.insert(entityBankAccounts).values(
+        donaturBankAccounts.map((acc) => ({
+          entityType: "employee",
+          entityId: newEmployee.id,
+          bankName: acc.bankName,
+          accountNumber: acc.accountNumber,
+          accountHolderName: acc.accountHolderName,
+        }))
+      );
+    }
+
+    return c.json({
+      data: newEmployee,
+      message: "Employee berhasil dibuat dari data donatur",
+    }, 201);
+  } catch (error: any) {
+    console.error("Error creating employee from donatur:", error);
+    if (error instanceof z.ZodError) {
+      return c.json({ error: error.errors[0].message }, 400);
+    }
+    return c.json({ error: "Failed to create employee from donatur" }, 500);
+  }
+});
+
 // GET /admin/employees/:id - Get single employee
 app.get("/:id", async (c) => {
   try {
@@ -380,6 +502,31 @@ app.post("/", requireRoles("super_admin", "admin_campaign"), async (c) => {
       await db.insert(entityBankAccounts).values(bankAccountsToInsert);
     }
 
+    // Ensure donatur record exists for this employee
+    if (newEmployee.email) {
+      const existingDonatur = await db.query.donatur.findFirst({
+        where: eq(donatur.email, newEmployee.email),
+      });
+      if (!existingDonatur) {
+        await db.insert(donatur).values({
+          id: createId(),
+          email: newEmployee.email,
+          name: newEmployee.name,
+          phone: newEmployee.phone || null,
+          whatsappNumber: newEmployee.whatsappNumber || null,
+          website: newEmployee.website || null,
+          detailAddress: newEmployee.detailAddress || null,
+          provinceCode: newEmployee.provinceCode || null,
+          regencyCode: newEmployee.regencyCode || null,
+          districtCode: newEmployee.districtCode || null,
+          villageCode: newEmployee.villageCode || null,
+          nik: newEmployee.nationalId || null,
+          npwp: newEmployee.taxId || null,
+          userId: newEmployee.userId || null,
+        });
+      }
+    }
+
     // Fetch the created bank accounts
     const createdBankAccounts = await db
       .select()
@@ -459,6 +606,45 @@ app.put("/:id", requireRoles("super_admin", "admin_campaign"), async (c) => {
       return c.json({ error: "Employee not found" }, 404);
     }
 
+    // If deactivating employee, remove employee role from user_roles
+    if (validated.isActive === false && updatedEmployee.userId) {
+      const employeeRole = await db.query.roles.findFirst({
+        where: eq(roles.slug, "employee"),
+      });
+      if (employeeRole) {
+        await db
+          .delete(userRoles)
+          .where(
+            and(
+              eq(userRoles.userId, updatedEmployee.userId),
+              eq(userRoles.roleId, employeeRole.id)
+            )
+          );
+      }
+    }
+
+    // If re-activating employee, ensure employee role exists
+    if (validated.isActive === true && updatedEmployee.userId) {
+      const employeeRole = await db.query.roles.findFirst({
+        where: eq(roles.slug, "employee"),
+      });
+      if (employeeRole) {
+        const existingRole = await db.query.userRoles.findFirst({
+          where: and(
+            eq(userRoles.userId, updatedEmployee.userId),
+            eq(userRoles.roleId, employeeRole.id)
+          ),
+        });
+        if (!existingRole) {
+          await db.insert(userRoles).values({
+            id: createId(),
+            userId: updatedEmployee.userId,
+            roleId: employeeRole.id,
+          });
+        }
+      }
+    }
+
     // Update bank accounts - delete old ones and insert new ones
     if (bankAccounts !== undefined) {
       // Delete existing bank accounts
@@ -482,6 +668,43 @@ app.put("/:id", requireRoles("super_admin", "admin_campaign"), async (c) => {
         }));
 
         await db.insert(entityBankAccounts).values(bankAccountsToInsert);
+      }
+    }
+
+    // Sync shared fields to donatur if linked via userId
+    if (updatedEmployee.userId) {
+      const linkedDonatur = await db.query.donatur.findFirst({
+        where: eq(donatur.userId, updatedEmployee.userId),
+      });
+      if (linkedDonatur) {
+        await db
+          .update(donatur)
+          .set({
+            name: updatedEmployee.name,
+            phone: updatedEmployee.phone || null,
+            whatsappNumber: updatedEmployee.whatsappNumber || null,
+            website: updatedEmployee.website || null,
+            detailAddress: updatedEmployee.detailAddress || null,
+            provinceCode: updatedEmployee.provinceCode || null,
+            regencyCode: updatedEmployee.regencyCode || null,
+            districtCode: updatedEmployee.districtCode || null,
+            villageCode: updatedEmployee.villageCode || null,
+            nik: updatedEmployee.nationalId || null,
+            npwp: updatedEmployee.taxId || null,
+            updatedAt: new Date(),
+          })
+          .where(eq(donatur.id, linkedDonatur.id));
+
+        // Sync to users table too
+        await db
+          .update(users)
+          .set({
+            name: updatedEmployee.name,
+            phone: updatedEmployee.phone || null,
+            whatsappNumber: updatedEmployee.whatsappNumber || null,
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, updatedEmployee.userId));
       }
     }
 
@@ -550,16 +773,7 @@ app.post("/:id/activate-user", requireRoles("super_admin"), async (c) => {
     const id = c.req.param("id");
     const body = await c.req.json();
 
-    // Validate request body
-    const schema = z.object({
-      email: z.string().email("Email tidak valid"),
-      password: z.string().min(8, "Password minimal 8 karakter"),
-      roleSlug: z.string().min(1, "Role wajib dipilih"),
-    });
-
-    const { email, password, roleSlug } = schema.parse(body);
-
-    // 1. Check if employee exists and doesn't have user_id yet
+    // 1. Get employee
     const employee = await db.query.employees.findFirst({
       where: eq(employees.id, id),
     });
@@ -568,32 +782,117 @@ app.post("/:id/activate-user", requireRoles("super_admin"), async (c) => {
       return c.json({ error: "Employee not found" }, 404);
     }
 
+    // Case A: Employee already has userId (e.g. created from donatur) → just assign role
     if (employee.userId) {
-      return c.json({ error: "Employee sudah memiliki akun user" }, 400);
+      const schema = z.object({
+        roleSlug: z.string().min(1, "Role wajib dipilih"),
+      });
+      const { roleSlug } = schema.parse(body);
+
+      const role = await db.query.roles.findFirst({
+        where: eq(roles.slug, roleSlug),
+      });
+      if (!role) {
+        return c.json({ error: "Role tidak ditemukan" }, 404);
+      }
+
+      // Remove existing roles and assign new one
+      await db.delete(userRoles).where(eq(userRoles.userId, employee.userId));
+      await db.insert(userRoles).values({
+        id: createId(),
+        userId: employee.userId,
+        roleId: role.id,
+      });
+
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.id, employee.userId),
+      });
+
+      return c.json({
+        success: true,
+        data: {
+          user: {
+            id: employee.userId,
+            email: existingUser?.email || employee.email,
+            name: existingUser?.name || employee.name,
+          },
+          employee,
+          role: { id: role.id, slug: role.slug, name: role.name },
+        },
+        message: `Role berhasil diubah ke ${role.name}`,
+      });
     }
 
-    // 2. Check if email is already used
+    // Case B: No userId → link existing user or create new user account + assign role
+    const schema = z.object({
+      email: z.string().email("Email tidak valid"),
+      password: z.string().min(8, "Password minimal 8 karakter").optional(),
+      roleSlug: z.string().min(1, "Role wajib dipilih"),
+    });
+
+    const { email, password, roleSlug } = schema.parse(body);
+
+    // Check if email is already used by another user
     const existingUser = await db.query.users.findFirst({
       where: eq(users.email, email),
     });
 
     if (existingUser) {
-      return c.json({ error: "Email sudah digunakan" }, 400);
+      // Email exists → link to existing user, just assign role
+      const role = await db.query.roles.findFirst({
+        where: eq(roles.slug, roleSlug),
+      });
+      if (!role) {
+        return c.json({ error: "Role tidak ditemukan" }, 404);
+      }
+
+      // Check if already has this role
+      const existingRole = await db.query.userRoles.findFirst({
+        where: and(
+          eq(userRoles.userId, existingUser.id),
+          eq(userRoles.roleId, role.id)
+        ),
+      });
+      if (!existingRole) {
+        await db.insert(userRoles).values({
+          id: createId(),
+          userId: existingUser.id,
+          roleId: role.id,
+        });
+      }
+
+      // Link employee to existing user
+      const [updatedEmployee] = await db
+        .update(employees)
+        .set({ userId: existingUser.id, updatedAt: new Date() })
+        .where(eq(employees.id, id))
+        .returning();
+
+      return c.json({
+        success: true,
+        data: {
+          user: { id: existingUser.id, email: existingUser.email, name: existingUser.name },
+          employee: updatedEmployee,
+          role: { id: role.id, slug: role.slug, name: role.name },
+        },
+        message: "Akun sudah ada, role berhasil di-assign",
+      }, 201);
     }
 
-    // 3. Check if role exists
+    // Email doesn't exist → create new user (password required)
+    if (!password) {
+      return c.json({ error: "Password wajib diisi untuk membuat akun baru" }, 400);
+    }
+
     const role = await db.query.roles.findFirst({
       where: eq(roles.slug, roleSlug),
     });
-
     if (!role) {
       return c.json({ error: "Role tidak ditemukan" }, 404);
     }
 
-    // 4. Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // 5. Create user account
     const [newUser] = await db
       .insert(users)
       .values({
@@ -606,37 +905,53 @@ app.post("/:id/activate-user", requireRoles("super_admin"), async (c) => {
       })
       .returning();
 
-    // 6. Assign role to user
     await db.insert(userRoles).values({
       id: createId(),
       userId: newUser.id,
       roleId: role.id,
     });
 
-    // 7. Update employee with user_id
     const [updatedEmployee] = await db
       .update(employees)
-      .set({
-        userId: newUser.id,
-        updatedAt: new Date(),
-      })
+      .set({ userId: newUser.id, updatedAt: new Date() })
       .where(eq(employees.id, id))
       .returning();
+
+    // Also ensure donatur record exists linked to this user
+    const existingDonatur = await db.query.donatur.findFirst({
+      where: eq(donatur.email, email),
+    });
+    if (!existingDonatur) {
+      await db.insert(donatur).values({
+        id: createId(),
+        email,
+        name: employee.name,
+        phone: employee.phone || null,
+        whatsappNumber: employee.whatsappNumber || null,
+        website: employee.website || null,
+        detailAddress: employee.detailAddress || null,
+        provinceCode: employee.provinceCode || null,
+        regencyCode: employee.regencyCode || null,
+        districtCode: employee.districtCode || null,
+        villageCode: employee.villageCode || null,
+        nik: employee.nationalId || null,
+        npwp: employee.taxId || null,
+        userId: newUser.id,
+      });
+    } else if (!existingDonatur.userId) {
+      // Link existing donatur to new user
+      await db
+        .update(donatur)
+        .set({ userId: newUser.id, updatedAt: new Date() })
+        .where(eq(donatur.id, existingDonatur.id));
+    }
 
     return c.json({
       success: true,
       data: {
-        user: {
-          id: newUser.id,
-          email: newUser.email,
-          name: newUser.name,
-        },
+        user: { id: newUser.id, email: newUser.email, name: newUser.name },
         employee: updatedEmployee,
-        role: {
-          id: role.id,
-          slug: role.slug,
-          name: role.name,
-        },
+        role: { id: role.id, slug: role.slug, name: role.name },
       },
     }, 201);
   } catch (error: any) {

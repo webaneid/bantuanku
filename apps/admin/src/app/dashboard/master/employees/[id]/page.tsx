@@ -28,6 +28,8 @@ export default function ViewEmployeePage() {
   const employeeId = params.id as string;
   const [showActivateForm, setShowActivateForm] = useState(false);
   const [activatePassword, setActivatePassword] = useState("");
+  const [selectedRoleSlug, setSelectedRoleSlug] = useState("employee");
+  const [showRoleForm, setShowRoleForm] = useState(false);
   const [feedback, setFeedback] = useState({
     open: false,
     type: "success" as "success" | "error",
@@ -41,6 +43,15 @@ export default function ViewEmployeePage() {
     queryFn: async () => {
       const response = await api.get(`/admin/employees/${employeeId}`);
       return response.data.data;
+    },
+  });
+
+  // Fetch roles
+  const { data: rolesData } = useQuery({
+    queryKey: ["roles"],
+    queryFn: async () => {
+      const response = await api.get("/admin/roles");
+      return response.data.data || [];
     },
   });
 
@@ -164,18 +175,21 @@ export default function ViewEmployeePage() {
     enabled: !!employeeId,
   });
 
-  // Activate user mutation
+  // Activate user / change role mutation
   const activateUserMutation = useMutation({
-    mutationFn: (payload: { email: string; password: string; roleSlug: string }) =>
+    mutationFn: (payload: { email?: string; password?: string; roleSlug: string }) =>
       api.post(`/admin/employees/${employeeId}/activate-user`, payload),
     onSuccess: () => {
       setFeedback({
         open: true,
         type: "success",
         title: "Berhasil",
-        message: "Akun employee berhasil diaktifkan",
+        message: employeeData?.userId
+          ? "Role berhasil diubah"
+          : "Akun employee berhasil diaktifkan",
       });
       setShowActivateForm(false);
+      setShowRoleForm(false);
       setActivatePassword("");
       queryClient.invalidateQueries({ queryKey: ["employee", employeeId] });
       refetch();
@@ -189,6 +203,7 @@ export default function ViewEmployeePage() {
       }),
   });
 
+  // Handle activate for new user (no userId)
   const handleActivateUser = () => {
     if (!activatePassword || activatePassword.length < 8) {
       setFeedback({
@@ -202,7 +217,14 @@ export default function ViewEmployeePage() {
     activateUserMutation.mutate({
       email: employeeData?.email || "",
       password: activatePassword,
-      roleSlug: "employee",
+      roleSlug: selectedRoleSlug,
+    });
+  };
+
+  // Handle change role (has userId)
+  const handleChangeRole = () => {
+    activateUserMutation.mutate({
+      roleSlug: selectedRoleSlug,
     });
   };
 
@@ -357,12 +379,59 @@ export default function ViewEmployeePage() {
               </div>
             </div>
 
-            {/* Akun Login Indicator */}
+            {/* Akun Login & Role Management */}
             <div className="mb-4">
               {employeeData.userId ? (
-                <div className="flex items-center gap-2 justify-center text-success-600 text-sm">
-                  <UserIcon className="w-4 h-4" />
-                  <span>Akun Employee Aktif</span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 justify-center text-success-600 text-sm">
+                    <UserIcon className="w-4 h-4" />
+                    <span>Akun Aktif</span>
+                  </div>
+                  {showRoleForm ? (
+                    <div className="space-y-2 text-left bg-gray-50 rounded-lg p-3">
+                      <div>
+                        <label className="text-xs text-gray-500 block mb-1">Role</label>
+                        <select
+                          value={selectedRoleSlug}
+                          onChange={(e) => setSelectedRoleSlug(e.target.value)}
+                          className="form-input text-sm"
+                        >
+                          {rolesData?.map((role: any) => (
+                            <option key={role.id} value={role.slug}>
+                              {role.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm flex-1"
+                          onClick={handleChangeRole}
+                          disabled={activateUserMutation.isPending}
+                        >
+                          {activateUserMutation.isPending ? "..." : "Simpan Role"}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => setShowRoleForm(false)}
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                        onClick={() => setShowRoleForm(true)}
+                      >
+                        Ubah Role
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center">
@@ -387,6 +456,20 @@ export default function ViewEmployeePage() {
                           placeholder="Minimal 8 karakter"
                           minLength={8}
                         />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 block mb-1">Role</label>
+                        <select
+                          value={selectedRoleSlug}
+                          onChange={(e) => setSelectedRoleSlug(e.target.value)}
+                          className="form-input text-sm"
+                        >
+                          {rolesData?.map((role: any) => (
+                            <option key={role.id} value={role.slug}>
+                              {role.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                       <div className="flex gap-2">
                         <button

@@ -40,6 +40,7 @@ interface Donatur {
   email: string;
   phone: string | null;
   whatsappNumber: string | null;
+  userId: string | null;
 }
 
 interface CheckoutFormData {
@@ -83,6 +84,8 @@ export default function CheckoutPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [fundraiserRefCode, setFundraiserRefCode] = useState<string | null>(null);
+  const [showRegisterPopup, setShowRegisterPopup] = useState(false);
+  const [whatsappSameAsPhone, setWhatsappSameAsPhone] = useState(true);
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -107,13 +110,18 @@ export default function CheckoutPage() {
       // Find donatur ID for logged-in user first
       checkExistingDonatur(user.email ?? undefined, user.phone ?? undefined);
 
+      const userPhone = user.phone || '';
+      const userWa = user.whatsappNumber || '';
+      const waSame = !userWa || normalizePhone(userWa) === normalizePhone(userPhone);
+
       setFormData(prev => ({
         ...prev,
         name: user.name || prev.name,
         email: user.email || prev.email,
-        phone: user.phone || prev.phone,
-        whatsapp: user.whatsappNumber || prev.whatsapp,
+        phone: userPhone || prev.phone,
+        whatsapp: waSame ? '' : userWa,
       }));
+      setWhatsappSameAsPhone(waSame);
       setIsAutoFilled(true);
     }
   }, [user, isHydrated]);
@@ -137,16 +145,27 @@ export default function CheckoutPage() {
           // Set donatur ID
           setDonaturId(donatur.id);
 
-          // Auto-fill name if found (only for guests)
+          // Auto-fill all fields (only for guests)
           if (!user) {
+            const donaturPhone = donatur.phone || '';
+            const donaturWa = donatur.whatsappNumber || '';
+            const waSame = !donaturWa || normalizePhone(donaturWa) === normalizePhone(donaturPhone);
+
             setFormData(prev => ({
               ...prev,
               name: donatur.name || prev.name,
-              phone: donatur.phone || prev.phone,
-              whatsapp: donatur.whatsappNumber || prev.whatsapp,
+              email: donatur.email || prev.email,
+              phone: donaturPhone || prev.phone,
+              whatsapp: waSame ? '' : donaturWa,
             }));
+            setWhatsappSameAsPhone(waSame);
             setIsAutoFilled(true);
             toast.success(t('checkout.main.toasts.donorFound'));
+
+            // Show register popup if donatur exists but has no user account
+            if (!donatur.userId) {
+              setShowRegisterPopup(true);
+            }
           }
         }
       }
@@ -167,15 +186,13 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleWhatsappFromPhone = () => {
-    if (formData.phone && !formData.whatsapp) {
-      setFormData(prev => ({
-        ...prev,
-        whatsapp: prev.phone,
-      }));
-      toast.success(t('checkout.main.toasts.whatsappAutoFilled'));
+  const handleWhatsappBlur = () => {
+    if (formData.whatsapp && !donaturId) {
+      checkExistingDonatur(undefined, formData.whatsapp);
     }
   };
+
+
 
   const processCheckout = async () => {
 
@@ -195,6 +212,12 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Validate WhatsApp if different from phone
+    if (!whatsappSameAsPhone && (!formData.whatsapp || normalizePhone(formData.whatsapp).length < 10)) {
+      toast.error(t('checkout.main.validation.invalidWhatsapp'));
+      return;
+    }
+
     if (items.length === 0) {
       toast.error(t('checkout.main.validation.emptyCart'));
       return;
@@ -202,7 +225,7 @@ export default function CheckoutPage() {
 
 
     // Check minimum donation amount for campaign items
-    const invalidCampaignItem = items.find(item => item.itemType === 'campaign' && item.amount < 10000);
+    const invalidCampaignItem = items.find(item => item.itemType === 'campaign' && item.amount < 1000);
     if (invalidCampaignItem) {
       toast.error(
         t('checkout.main.validation.minDonation', { title: invalidCampaignItem.title })
@@ -211,7 +234,7 @@ export default function CheckoutPage() {
     }
 
     // Check minimum amount for zakat items
-    const invalidZakatItem = items.find(item => item.itemType === 'zakat' && item.amount < 10000);
+    const invalidZakatItem = items.find(item => item.itemType === 'zakat' && item.amount < 1000);
     if (invalidZakatItem) {
       toast.error(
         t('checkout.main.validation.minZakat', { title: invalidZakatItem.title })
@@ -224,9 +247,9 @@ export default function CheckoutPage() {
     try {
       // Normalize contact data
       const normalizedPhone = normalizePhone(formData.phone);
-      const normalizedWhatsapp = formData.whatsapp
-        ? normalizePhone(formData.whatsapp)
-        : normalizedPhone;
+      const normalizedWhatsapp = whatsappSameAsPhone
+        ? normalizedPhone
+        : (formData.whatsapp ? normalizePhone(formData.whatsapp) : normalizedPhone);
       const normalizedEmail = formData.email.toLowerCase().trim();
 
       // Separate campaign, zakat, and qurban items
@@ -574,19 +597,42 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-600">
-                      {t('checkout.main.alreadyHaveAccount')}{' '}
-                      <Link
-                        href="/login"
-                        className="font-medium text-primary-600 hover:text-primary-700"
-                      >
-                        {t('checkout.main.loginHere')}
-                      </Link>
-                    </p>
+                    <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 flex items-center gap-3">
+                      <svg className="w-5 h-5 text-primary-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <p className="text-sm text-primary-800 flex-1">
+                        {t('checkout.main.alreadyHaveAccount')}{' '}
+                        <Link
+                          href="/login"
+                          className="font-semibold text-primary-700 hover:text-primary-900 underline"
+                        >
+                          {t('checkout.main.loginHere')}
+                        </Link>
+                      </p>
+                    </div>
                   )}
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Email - moved to top */}
+                  <div className="form-field">
+                    <label className="form-label">
+                      {t('checkout.main.labels.email')} <span className="text-red-600">*</span>
+                    </label>
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value });
+                        setIsAutoFilled(false);
+                      }}
+                      onBlur={handleEmailBlur}
+                      placeholder={t('checkout.main.placeholders.email')}
+                      required
+                    />
+                  </div>
+
                   {/* Nama Lengkap */}
                   <div className="form-field">
                     <label className="form-label">
@@ -628,27 +674,6 @@ export default function CheckoutPage() {
                     </label>
                   </div>
 
-                  {/* Email */}
-                  <div className="form-field">
-                    <label className="form-label">
-                      {t('checkout.main.labels.email')} <span className="text-red-600">*</span>
-                    </label>
-                    <Input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => {
-                        setFormData({ ...formData, email: e.target.value });
-                        setIsAutoFilled(false);
-                      }}
-                      onBlur={handleEmailBlur}
-                      placeholder={t('checkout.main.placeholders.email')}
-                      required
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      {t('checkout.main.hints.donationProofEmail')}
-                    </p>
-                  </div>
-
                   {/* Nomor Telepon */}
                   <div className="form-field">
                     <label className="form-label">
@@ -670,29 +695,37 @@ export default function CheckoutPage() {
                   {/* WhatsApp */}
                   <div className="form-field">
                     <label className="form-label">
-                      {t('checkout.main.labels.whatsapp')}
+                      {t('checkout.main.labels.whatsapp')} <span className="text-red-600">*</span>
                     </label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="tel"
-                        value={formData.whatsapp}
-                        onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                        placeholder={t('checkout.main.placeholders.whatsapp')}
-                        className="flex-1"
+                    <Input
+                      type="tel"
+                      value={whatsappSameAsPhone ? formData.phone : formData.whatsapp}
+                      onChange={(e) => {
+                        setFormData({ ...formData, whatsapp: e.target.value });
+                        setWhatsappSameAsPhone(false);
+                        setIsAutoFilled(false);
+                      }}
+                      onBlur={handleWhatsappBlur}
+                      placeholder={t('checkout.main.placeholders.whatsapp')}
+                      required
+                      disabled={whatsappSameAsPhone}
+                    />
+                    <label className="flex items-center gap-2 cursor-pointer mt-2">
+                      <input
+                        type="checkbox"
+                        checked={whatsappSameAsPhone}
+                        onChange={(e) => {
+                          setWhatsappSameAsPhone(e.target.checked);
+                          if (e.target.checked) {
+                            setFormData(prev => ({ ...prev, whatsapp: '' }));
+                          }
+                        }}
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                       />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="md"
-                        onClick={handleWhatsappFromPhone}
-                        disabled={!formData.phone}
-                      >
+                      <span className="text-sm text-gray-700">
                         {t('checkout.main.whatsappSameAsPhone')}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {t('checkout.main.hints.whatsappNotification')}
-                    </p>
+                      </span>
+                    </label>
                   </div>
 
                   {/* Atas Nama - For Qurban and Zakat */}
@@ -894,6 +927,48 @@ export default function CheckoutPage() {
                 ? t('checkout.common.processing')
                 : t('checkout.main.actions.choosePaymentMethod')}
             </Button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Register Popup for unregistered donatur */}
+      {showRegisterPopup && isMounted && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setShowRegisterPopup(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6 text-center animate-in fade-in zoom-in duration-200">
+            {/* Icon */}
+            <div className="mx-auto w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center mb-4">
+              <svg className="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+            </div>
+
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              Buat Akun Gratis
+            </h3>
+
+            <p className="text-sm text-gray-600 leading-relaxed mb-6">
+              Dengan mendaftar, Anda bisa memantau seluruh riwayat donasi & zakat,
+              mendapat update program terbaru, serta mengelola profil Anda dengan mudah.
+              Prosesnya cuma <span className="font-semibold text-primary-700">1 menit</span>!
+            </p>
+
+            <div className="flex flex-col gap-3">
+              <Link
+                href={`/register${formData.email ? `?email=${encodeURIComponent(formData.email)}` : ''}`}
+                className="btn-primary w-full py-3 rounded-lg font-semibold text-center inline-block"
+              >
+                Daftar Sekarang
+              </Link>
+              <button
+                type="button"
+                onClick={() => setShowRegisterPopup(false)}
+                className="text-sm text-gray-500 hover:text-gray-700 py-2 transition-colors"
+              >
+                Lanjutkan Transaksi
+              </button>
+            </div>
           </div>
         </div>,
         document.body

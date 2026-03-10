@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { AddressForm, type AddressValue } from "@/components/forms/AddressForm";
@@ -9,6 +9,7 @@ import ContactForm, { type ContactValue } from "@/components/forms/ContactForm";
 import { BankAccountForm, type BankAccountValue } from "@/components/forms/BankAccountForm";
 import { normalizeContactData } from "@/lib/contact-helpers";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import Autocomplete from "@/components/Autocomplete";
 
 type Donatur = {
   id: string;
@@ -29,6 +30,22 @@ type Donatur = {
   districtName?: string;
   villageName?: string;
   villagePostalCode?: string | null;
+
+  // Job
+  jobTitleId?: number | null;
+  jobTitleName?: string;
+  jobCategoryName?: string;
+
+  // Income range
+  incomeRangeId?: number | null;
+  incomeRangeLabel?: string;
+
+  // Personal
+  nik?: string | null;
+  npwp?: string | null;
+  birthPlace?: string | null;
+  birthDate?: string | null;
+  gender?: string | null;
 
   // Bank accounts - new system
   bankAccounts?: BankAccountValue[];
@@ -61,7 +78,56 @@ export default function DonorModal({
 }: DonorModalProps) {
   const [formData, setFormData] = useState({
     name: "",
+    jobTitleId: null as number | null,
+    incomeRangeId: null as number | null,
+    nik: "" as string,
+    npwp: "" as string,
+    birthPlace: "" as string,
+    birthDate: "" as string,
+    gender: "" as string,
   });
+
+  // Fetch job categories with titles
+  const { data: jobCategories } = useQuery({
+    queryKey: ["jobCategories"],
+    queryFn: async () => {
+      const res = await api.get("/jobs/categories");
+      return res.data.data as Array<{
+        id: number;
+        name: string;
+        titles: Array<{ id: number; name: string; isPopular: boolean }>;
+      }>;
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const jobTitleOptions = useMemo(
+    () => (jobCategories || []).flatMap((cat) =>
+      cat.titles.map((title) => ({
+        value: String(title.id),
+        label: `${title.name} — ${cat.name}`,
+      }))
+    ),
+    [jobCategories]
+  );
+
+  // Fetch income ranges
+  const { data: incomeRangesData } = useQuery({
+    queryKey: ["incomeRanges"],
+    queryFn: async () => {
+      const res = await api.get("/income-ranges");
+      return res.data.data as Array<{ id: number; label: string }>;
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const incomeRangeOptions = useMemo(
+    () => (incomeRangesData || []).map((r) => ({
+      value: String(r.id),
+      label: r.label,
+    })),
+    [incomeRangesData]
+  );
 
   // Contact data state
   const [contactData, setContactData] = useState<ContactValue>({});
@@ -108,6 +174,13 @@ export default function DonorModal({
     if (donatur) {
       setFormData({
         name: donatur.name || "",
+        jobTitleId: donatur.jobTitleId ?? null,
+        incomeRangeId: donatur.incomeRangeId ?? null,
+        nik: donatur.nik || "",
+        npwp: donatur.npwp || "",
+        birthPlace: donatur.birthPlace || "",
+        birthDate: donatur.birthDate || "",
+        gender: donatur.gender || "",
       });
       setContactData({
         email: donatur.email || "",
@@ -118,6 +191,13 @@ export default function DonorModal({
     } else {
       setFormData({
         name: "",
+        jobTitleId: null,
+        incomeRangeId: null,
+        nik: "",
+        npwp: "",
+        birthPlace: "",
+        birthDate: "",
+        gender: "",
       });
       setContactData({});
       setAddressFormData({});
@@ -277,6 +357,98 @@ export default function DonorModal({
                   disabled={isViewMode}
                   required
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Pekerjaan</label>
+                <Autocomplete
+                  options={jobTitleOptions}
+                  value={String(formData.jobTitleId ?? "")}
+                  onChange={(value) => setFormData({ ...formData, jobTitleId: value ? Number(value) : null })}
+                  placeholder="Pilih Pekerjaan"
+                  disabled={isViewMode}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Penghasilan Bulanan</label>
+                <Autocomplete
+                  options={incomeRangeOptions}
+                  value={String(formData.incomeRangeId ?? "")}
+                  onChange={(value) => setFormData({ ...formData, incomeRangeId: value ? Number(value) : null })}
+                  placeholder="Pilih Penghasilan Bulanan"
+                  disabled={isViewMode}
+                />
+              </div>
+            </div>
+
+            {/* Personal Info */}
+            <div className="form-section">
+              <h3 className="form-section-title">Data Pribadi</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="form-label">Nomor NIK</label>
+                  <input
+                    type="text"
+                    value={formData.nik}
+                    onChange={(e) => setFormData({ ...formData, nik: e.target.value })}
+                    className="form-input"
+                    disabled={isViewMode}
+                    maxLength={16}
+                    placeholder="16 digit NIK"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Nomor NPWP</label>
+                  <input
+                    type="text"
+                    value={formData.npwp}
+                    onChange={(e) => setFormData({ ...formData, npwp: e.target.value })}
+                    className="form-input"
+                    disabled={isViewMode}
+                    maxLength={25}
+                    placeholder="Nomor NPWP"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Tempat Lahir</label>
+                  <input
+                    type="text"
+                    value={formData.birthPlace}
+                    onChange={(e) => setFormData({ ...formData, birthPlace: e.target.value })}
+                    className="form-input"
+                    disabled={isViewMode}
+                    placeholder="Kota tempat lahir"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Tanggal Lahir</label>
+                  <input
+                    type="date"
+                    value={formData.birthDate}
+                    onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                    className="form-input"
+                    disabled={isViewMode}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Jenis Kelamin</label>
+                  <select
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                    className="form-input"
+                    disabled={isViewMode}
+                  >
+                    <option value="">-- Pilih --</option>
+                    <option value="laki-laki">Laki-laki</option>
+                    <option value="perempuan">Perempuan</option>
+                  </select>
+                </div>
               </div>
             </div>
 

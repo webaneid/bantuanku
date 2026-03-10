@@ -14,6 +14,9 @@ import {
   HeartIcon,
   GlobeAltIcon,
   UserIcon,
+  BriefcaseIcon,
+  CurrencyDollarIcon,
+  IdentificationIcon,
 } from "@heroicons/react/24/outline";
 import api from "@/lib/api";
 import FeedbackDialog from "@/components/FeedbackDialog";
@@ -263,6 +266,75 @@ export default function ViewDonaturPage() {
             </div>
 
             <div className="space-y-4">
+              {donaturData.jobTitleName && (
+                <div className="flex items-start gap-3">
+                  <BriefcaseIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-500">Pekerjaan</p>
+                    <p className="font-medium text-gray-900">{donaturData.jobTitleName}</p>
+                    {donaturData.jobCategoryName && (
+                      <p className="text-xs text-gray-500">{donaturData.jobCategoryName}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {donaturData.incomeRangeLabel && (
+                <div className="flex items-start gap-3">
+                  <CurrencyDollarIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-500">Penghasilan Bulanan</p>
+                    <p className="font-medium text-gray-900">{donaturData.incomeRangeLabel}</p>
+                  </div>
+                </div>
+              )}
+
+              {donaturData.gender && (
+                <div className="flex items-start gap-3">
+                  <IdentificationIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-500">Jenis Kelamin</p>
+                    <p className="font-medium text-gray-900 capitalize">{donaturData.gender}</p>
+                  </div>
+                </div>
+              )}
+
+              {(donaturData.birthPlace || donaturData.birthDate) && (
+                <div className="flex items-start gap-3">
+                  <CalendarIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-500">Tempat, Tanggal Lahir</p>
+                    <p className="font-medium text-gray-900">
+                      {[donaturData.birthPlace, donaturData.birthDate ? formatDate(donaturData.birthDate) : null].filter(Boolean).join(", ")}
+                      {donaturData.birthDate && (() => {
+                        const age = Math.floor((Date.now() - new Date(donaturData.birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+                        return <span className="text-gray-500 text-sm ml-1">({age} tahun)</span>;
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {donaturData.nik && (
+                <div className="flex items-start gap-3">
+                  <IdentificationIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-500">NIK</p>
+                    <p className="font-medium text-gray-900">{donaturData.nik}</p>
+                  </div>
+                </div>
+              )}
+
+              {donaturData.npwp && (
+                <div className="flex items-start gap-3">
+                  <IdentificationIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-500">NPWP</p>
+                    <p className="font-medium text-gray-900">{donaturData.npwp}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-start gap-3">
                 <EnvelopeIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
