@@ -13,7 +13,7 @@ export const transactionPayments = pgTable("transaction_payments", {
 
   // Payment Details
   amount: bigint("amount", { mode: "number" }).notNull(),
-  paymentDate: timestamp("payment_date", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  paymentDate: timestamp("payment_date", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
   paymentMethod: text("payment_method").notNull(),
   paymentChannel: text("payment_channel"),
 
@@ -23,9 +23,9 @@ export const transactionPayments = pgTable("transaction_payments", {
   // Proof & Verification
   paymentProof: text("payment_proof"),
   verifiedBy: text("verified_by").references(() => users.id),
-  verifiedAt: timestamp("verified_at", { precision: 3, mode: "date" }),
+  verifiedAt: timestamp("verified_at", { precision: 3, mode: "date", withTimezone: true }),
   rejectedBy: text("rejected_by").references(() => users.id),
-  rejectedAt: timestamp("rejected_at", { precision: 3, mode: "date" }),
+  rejectedAt: timestamp("rejected_at", { precision: 3, mode: "date", withTimezone: true }),
 
   // Status
   status: text("status").default("pending").notNull(), // pending, verified, rejected
@@ -36,7 +36,7 @@ export const transactionPayments = pgTable("transaction_payments", {
   paymentCode: text("payment_code"),
   paymentUrl: text("payment_url"),
   qrCode: text("qr_code"),
-  expiredAt: timestamp("expired_at", { precision: 3, mode: "date" }),
+  expiredAt: timestamp("expired_at", { precision: 3, mode: "date", withTimezone: true }),
   gatewayCode: text("gateway_code"),
   webhookPayload: jsonb("webhook_payload"),
 
@@ -44,8 +44,8 @@ export const transactionPayments = pgTable("transaction_payments", {
   ledgerEntryId: text("ledger_entry_id"),
 
   notes: text("notes"),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const transactionPaymentsRelations = relations(transactionPayments, ({ one }) => ({

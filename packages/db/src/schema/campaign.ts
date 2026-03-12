@@ -21,8 +21,8 @@ export const campaigns = pgTable("campaigns", {
   collected: bigint("collected", { mode: "number" }).default(0).notNull(),
   donorCount: integer("donor_count").default(0).notNull(),
   pillar: text("pillar").default("Kemanusiaan").notNull(),
-  startDate: timestamp("start_date", { precision: 3, mode: "date" }),
-  endDate: timestamp("end_date", { precision: 3, mode: "date" }),
+  startDate: timestamp("start_date", { precision: 3, mode: "date", withTimezone: true }),
+  endDate: timestamp("end_date", { precision: 3, mode: "date", withTimezone: true }),
   isFeatured: boolean("is_featured").default(false).notNull(),
   isUrgent: boolean("is_urgent").default(false).notNull(),
 
@@ -39,12 +39,12 @@ export const campaigns = pgTable("campaigns", {
   seoScore: integer("seo_score").default(0),
 
   status: text("status").default("draft").notNull(),
-  publishedAt: timestamp("published_at", { precision: 3, mode: "date" }),
+  publishedAt: timestamp("published_at", { precision: 3, mode: "date", withTimezone: true }),
   createdBy: text("created_by").references(() => users.id),
   coordinatorId: text("coordinator_id").references(() => employees.id),
   mitraId: text("mitra_id").references(() => mitra.id),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const campaignUpdates = pgTable("campaign_updates", {
@@ -54,7 +54,7 @@ export const campaignUpdates = pgTable("campaign_updates", {
   content: text("content").notNull(),
   images: jsonb("images").$type<string[]>(),
   createdBy: text("created_by").references(() => users.id),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 // Relations

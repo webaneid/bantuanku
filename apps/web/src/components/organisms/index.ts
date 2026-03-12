@@ -40,3 +40,6 @@ export type { BreadcrumbProps, BreadcrumbItem } from './Breadcrumb';
 // Zakat Card
 export { ZakatCard } from './ZakatCard';
 export type { ZakatCardProps } from './ZakatCard';
+
+// Testimonial Section
+export { TestimonialSection } from './TestimonialSection';

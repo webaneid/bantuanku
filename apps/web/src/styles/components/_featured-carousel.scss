@@ -143,6 +143,10 @@
   transition: all $transition-base;
   height: 100%;
 
+  @include mobile {
+    border-radius: 5px;
+  }
+
   &:hover {
     box-shadow: 0 8px 24px rgba(black, 0.12);
     transform: translateY(-4px);
@@ -249,8 +253,8 @@
     gap: $spacing-4;
 
     @include mobile {
-      padding: 20px;
-      gap: 20px;
+      padding: 10px;
+      gap: 15px;
     }
   }
 

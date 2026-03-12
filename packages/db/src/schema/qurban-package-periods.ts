@@ -31,13 +31,13 @@ export const qurbanPackagePeriods = pgTable("qurban_package_periods", {
   isAvailable: boolean("is_available").default(true).notNull(),
 
   // Optional execution override per package-period
-  executionDateOverride: timestamp("execution_date_override", { precision: 3, mode: "date" }),
+  executionDateOverride: timestamp("execution_date_override", { precision: 3, mode: "date", withTimezone: true }),
   executionTimeNote: text("execution_time_note"),
   executionLocation: text("execution_location"),
   executionNotes: text("execution_notes"),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   // Ensure unique package-period combination
   packagePeriodUnique: unique().on(table.packageId, table.periodId),

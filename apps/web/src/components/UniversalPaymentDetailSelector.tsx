@@ -45,6 +45,9 @@ export default function UniversalPaymentDetailSelector({
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [transferAmount, setTransferAmount] = useState<number>(0);
   const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [paymentTime, setPaymentTime] = useState<string>(
+    new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  );
   const [methodType, setMethodType] = useState<string | null>(null);
   const [qrisData, setQrisData] = useState<any>(null);
   const [isLoadingQris, setIsLoadingQris] = useState(false);
@@ -281,7 +284,7 @@ export default function UniversalPaymentDetailSelector({
       const formData = new FormData();
       formData.append("file", paymentProof);
       formData.append("amount", transferAmount.toString());
-      formData.append("paymentDate", paymentDate);
+      formData.append("paymentDate", `${paymentDate}T${paymentTime || '00:00'}`);
 
       const response = await api.post(
         `/transactions/${transactionId}/upload-proof`,
@@ -602,7 +605,7 @@ export default function UniversalPaymentDetailSelector({
                   </p>
                 </div>
 
-                {/* Payment Date Input */}
+                {/* Payment Date & Time Input */}
                 <div>
                   <label
                     htmlFor="payment-date"
@@ -610,14 +613,23 @@ export default function UniversalPaymentDetailSelector({
                   >
                     {t("payment.paymentDate")} <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="date"
-                    id="payment-date"
-                    value={paymentDate}
-                    onChange={(e) => setPaymentDate(e.target.value)}
-                    max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                  <div className="flex gap-3">
+                    <input
+                      type="date"
+                      id="payment-date"
+                      value={paymentDate}
+                      onChange={(e) => setPaymentDate(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                    <input
+                      type="time"
+                      id="payment-time"
+                      value={paymentTime}
+                      onChange={(e) => setPaymentTime(e.target.value)}
+                      className="w-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    />
+                  </div>
                   <p className="mt-2 text-sm text-gray-500">
                     {t("payment.paymentDateHint")}
                   </p>

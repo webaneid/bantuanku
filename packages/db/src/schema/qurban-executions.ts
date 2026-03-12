@@ -14,7 +14,7 @@ export const qurbanExecutions = pgTable("qurban_executions", {
   transactionId: text("transaction_id").references(() => transactions.id), // Jika individual (kambing atau sapi utuh)
 
   // Execution Details
-  executionDate: timestamp("execution_date", { precision: 3, mode: "date" }).notNull(),
+  executionDate: timestamp("execution_date", { precision: 3, mode: "date", withTimezone: true }).notNull(),
   location: text("location").notNull(), // Lokasi penyembelihan
   butcherName: text("butcher_name"), // Nama jagal/panitia
 
@@ -36,8 +36,8 @@ export const qurbanExecutions = pgTable("qurban_executions", {
   recipientList: text("recipient_list"), // JSON array of recipient names
 
   executedBy: text("executed_by").references(() => users.id), // Admin yang input laporan
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const qurbanExecutionsRelations = relations(qurbanExecutions, ({ one }) => ({

@@ -72,14 +72,15 @@ export default function ZakatDashboardPage() {
     const paidAmount = paidTransactions.reduce((sum: number, t: any) => sum + (t.totalAmount || 0), 0);
     const pendingAmount = pendingTransactions.reduce((sum: number, t: any) => sum + (t.totalAmount || 0), 0);
 
-    // Group by product_id (zakat type)
+    // Group by zakat type ID (stored in typeSpecificData.zakat_type_id)
     const byType: Record<string, { totalAmount: number; count: number; zakatTypeId: string }> = {};
     paidTransactions.forEach((t: any) => {
-      if (!byType[t.productId]) {
-        byType[t.productId] = { totalAmount: 0, count: 0, zakatTypeId: t.productId };
+      const zakatTypeId = t.typeSpecificData?.zakat_type_id || t.productId;
+      if (!byType[zakatTypeId]) {
+        byType[zakatTypeId] = { totalAmount: 0, count: 0, zakatTypeId };
       }
-      byType[t.productId].totalAmount += t.totalAmount || 0;
-      byType[t.productId].count += 1;
+      byType[zakatTypeId].totalAmount += t.totalAmount || 0;
+      byType[zakatTypeId].count += 1;
     });
 
     const distributions = distributionStatsData?.distributions || { disbursedAmount: 0, disbursedCount: 0 };

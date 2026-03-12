@@ -34,7 +34,6 @@ export default function TransactionList({ transactions }: { transactions: Saving
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
-      timeZone: 'Asia/Jakarta',
     }).format(new Date(date));
 
   if (transactions.length === 0) {

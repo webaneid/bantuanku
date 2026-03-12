@@ -1196,7 +1196,8 @@ reportsAdmin.get("/zakat", requireRole("super_admin", "admin_finance"), async (c
   // Zakat Income (by category)
   const incomeConditions = [
     eq(transactions.paymentStatus, "paid"),
-    like(transactions.category, "zakat_%"),
+    eq(transactions.productType, "zakat"),
+    sql<boolean>`coalesce((${transactions.typeSpecificData} ->> 'is_admin_fee_entry')::boolean, false) = false`,
   ];
 
   if (startDate) {
@@ -1332,7 +1333,7 @@ reportsAdmin.get("/qurban", requireRole("super_admin", "admin_finance"), async (
   // Qurban Income
   const incomeConditions = [
     eq(transactions.paymentStatus, "paid"),
-    like(transactions.category, "qurban_%"),
+    eq(transactions.productType, "qurban"),
   ];
 
   if (startDate) {
@@ -1355,7 +1356,7 @@ reportsAdmin.get("/qurban", requireRole("super_admin", "admin_finance"), async (
   // Qurban Expense
   const expenseConditions = [
     eq(disbursements.status, "paid"),
-    like(disbursements.category, "qurban_%"),
+    eq(disbursements.disbursementType, "qurban"),
   ];
 
   if (startDate) {

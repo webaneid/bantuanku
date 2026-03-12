@@ -56,8 +56,8 @@ export const employees = pgTable("employees", {
   // User Account Link
   userId: text("user_id").references(() => users.id),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const employeesRelations = relations(employees, ({ many }) => ({

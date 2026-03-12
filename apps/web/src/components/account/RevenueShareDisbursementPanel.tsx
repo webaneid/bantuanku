@@ -95,7 +95,6 @@ export default function RevenueShareDisbursementPanel({
       day: "numeric",
       month: "short",
       year: "numeric",
-      timeZone: "Asia/Jakarta",
     }).format(new Date(date));
 
   const formatDateLong = (date: string) =>
@@ -103,7 +102,6 @@ export default function RevenueShareDisbursementPanel({
       day: "numeric",
       month: "long",
       year: "numeric",
-      timeZone: "Asia/Jakarta",
     }).format(new Date(date));
 
   const { data: availabilityData, isLoading: availabilityLoading } = useQuery<AvailabilityData>({

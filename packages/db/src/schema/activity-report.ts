@@ -17,7 +17,7 @@ export const activityReports = pgTable("activity_reports", {
 
   // Core Report Fields
   title: text("title").notNull(),
-  activityDate: timestamp("activity_date", { precision: 3, mode: "date" }).notNull(),
+  activityDate: timestamp("activity_date", { precision: 3, mode: "date", withTimezone: true }).notNull(),
   description: text("description").notNull(), // HTML content from TipTap editor
   gallery: jsonb("gallery").$type<string[]>().default([]),
   videoUrl: text("video_url"),
@@ -34,12 +34,12 @@ export const activityReports = pgTable("activity_reports", {
 
   // Status & Publishing
   status: text("status").default("draft").notNull(), // draft, published
-  publishedAt: timestamp("published_at", { precision: 3, mode: "date" }),
+  publishedAt: timestamp("published_at", { precision: 3, mode: "date", withTimezone: true }),
 
   // Audit
   createdBy: text("created_by").references(() => users.id),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 
   // Backward compatibility (will be removed in future)
   campaignId: text("campaign_id"),

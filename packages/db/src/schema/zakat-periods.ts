@@ -12,14 +12,14 @@ export const zakatPeriods = pgTable("zakat_periods", {
   name: text("name").notNull(),
   year: integer("year").notNull(),
   hijriYear: text("hijri_year"),
-  startDate: timestamp("start_date", { precision: 3, mode: "date" }).notNull(),
-  endDate: timestamp("end_date", { precision: 3, mode: "date" }).notNull(),
-  executionDate: timestamp("execution_date", { precision: 3, mode: "date" }),
+  startDate: timestamp("start_date", { precision: 3, mode: "date", withTimezone: true }).notNull(),
+  endDate: timestamp("end_date", { precision: 3, mode: "date", withTimezone: true }).notNull(),
+  executionDate: timestamp("execution_date", { precision: 3, mode: "date", withTimezone: true }),
   status: text("status").default("draft").notNull(),
   description: text("description"),
   mitraId: text("mitra_id").references(() => mitra.id),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const zakatPeriodsRelations = relations(zakatPeriods, ({ one }) => ({

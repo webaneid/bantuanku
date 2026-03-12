@@ -119,7 +119,7 @@ export default function CampaignSidebar({
 
   return (
     <div>
-      <div className="bg-white rounded-lg shadow-sm p-6 sticky top-24 space-y-6">
+      <div className="hidden lg:block bg-white rounded-lg shadow-sm p-6 sticky top-24 space-y-6">
         {/* Organization / Mitra */}
         {ownerName && (
           isMitraOwner && campaign.mitraSlug ? (
@@ -155,9 +155,9 @@ export default function CampaignSidebar({
         )}
 
         {/* Campaign Title */}
-        <h1 className="text-2xl font-bold text-gray-900">
+        <div className="text-2xl font-bold text-gray-900">
           {campaign.title}
-        </h1>
+        </div>
 
         {/* Campaign Meta */}
         <div className="rounded-lg border border-gray-200 p-3 space-y-2">
@@ -361,6 +361,20 @@ export default function CampaignSidebar({
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Mobile Amount Selector — portal to mobile target */}
+      {isMounted && document.getElementById('mobile-amount-selector') && createPortal(
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <DonationAmountSelector
+            programType={programType}
+            pillar={campaign.pillar}
+            onAmountSelect={setSelectedAmount}
+            selectedAmount={selectedAmount}
+            onFidyahDataChange={setFidyahData}
+          />
+        </div>,
+        document.getElementById('mobile-amount-selector')!
       )}
 
       {/* Share Modal */}

@@ -37,6 +37,17 @@ type QurbanExecutionReportData = {
   executions: ExecutionItem[];
 };
 
+const EXECUTION_COLUMN_LABELS = {
+  executionNumber: "No Eksekusi",
+  executionDate: "Tanggal",
+  periodName: "Periode",
+  animalType: "Jenis Hewan",
+  donor: "Shohibul Qurban",
+  approach: "Pendekatan",
+  recipientCount: "Jumlah Penerima",
+  location: "Lokasi",
+} as const;
+
 export default function QurbanExecutionReportPage() {
   const formatLocalDate = (date: Date): string => {
     const year = date.getFullYear();
@@ -73,6 +84,8 @@ export default function QurbanExecutionReportPage() {
   };
 
   const executions = data?.executions || [];
+  const formatExecutionDate = (value: string) =>
+    value ? new Date(value).toLocaleDateString("id-ID") : "-";
 
   const handleExportExcel = () => {
     exportMultiSheetExcel({
@@ -145,46 +158,94 @@ export default function QurbanExecutionReportPage() {
         {isLoading ? (
           <div className="p-6 text-center text-gray-500">Loading...</div>
         ) : (
-          <div className="table-container">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Detail Per Ekor / Per Individu</h2>
+          <>
+            <div className="table-container">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Detail Per Ekor / Per Individu</h2>
+              </div>
+
+              {executions.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">Belum ada data penyembelihan pada periode ini</div>
+              ) : (
+                <table className="table table-report">
+                  <thead>
+                    <tr>
+                      <th>{EXECUTION_COLUMN_LABELS.executionNumber}</th>
+                      <th>{EXECUTION_COLUMN_LABELS.executionDate}</th>
+                      <th>{EXECUTION_COLUMN_LABELS.periodName}</th>
+                      <th>{EXECUTION_COLUMN_LABELS.animalType}</th>
+                      <th>{EXECUTION_COLUMN_LABELS.donor}</th>
+                      <th>{EXECUTION_COLUMN_LABELS.approach}</th>
+                      <th className="text-right">{EXECUTION_COLUMN_LABELS.recipientCount}</th>
+                      <th>{EXECUTION_COLUMN_LABELS.location}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {executions.map((item) => (
+                      <tr key={item.id}>
+                        <td className="text-sm text-gray-900">{item.executionNumber}</td>
+                        <td className="text-sm text-gray-700">{formatExecutionDate(item.executionDate)}</td>
+                        <td className="text-sm text-gray-700">{item.periodName || "-"}</td>
+                        <td className="text-sm text-gray-700">{item.animalType}</td>
+                        <td className="text-sm text-gray-700">{item.onBehalfOf || item.donorName || "-"}</td>
+                        <td className="text-sm text-gray-700">
+                          {item.isShared ? `Patungan${item.groupNumber ? ` #${item.groupNumber}` : ""}` : "Individu"}
+                        </td>
+                        <td className="text-sm text-right text-gray-700">{item.recipientCount || 0}</td>
+                        <td className="text-sm text-gray-700">{item.location}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
 
-            {executions.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">Belum ada data penyembelihan pada periode ini</div>
-            ) : (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>No Eksekusi</th>
-                    <th>Tanggal</th>
-                    <th>Periode</th>
-                    <th>Hewan</th>
-                    <th>Shohibul Qurban</th>
-                    <th>Pendekatan</th>
-                    <th className="text-right">Penerima</th>
-                    <th>Lokasi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {executions.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="text-sm text-gray-900">{item.executionNumber}</td>
-                      <td className="text-sm text-gray-700">{item.executionDate ? new Date(item.executionDate).toLocaleDateString("id-ID") : "-"}</td>
-                      <td className="text-sm text-gray-700">{item.periodName || "-"}</td>
-                      <td className="text-sm text-gray-700">{item.animalType}</td>
-                      <td className="text-sm text-gray-700">{item.onBehalfOf || item.donorName || "-"}</td>
-                      <td className="text-sm text-gray-700">
+            <div className="table-mobile-cards">
+              <div className="px-1 py-2 mb-2">
+                <h2 className="text-lg font-semibold text-gray-900">Detail Per Ekor / Per Individu</h2>
+              </div>
+              {executions.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">Belum ada data penyembelihan pada periode ini</div>
+              ) : (
+                executions.map((item) => (
+                  <div key={item.id} className="table-card">
+                    <div className="table-card-header">
+                      <div className="table-card-header-left">
+                        <div className="table-card-header-title">{item.executionNumber}</div>
+                        <div className="table-card-header-subtitle">{formatExecutionDate(item.executionDate)}</div>
+                      </div>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">{EXECUTION_COLUMN_LABELS.periodName}</span>
+                      <span className="table-card-row-value">{item.periodName || "-"}</span>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">{EXECUTION_COLUMN_LABELS.animalType}</span>
+                      <span className="table-card-row-value">{item.animalType}</span>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">{EXECUTION_COLUMN_LABELS.donor}</span>
+                      <span className="table-card-row-value">{item.onBehalfOf || item.donorName || "-"}</span>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">{EXECUTION_COLUMN_LABELS.approach}</span>
+                      <span className="table-card-row-value">
                         {item.isShared ? `Patungan${item.groupNumber ? ` #${item.groupNumber}` : ""}` : "Individu"}
-                      </td>
-                      <td className="text-sm text-right text-gray-700">{item.recipientCount || 0}</td>
-                      <td className="text-sm text-gray-700">{item.location}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                      </span>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">{EXECUTION_COLUMN_LABELS.recipientCount}</span>
+                      <span className="table-card-row-value">{item.recipientCount || 0}</span>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">{EXECUTION_COLUMN_LABELS.location}</span>
+                      <span className="table-card-row-value">{item.location || "-"}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

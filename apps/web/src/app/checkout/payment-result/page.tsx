@@ -94,8 +94,7 @@ export default function PaymentResultPage() {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'Asia/Jakarta',
-    }).format(date) + ' WIB';
+    }).format(date);
   };
 
   const getPaymentInstructions = (channel?: string) => {

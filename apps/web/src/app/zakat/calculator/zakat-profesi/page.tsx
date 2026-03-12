@@ -8,6 +8,7 @@ import { fetchZakatConfig, fetchZakatPeriods, fetchZakatTypes, formatCurrency, g
 import { useZakatDisplayMeta } from '@/components/zakat/ZakatDisplayMetaContext';
 import ZakatConfirmModal from '@/components/zakat/ZakatConfirmModal';
 import ZakatOwnerInfo from '@/components/zakat/ZakatOwnerInfo';
+import ZakatPageHeader from '@/components/zakat/ZakatPageHeader';
 import { useI18n } from '@/lib/i18n/provider';
 
 function getLargeVariantUrl(imageUrl: string): string {
@@ -149,39 +150,47 @@ export default function ZakatProfesiPage() {
   return (
     <>
       <Header />
-      <Breadcrumb items={[{ label: t('zakatDetail.breadcrumb.home'), href: '/' }, { label: t('zakatDetail.breadcrumb.zakat'), href: '/zakat' }, { label: displayName }]} />
-      <main className="min-h-screen bg-gray-50 py-8 md:py-12">
+      <ZakatPageHeader
+        displayName={displayName}
+        displayDescription={displayDescription}
+        displayImageSrc={displayImageSrc}
+        displayImageOriginal={displayImageOriginal}
+        owner={displayMeta?.owner}
+      />
+      <main className="min-h-screen bg-gray-50 py-4 lg:py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
-            {/* Feature Image */}
-            {displayImageSrc && (
-              <div className="mb-8">
-                <img
-                  src={displayImageSrc}
-                  alt={displayName}
-                  className="w-full h-auto rounded-xl"
-                  onError={(event) => {
-                    if (!displayImageOriginal) return;
-                    if (event.currentTarget.src !== displayImageOriginal) {
-                      event.currentTarget.src = displayImageOriginal;
-                    }
-                  }}
-                />
-              </div>
-            )}
-
-            <ZakatOwnerInfo owner={displayMeta?.owner} />
-            {/* Header */}
-            <div className="mb-6">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-                {displayName}
-              </h2>
-              {displayDescription && (
-                <div
-                  className="text-sm text-gray-600 leading-relaxed [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
-                  dangerouslySetInnerHTML={{ __html: displayDescription }}
-                />
+            {/* Desktop Feature Image */}
+            <div className="hidden lg:block">
+              {displayImageSrc && (
+                <div className="mb-8">
+                  <img
+                    src={displayImageSrc}
+                    alt={displayName}
+                    className="w-full h-auto rounded-xl"
+                    onError={(event) => {
+                      if (!displayImageOriginal) return;
+                      if (event.currentTarget.src !== displayImageOriginal) {
+                        event.currentTarget.src = displayImageOriginal;
+                      }
+                    }}
+                  />
+                </div>
               )}
+
+              <ZakatOwnerInfo owner={displayMeta?.owner} />
+              {/* Header */}
+              <div className="mb-6">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                  {displayName}
+                </h2>
+                {displayDescription && (
+                  <div
+                    className="text-sm text-gray-600 leading-relaxed [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
+                    dangerouslySetInnerHTML={{ __html: displayDescription }}
+                  />
+                )}
+              </div>
             </div>
 
             <div className="mb-6">
@@ -414,7 +423,7 @@ export default function ZakatProfesiPage() {
           {relatedZakat.length > 0 && (
             <section className="mt-10">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('zakatCalculator.common.otherZakat')}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-[0.4rem] lg:gap-4">
                 {relatedZakat.map((item) => (
                   <ZakatCard
                     key={item.id}

@@ -20,7 +20,7 @@ export const fundraisers = pgTable("fundraisers", {
   // Status
   status: text("status").default("pending").notNull(),
   approvedBy: text("approved_by").references(() => users.id),
-  approvedAt: timestamp("approved_at", { precision: 3, mode: "date" }),
+  approvedAt: timestamp("approved_at", { precision: 3, mode: "date", withTimezone: true }),
 
   // Komisi & Saldo
   commissionPercentage: decimal("commission_percentage", { precision: 5, scale: 2 }).default("5.00"),
@@ -31,8 +31,8 @@ export const fundraisers = pgTable("fundraisers", {
   totalWithdrawn: bigint("total_withdrawn", { mode: "number" }).default(0),
 
   notes: text("notes"),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const fundraisersRelations = relations(fundraisers, ({ one, many }) => ({

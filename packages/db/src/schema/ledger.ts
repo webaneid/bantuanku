@@ -34,19 +34,19 @@ export const ledger = pgTable("ledger", {
 
   createdBy: text("created_by").references(() => users.id),
   submittedBy: text("submitted_by").references(() => users.id),
-  submittedAt: timestamp("submitted_at", { precision: 3, mode: "date" }),
+  submittedAt: timestamp("submitted_at", { precision: 3, mode: "date", withTimezone: true }),
   approvedBy: text("approved_by").references(() => users.id),
-  approvedAt: timestamp("approved_at", { precision: 3, mode: "date" }),
+  approvedAt: timestamp("approved_at", { precision: 3, mode: "date", withTimezone: true }),
   rejectedBy: text("rejected_by").references(() => users.id),
-  rejectedAt: timestamp("rejected_at", { precision: 3, mode: "date" }),
+  rejectedAt: timestamp("rejected_at", { precision: 3, mode: "date", withTimezone: true }),
   rejectionReason: text("rejection_reason"),
 
   paidBy: text("paid_by").references(() => users.id),
-  paidAt: timestamp("paid_at", { precision: 3, mode: "date" }),
+  paidAt: timestamp("paid_at", { precision: 3, mode: "date", withTimezone: true }),
   paymentMethod: text("payment_method"), // transfer, cash, check, etc
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const ledgerRelations = relations(ledger, ({ one, many }) => ({

@@ -223,7 +223,7 @@ export default function ZakatReportPage() {
           <div className="p-6 text-center text-gray-500">Loading...</div>
         ) : (
           <>
-            {/* Income by Type - Desktop */}
+            {/* Pemasukan Zakat per Jenis - Desktop */}
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Pemasukan Zakat per Jenis</h2>
@@ -232,7 +232,7 @@ export default function ZakatReportPage() {
               {income.length === 0 ? (
                 <div className="p-6 text-center text-gray-500">Tidak ada data pemasukan dalam periode ini</div>
               ) : (
-                <table className="table">
+                <table className="table table-report">
                   <thead>
                     <tr>
                       <th>Jenis Zakat</th>
@@ -242,51 +242,78 @@ export default function ZakatReportPage() {
                   </thead>
                   <tbody>
                     {income.map((item) => (
-                      <tr key={item.category} className="hover:bg-gray-50">
-                        <td className="text-sm text-gray-900">
-                          {ZAKAT_TYPE_LABELS[item.category] || item.category}
+                      <tr key={item.category}>
+                        <td>
+                          <div className="font-medium text-gray-900">
+                            {ZAKAT_TYPE_LABELS[item.category] || item.category}
+                          </div>
                         </td>
-                        <td className="text-sm text-right text-gray-600">{item.count}</td>
-                        <td className="text-sm text-right font-medium text-success-600 mono">
+                        <td className="text-right text-gray-600">{item.count}</td>
+                        <td className="text-right font-medium text-success-600 mono">
                           Rp {formatRupiah(item.total)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                  <tfoot>
                     <tr>
-                      <td className="font-bold text-gray-900">TOTAL</td>
-                      <td className="text-right font-bold">{income.reduce((s, i) => s + i.count, 0)}</td>
-                      <td className="text-right font-bold text-success-600 mono">Rp {formatRupiah(summary.totalIncome)}</td>
+                      <td>TOTAL</td>
+                      <td className="text-right">{income.reduce((s, i) => s + i.count, 0)}</td>
+                      <td className="text-right text-success-600 mono">Rp {formatRupiah(summary.totalIncome)}</td>
                     </tr>
                   </tfoot>
                 </table>
               )}
             </div>
 
-            {/* Income - Mobile Cards */}
+            {/* Pemasukan Zakat per Jenis - Mobile Cards */}
             <div className="table-mobile-cards">
               <div className="px-1 py-2 mb-2">
                 <h2 className="text-lg font-semibold text-gray-900">Pemasukan Zakat per Jenis</h2>
               </div>
-              {income.map((item) => (
-                <div key={item.category} className="table-card">
-                  <div className="table-card-header">
-                    <div className="table-card-header-left">
-                      <div className="table-card-header-title">
-                        {ZAKAT_TYPE_LABELS[item.category] || item.category}
+              {income.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">Tidak ada data pemasukan dalam periode ini</div>
+              ) : (
+                <>
+                  {income.map((item) => (
+                    <div key={item.category} className="table-card">
+                      <div className="table-card-header">
+                        <div className="table-card-header-left">
+                          <div className="table-card-header-title">
+                            {ZAKAT_TYPE_LABELS[item.category] || item.category}
+                          </div>
+                        </div>
                       </div>
-                      <div className="table-card-header-subtitle">{item.count} transaksi</div>
+                      <div className="table-card-row">
+                        <span className="table-card-row-label">Jumlah Transaksi</span>
+                        <span className="table-card-row-value">{item.count}</span>
+                      </div>
+                      <div className="table-card-row">
+                        <span className="table-card-row-label">Total</span>
+                        <span className="table-card-row-value mono text-success-600">Rp {formatRupiah(item.total)}</span>
+                      </div>
                     </div>
-                    <span className="mono font-medium text-success-600">Rp {formatRupiah(item.total)}</span>
+                  ))}
+                  <div className="table-card bg-gray-50">
+                    <div className="table-card-header">
+                      <div className="table-card-header-left">
+                        <div className="table-card-header-title">TOTAL</div>
+                      </div>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">Jumlah Transaksi</span>
+                      <span className="table-card-row-value font-bold">{income.reduce((s, i) => s + i.count, 0)}</span>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">Total</span>
+                      <span className="table-card-row-value mono font-bold text-success-600">Rp {formatRupiah(summary.totalIncome)}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {income.length === 0 && (
-                <div className="text-center py-8 text-gray-500">Tidak ada data pemasukan</div>
+                </>
               )}
             </div>
 
+            {/* Laporan Zakat per Periode & Jenis - Desktop */}
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Laporan Zakat per Periode & Jenis</h2>
@@ -295,7 +322,7 @@ export default function ZakatReportPage() {
               {periodByType.length === 0 ? (
                 <div className="p-6 text-center text-gray-500">Belum ada transaksi zakat per periode dalam filter ini</div>
               ) : (
-                <table className="table">
+                <table className="table table-report">
                   <thead>
                     <tr>
                       <th>Periode</th>
@@ -306,24 +333,26 @@ export default function ZakatReportPage() {
                   </thead>
                   <tbody>
                     {periodByType.map((item) => (
-                      <tr key={`${item.periodId}-${item.zakatTypeId}`} className="hover:bg-gray-50">
-                        <td className="text-sm text-gray-900">
-                          {item.periodName}
-                          {item.periodHijriYear ? ` (${item.periodHijriYear}H)` : ""}
+                      <tr key={`${item.periodId}-${item.zakatTypeId}`}>
+                        <td>
+                          <div className="font-medium text-gray-900">
+                            {item.periodName}
+                            {item.periodHijriYear ? ` (${item.periodHijriYear}H)` : ""}
+                          </div>
                         </td>
-                        <td className="text-sm text-gray-700">{item.zakatTypeName}</td>
-                        <td className="text-sm text-right text-gray-600">{item.count}</td>
-                        <td className="text-sm text-right font-medium text-success-600 mono">
+                        <td className="text-gray-700">{item.zakatTypeName}</td>
+                        <td className="text-right text-gray-600">{item.count}</td>
+                        <td className="text-right font-medium text-success-600 mono">
                           Rp {formatRupiah(item.total)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                  <tfoot>
                     <tr>
-                      <td className="font-bold text-gray-900" colSpan={2}>TOTAL</td>
-                      <td className="text-right font-bold">{periodByType.reduce((s, i) => s + i.count, 0)}</td>
-                      <td className="text-right font-bold text-success-600 mono">
+                      <td colSpan={2}>TOTAL</td>
+                      <td className="text-right">{periodByType.reduce((s, i) => s + i.count, 0)}</td>
+                      <td className="text-right text-success-600 mono">
                         Rp {formatRupiah(periodByType.reduce((s, i) => s + i.total, 0))}
                       </td>
                     </tr>
@@ -332,7 +361,58 @@ export default function ZakatReportPage() {
               )}
             </div>
 
-            {/* Expense by Asnaf - Desktop */}
+            {/* Laporan Zakat per Periode & Jenis - Mobile Cards */}
+            <div className="table-mobile-cards">
+              <div className="px-1 py-2 mb-2">
+                <h2 className="text-lg font-semibold text-gray-900">Laporan Zakat per Periode & Jenis</h2>
+              </div>
+              {periodByType.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">Belum ada transaksi zakat per periode dalam filter ini</div>
+              ) : (
+                <>
+                  {periodByType.map((item) => (
+                    <div key={`${item.periodId}-${item.zakatTypeId}`} className="table-card">
+                      <div className="table-card-header">
+                        <div className="table-card-header-left">
+                          <div className="table-card-header-title">
+                            {item.periodName}
+                            {item.periodHijriYear ? ` (${item.periodHijriYear}H)` : ""}
+                          </div>
+                          <div className="table-card-header-subtitle">{item.zakatTypeName}</div>
+                        </div>
+                      </div>
+                      <div className="table-card-row">
+                        <span className="table-card-row-label">Jumlah Transaksi</span>
+                        <span className="table-card-row-value">{item.count}</span>
+                      </div>
+                      <div className="table-card-row">
+                        <span className="table-card-row-label">Total</span>
+                        <span className="table-card-row-value mono text-success-600">Rp {formatRupiah(item.total)}</span>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="table-card bg-gray-50">
+                    <div className="table-card-header">
+                      <div className="table-card-header-left">
+                        <div className="table-card-header-title">TOTAL</div>
+                      </div>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">Jumlah Transaksi</span>
+                      <span className="table-card-row-value font-bold">{periodByType.reduce((s, i) => s + i.count, 0)}</span>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">Total</span>
+                      <span className="table-card-row-value mono font-bold text-success-600">
+                        Rp {formatRupiah(periodByType.reduce((s, i) => s + i.total, 0))}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Penyaluran Zakat per Asnaf - Desktop */}
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">Penyaluran Zakat per Asnaf (8 Kategori)</h2>
@@ -341,7 +421,7 @@ export default function ZakatReportPage() {
               {expense.length === 0 ? (
                 <div className="p-6 text-center text-gray-500">Tidak ada data penyaluran dalam periode ini</div>
               ) : (
-                <table className="table">
+                <table className="table table-report">
                   <thead>
                     <tr>
                       <th>Asnaf</th>
@@ -351,48 +431,74 @@ export default function ZakatReportPage() {
                   </thead>
                   <tbody>
                     {expense.map((item) => (
-                      <tr key={item.category} className="hover:bg-gray-50">
-                        <td className="text-sm text-gray-900">
-                          {ASNAF_LABELS[item.category] || item.category}
+                      <tr key={item.category}>
+                        <td>
+                          <div className="font-medium text-gray-900">
+                            {ASNAF_LABELS[item.category] || item.category}
+                          </div>
                         </td>
-                        <td className="text-sm text-right text-gray-600">{item.count}</td>
-                        <td className="text-sm text-right font-medium text-danger-600 mono">
+                        <td className="text-right text-gray-600">{item.count}</td>
+                        <td className="text-right font-medium text-danger-600 mono">
                           Rp {formatRupiah(item.total)}
                         </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                  <tfoot>
                     <tr>
-                      <td className="font-bold text-gray-900">TOTAL</td>
-                      <td className="text-right font-bold">{expense.reduce((s, e) => s + e.count, 0)}</td>
-                      <td className="text-right font-bold text-danger-600 mono">Rp {formatRupiah(summary.totalExpense)}</td>
+                      <td>TOTAL</td>
+                      <td className="text-right">{expense.reduce((s, e) => s + e.count, 0)}</td>
+                      <td className="text-right text-danger-600 mono">Rp {formatRupiah(summary.totalExpense)}</td>
                     </tr>
                   </tfoot>
                 </table>
               )}
             </div>
 
-            {/* Expense - Mobile Cards */}
+            {/* Penyaluran Zakat per Asnaf - Mobile Cards */}
             <div className="table-mobile-cards">
               <div className="px-1 py-2 mb-2">
-                <h2 className="text-lg font-semibold text-gray-900">Penyaluran Zakat per Asnaf</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Penyaluran Zakat per Asnaf (8 Kategori)</h2>
               </div>
-              {expense.map((item) => (
-                <div key={item.category} className="table-card">
-                  <div className="table-card-header">
-                    <div className="table-card-header-left">
-                      <div className="table-card-header-title">
-                        {ASNAF_LABELS[item.category] || item.category}
+              {expense.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">Tidak ada data penyaluran dalam periode ini</div>
+              ) : (
+                <>
+                  {expense.map((item) => (
+                    <div key={item.category} className="table-card">
+                      <div className="table-card-header">
+                        <div className="table-card-header-left">
+                          <div className="table-card-header-title">
+                            {ASNAF_LABELS[item.category] || item.category}
+                          </div>
+                        </div>
                       </div>
-                      <div className="table-card-header-subtitle">{item.count} penyaluran</div>
+                      <div className="table-card-row">
+                        <span className="table-card-row-label">Jumlah Penyaluran</span>
+                        <span className="table-card-row-value">{item.count}</span>
+                      </div>
+                      <div className="table-card-row">
+                        <span className="table-card-row-label">Total</span>
+                        <span className="table-card-row-value mono text-danger-600">Rp {formatRupiah(item.total)}</span>
+                      </div>
                     </div>
-                    <span className="mono font-medium text-danger-600">Rp {formatRupiah(item.total)}</span>
+                  ))}
+                  <div className="table-card bg-gray-50">
+                    <div className="table-card-header">
+                      <div className="table-card-header-left">
+                        <div className="table-card-header-title">TOTAL</div>
+                      </div>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">Jumlah Penyaluran</span>
+                      <span className="table-card-row-value font-bold">{expense.reduce((s, e) => s + e.count, 0)}</span>
+                    </div>
+                    <div className="table-card-row">
+                      <span className="table-card-row-label">Total</span>
+                      <span className="table-card-row-value mono font-bold text-danger-600">Rp {formatRupiah(summary.totalExpense)}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {expense.length === 0 && (
-                <div className="text-center py-8 text-gray-500">Tidak ada data penyaluran</div>
+                </>
               )}
             </div>
           </>

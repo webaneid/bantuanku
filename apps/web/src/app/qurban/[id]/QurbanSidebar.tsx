@@ -132,8 +132,8 @@ export default function QurbanSidebar({
 
   return (
     <div className="sticky top-8 space-y-4">
-      {/* Package Info Card */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
+      {/* Package Info Card — desktop only */}
+      <div className="hidden lg:block bg-white rounded-lg shadow-sm p-6">
         {(qurbanPackage.ownerName || qurbanPackage.ownerLogoUrl) && (
           qurbanPackage.ownerType === 'mitra' && qurbanPackage.ownerSlug ? (
             <a
@@ -318,8 +318,8 @@ export default function QurbanSidebar({
         )}
       </div>
 
-      {/* Help Card */}
-      <div className="bg-blue-50 rounded-lg p-4">
+      {/* Help Card — desktop only */}
+      <div className="hidden lg:block bg-blue-50 rounded-lg p-4">
         <h3 className="text-sm font-semibold text-blue-900 mb-2">
           {t('qurbanDetail.sidebar.help.title')}
         </h3>
@@ -399,6 +399,74 @@ export default function QurbanSidebar({
           </div>
         </div>,
         document.body
+      )}
+
+      {/* Mobile Order Section — portal to mobile target */}
+      {isMounted && document.getElementById('mobile-qurban-order') && createPortal(
+        <div className="bg-white rounded-lg shadow-sm p-4 space-y-4">
+          {/* Period Selection */}
+          {isAvailable && qurbanPackage.availablePeriods.length > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('qurbanDetail.sidebar.selectPeriod')}
+              </label>
+              <select
+                value={selectedPeriod}
+                onChange={(e) => handlePeriodChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                {qurbanPackage.availablePeriods.map((period) => (
+                  <option key={period.periodId} value={period.periodId}>
+                    {period.periodName} - Rp {formatRupiah(period.price)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Quantity */}
+          {isAvailable && qurbanPackage.packageType === 'individual' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {t('qurbanDetail.sidebar.quantity')}
+              </label>
+              <input
+                type="number"
+                min="1"
+                max={qurbanPackage.stock - qurbanPackage.stockSold}
+                value={quantity}
+                onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          )}
+
+          {/* Price Summary */}
+          {isAvailable && (
+            <div className="border-t border-gray-200 pt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">{t('qurbanDetail.sidebar.summary.subtotal')}</span>
+                <span className="font-medium mono">Rp {formatRupiah(subtotal)}</span>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">{t('qurbanDetail.sidebar.summary.adminFee', { quantity })}</span>
+                  <span className="font-medium mono">Rp {formatRupiah(totalAdminFee)}</span>
+                </div>
+                {qurbanPackage.packageType === 'shared' && qurbanPackage.maxSlots && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {t('qurbanDetail.sidebar.summary.sharedInfo', { maxSlots: qurbanPackage.maxSlots })}
+                  </p>
+                )}
+              </div>
+              <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200">
+                <span className="text-gray-900">{t('qurbanDetail.sidebar.summary.total')}</span>
+                <span className="text-primary-600 mono">Rp {formatRupiah(total)}</span>
+              </div>
+            </div>
+          )}
+        </div>,
+        document.getElementById('mobile-qurban-order')!
       )}
 
       {/* Qurban Confirmation Modal */}

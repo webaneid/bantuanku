@@ -50,7 +50,7 @@ export const disbursements = pgTable("disbursements", {
 
   // Payment Execution Details
   transferProofUrl: text("transfer_proof_url"),
-  transferDate: timestamp("transfer_date", { precision: 3, mode: "date" }),
+  transferDate: timestamp("transfer_date", { precision: 3, mode: "date", withTimezone: true }),
   transferredAmount: bigint("transferred_amount", { mode: "number" }),
   additionalFees: bigint("additional_fees", { mode: "number" }).default(0),
   destinationBankId: text("destination_bank_id"),
@@ -65,12 +65,12 @@ export const disbursements = pgTable("disbursements", {
   rejectedBy: text("rejected_by").references(() => users.id),
   paidBy: text("paid_by").references(() => users.id),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  submittedAt: timestamp("submitted_at", { precision: 3, mode: "date" }),
-  approvedAt: timestamp("approved_at", { precision: 3, mode: "date" }),
-  rejectedAt: timestamp("rejected_at", { precision: 3, mode: "date" }),
-  paidAt: timestamp("paid_at", { precision: 3, mode: "date" }),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  submittedAt: timestamp("submitted_at", { precision: 3, mode: "date", withTimezone: true }),
+  approvedAt: timestamp("approved_at", { precision: 3, mode: "date", withTimezone: true }),
+  rejectedAt: timestamp("rejected_at", { precision: 3, mode: "date", withTimezone: true }),
+  paidAt: timestamp("paid_at", { precision: 3, mode: "date", withTimezone: true }),
 
   // Backward compatibility (OPTIONAL)
   expenseAccountId: text("expense_account_id").references(() => chartOfAccounts.id),
@@ -88,7 +88,7 @@ export const disbursementActivityReports = pgTable("disbursement_activity_report
   disbursementId: text("disbursement_id").notNull().references(() => disbursements.id, { onDelete: "cascade" }),
 
   // Activity Details
-  reportDate: timestamp("report_date", { precision: 3, mode: "date" }).notNull(),
+  reportDate: timestamp("report_date", { precision: 3, mode: "date", withTimezone: true }).notNull(),
   reportDescription: text("report_description").notNull(),
   photos: text("photos"), // JSON array of photo URLs
   videoUrl: text("video_url"),
@@ -98,7 +98,7 @@ export const disbursementActivityReports = pgTable("disbursement_activity_report
   recipientList: text("recipient_list"), // JSON array of recipient details
 
   addedBy: text("added_by").references(() => users.id),
-  addedAt: timestamp("added_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  addedAt: timestamp("added_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export type DisbursementActivityReport = typeof disbursementActivityReports.$inferSelect;

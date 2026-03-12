@@ -37,6 +37,7 @@ interface CampaignTabsProps {
   donorCount: number;
   coordinatorName?: string;
   ownerName?: string;
+  mobileMetaContent?: React.ReactNode;
 }
 
 export default function CampaignTabs({
@@ -46,6 +47,7 @@ export default function CampaignTabs({
   donorCount,
   coordinatorName,
   ownerName,
+  mobileMetaContent,
 }: CampaignTabsProps) {
   const { t, locale } = useI18n();
   const [activeTab, setActiveTab] = useState<'detail' | 'updates' | 'donors'>('detail');
@@ -120,7 +122,6 @@ export default function CampaignTabs({
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-      timeZone: 'Asia/Jakarta'
     });
   };
 
@@ -192,10 +193,15 @@ export default function CampaignTabs({
       </div>
 
       {/* Tab Content */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Detail Tab */}
         {activeTab === 'detail' && (
           <div className="space-y-6">
+            {mobileMetaContent && (
+              <div className="lg:hidden">
+                {mobileMetaContent}
+              </div>
+            )}
             <div
               className="prose prose-gray max-w-none"
               dangerouslySetInnerHTML={{ __html: campaignDescription }}
@@ -405,11 +411,11 @@ export default function CampaignTabs({
                   {donations.map((donation) => (
                     <div
                       key={donation.id}
-                      className="flex items-start justify-between pb-4 border-b border-gray-100 last:border-b-0"
+                      className="pb-4 border-b border-gray-100 last:border-b-0"
                     >
-                      {/* Left: Donor info */}
-                      <div className="flex-1">
-                        <div className="flex items-start gap-3">
+                      {/* Top row: Avatar + Name/Date + Amount */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1">
                           <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
                             <svg
                               className="w-5 h-5 text-primary-600"
@@ -432,22 +438,22 @@ export default function CampaignTabs({
                             <p className="text-gray-500" style={{ fontSize: '12px' }}>
                               {formatFullDate(donation.paidAt)}
                             </p>
-                            {donation.message && (
-                              <p className="text-gray-600 italic mt-2" style={{ fontSize: '15px', fontWeight: 400 }}>
-                                &ldquo;{donation.message}&rdquo;
-                              </p>
-                            )}
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0 text-right ml-4">
+                          <div className="text-gray-500 mb-1" style={{ fontSize: '12px' }}>{t('campaignDetail.tabs.donationLabel')}</div>
+                          <div className="mono text-primary-600" style={{ fontSize: '15px', fontWeight: 600 }}>
+                            Rp {donation.totalAmount.toLocaleString(localeTag)}
                           </div>
                         </div>
                       </div>
 
-                      {/* Right: Donation amount */}
-                      <div className="flex-shrink-0 text-right ml-4">
-                        <div className="text-gray-500 mb-1" style={{ fontSize: '12px' }}>{t('campaignDetail.tabs.donationLabel')}</div>
-                        <div className="mono text-primary-600" style={{ fontSize: '15px', fontWeight: 600 }}>
-                          Rp {donation.totalAmount.toLocaleString(localeTag)}
-                        </div>
-                      </div>
+                      {/* Message/Doa - full width */}
+                      {donation.message && (
+                        <p className="text-gray-600 italic mt-2 pl-[52px] sm:pl-[52px]" style={{ fontSize: '14px', fontWeight: 400 }}>
+                          &ldquo;{donation.message}&rdquo;
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>

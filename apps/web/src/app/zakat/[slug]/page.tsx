@@ -241,11 +241,43 @@ export default async function ZakatDetailPage({ params }: Props) {
     <>
       {jsonLdScripts}
       <Header />
-      <Breadcrumb items={[{ label: t('zakatDetail.breadcrumb.home'), href: '/' }, { label: t('zakatDetail.breadcrumb.zakat'), href: '/zakat' }, { label: zakatType.name }]} />
-      <main className="min-h-screen bg-gray-50 py-8 md:py-12">
+      <div className="hidden lg:block">
+        <Breadcrumb items={[{ label: t('zakatDetail.breadcrumb.home'), href: '/' }, { label: t('zakatDetail.breadcrumb.zakat'), href: '/zakat' }, { label: zakatType.name }]} />
+      </div>
+
+      {/* Mobile: edge-to-edge image with back button */}
+      {zakatType.imageUrl && (
+        <div className="lg:hidden relative">
+          <Link
+            href="/zakat"
+            className="absolute top-4 left-4 z-10 w-10 h-10 bg-black/40 rounded-full flex items-center justify-center text-white"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </Link>
+          <img
+            src={getImageUrlByVariant(zakatType.imageUrl, ['large'])}
+            alt={zakatType.name}
+            className="w-full h-auto"
+          />
+        </div>
+      )}
+
+      {/* Mobile: title compact section */}
+      <div className="lg:hidden bg-white px-4 py-4">
+        <h1 className="text-xl font-bold text-gray-900 mb-1">
+          {zakatType.name}
+        </h1>
+        {zakatType.description && (
+          <p className="text-sm text-gray-600">{zakatType.description}</p>
+        )}
+      </div>
+
+      <main className="min-h-screen bg-gray-50 py-4 lg:py-8">
         <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="mb-8">
+          {/* Desktop Header */}
+          <div className="hidden lg:block mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
               {zakatType.name}
             </h1>
@@ -256,9 +288,9 @@ export default async function ZakatDetailPage({ params }: Props) {
             )}
           </div>
 
-          {/* Image */}
+          {/* Desktop Image */}
           {zakatType.imageUrl && (
-            <div className="mb-8 rounded-xl overflow-hidden">
+            <div className="hidden lg:block mb-8 rounded-xl overflow-hidden">
               <img
                 src={getImageUrlByVariant(zakatType.imageUrl, ['large'])}
                 alt={zakatType.name}

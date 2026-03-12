@@ -314,19 +314,94 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
       <Header />
 
       <main className="flex-1 bg-gray-50">
-        <Breadcrumb items={[
-          { label: t('qurbanDetail.breadcrumb.home'), href: '/' },
-          { label: t('qurbanDetail.breadcrumb.qurban'), href: '/qurban' },
-          { label: qurbanPackage.name },
-        ]} />
+        {/* Breadcrumb — desktop only */}
+        <div className="hidden lg:block">
+          <Breadcrumb items={[
+            { label: t('qurbanDetail.breadcrumb.home'), href: '/' },
+            { label: t('qurbanDetail.breadcrumb.qurban'), href: '/qurban' },
+            { label: qurbanPackage.name },
+          ]} />
+        </div>
+
+        {/* Mobile: edge-to-edge image with back button */}
+        <div className="lg:hidden relative">
+          <a
+            href="/qurban"
+            className="absolute top-4 left-4 z-10 w-10 h-10 bg-black/40 rounded-full flex items-center justify-center text-white"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </a>
+          <div className="bg-white overflow-hidden">
+            {qurbanPackage.imageUrl ? (
+              <img
+                src={getQurbanImageUrlByVariant(qurbanPackage.imageUrl, ['large', 'medium'])}
+                alt={qurbanPackage.name}
+                className="w-full aspect-video object-contain bg-gray-100"
+              />
+            ) : (
+              <div className="w-full aspect-video bg-gray-100 flex items-center justify-center">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-gray-400">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile: Title + Price + Stock info */}
+        <div className="lg:hidden bg-white px-4 py-4 space-y-3">
+          <h1 className="text-xl font-bold text-gray-900">{qurbanPackage.name}</h1>
+          <div className="text-2xl font-bold text-primary-600 mono">
+            Rp {(qurbanPackage.price || 0).toLocaleString('id-ID')}
+          </div>
+          <div className="text-sm text-gray-600">
+            {qurbanPackage.packageType === 'individual'
+              ? t('qurbanDetail.sidebar.pricePer', { unit: t('qurbanDetail.sidebar.unit.animal') })
+              : t('qurbanDetail.sidebar.pricePer', { unit: t('qurbanDetail.sidebar.unit.slot') })}
+          </div>
+          <div className="p-3 bg-gray-50 rounded-lg">
+            {qurbanPackage.packageType === 'individual' ? (
+              <div className="text-sm">
+                <span className="text-gray-600">{t('qurbanDetail.sidebar.stock.available')}</span>{' '}
+                <span className="font-semibold text-gray-900">
+                  {t('qurbanDetail.sidebar.stock.value', {
+                    remaining: qurbanPackage.stock - qurbanPackage.stockSold,
+                    total: qurbanPackage.stock,
+                  })}
+                </span>
+              </div>
+            ) : (
+              <div className="text-sm space-y-1">
+                <div>
+                  <span className="text-gray-600">{t('qurbanDetail.sidebar.slot.available')}</span>{' '}
+                  <span className="font-semibold text-gray-900">
+                    {t('qurbanDetail.sidebar.slot.value', { count: qurbanPackage.availableSlots })}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-600">{t('qurbanDetail.sidebar.slot.maxPerAnimal')}</span>{' '}
+                  <span className="font-semibold text-gray-900">
+                    {t('qurbanDetail.sidebar.slot.maxValue', { count: qurbanPackage.maxSlots || 0 })}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile: Order Section portal target */}
+        <div id="mobile-qurban-order" className="lg:hidden"></div>
 
         {/* Qurban Content */}
-        <div className="container py-8 pb-24 lg:pb-8">
+        <div className="container py-4 lg:py-8 pb-24 lg:pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Qurban Image */}
-              <div className="bg-white rounded-lg overflow-hidden shadow-sm">
+              {/* Qurban Image — desktop only */}
+              <div className="hidden lg:block bg-white rounded-lg overflow-hidden shadow-sm">
                 {qurbanPackage.imageUrl ? (
                   <img
                     src={getQurbanImageUrlByVariant(qurbanPackage.imageUrl, ['large', 'medium'])}
@@ -350,6 +425,43 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
                 animalType={animalTypeLabel}
                 packageType={qurbanPackage.packageType}
                 periodName={qurbanPackage.periodName || ''}
+                mobileMetaContent={
+                  <div className="space-y-4">
+                    {/* Owner info */}
+                    {ownerName && (
+                      <div className="flex items-center gap-3">
+                        {ownerLogoUrl && (
+                          <img
+                            src={getQurbanImageUrl(ownerLogoUrl) || '/logo.svg'}
+                            alt={ownerName}
+                            className="w-10 h-10 object-contain rounded-lg"
+                          />
+                        )}
+                        <span className="text-sm font-medium text-gray-900">{ownerName}</span>
+                      </div>
+                    )}
+
+                    {/* Package info card */}
+                    <div className="rounded-lg border border-gray-200 p-3 space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">{t('qurbanDetail.tabs.labels.animalType')}</span>
+                        <span className="font-medium text-gray-900">{animalTypeLabel}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">{t('qurbanDetail.tabs.labels.packageType')}</span>
+                        <span className="font-medium text-gray-900">
+                          {qurbanPackage.packageType === 'individual'
+                            ? t('qurbanDetail.tabs.values.packageIndividual')
+                            : t('qurbanDetail.tabs.values.packageShared')}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">{t('qurbanDetail.tabs.labels.period')}</span>
+                        <span className="font-medium text-gray-900">{qurbanPackage.periodName || '-'}</span>
+                      </div>
+                    </div>
+                  </div>
+                }
               />
             </div>
 

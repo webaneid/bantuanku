@@ -13,7 +13,7 @@ export const settings = pgTable("settings", {
   sortOrder: integer("sort_order").default(0).notNull(),
   isPublic: boolean("is_public").default(false).notNull(),
   updatedBy: text("updated_by").references(() => users.id),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Setting = typeof settings.$inferSelect;

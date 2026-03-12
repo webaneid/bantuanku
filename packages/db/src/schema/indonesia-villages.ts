@@ -9,8 +9,8 @@ export const indonesiaVillages = pgTable("indonesia_villages", {
   name: text("name").notNull(), // "LATIUNG"
   postalCode: text("postal_code"), // Kode pos (nullable karena tidak semua village punya)
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export type IndonesiaVillage = typeof indonesiaVillages.$inferSelect;

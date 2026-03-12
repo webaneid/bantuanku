@@ -41,7 +41,7 @@ export const transactions = pgTable("transactions", {
   bankAccountId: text("bank_account_id").references(() => bankAccounts.id), // Bank account yang menerima pembayaran
   paymentStatus: text("payment_status").default("pending").notNull(), // pending, partial, paid, cancelled
   paidAmount: bigint("paid_amount", { mode: "number" }).default(0),
-  paidAt: timestamp("paid_at", { precision: 3, mode: "date" }),
+  paidAt: timestamp("paid_at", { precision: 3, mode: "date", withTimezone: true }),
 
   // Type-Specific Data (Conditional Fields as JSON)
   typeSpecificData: jsonb("type_specific_data"),
@@ -59,8 +59,8 @@ export const transactions = pgTable("transactions", {
   // Ledger Integration
   ledgerEntryId: text("ledger_entry_id"),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 // Import after declaration to avoid circular dependency

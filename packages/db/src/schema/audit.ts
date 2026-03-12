@@ -12,7 +12,7 @@ export const auditLogs = pgTable("audit_logs", {
   newData: jsonb("new_data"),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export type AuditLog = typeof auditLogs.$inferSelect;

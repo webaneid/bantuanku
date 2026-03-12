@@ -10,8 +10,8 @@ export const notifications = pgTable("notifications", {
   message: text("message").notNull(),
   data: jsonb("data"),
   isRead: boolean("is_read").default(false).notNull(),
-  readAt: timestamp("read_at", { precision: 3, mode: "date" }),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  readAt: timestamp("read_at", { precision: 3, mode: "date", withTimezone: true }),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Notification = typeof notifications.$inferSelect;

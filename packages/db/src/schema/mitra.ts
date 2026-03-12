@@ -41,7 +41,7 @@ export const mitra = pgTable("mitra", {
   // Status
   status: text("status").default("pending").notNull(),
   verifiedBy: text("verified_by").references(() => users.id),
-  verifiedAt: timestamp("verified_at", { precision: 3, mode: "date" }),
+  verifiedAt: timestamp("verified_at", { precision: 3, mode: "date", withTimezone: true }),
   rejectionReason: text("rejection_reason"),
 
   // Keuangan
@@ -55,8 +55,8 @@ export const mitra = pgTable("mitra", {
   userId: text("user_id").references(() => users.id),
 
   notes: text("notes"),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const mitraRelations = relations(mitra, ({ one }) => ({

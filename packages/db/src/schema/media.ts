@@ -24,11 +24,11 @@ export const media = pgTable("media", {
   height: integer("height"),
   variants: jsonb("variants").$type<Record<string, MediaVariant>>(),
   originalLocalPath: text("original_local_path"),
-  originalLocalExpiresAt: timestamp("original_local_expires_at", { precision: 3, mode: "date" }),
+  originalLocalExpiresAt: timestamp("original_local_expires_at", { precision: 3, mode: "date", withTimezone: true }),
   folder: text("folder").default("uploads").notNull(),
   category: text("category").default("general").notNull(), // general, financial, activity, document
   uploadedBy: text("uploaded_by").references(() => users.id),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Media = typeof media.$inferSelect;

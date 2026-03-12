@@ -11,6 +11,7 @@ import {
   FeaturedCarousel,
   CategoryGrid,
   QurbanSection,
+  TestimonialSection,
 } from '@/components/organisms';
 import { Button, ProgramBadge } from '@/components/atoms';
 import { fetchCampaigns, calculateDaysLeft, getImageUrlByVariant } from '@/services/campaigns';
@@ -631,6 +632,9 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* Testimonials */}
+        <TestimonialSection />
+
         {/* CTA */}
         <section className="cta-section py-16 md:py-24 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 text-white relative overflow-hidden">
           {/* Decorative elements */}
@@ -660,14 +664,14 @@ export default async function HomePage() {
                       <Button size="lg" className="w-full sm:w-64 !bg-white !text-primary-700 hover:!bg-primary-50 font-bold shadow-lg shadow-black/10">
                         {button.text}
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="ml-2">
-                          <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </Button>
                     ) : (
                       <Button size="lg" variant="outline" className="w-full sm:w-64 !border-white !text-white hover:!bg-white hover:!text-primary-700 font-bold">
                         {button.text}
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="ml-2">
-                          <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </Button>
                     )}

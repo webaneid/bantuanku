@@ -18,7 +18,7 @@ export const zakatCalculatorConfigs = pgTable("zakat_calculator_configs", {
 
   isActive: boolean("is_active").default(true).notNull(),
   updatedBy: text("updated_by").references(() => users.id),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const zakatCalculationLogs = pgTable("zakat_calculation_logs", {
@@ -33,7 +33,7 @@ export const zakatCalculationLogs = pgTable("zakat_calculation_logs", {
   donationId: text("donation_id"),
   isConverted: boolean("is_converted").default(false).notNull(),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export type ZakatCalculatorConfig = typeof zakatCalculatorConfigs.$inferSelect;

@@ -23,7 +23,7 @@ export default function CampaignGallery({
   const [selectedImage, setSelectedImage] = useState<string>(images[0] || featuredImage);
 
   return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-sm">
+    <div className="bg-white lg:rounded-lg overflow-hidden lg:shadow-sm">
       <img
         src={getImageUrlByVariant(selectedImage, ['large', 'medium'])}
         alt={altText}

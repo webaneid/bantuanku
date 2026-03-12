@@ -152,7 +152,6 @@ export default function FundraiserPage() {
       day: "numeric",
       month: "short",
       year: "numeric",
-      timeZone: "Asia/Jakarta",
     }).format(new Date(date));
 
   const formatDateLong = (date: string) =>
@@ -160,7 +159,6 @@ export default function FundraiserPage() {
       day: "numeric",
       month: "long",
       year: "numeric",
-      timeZone: "Asia/Jakarta",
     }).format(new Date(date));
 
   const referralStatusLabel = (status: string) => {

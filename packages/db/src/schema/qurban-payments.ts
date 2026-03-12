@@ -21,11 +21,11 @@ export const qurbanPayments = pgTable("qurban_payments", {
 
   notes: text("notes"),
 
-  verifiedAt: timestamp("verified_at", { precision: 3, mode: "date" }),
+  verifiedAt: timestamp("verified_at", { precision: 3, mode: "date", withTimezone: true }),
   verifiedBy: text("verified_by").references(() => users.id),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const qurbanPaymentsRelations = relations(qurbanPayments, ({ one }) => ({

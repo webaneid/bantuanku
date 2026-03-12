@@ -7,8 +7,8 @@ export const jobCategories = pgTable("job_categories", {
   description: text("description"),
   displayOrder: integer("display_order").default(0).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const jobCategoriesRelations = relations(jobCategories, ({ many }) => ({
@@ -21,8 +21,8 @@ export const jobTitles = pgTable("job_titles", {
   name: varchar("name", { length: 100 }).notNull(),
   isPopular: boolean("is_popular").default(false).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const jobTitlesRelations = relations(jobTitles, ({ one }) => ({

@@ -45,17 +45,17 @@ export const donatur = pgTable("donatur", {
   totalAmount: bigint("total_amount", { mode: "number" }).default(0).notNull(),
 
   // Verification
-  emailVerifiedAt: timestamp("email_verified_at", { precision: 3, mode: "date" }),
-  phoneVerifiedAt: timestamp("phone_verified_at", { precision: 3, mode: "date" }),
+  emailVerifiedAt: timestamp("email_verified_at", { precision: 3, mode: "date", withTimezone: true }),
+  phoneVerifiedAt: timestamp("phone_verified_at", { precision: 3, mode: "date", withTimezone: true }),
 
   // Status
   isActive: boolean("is_active").default(true).notNull(),
   isAnonymous: boolean("is_anonymous").default(false).notNull(),
 
   // Timestamps
-  lastLoginAt: timestamp("last_login_at", { precision: 3, mode: "date" }),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  lastLoginAt: timestamp("last_login_at", { precision: 3, mode: "date", withTimezone: true }),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const donaturRelations = relations(donatur, ({ one }) => ({

@@ -255,6 +255,16 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
                 </span>
               </div>
             </div>
+            <div>
+              <label className="text-sm text-gray-500">Tanggal Transaksi</label>
+              <div className="font-semibold">
+                {transaction.createdAt
+                  ? format(new Date(transaction.createdAt), "dd MMM yyyy, HH:mm", {
+                      locale: idLocale,
+                    })
+                  : "-"}
+              </div>
+            </div>
           </div>
 
           <div className="border-t pt-4 mb-6">
@@ -483,7 +493,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
                         <div>
                           <p className="text-gray-500">Tanggal Transfer</p>
                           <p className="text-gray-900 font-medium">
-                            {payment.paymentDate && format(new Date(payment.paymentDate), "dd MMM yyyy", {
+                            {payment.paymentDate && format(new Date(payment.paymentDate), "dd MMM yyyy, HH:mm", {
                               locale: idLocale,
                             })}
                           </p>

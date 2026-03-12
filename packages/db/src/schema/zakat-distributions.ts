@@ -45,22 +45,22 @@ export const zakatDistributions = pgTable("zakat_distributions", {
 
   // Workflow
   approvedBy: text("approved_by").references(() => users.id),
-  approvedAt: timestamp("approved_at", { precision: 3, mode: "date" }),
+  approvedAt: timestamp("approved_at", { precision: 3, mode: "date", withTimezone: true }),
   disbursedBy: text("disbursed_by").references(() => users.id),
-  disbursedAt: timestamp("disbursed_at", { precision: 3, mode: "date" }),
+  disbursedAt: timestamp("disbursed_at", { precision: 3, mode: "date", withTimezone: true }),
   
   // Activity Report (only for coordinator type, filled after disbursed)
-  reportDate: timestamp("report_date", { precision: 3, mode: "date" }), // actual date of distribution activity
+  reportDate: timestamp("report_date", { precision: 3, mode: "date", withTimezone: true }), // actual date of distribution activity
   reportDescription: text("report_description"), // activity description
   reportPhotos: text("report_photos"), // JSON array of photo URLs
   reportAddedBy: text("report_added_by").references(() => users.id),
-  reportAddedAt: timestamp("report_added_at", { precision: 3, mode: "date" }),
+  reportAddedAt: timestamp("report_added_at", { precision: 3, mode: "date", withTimezone: true }),
 
   createdBy: text("created_by")
     .references(() => users.id)
     .notNull(),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const zakatDistributionsRelations = relations(zakatDistributions, ({ one }) => ({

@@ -1,0 +1,231 @@
+@import '../variables';
+@import '../mixins';
+
+.testimonial-section {
+  padding: 1.5rem 0;
+  background: $primary-50;
+  position: relative;
+  overflow: hidden;
+
+  @include desktop {
+    padding: $spacing-16 0;
+  }
+
+  // Decorative blurs
+  &__decor {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      width: 16rem;
+      height: 16rem;
+      border-radius: $radius-full;
+      mix-blend-mode: multiply;
+      filter: blur(48px);
+      opacity: 0.5;
+    }
+
+    &::before {
+      top: 0;
+      right: 0;
+      background: $primary-100;
+      transform: translate(50%, -50%);
+    }
+
+    &::after {
+      bottom: 0;
+      left: 0;
+      background: $primary-200;
+      transform: translate(-50%, 50%);
+    }
+  }
+
+  &__header {
+    text-align: center;
+    margin-bottom: $spacing-8;
+    position: relative;
+    z-index: 1;
+
+    @include desktop {
+      margin-bottom: $spacing-12;
+    }
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-2;
+    background: white;
+    padding: $spacing-2 $spacing-4;
+    border-radius: $radius-full;
+    box-shadow: 0 1px 3px rgba(black, 0.08);
+    border: 1px solid $primary-100;
+    margin-bottom: $spacing-4;
+
+    img {
+      width: 20px;
+      height: 20px;
+    }
+
+    span {
+      font-size: $font-sm;
+      font-weight: 600;
+      color: $gray-700;
+    }
+  }
+
+
+  // Swiper overrides
+  &__slider {
+    position: relative;
+    z-index: 1;
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0;
+
+    @include desktop {
+      padding: 0 $spacing-6;
+    }
+
+    .swiper {
+      padding-bottom: $spacing-12;
+    }
+
+    .swiper-pagination-bullet {
+      background: $primary-300;
+      opacity: 0.6;
+
+      &-active {
+        background: $primary-600;
+        opacity: 1;
+      }
+    }
+  }
+}
+
+// Testimonial Card
+.testimonial-card {
+  background: white;
+  border-radius: $radius-xl;
+  padding: $spacing-6;
+  box-shadow: 0 2px 8px rgba(black, 0.06);
+  border: 1px solid $gray-100;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow $transition-base;
+
+  @include desktop {
+    padding: $spacing-8;
+  }
+
+  &:hover {
+    box-shadow: 0 8px 24px rgba(black, 0.1);
+  }
+
+  &__quote-icon {
+    position: absolute;
+    top: -$spacing-2;
+    right: -$spacing-2;
+    color: $primary-50;
+    opacity: 0.5;
+    transform: rotate(12deg);
+    transition: transform $transition-base;
+
+    svg {
+      width: 100px;
+      height: 100px;
+
+      @include mobile {
+        width: 72px;
+        height: 72px;
+      }
+    }
+  }
+
+  &:hover &__quote-icon {
+    transform: rotate(0deg);
+  }
+
+  &__stars {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-bottom: $spacing-3;
+    position: relative;
+    z-index: 1;
+
+    svg {
+      width: 18px;
+      height: 18px;
+
+      @include mobile {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  &__text {
+    font-size: $font-sm;
+    color: $gray-700;
+    font-style: italic;
+    flex: 1;
+    margin-bottom: $spacing-5;
+    line-height: 1.7;
+    position: relative;
+    z-index: 1;
+
+    @include desktop {
+      font-size: $font-base;
+    }
+  }
+
+  &__author {
+    display: flex;
+    align-items: center;
+    gap: $spacing-3;
+    margin-top: auto;
+    padding-top: $spacing-4;
+    border-top: 1px solid $gray-100;
+  }
+
+  &__avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: $radius-full;
+    background: linear-gradient(135deg, $primary-100, $primary-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $primary-700;
+    font-weight: 700;
+    font-size: $font-lg;
+    flex-shrink: 0;
+
+    @include mobile {
+      width: 40px;
+      height: 40px;
+      font-size: $font-base;
+    }
+  }
+
+  &__name {
+    font-weight: 600;
+    color: $gray-900;
+    font-size: $font-sm;
+    line-height: 1.3;
+  }
+
+  &__time {
+    font-size: $font-xs;
+    color: $gray-500;
+  }
+}

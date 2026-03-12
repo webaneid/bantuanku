@@ -8,8 +8,8 @@ export const indonesiaDistricts = pgTable("indonesia_districts", {
     .references(() => indonesiaRegencies.code),
   name: text("name").notNull(), // "TEUPAH SELATAN"
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export type IndonesiaDistrict = typeof indonesiaDistricts.$inferSelect;

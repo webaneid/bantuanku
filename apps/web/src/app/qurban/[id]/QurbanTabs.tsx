@@ -10,6 +10,7 @@ interface QurbanTabsProps {
   animalType: string;
   packageType: string;
   periodName: string;
+  mobileMetaContent?: React.ReactNode;
 }
 
 export default function QurbanTabs({
@@ -17,6 +18,7 @@ export default function QurbanTabs({
   animalType,
   packageType,
   periodName,
+  mobileMetaContent,
 }: QurbanTabsProps) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<'description' | 'info'>('description');
@@ -52,14 +54,21 @@ export default function QurbanTabs({
       </div>
 
       {/* Tab Content */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {activeTab === 'description' && (
-          <div className="prose prose-sm max-w-none">
-            {packageDescription ? (
-              <div dangerouslySetInnerHTML={{ __html: packageDescription }} />
-            ) : (
-              <p className="text-gray-500">{t('qurbanDetail.tabs.noDescription')}</p>
+          <div className="space-y-6">
+            {mobileMetaContent && (
+              <div className="lg:hidden">
+                {mobileMetaContent}
+              </div>
             )}
+            <div className="prose prose-sm max-w-none">
+              {packageDescription ? (
+                <div dangerouslySetInnerHTML={{ __html: packageDescription }} />
+              ) : (
+                <p className="text-gray-500">{t('qurbanDetail.tabs.noDescription')}</p>
+              )}
+            </div>
           </div>
         )}
 

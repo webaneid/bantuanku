@@ -3,8 +3,10 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { createId, disbursements, entityBankAccounts, revenueShares, settings, users } from "@bantuanku/db";
+import { encrypt, decrypt } from "../../lib/encryption";
 import { success, error } from "../../lib/response";
 import { requireDeveloper, requireRole } from "../../middleware/auth";
+import { clearTestimonialsCache } from "../testimonials";
 import type { Env, Variables } from "../../types";
 
 const settingsAdmin = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -154,11 +156,11 @@ settingsAdmin.get(
     const earliestDate =
       earliestRevenue?.calculatedAt && earliestDisbursement?.createdAt
         ? new Date(
-            Math.min(
-              earliestRevenue.calculatedAt.getTime(),
-              earliestDisbursement.createdAt.getTime()
-            )
+          Math.min(
+            earliestRevenue.calculatedAt.getTime(),
+            earliestDisbursement.createdAt.getTime()
           )
+        )
         : earliestRevenue?.calculatedAt || earliestDisbursement?.createdAt;
 
     if (!earliestDate) {
@@ -269,10 +271,18 @@ settingsAdmin.get("/", requireRole("super_admin", "admin_finance", "admin_campai
 
   const grouped = data.reduce(
     (acc, setting) => {
-      if (!acc[setting.category]) {
-        acc[setting.category] = [];
+      // Decrypt sensitive API keys for display in admin
+      let displayValue = setting.value;
+      if (setting.key.includes("_api_key") || setting.key.includes("_secret")) {
+        displayValue = decrypt(setting.value);
       }
-      acc[setting.category].push(setting);
+
+      const parsedSetting = { ...setting, value: displayValue };
+
+      if (!acc[parsedSetting.category]) {
+        acc[parsedSetting.category] = [];
+      }
+      acc[parsedSetting.category].push(parsedSetting);
       return acc;
     },
     {} as Record<string, typeof data>
@@ -416,6 +426,13 @@ settingsAdmin.put("/batch", requireRole("super_admin", "admin_finance"), zValida
 
   // Process each setting - update if exists, create if not
   for (const settingData of body) {
+    let finalValue = settingData.value;
+
+    // Encrypt sensitive fields
+    if (settingData.key.includes("_api_key") || settingData.key.includes("_secret")) {
+      finalValue = encrypt(settingData.value);
+    }
+
     const existing = await db.query.settings.findFirst({
       where: eq(settings.key, settingData.key),
     });
@@ -425,7 +442,7 @@ settingsAdmin.put("/batch", requireRole("super_admin", "admin_finance"), zValida
       await db
         .update(settings)
         .set({
-          value: settingData.value,
+          value: finalValue,
           label: settingData.label,
           description: settingData.description,
           category: settingData.category,
@@ -439,7 +456,7 @@ settingsAdmin.put("/batch", requireRole("super_admin", "admin_finance"), zValida
       // Create new setting
       await db.insert(settings).values({
         key: settingData.key,
-        value: settingData.value,
+        value: finalValue,
         label: settingData.label,
         description: settingData.description,
         category: settingData.category,
@@ -451,6 +468,11 @@ settingsAdmin.put("/batch", requireRole("super_admin", "admin_finance"), zValida
   }
 
   return success(c, null, "Settings updated successfully");
+});
+
+settingsAdmin.post("/google-maps/reset-cache", requireRole("super_admin", "admin_finance"), async (c) => {
+  clearTestimonialsCache();
+  return success(c, null, "Cache testimoni Google Maps berhasil di-reset");
 });
 
 // Auto-update gold price from Pluang scraper

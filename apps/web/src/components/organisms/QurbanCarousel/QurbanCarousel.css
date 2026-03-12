@@ -2,12 +2,23 @@
   @apply relative w-full;
 }
 
+@media (max-width: 639px) {
+  .qurban-carousel {
+    width: calc(100% + 1rem);
+  }
+
+  .qurban-carousel__track {
+    gap: 1rem !important;
+  }
+}
+
 .qurban-carousel__container {
   @apply relative;
 }
 
 .qurban-carousel__track {
-  @apply flex gap-6 overflow-x-auto scroll-smooth;
+  @apply flex overflow-x-auto scroll-smooth;
+  gap: 1.5rem;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
 }
@@ -57,7 +68,13 @@
   @apply -right-6;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 639px) {
+  .qurban-carousel__nav {
+    @apply hidden;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 768px) {
   .qurban-carousel__nav {
     @apply w-10 h-10;
   }

@@ -48,6 +48,12 @@ const allMenuItems = [
     roles: ["super_admin"],
   },
   {
+    label: "Testimoni Google Maps",
+    icon: ChatBubbleLeftRightIcon,
+    href: "/dashboard/settings/google-maps",
+    roles: ["super_admin"],
+  },
+  {
     label: "Platform Provider",
     icon: CogIcon,
     href: "/dashboard/settings/developer",
@@ -85,11 +91,10 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                 <button
                   key={item.href}
                   onClick={() => router.push(item.href)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-l-4 ${
-                    active
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-l-4 ${active
                       ? "bg-primary-50 text-primary-700 border-primary-600 font-medium"
                       : "bg-white text-gray-700 border-transparent hover:bg-gray-50"
-                  }`}
+                    }`}
                 >
                   <Icon className={`w-5 h-5 ${active ? "text-primary-600" : "text-gray-400"}`} />
                   <span className="text-sm">{item.label}</span>

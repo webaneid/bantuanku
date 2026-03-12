@@ -23,11 +23,11 @@ export const pages = pgTable("pages", {
   seoScore: integer("seo_score").default(0),
 
   isPublished: boolean("is_published").default(true).notNull(),
-  publishedAt: timestamp("published_at", { precision: 3, mode: "date" }),
+  publishedAt: timestamp("published_at", { precision: 3, mode: "date", withTimezone: true }),
 
   createdBy: text("created_by").references(() => users.id),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Page = typeof pages.$inferSelect;

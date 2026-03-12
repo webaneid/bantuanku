@@ -26,6 +26,6 @@ export const pillars = pgTable("pillars", {
   ogImageUrl: text("og_image_url"),
   seoScore: integer("seo_score").default(0),
 
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

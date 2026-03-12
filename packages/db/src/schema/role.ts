@@ -9,8 +9,8 @@ export const roles = pgTable("roles", {
   name: text("name").notNull(),
   description: text("description"),
   isSystem: boolean("is_system").default(false).notNull(),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const permissions = pgTable("permissions", {
@@ -19,21 +19,21 @@ export const permissions = pgTable("permissions", {
   name: text("name").notNull(),
   module: text("module").notNull(),
   description: text("description"),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const userRoles = pgTable("user_roles", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   roleId: text("role_id").notNull().references(() => roles.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const rolePermissions = pgTable("role_permissions", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
   roleId: text("role_id").notNull().references(() => roles.id, { onDelete: "cascade" }),
   permissionId: text("permission_id").notNull().references(() => permissions.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const userRolesRelations = relations(userRoles, ({ one }) => ({

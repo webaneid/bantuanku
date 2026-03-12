@@ -43,8 +43,8 @@ export const vendors = pgTable("vendors", {
   isActive: boolean("is_active").default(true).notNull(),
   notes: text("notes"),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const vendorsRelations = relations(vendors, ({ many }) => ({

@@ -57,8 +57,8 @@ export const mustahiqs = pgTable("mustahiqs", {
   // Status
   isActive: boolean("is_active").default(true).notNull(),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const mustahiqsRelations = relations(mustahiqs, ({ many, one }) => ({

@@ -15,8 +15,8 @@ export const disbursementRevenueShareItems = pgTable(
       .references(() => revenueShares.id, { onDelete: "cascade" }),
     shareType: text("share_type").notNull(), // mitra | fundraiser | developer
     allocatedAmount: bigint("allocated_amount", { mode: "number" }).notNull(),
-    createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-    updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
   },
   (table) => ({
     disbursementRevenueUnique: unique("uq_disbursement_revenue_share_item").on(

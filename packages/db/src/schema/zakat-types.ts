@@ -28,8 +28,8 @@ export const zakatTypes = pgTable("zakat_types", {
   seoScore: integer("seo_score").default(0),
 
   createdBy: text("created_by").references(() => users.id),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export type ZakatType = typeof zakatTypes.$inferSelect;

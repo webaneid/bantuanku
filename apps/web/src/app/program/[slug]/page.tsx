@@ -312,24 +312,83 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
       <Header />
 
       <main className="flex-1 bg-gray-50">
-        {/* Breadcrumb */}
-        <Breadcrumb items={[
-          { label: t('campaignDetail.breadcrumb.home'), href: '/' },
-          { label: t('campaignDetail.breadcrumb.program'), href: '/program' },
-          { label: campaign.title },
-        ]} />
+        {/* Breadcrumb — desktop only */}
+        <div className="hidden lg:block">
+          <Breadcrumb items={[
+            { label: t('campaignDetail.breadcrumb.home'), href: '/' },
+            { label: t('campaignDetail.breadcrumb.program'), href: '/program' },
+            { label: campaign.title },
+          ]} />
+        </div>
+
+        {/* Mobile: edge-to-edge gallery with back button */}
+        <div className="lg:hidden relative">
+          <a
+            href="/program"
+            className="absolute top-4 left-4 z-10 w-10 h-10 bg-black/40 rounded-full flex items-center justify-center text-white"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </a>
+          <CampaignGallery
+            featuredImage={campaign.imageUrl}
+            galleryImages={campaignGalleryImages}
+            altText={campaign.title}
+          />
+        </div>
+
+        {/* Mobile: Title + Progress + Stats */}
+        <div className="lg:hidden bg-white px-4 py-4 space-y-3">
+          <h1 className="text-xl font-bold text-gray-900">{campaign.title}</h1>
+          <div className="space-y-2">
+            <span className="text-xl font-bold text-primary-600">
+              Rp {(campaign.collected || 0).toLocaleString('id-ID')}
+            </span>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary-500 rounded-full transition-all"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <span>{t('campaignDetail.sidebar.progress', { percent: progressPercentage.toFixed(1), target: (campaign.goal || 0).toLocaleString('id-ID') })}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>{t('campaignDetail.sidebar.donors', { count: campaign.donorCount || 0 })}</span>
+            </div>
+            {daysLeft !== null && daysLeft > 0 && (
+              <div className="flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>{t('campaignDetail.sidebar.daysLeft', { days: daysLeft })}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile: Amount Selector portal target */}
+        <div id="mobile-amount-selector" className="lg:hidden"></div>
 
         {/* Campaign Content */}
-        <div className="container py-8 pb-24 lg:pb-8">
+        <div className="container py-4 lg:py-8 pb-24 lg:pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Campaign Image */}
-              <CampaignGallery
-                featuredImage={campaign.imageUrl}
-                galleryImages={campaignGalleryImages}
-                altText={campaign.title}
-              />
+              {/* Campaign Image — desktop only */}
+              <div className="hidden lg:block">
+                <CampaignGallery
+                  featuredImage={campaign.imageUrl}
+                  galleryImages={campaignGalleryImages}
+                  altText={campaign.title}
+                />
+              </div>
 
               {/* Tabs */}
               <CampaignTabs
@@ -339,6 +398,65 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
                 donorCount={campaign.donorCount || 0}
                 coordinatorName={campaign.coordinatorName}
                 ownerName={campaign.mitraName || campaign.organizationName || settings.organization_name}
+                mobileMetaContent={
+                  <div className="space-y-4">
+                    {/* Mitra/Organization info */}
+                    {(campaign.mitraName || campaign.organizationName || settings.organization_name) && (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={getImageUrl(
+                            campaign.mitraLogoUrl || settings.organization_institution_logo || settings.organization_logo || '/logo.svg',
+                            '/logo.svg'
+                          )}
+                          alt={campaign.mitraName || campaign.organizationName || settings.organization_name}
+                          className="w-10 h-10 object-contain rounded-lg"
+                        />
+                        <div className="flex items-center gap-1">
+                          <span className="text-sm font-medium text-gray-900">
+                            {campaign.mitraName || campaign.organizationName || settings.organization_name}
+                          </span>
+                          <svg className="w-4 h-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Meta card */}
+                    <div className="rounded-lg border border-gray-200 p-3 space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">{t('campaignDetail.sidebar.meta.startDate')}</span>
+                        <span className="font-medium text-gray-900">
+                          {campaign.startDate
+                            ? new Date(campaign.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                            : '-'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">{t('campaignDetail.sidebar.meta.pillar')}</span>
+                        <span className="font-medium text-gray-900">{campaign.pillar || '-'}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">{t('campaignDetail.sidebar.meta.category')}</span>
+                        <span className="font-medium text-gray-900">{categoryLabel || '-'}</span>
+                      </div>
+                      {(campaign.isFeatured || campaign.isUrgent) && (
+                        <div className="pt-2 border-t border-gray-100 flex flex-wrap gap-2">
+                          {campaign.isFeatured && (
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700">
+                              {t('campaignDetail.sidebar.badges.featured')}
+                            </span>
+                          )}
+                          {campaign.isUrgent && (
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
+                              {t('campaignDetail.sidebar.badges.urgent')}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                }
               />
             </div>
 

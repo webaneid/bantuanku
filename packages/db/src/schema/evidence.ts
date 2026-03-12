@@ -15,10 +15,10 @@ export const evidences = pgTable("evidences", {
   amount: bigint("amount", { mode: "number" }),
 
   uploadedBy: text("uploaded_by").references(() => users.id),
-  uploadedAt: timestamp("uploaded_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  uploadedAt: timestamp("uploaded_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const evidencesRelations = relations(evidences, ({ one }) => ({

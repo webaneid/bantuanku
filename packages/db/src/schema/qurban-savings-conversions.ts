@@ -23,8 +23,8 @@ export const qurbanSavingsConversions = pgTable("qurban_savings_conversions", {
 
   notes: text("notes"),
   convertedBy: text("converted_by").references(() => users.id),
-  convertedAt: timestamp("converted_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  convertedAt: timestamp("converted_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const qurbanSavingsConversionsRelations = relations(qurbanSavingsConversions, ({ one }) => ({

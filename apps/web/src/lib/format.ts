@@ -103,10 +103,10 @@ export function truncate(text: string, maxLength: number): string {
 }
 
 /**
- * Format date to Indonesian locale in WIB timezone
+ * Format date to Indonesian locale in the viewer's local timezone
  * @param date - Date object or string
  * @param format - Format type ('short', 'long', 'full')
- * @returns Formatted date string in WIB timezone
+ * @returns Formatted date string
  */
 export function formatDate(
   date: Date | string,
@@ -116,29 +116,26 @@ export function formatDate(
 
   const options: Intl.DateTimeFormatOptions =
     format === 'short'
-      ? { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }
+      ? { day: 'numeric', month: 'short', year: 'numeric' }
       : format === 'long'
-      ? { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }
+      ? { day: 'numeric', month: 'long', year: 'numeric' }
       : {
           weekday: 'long',
           day: 'numeric',
           month: 'long',
           year: 'numeric',
-          timeZone: 'Asia/Jakarta'
         };
 
   return d.toLocaleDateString('id-ID', options);
 }
 
 /**
- * Get relative time in WIB timezone (e.g., "2 hari yang lalu")
+ * Get relative time (e.g., "2 hari yang lalu")
  * @param date - Date object or string
  * @returns Relative time string
  */
 export function getRelativeTime(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  // Calculate time difference in WIB timezone context
-  // Both dates are interpreted in WIB timezone for consistent calculation
   const now = new Date();
   const diff = now.getTime() - d.getTime();
 
@@ -160,10 +157,10 @@ export function getRelativeTime(date: Date | string): string {
 }
 
 /**
- * Format date with time in WIB timezone
+ * Format date with time in the viewer's local timezone
  * @param date - Date object or string
  * @param includeSeconds - Include seconds in time (default: false)
- * @returns Formatted datetime string (e.g., "31 Jan 2026, 14:30 WIB")
+ * @returns Formatted datetime string (e.g., "31 Jan 2026, 14:30")
  */
 export function formatDateTime(
   date: Date | string,
@@ -175,19 +172,17 @@ export function formatDateTime(
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-    timeZone: 'Asia/Jakarta'
   };
 
   const timeOptions: Intl.DateTimeFormatOptions = {
     hour: '2-digit',
     minute: '2-digit',
     ...(includeSeconds && { second: '2-digit' }),
-    timeZone: 'Asia/Jakarta',
     hour12: false
   };
 
   const datePart = d.toLocaleDateString('id-ID', dateOptions);
   const timePart = d.toLocaleTimeString('id-ID', timeOptions);
 
-  return `${datePart}, ${timePart} WIB`;
+  return `${datePart}, ${timePart}`;
 }

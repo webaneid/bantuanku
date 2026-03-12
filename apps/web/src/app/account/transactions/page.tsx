@@ -211,11 +211,14 @@ export default function TransactionsPage() {
                         </span>
                       </td>
                       <td className="text-gray-600 text-sm">
-                        {new Date(transaction.createdAt).toLocaleDateString(localeTag, {
+                        {new Intl.DateTimeFormat(localeTag, {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
-                        })}
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false,
+                        }).format(new Date(transaction.createdAt))}
                       </td>
                       <td>
                         <div className="table-actions">
@@ -267,11 +270,14 @@ export default function TransactionsPage() {
                   <div className="table-card-row">
                     <span className="table-card-row-label">{t('account.transactions.table.dateLabel')}</span>
                     <span className="table-card-row-value">
-                      {new Date(transaction.createdAt).toLocaleDateString(localeTag, {
+                      {new Intl.DateTimeFormat(localeTag, {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric',
-                      })}
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false,
+                      }).format(new Date(transaction.createdAt))}
                     </span>
                   </div>
 

@@ -14,8 +14,8 @@ export const chartOfAccounts = pgTable("chart_of_accounts", {
   isActive: boolean("is_active").default(true).notNull(),
   isSystem: boolean("is_system").default(false).notNull(), // true = tidak bisa dihapus
   description: text("description"),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const coaRelations = relations(chartOfAccounts, ({ one, many }) => ({

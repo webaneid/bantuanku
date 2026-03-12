@@ -12,13 +12,13 @@ export const ledgerEntries = pgTable("ledger_entries", {
   refType: text("ref_type").notNull(), // donation, disbursement, adjustment, etc
   refId: text("ref_id"), // reference to source transaction
 
-  postedAt: timestamp("posted_at", { precision: 3, mode: "date" }).notNull(),
+  postedAt: timestamp("posted_at", { precision: 3, mode: "date", withTimezone: true }).notNull(),
   memo: text("memo"), // description of the entry
   status: text("status").default("posted").notNull(), // posted, voided
 
   createdBy: text("created_by").references(() => users.id),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 // Ledger Lines - Individual debit/credit lines within an entry
@@ -31,7 +31,7 @@ export const ledgerLines = pgTable("ledger_lines", {
   debit: bigint("debit", { mode: "number" }).default(0).notNull(),
   credit: bigint("credit", { mode: "number" }).default(0).notNull(),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 // Alias for chartOfAccounts to match import expectations

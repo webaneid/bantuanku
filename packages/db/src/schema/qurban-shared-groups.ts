@@ -21,8 +21,8 @@ export const qurbanSharedGroups = pgTable("qurban_shared_groups", {
   slotsFilled: integer("slots_filled").default(0).notNull(), // Berapa orang sudah join
   status: text("status").default("open").notNull(), // open, full, confirmed, executed
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const qurbanSharedGroupsRelations = relations(qurbanSharedGroups, ({ one, many }) => ({

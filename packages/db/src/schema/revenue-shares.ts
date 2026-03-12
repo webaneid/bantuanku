@@ -31,11 +31,11 @@ export const revenueShares = pgTable("revenue_shares", {
   programAmount: bigint("program_amount", { mode: "number" }).notNull(),
 
   status: text("status").default("calculated").notNull(),
-  calculatedAt: timestamp("calculated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  distributedAt: timestamp("distributed_at", { precision: 3, mode: "date" }),
+  calculatedAt: timestamp("calculated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  distributedAt: timestamp("distributed_at", { precision: 3, mode: "date", withTimezone: true }),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const revenueSharesRelations = relations(revenueShares, ({ one }) => ({

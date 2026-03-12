@@ -14,18 +14,18 @@ export const qurbanSavingsTransactions = pgTable("qurban_savings_transactions", 
   // Transaction Details
   amount: bigint("amount", { mode: "number" }).notNull(),
   transactionType: text("transaction_type").notNull(), // 'deposit', 'withdrawal', 'conversion'
-  transactionDate: timestamp("transaction_date", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  transactionDate: timestamp("transaction_date", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
   paymentMethod: text("payment_method"), // 'bank_transfer', 'ewallet', 'va', dst
   paymentChannel: text("payment_channel"),
 
   // Proof & Verification
   paymentProof: text("payment_proof"),
   verifiedBy: text("verified_by").references(() => users.id),
-  verifiedAt: timestamp("verified_at", { precision: 3, mode: "date" }),
+  verifiedAt: timestamp("verified_at", { precision: 3, mode: "date", withTimezone: true }),
   status: text("status").default("pending").notNull(), // pending, verified, rejected
 
   notes: text("notes"),
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const qurbanSavingsTransactionsRelations = relations(qurbanSavingsTransactions, ({ one }) => ({

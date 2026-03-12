@@ -39,12 +39,12 @@ export const qurbanOrders = pgTable("qurban_orders", {
   onBehalfOf: text("on_behalf_of"),
   notes: text("notes"),
 
-  orderDate: timestamp("order_date", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  confirmedAt: timestamp("confirmed_at", { precision: 3, mode: "date" }),
-  executedAt: timestamp("executed_at", { precision: 3, mode: "date" }),
+  orderDate: timestamp("order_date", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  confirmedAt: timestamp("confirmed_at", { precision: 3, mode: "date", withTimezone: true }),
+  executedAt: timestamp("executed_at", { precision: 3, mode: "date", withTimezone: true }),
 
-  createdAt: timestamp("created_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { precision: 3, mode: "date" }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
 });
 
 export const qurbanOrdersRelations = relations(qurbanOrders, ({ one }) => ({

@@ -234,7 +234,7 @@ export default function QurbanReportPage() {
               {income.length === 0 ? (
                 <div className="p-6 text-center text-gray-500">Tidak ada data pemasukan dalam periode ini</div>
               ) : (
-                <table className="table">
+                <table className="table table-report">
                   <thead>
                     <tr>
                       <th>Jenis Pemasukan</th>
@@ -278,14 +278,37 @@ export default function QurbanReportPage() {
                       <div className="table-card-header-title">
                         {QURBAN_INCOME_LABELS[item.category] || item.category}
                       </div>
-                      <div className="table-card-header-subtitle">{item.count} transaksi</div>
                     </div>
-                    <span className="mono font-medium text-success-600">Rp {formatRupiah(item.total)}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Jumlah Transaksi</span>
+                    <span className="table-card-row-value">{item.count}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Total</span>
+                    <span className="table-card-row-value mono text-success-600">Rp {formatRupiah(item.total)}</span>
                   </div>
                 </div>
               ))}
               {income.length === 0 && (
                 <div className="text-center py-8 text-gray-500">Tidak ada data pemasukan</div>
+              )}
+              {income.length > 0 && (
+                <div className="table-card bg-gray-50">
+                  <div className="table-card-header">
+                    <div className="table-card-header-left">
+                      <div className="table-card-header-title">TOTAL</div>
+                    </div>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Jumlah Transaksi</span>
+                    <span className="table-card-row-value font-bold">{income.reduce((s, i) => s + i.count, 0)}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Total</span>
+                    <span className="table-card-row-value mono font-bold text-success-600">Rp {formatRupiah(summary.totalIncome)}</span>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -297,7 +320,7 @@ export default function QurbanReportPage() {
               {periodByAnimal.length === 0 ? (
                 <div className="p-6 text-center text-gray-500">Belum ada data qurban per periode dalam filter ini</div>
               ) : (
-                <table className="table">
+                <table className="table table-report">
                   <thead>
                     <tr>
                       <th>Periode</th>
@@ -339,6 +362,66 @@ export default function QurbanReportPage() {
               )}
             </div>
 
+            {/* Period x Animal - Mobile Cards */}
+            <div className="table-mobile-cards">
+              <div className="px-1 py-2 mb-2">
+                <h2 className="text-lg font-semibold text-gray-900">Laporan Qurban per Periode & Jumlah Hewan</h2>
+              </div>
+              {periodByAnimal.map((item) => (
+                <div key={`${item.periodId}-${item.animalType}`} className="table-card">
+                  <div className="table-card-header">
+                    <div className="table-card-header-left">
+                      <div className="table-card-header-title">
+                        {item.periodName}
+                        {item.hijriYear ? ` (${item.hijriYear}H)` : ""}
+                      </div>
+                      <div className="table-card-header-subtitle">
+                        {ANIMAL_LABELS[item.animalType?.toLowerCase()] || item.animalType}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Jumlah Transaksi</span>
+                    <span className="table-card-row-value">{item.transactionCount}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Jumlah Hewan</span>
+                    <span className="table-card-row-value">{item.animalCount}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Nilai Terkumpul</span>
+                    <span className="table-card-row-value mono text-success-600">Rp {formatRupiah(item.totalCollected)}</span>
+                  </div>
+                </div>
+              ))}
+              {periodByAnimal.length === 0 && (
+                <div className="text-center py-8 text-gray-500">Belum ada data qurban per periode</div>
+              )}
+              {periodByAnimal.length > 0 && (
+                <div className="table-card bg-gray-50">
+                  <div className="table-card-header">
+                    <div className="table-card-header-left">
+                      <div className="table-card-header-title">TOTAL</div>
+                    </div>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Jumlah Transaksi</span>
+                    <span className="table-card-row-value font-bold">{periodByAnimal.reduce((s, i) => s + i.transactionCount, 0)}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Jumlah Hewan</span>
+                    <span className="table-card-row-value font-bold">{periodByAnimal.reduce((s, i) => s + i.animalCount, 0)}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Nilai Terkumpul</span>
+                    <span className="table-card-row-value mono font-bold text-success-600">
+                      Rp {formatRupiah(periodByAnimal.reduce((s, i) => s + i.totalCollected, 0))}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Expense - Desktop */}
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
@@ -348,7 +431,7 @@ export default function QurbanReportPage() {
               {expense.length === 0 ? (
                 <div className="p-6 text-center text-gray-500">Tidak ada data pembelian dalam periode ini</div>
               ) : (
-                <table className="table">
+                <table className="table table-report">
                   <thead>
                     <tr>
                       <th>Kategori Pembelian</th>
@@ -392,14 +475,37 @@ export default function QurbanReportPage() {
                       <div className="table-card-header-title">
                         {QURBAN_EXPENSE_LABELS[item.category] || item.category}
                       </div>
-                      <div className="table-card-header-subtitle">{item.count} pembelian</div>
                     </div>
-                    <span className="mono font-medium text-danger-600">Rp {formatRupiah(item.total)}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Jumlah Pembelian</span>
+                    <span className="table-card-row-value">{item.count}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Total</span>
+                    <span className="table-card-row-value mono text-danger-600">Rp {formatRupiah(item.total)}</span>
                   </div>
                 </div>
               ))}
               {expense.length === 0 && (
                 <div className="text-center py-8 text-gray-500">Tidak ada data pembelian</div>
+              )}
+              {expense.length > 0 && (
+                <div className="table-card bg-gray-50">
+                  <div className="table-card-header">
+                    <div className="table-card-header-left">
+                      <div className="table-card-header-title">TOTAL</div>
+                    </div>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Jumlah Pembelian</span>
+                    <span className="table-card-row-value font-bold">{expense.reduce((s, e) => s + e.count, 0)}</span>
+                  </div>
+                  <div className="table-card-row">
+                    <span className="table-card-row-label">Total</span>
+                    <span className="table-card-row-value mono font-bold text-danger-600">Rp {formatRupiah(summary.totalExpense)}</span>
+                  </div>
+                </div>
               )}
             </div>
           </>
