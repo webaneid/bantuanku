@@ -32,6 +32,13 @@ const parsePagination = (pageRaw?: string, limitRaw?: string, defaultLimit = 20,
   return { page, limit, offset };
 };
 
+/** Parse endDate string to end-of-day (23:59:59.999) so that <= comparisons include the full day */
+const endOfDay = (dateStr: string): Date => {
+  const d = new Date(dateStr);
+  d.setUTCHours(23, 59, 59, 999);
+  return d;
+};
+
 const INCOME_CATEGORIES = [
   "campaign_donation",
   "zakat_fitrah",
@@ -131,8 +138,8 @@ reportsAdmin.get("/dashboard", requireRole("super_admin", "admin_finance"), asyn
   }
 
   if (endDate) {
-    txnConds.push(lte(transactions.paidAt, new Date(endDate)));
-    disbConds.push(lte(disbursements.paidAt, new Date(endDate)));
+    txnConds.push(lte(transactions.paidAt, endOfDay(endDate)));
+    disbConds.push(lte(disbursements.paidAt, endOfDay(endDate)));
   }
 
   const [incomeSummary] = await db
@@ -189,7 +196,7 @@ reportsAdmin.get("/donations-summary", requireRole("super_admin", "admin_finance
   }
 
   if (endDate) {
-    conditions.push(lte(transactions.createdAt, new Date(endDate)));
+    conditions.push(lte(transactions.createdAt, endOfDay(endDate)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -253,7 +260,7 @@ reportsAdmin.get("/campaigns-performance", requireRole("super_admin", "admin_cam
   }
 
   if (endDate) {
-    conditions.push(lte(campaigns.createdAt, new Date(endDate)));
+    conditions.push(lte(campaigns.createdAt, endOfDay(endDate)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -511,7 +518,7 @@ reportsAdmin.get("/ledger-summary", requireRole("super_admin", "admin_finance"),
   }
 
   if (endDate) {
-    conditions.push(lte(disbursements.createdAt, new Date(endDate)));
+    conditions.push(lte(disbursements.createdAt, endOfDay(endDate)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -563,7 +570,7 @@ reportsAdmin.get("/donor-analytics", requireRole("super_admin", "admin_finance")
   }
 
   if (endDate) {
-    conditions.push(lte(transactions.createdAt, new Date(endDate)));
+    conditions.push(lte(transactions.createdAt, endOfDay(endDate)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -1066,7 +1073,7 @@ reportsAdmin.get("/cash-flow-by-category", requireRole("super_admin", "admin_fin
     conditions.push(gte(transactions.paidAt, new Date(startDate)));
   }
   if (endDate) {
-    conditions.push(lte(transactions.paidAt, new Date(endDate)));
+    conditions.push(lte(transactions.paidAt, endOfDay(endDate)));
   }
 
   const txnWhereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -1094,7 +1101,7 @@ reportsAdmin.get("/cash-flow-by-category", requireRole("super_admin", "admin_fin
     disbConditions.push(gte(disbursements.paidAt, new Date(startDate)));
   }
   if (endDate) {
-    disbConditions.push(lte(disbursements.paidAt, new Date(endDate)));
+    disbConditions.push(lte(disbursements.paidAt, endOfDay(endDate)));
   }
 
   const disbWhereClause = disbConditions.length > 0 ? and(...disbConditions) : undefined;
@@ -1207,7 +1214,7 @@ reportsAdmin.get("/zakat", requireRole("super_admin", "admin_finance"), async (c
   }
   if (endDate) {
     incomeConditions.push(
-      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) <= ${new Date(endDate)}`
+      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) <= ${endOfDay(endDate)}`
     );
   }
 
@@ -1231,7 +1238,7 @@ reportsAdmin.get("/zakat", requireRole("super_admin", "admin_finance"), async (c
     expenseConditions.push(gte(disbursements.paidAt, new Date(startDate)));
   }
   if (endDate) {
-    expenseConditions.push(lte(disbursements.paidAt, new Date(endDate)));
+    expenseConditions.push(lte(disbursements.paidAt, endOfDay(endDate)));
   }
 
   const zakatExpense = await db
@@ -1270,7 +1277,7 @@ reportsAdmin.get("/zakat", requireRole("super_admin", "admin_finance"), async (c
   }
   if (endDate) {
     periodTypeConditions.push(
-      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) <= ${new Date(endDate)}`
+      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) <= ${endOfDay(endDate)}`
     );
   }
 
@@ -1348,7 +1355,7 @@ reportsAdmin.get("/qurban", requireRole("super_admin", "admin_finance"), async (
     incomeConditions.push(gte(transactions.paidAt, new Date(startDate)));
   }
   if (endDate) {
-    incomeConditions.push(lte(transactions.paidAt, new Date(endDate)));
+    incomeConditions.push(lte(transactions.paidAt, endOfDay(endDate)));
   }
 
   const qurbanIncome = await db
@@ -1371,7 +1378,7 @@ reportsAdmin.get("/qurban", requireRole("super_admin", "admin_finance"), async (
     expenseConditions.push(gte(disbursements.paidAt, new Date(startDate)));
   }
   if (endDate) {
-    expenseConditions.push(lte(disbursements.paidAt, new Date(endDate)));
+    expenseConditions.push(lte(disbursements.paidAt, endOfDay(endDate)));
   }
 
   const qurbanExpense = await db
@@ -1409,7 +1416,7 @@ reportsAdmin.get("/qurban", requireRole("super_admin", "admin_finance"), async (
     qurbanPeriodAnimalConditions.push(gte(transactions.paidAt, new Date(startDate)));
   }
   if (endDate) {
-    qurbanPeriodAnimalConditions.push(lte(transactions.paidAt, new Date(endDate)));
+    qurbanPeriodAnimalConditions.push(lte(transactions.paidAt, endOfDay(endDate)));
   }
 
   const qurbanByPeriodAnimal = await db
@@ -1482,7 +1489,7 @@ reportsAdmin.get("/qurban-execution", requireRole("super_admin", "admin_finance"
       executionConditions.push(gte(qurbanExecutions.executionDate, new Date(startDate)));
     }
     if (endDate) {
-      executionConditions.push(lte(qurbanExecutions.executionDate, new Date(endDate)));
+      executionConditions.push(lte(qurbanExecutions.executionDate, endOfDay(endDate)));
     }
 
     const baseQuery = db
@@ -1620,7 +1627,7 @@ reportsAdmin.get("/campaign", requireRole("super_admin", "admin_finance"), async
     incomeConditions.push(gte(transactions.paidAt, new Date(startDate)));
   }
   if (endDate) {
-    incomeConditions.push(lte(transactions.paidAt, new Date(endDate)));
+    incomeConditions.push(lte(transactions.paidAt, endOfDay(endDate)));
   }
 
   const campaignIncome = await db
@@ -1644,7 +1651,7 @@ reportsAdmin.get("/campaign", requireRole("super_admin", "admin_finance"), async
     expenseConditions.push(gte(disbursements.paidAt, new Date(startDate)));
   }
   if (endDate) {
-    expenseConditions.push(lte(disbursements.paidAt, new Date(endDate)));
+    expenseConditions.push(lte(disbursements.paidAt, endOfDay(endDate)));
   }
 
   const campaignExpense = await db
@@ -1712,7 +1719,7 @@ reportsAdmin.get("/unique-codes", requireRole("super_admin", "admin_finance"), a
   ];
 
   if (startDate) conditions.push(gte(transactions.paidAt, new Date(startDate)));
-  if (endDate) conditions.push(lte(transactions.paidAt, new Date(endDate)));
+  if (endDate) conditions.push(lte(transactions.paidAt, endOfDay(endDate)));
 
   const [summary] = await db
     .select({
@@ -1831,7 +1838,7 @@ reportsAdmin.get("/program-summary", requireRole("super_admin", "admin_finance",
     const dateFilter = (dateCol: any) => {
       const conds: any[] = [];
       if (startDate) conds.push(gte(dateCol, new Date(startDate)));
-      if (endDate) conds.push(lte(dateCol, new Date(endDate)));
+      if (endDate) conds.push(lte(dateCol, endOfDay(endDate)));
       return conds;
     };
 
@@ -1963,7 +1970,7 @@ reportsAdmin.get("/program-detail", requireRole("super_admin", "admin_finance", 
       eq(transactions.productType, "campaign"),
     ];
     if (startDate) incomeConds.push(gte(transactions.paidAt, new Date(startDate)));
-    if (endDate) incomeConds.push(lte(transactions.paidAt, new Date(endDate)));
+    if (endDate) incomeConds.push(lte(transactions.paidAt, endOfDay(endDate)));
 
     const incomeList = await db
       .select({
@@ -1985,7 +1992,7 @@ reportsAdmin.get("/program-detail", requireRole("super_admin", "admin_finance", 
       eq(disbursements.referenceId, campaignId),
     ];
     if (startDate) expenseConds.push(gte(disbursements.paidAt, new Date(startDate)));
-    if (endDate) expenseConds.push(lte(disbursements.paidAt, new Date(endDate)));
+    if (endDate) expenseConds.push(lte(disbursements.paidAt, endOfDay(endDate)));
 
     const expenseList = await db
       .select({
@@ -2161,7 +2168,7 @@ reportsAdmin.get("/mitra-detail", requireRole("super_admin", "admin_finance"), a
       sql`${revenueShares.mitraAmount} > 0`,
     ];
     if (startDate) shareConds.push(gte(revenueShares.calculatedAt, new Date(startDate)));
-    if (endDate) shareConds.push(lte(revenueShares.calculatedAt, new Date(endDate)));
+    if (endDate) shareConds.push(lte(revenueShares.calculatedAt, endOfDay(endDate)));
 
     const shares = await db
       .select({
@@ -2188,7 +2195,7 @@ reportsAdmin.get("/mitra-detail", requireRole("super_admin", "admin_finance"), a
       eq(disbursements.category, "revenue_share_mitra"),
     ];
     if (startDate) disbConds.push(gte(disbursements.paidAt, new Date(startDate)));
-    if (endDate) disbConds.push(lte(disbursements.paidAt, new Date(endDate)));
+    if (endDate) disbConds.push(lte(disbursements.paidAt, endOfDay(endDate)));
 
     const disbList = await db
       .select({
@@ -2351,7 +2358,7 @@ reportsAdmin.get("/fundraiser-detail", requireRole("super_admin", "admin_finance
       eq(transactions.referredByFundraiserId, fundraiserId),
     ];
     if (startDate) refConds.push(gte(transactions.paidAt, new Date(startDate)));
-    if (endDate) refConds.push(lte(transactions.paidAt, new Date(endDate)));
+    if (endDate) refConds.push(lte(transactions.paidAt, endOfDay(endDate)));
 
     const refs = await db
       .select({
@@ -2379,7 +2386,7 @@ reportsAdmin.get("/fundraiser-detail", requireRole("super_admin", "admin_finance
       inArray(disbursements.status, ["submitted", "approved", "paid"]),
     ];
     if (startDate) disbConds.push(gte(disbursements.createdAt, new Date(startDate)));
-    if (endDate) disbConds.push(lte(disbursements.createdAt, new Date(endDate)));
+    if (endDate) disbConds.push(lte(disbursements.createdAt, endOfDay(endDate)));
 
     const disbList = await db
       .select({
@@ -2628,7 +2635,7 @@ reportsAdmin.get("/donor-detail", requireRole("super_admin", "admin_finance"), a
       eq(transactions.donorEmail, donor.email),
     ];
     if (startDate) txConds.push(gte(transactions.paidAt, new Date(startDate)));
-    if (endDate) txConds.push(lte(transactions.paidAt, new Date(endDate)));
+    if (endDate) txConds.push(lte(transactions.paidAt, endOfDay(endDate)));
 
     const txList = await db
       .select({
@@ -2684,8 +2691,8 @@ reportsAdmin.get("/consistency-check", requireRole("super_admin", "admin_finance
     disbConds.push(gte(disbursements.createdAt, new Date(startDate)));
   }
   if (endDate) {
-    txConds.push(lte(transactions.paidAt, new Date(endDate)));
-    disbConds.push(lte(disbursements.createdAt, new Date(endDate)));
+    txConds.push(lte(transactions.paidAt, endOfDay(endDate)));
+    disbConds.push(lte(disbursements.createdAt, endOfDay(endDate)));
   }
 
   const txCategoryRows = await db
@@ -2748,8 +2755,8 @@ reportsAdmin.get("/consistency-check/details", requireRole("super_admin", "admin
     disbConds.push(gte(disbursements.createdAt, new Date(startDate)));
   }
   if (endDate) {
-    txConds.push(lte(transactions.paidAt, new Date(endDate)));
-    disbConds.push(lte(disbursements.createdAt, new Date(endDate)));
+    txConds.push(lte(transactions.paidAt, endOfDay(endDate)));
+    disbConds.push(lte(disbursements.createdAt, endOfDay(endDate)));
   }
 
   const txCategoryRows = await db
