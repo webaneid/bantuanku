@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { disbursements, zakatTypes, eq, and, sql, transactions } from "@bantuanku/db";
+import { disbursements, zakatTypes, zakatPeriods, eq, and, sql, transactions } from "@bantuanku/db";
 import type { Env, Variables } from "../../types";
 import { requireAuth } from "../../middleware/auth";
 
@@ -74,18 +74,20 @@ app.get("/", async (c) => {
     .groupBy(distributionAsnaf);
 
   // Get donations by zakat type
+  // productId → zakatPeriod → zakatType
   const donationsByType = await db
     .select({
-      zakatTypeId: transactions.productId,
+      zakatTypeId: zakatTypes.id,
       zakatTypeName: zakatTypes.name,
       zakatTypeSlug: zakatTypes.slug,
       totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${transactions.paymentStatus} = 'paid' THEN ${transactions.totalAmount} ELSE 0 END), 0)`,
       count: sql<number>`COUNT(CASE WHEN ${transactions.paymentStatus} = 'paid' THEN 1 END)`,
     })
     .from(transactions)
-    .leftJoin(zakatTypes, eq(transactions.productId, zakatTypes.id))
+    .innerJoin(zakatPeriods, eq(transactions.productId, zakatPeriods.id))
+    .innerJoin(zakatTypes, eq(zakatPeriods.zakatTypeId, zakatTypes.id))
     .where(donationConditions)
-    .groupBy(transactions.productId, zakatTypes.name, zakatTypes.slug);
+    .groupBy(zakatTypes.id, zakatTypes.name, zakatTypes.slug);
 
   // Get distributions by zakat type
   const distributionsByType = await db
