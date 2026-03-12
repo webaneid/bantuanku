@@ -35,6 +35,9 @@ BEGIN
 END $$;
 
 -- Set database timezone to UTC for future operations
-ALTER DATABASE CURRENT SET timezone = 'UTC';
+DO $$
+BEGIN
+  EXECUTE format('ALTER DATABASE %I SET timezone = %L', current_database(), 'UTC');
+END $$;
 
 COMMIT;
