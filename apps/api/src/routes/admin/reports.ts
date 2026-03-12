@@ -1201,10 +1201,14 @@ reportsAdmin.get("/zakat", requireRole("super_admin", "admin_finance"), async (c
   ];
 
   if (startDate) {
-    incomeConditions.push(gte(transactions.paidAt, new Date(startDate)));
+    incomeConditions.push(
+      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) >= ${new Date(startDate)}`
+    );
   }
   if (endDate) {
-    incomeConditions.push(lte(transactions.paidAt, new Date(endDate)));
+    incomeConditions.push(
+      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) <= ${new Date(endDate)}`
+    );
   }
 
   const zakatIncome = await db
@@ -1260,10 +1264,14 @@ reportsAdmin.get("/zakat", requireRole("super_admin", "admin_finance"), async (c
   ];
 
   if (startDate) {
-    periodTypeConditions.push(gte(transactions.paidAt, new Date(startDate)));
+    periodTypeConditions.push(
+      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) >= ${new Date(startDate)}`
+    );
   }
   if (endDate) {
-    periodTypeConditions.push(lte(transactions.paidAt, new Date(endDate)));
+    periodTypeConditions.push(
+      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) <= ${new Date(endDate)}`
+    );
   }
 
   const zakatPeriodByType = await db
