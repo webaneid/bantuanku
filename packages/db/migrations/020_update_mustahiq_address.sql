@@ -9,27 +9,29 @@ ALTER TABLE mustahiqs
   ADD COLUMN IF NOT EXISTS village_code TEXT,
   ADD COLUMN IF NOT EXISTS detail_address TEXT;
 
--- Step 2: Add foreign key constraints
-ALTER TABLE mustahiqs
-  ADD CONSTRAINT fk_mustahiq_province 
-    FOREIGN KEY (province_code) 
-    REFERENCES indonesia_provinces(code) 
-    ON DELETE SET NULL,
-  
-  ADD CONSTRAINT fk_mustahiq_regency 
-    FOREIGN KEY (regency_code) 
-    REFERENCES indonesia_regencies(code) 
-    ON DELETE SET NULL,
-  
-  ADD CONSTRAINT fk_mustahiq_district 
-    FOREIGN KEY (district_code) 
-    REFERENCES indonesia_districts(code) 
-    ON DELETE SET NULL,
-  
-  ADD CONSTRAINT fk_mustahiq_village 
-    FOREIGN KEY (village_code) 
-    REFERENCES indonesia_villages(code) 
-    ON DELETE SET NULL;
+-- Step 2: Add foreign key constraints (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_mustahiq_province') THEN
+    ALTER TABLE mustahiqs ADD CONSTRAINT fk_mustahiq_province
+      FOREIGN KEY (province_code) REFERENCES indonesia_provinces(code) ON DELETE SET NULL;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_mustahiq_regency') THEN
+    ALTER TABLE mustahiqs ADD CONSTRAINT fk_mustahiq_regency
+      FOREIGN KEY (regency_code) REFERENCES indonesia_regencies(code) ON DELETE SET NULL;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_mustahiq_district') THEN
+    ALTER TABLE mustahiqs ADD CONSTRAINT fk_mustahiq_district
+      FOREIGN KEY (district_code) REFERENCES indonesia_districts(code) ON DELETE SET NULL;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_mustahiq_village') THEN
+    ALTER TABLE mustahiqs ADD CONSTRAINT fk_mustahiq_village
+      FOREIGN KEY (village_code) REFERENCES indonesia_villages(code) ON DELETE SET NULL;
+  END IF;
+END $$;
 
 -- Step 3: Migrate existing data (if any exists)
 -- Note: This copies the old text address to detail_address for manual review
