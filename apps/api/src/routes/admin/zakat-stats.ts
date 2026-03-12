@@ -17,12 +17,14 @@ app.get("/", async (c) => {
   const zakatTypeId = c.req.query("zakatTypeId");
 
   // Build conditions for filtering by zakatTypeId if provided
-  const donationConditions = zakatTypeId
-    ? and(
-        eq(transactions.productType, "zakat"),
-        eq(transactions.productId, zakatTypeId)
-      )
-    : eq(transactions.productType, "zakat");
+  const baseDonationConditions = [
+    eq(transactions.productType, "zakat"),
+    sql<boolean>`coalesce((${transactions.typeSpecificData} ->> 'is_admin_fee_entry')::boolean, false) = false`,
+  ];
+  if (zakatTypeId) {
+    baseDonationConditions.push(eq(transactions.productId, zakatTypeId));
+  }
+  const donationConditions = and(...baseDonationConditions);
   const distributionZakatTypeId = sql`COALESCE(${disbursements.typeSpecificData} ->> 'zakatTypeId', ${disbursements.typeSpecificData} ->> 'zakat_type_id')`;
   const distributionAsnaf = sql`COALESCE(${disbursements.typeSpecificData} ->> 'asnaf', '-')`;
   const distributionConditions = zakatTypeId

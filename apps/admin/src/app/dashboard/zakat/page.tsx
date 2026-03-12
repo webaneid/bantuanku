@@ -10,17 +10,14 @@ import {
   ArrowDownCircleIcon,
   ScaleIcon,
 } from "@heroicons/react/24/outline";
-import { useMemo } from "react";
 
 export default function ZakatDashboardPage() {
-  // Fetch all zakat transactions
-  const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery({
-    queryKey: ["zakat-transactions-all"],
+  // Fetch all stats from server-side SUM (accurate, no limit)
+  const { data: statsData, isLoading: isLoadingStats } = useQuery({
+    queryKey: ["zakat-stats"],
     queryFn: async () => {
-      const response = await api.get("/transactions", {
-        params: { product_type: "zakat", limit: 1000 },
-      });
-      return response.data?.data || [];
+      const response = await api.get("/admin/zakat/stats");
+      return response.data.data;
     },
   });
 
@@ -30,6 +27,17 @@ export default function ZakatDashboardPage() {
     queryFn: async () => {
       const response = await api.get("/admin/zakat/types", {
         params: { isActive: "true", limit: 100 },
+      });
+      return response.data?.data || [];
+    },
+  });
+
+  // Fetch recent donations
+  const { data: recentDonations, isLoading: isLoadingDonations } = useQuery({
+    queryKey: ["zakat-recent-donations"],
+    queryFn: async () => {
+      const response = await api.get("/admin/zakat/stats/recent-donations", {
+        params: { limit: 5 },
       });
       return response.data?.data || [];
     },
@@ -46,77 +54,22 @@ export default function ZakatDashboardPage() {
     },
   });
 
-  // Fetch distribution stats
-  const { data: distributionStatsData } = useQuery({
-    queryKey: ["zakat-distribution-stats"],
-    queryFn: async () => {
-      const response = await api.get("/admin/zakat/stats");
-      return response.data.data;
+  const stats = {
+    donations: {
+      paidAmount: statsData?.donations?.paidAmount || 0,
+      pendingAmount: statsData?.donations?.pendingAmount || 0,
+      paidCount: statsData?.donations?.paidCount || 0,
+      pendingCount: statsData?.donations?.pendingCount || 0,
     },
-  });
+    distributions: {
+      disbursedAmount: statsData?.distributions?.disbursedAmount || 0,
+      disbursedCount: statsData?.distributions?.disbursedCount || 0,
+    },
+    balance: statsData?.balance || 0,
+    donationsByType: statsData?.donationsByType || [],
+  };
 
-  // Calculate stats from transactions
-  const stats = useMemo(() => {
-    if (!transactionsData) {
-      return {
-        donations: { paidAmount: 0, pendingAmount: 0, paidCount: 0, pendingCount: 0 },
-        distributions: { disbursedAmount: 0, approvedAmount: 0, draftAmount: 0, disbursedCount: 0 },
-        balance: 0,
-        donationsByType: [],
-      };
-    }
-
-    const paidTransactions = transactionsData.filter((t: any) => t.paymentStatus === "paid");
-    const pendingTransactions = transactionsData.filter((t: any) => t.paymentStatus === "pending" || t.paymentStatus === "partial");
-
-    const paidAmount = paidTransactions.reduce((sum: number, t: any) => sum + (t.totalAmount || 0), 0);
-    const pendingAmount = pendingTransactions.reduce((sum: number, t: any) => sum + (t.totalAmount || 0), 0);
-
-    // Group by zakat type ID (stored in typeSpecificData.zakat_type_id)
-    const byType: Record<string, { totalAmount: number; count: number; zakatTypeId: string }> = {};
-    paidTransactions.forEach((t: any) => {
-      const zakatTypeId = t.typeSpecificData?.zakat_type_id || t.productId;
-      if (!byType[zakatTypeId]) {
-        byType[zakatTypeId] = { totalAmount: 0, count: 0, zakatTypeId };
-      }
-      byType[zakatTypeId].totalAmount += t.totalAmount || 0;
-      byType[zakatTypeId].count += 1;
-    });
-
-    const distributions = distributionStatsData?.distributions || { disbursedAmount: 0, disbursedCount: 0 };
-    const balance = paidAmount - (distributions.disbursedAmount || 0);
-
-    return {
-      donations: {
-        paidAmount,
-        pendingAmount,
-        paidCount: paidTransactions.length,
-        pendingCount: pendingTransactions.length,
-      },
-      distributions,
-      balance,
-      donationsByType: Object.values(byType),
-    };
-  }, [transactionsData, distributionStatsData]);
-
-  // Recent donations from transactions
-  const recentDonations = useMemo(() => {
-    if (!transactionsData) return [];
-    return transactionsData
-      .filter((t: any) => t.paymentStatus === "paid")
-      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5)
-      .map((t: any) => ({
-        id: t.id,
-        donorName: t.donorName,
-        isAnonymous: t.isAnonymous,
-        zakatTypeName: t.productName,
-        amount: t.totalAmount,
-        createdAt: t.createdAt,
-      }));
-  }, [transactionsData]);
-
-  if (isLoadingTransactions || isLoadingTypes) {
+  if (isLoadingStats || isLoadingTypes) {
     return (
       <main className="flex-1 overflow-y-auto bg-gray-50">
         <div className="dashboard-container">
@@ -259,7 +212,7 @@ export default function ZakatDashboardPage() {
                 </div>
               ) : (
                 typesData.map((type: any) => {
-                  const typeStats = stats.donationsByType?.find(
+                  const typeStats = stats.donationsByType.find(
                     (d: any) => d.zakatTypeId === type.id
                   ) || { totalAmount: 0, count: 0 };
 
@@ -305,7 +258,7 @@ export default function ZakatDashboardPage() {
         </div>
 
         {/* Distribution by Asnaf */}
-        {distributionStatsData?.distributionsByCategory && distributionStatsData.distributionsByCategory.length > 0 && (
+        {statsData?.distributionsByCategory && statsData.distributionsByCategory.length > 0 && (
           <div className="content-card mb-6">
             <div className="content-card-header">
               <h2 className="content-card-title">
@@ -314,7 +267,7 @@ export default function ZakatDashboardPage() {
             </div>
             <div className="content-card-body">
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                {distributionStatsData.distributionsByCategory.map((item: any) => (
+                {statsData.distributionsByCategory.map((item: any) => (
                   <div key={item.category} className="border border-gray-200 rounded-lg p-3">
                     <div className="text-xs text-gray-500 uppercase font-medium">
                       {item.category}
@@ -344,13 +297,13 @@ export default function ZakatDashboardPage() {
               </Link>
             </div>
             <div className="content-card-body">
-              {isLoadingTransactions ? (
+              {isLoadingDonations ? (
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
                   ))}
                 </div>
-              ) : recentDonations.length > 0 ? (
+              ) : recentDonations && recentDonations.length > 0 ? (
                 <div className="space-y-3">
                   {recentDonations.map((donation: any) => (
                     <div
@@ -371,7 +324,7 @@ export default function ZakatDashboardPage() {
                       </div>
                       <div className="text-right">
                         <div className="font-semibold text-success-700">
-                          {formatCurrency(donation.amount)}
+                          {formatCurrency(donation.totalAmount)}
                         </div>
                       </div>
                     </div>
