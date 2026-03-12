@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
@@ -108,6 +109,11 @@ export default function LoginPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               required
             />
+            <div className="mt-2 text-right">
+              <Link href="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                Lupa password?
+              </Link>
+            </div>
           </div>
 
           <button

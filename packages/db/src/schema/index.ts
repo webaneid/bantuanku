@@ -1,4 +1,5 @@
 export * from "./user";
+export * from "./auth-otp-codes";
 export * from "./role";
 export * from "./donatur";
 export * from "./category";

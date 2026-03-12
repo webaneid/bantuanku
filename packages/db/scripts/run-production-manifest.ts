@@ -178,6 +178,9 @@ const CORE_EXISTING: MigrationEntry[] = [
   {
     file: "packages/db/migrations/110_add_mustahiq_personal_fields.sql",
   },
+  {
+    file: "packages/db/migrations/112_create_auth_otp_codes.sql",
+  },
 ];
 
 const args = process.argv.slice(2);

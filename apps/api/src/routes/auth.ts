@@ -1,8 +1,9 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
-import { users, userRoles, roles, createId } from "@bantuanku/db";
+import { createHash, randomInt } from "node:crypto";
+import { eq, or, inArray, and, isNull, desc } from "drizzle-orm";
+import { users, userRoles, roles, createId, authOtpCodes, donatur as donaturTable } from "@bantuanku/db";
 import { hashPassword, verifyPassword } from "../lib/password";
 import { signToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
 import { success, error } from "../lib/response";
@@ -25,6 +26,59 @@ const loginSchema = z.object({
   email: z.string().email().max(255),
   password: z.string().max(128),
 });
+
+const forgotPasswordRequestSchema = z.object({
+  phone: z.string().trim().min(8).max(30),
+});
+
+const forgotPasswordResetSchema = z.object({
+  phone: z.string().trim().min(8).max(30),
+  otp: z.string().trim().regex(/^\d{4,8}$/),
+  newPassword: z.string().min(8).max(128),
+});
+
+const FORGOT_PASSWORD_PURPOSE = "forgot_password";
+const OTP_TTL_MINUTES = 5;
+const OTP_MAX_ATTEMPTS = 5;
+
+function normalizePhone(input: string): string {
+  let cleaned = input.replace(/[^\d+]/g, "");
+  if (cleaned.startsWith("+62")) {
+    cleaned = "0" + cleaned.substring(3);
+  } else if (cleaned.startsWith("62") && cleaned.length > 10) {
+    cleaned = "0" + cleaned.substring(2);
+  }
+  if (cleaned && !cleaned.startsWith("0")) {
+    cleaned = "0" + cleaned;
+  }
+  return cleaned;
+}
+
+function toPhoneVariants(input: string): string[] {
+  const normalized = normalizePhone(input);
+  const digits = normalized.replace(/[^\d]/g, "");
+  const national = digits.startsWith("0") ? digits : `0${digits}`;
+  const intl = national.startsWith("0") ? `62${national.slice(1)}` : `62${national}`;
+  const variants = [normalized, digits, national, intl, `+${intl}`]
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return Array.from(new Set(variants));
+}
+
+function hashOtp(otp: string, secret: string): string {
+  return createHash("sha256")
+    .update(`${otp}:${secret}`)
+    .digest("hex");
+}
+
+function formatOtpExpiry(date: Date): string {
+  const time = new Intl.DateTimeFormat("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Jakarta",
+  }).format(date);
+  return time.replace(".", ":");
+}
 
 auth.post("/register", authRateLimit, zValidator("json", registerSchema), async (c) => {
   const { email, password, name, phone, whatsappNumber } = c.req.valid("json");
@@ -96,7 +150,7 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
   // Link existing transactions to new user account
   const { or } = await import("drizzle-orm");
 
-  const normalizePhone = (input: string): string => {
+  const normalizeTransactionPhone = (input: string): string => {
     let cleaned = input.replace(/[^\d+]/g, "");
     if (cleaned.startsWith("+62")) {
       cleaned = "0" + cleaned.substring(3);
@@ -111,10 +165,10 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
 
   const conditions = [eq(transactions.donorEmail, email.toLowerCase().trim())];
   if (phone) {
-    conditions.push(eq(transactions.donorPhone, normalizePhone(phone)));
+    conditions.push(eq(transactions.donorPhone, normalizeTransactionPhone(phone)));
   }
   if (whatsappNumber) {
-    conditions.push(eq(transactions.donorPhone, normalizePhone(whatsappNumber)));
+    conditions.push(eq(transactions.donorPhone, normalizeTransactionPhone(whatsappNumber)));
   }
 
   if (conditions.length > 0) {
@@ -212,6 +266,193 @@ auth.post("/login", authRateLimit, zValidator("json", loginSchema), async (c) =>
     },
   });
 });
+
+auth.post(
+  "/forgot-password/request-otp",
+  authRateLimit,
+  zValidator("json", forgotPasswordRequestSchema),
+  async (c) => {
+    const { phone } = c.req.valid("json");
+    const db = c.get("db");
+    const phoneVariants = toPhoneVariants(phone);
+    const genericMessage = "Jika nomor terdaftar, kode OTP sudah dikirim ke WhatsApp.";
+
+    if (phoneVariants.length === 0) {
+      return success(c, { sent: true }, genericMessage);
+    }
+
+    const user = await db.query.users.findFirst({
+      where: or(
+        inArray(users.phone, phoneVariants),
+        inArray(users.whatsappNumber, phoneVariants)
+      ),
+    });
+
+    if (!user || !user.isActive) {
+      return success(c, { sent: true }, genericMessage);
+    }
+
+    const recipientPhone = normalizePhone(user.whatsappNumber || user.phone || phone);
+    if (!recipientPhone) {
+      return success(c, { sent: true }, genericMessage);
+    }
+
+    const otp = String(randomInt(100000, 1000000));
+    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+    const otpHash = hashOtp(otp, c.env.JWT_SECRET);
+
+    await db
+      .update(authOtpCodes)
+      .set({
+        consumedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(authOtpCodes.userId, user.id),
+          eq(authOtpCodes.purpose, FORGOT_PASSWORD_PURPOSE),
+          isNull(authOtpCodes.consumedAt)
+        )
+      );
+
+    await db.insert(authOtpCodes).values({
+      id: createId(),
+      userId: user.id,
+      phone: recipientPhone,
+      purpose: FORGOT_PASSWORD_PURPOSE,
+      codeHash: otpHash,
+      expiresAt,
+      attemptCount: 0,
+    });
+
+    let sent = false;
+    try {
+      const wa = new WhatsAppService(db, c.env.FRONTEND_URL);
+      sent = await wa.send({
+        phone: recipientPhone,
+        templateKey: "wa_tpl_register_verify",
+        variables: {
+          customer_name: user.name,
+          verification_code: otp,
+          code_expires_at: formatOtpExpiry(expiresAt),
+        },
+      });
+
+      if (!sent) {
+        sent = await wa.sendMessage(
+          recipientPhone,
+          `Kode OTP reset password Anda: ${otp}\nBerlaku sampai ${formatOtpExpiry(expiresAt)} WIB.\nJangan bagikan kode ini.`
+        );
+      }
+    } catch (waError) {
+      console.error("[WA] forgot password OTP error:", waError);
+      sent = false;
+    }
+
+    if (!sent) {
+      return error(c, "Gagal mengirim OTP WhatsApp. Cek konfigurasi WhatsApp Anda.", 500);
+    }
+
+    return success(c, { sent: true }, genericMessage);
+  }
+);
+
+auth.post(
+  "/forgot-password/reset",
+  authRateLimit,
+  zValidator("json", forgotPasswordResetSchema),
+  async (c) => {
+    const { phone, otp, newPassword } = c.req.valid("json");
+    const db = c.get("db");
+    const phoneVariants = toPhoneVariants(phone);
+
+    if (phoneVariants.length === 0) {
+      return error(c, "OTP tidak valid atau sudah kedaluwarsa", 400);
+    }
+
+    const otpRow = await db.query.authOtpCodes.findFirst({
+      where: and(
+        inArray(authOtpCodes.phone, phoneVariants),
+        eq(authOtpCodes.purpose, FORGOT_PASSWORD_PURPOSE),
+        isNull(authOtpCodes.consumedAt)
+      ),
+      orderBy: [desc(authOtpCodes.createdAt)],
+    });
+
+    if (!otpRow) {
+      return error(c, "OTP tidak valid atau sudah kedaluwarsa", 400);
+    }
+
+    if (otpRow.expiresAt.getTime() < Date.now()) {
+      await db
+        .update(authOtpCodes)
+        .set({ consumedAt: new Date(), updatedAt: new Date() })
+        .where(eq(authOtpCodes.id, otpRow.id));
+      return error(c, "OTP tidak valid atau sudah kedaluwarsa", 400);
+    }
+
+    if (otpRow.attemptCount >= OTP_MAX_ATTEMPTS) {
+      return error(c, "OTP tidak valid atau sudah kedaluwarsa", 400);
+    }
+
+    const otpHash = hashOtp(otp, c.env.JWT_SECRET);
+    if (otpHash !== otpRow.codeHash) {
+      const nextAttempts = otpRow.attemptCount + 1;
+      await db
+        .update(authOtpCodes)
+        .set({
+          attemptCount: nextAttempts,
+          consumedAt: nextAttempts >= OTP_MAX_ATTEMPTS ? new Date() : null,
+          updatedAt: new Date(),
+        })
+        .where(eq(authOtpCodes.id, otpRow.id));
+      return error(c, "OTP tidak valid atau sudah kedaluwarsa", 400);
+    }
+
+    const user = otpRow.userId
+      ? await db.query.users.findFirst({
+          where: eq(users.id, otpRow.userId),
+        })
+      : await db.query.users.findFirst({
+          where: or(
+            inArray(users.phone, phoneVariants),
+            inArray(users.whatsappNumber, phoneVariants)
+          ),
+        });
+
+    if (!user) {
+      return error(c, "Akun tidak ditemukan", 404);
+    }
+
+    const newPasswordHash = await hashPassword(newPassword);
+
+    await db
+      .update(users)
+      .set({
+        passwordHash: newPasswordHash,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    await db
+      .update(donaturTable)
+      .set({
+        passwordHash: newPasswordHash,
+        updatedAt: new Date(),
+      })
+      .where(or(eq(donaturTable.userId, user.id), eq(donaturTable.email, user.email)));
+
+    await db
+      .update(authOtpCodes)
+      .set({
+        consumedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(authOtpCodes.id, otpRow.id));
+
+    return success(c, { reset: true }, "Password berhasil diubah");
+  }
+);
 
 auth.post("/refresh", async (c) => {
   const body = await c.req.json();

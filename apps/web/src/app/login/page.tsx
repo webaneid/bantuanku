@@ -72,6 +72,14 @@ export default function LoginPage() {
               placeholder={t("auth.login.passwordPlaceholder")}
               required
             />
+            <div className="mt-2 text-right">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              >
+                {t("auth.login.forgotPassword")}
+              </Link>
+            </div>
           </div>
 
           <Button
