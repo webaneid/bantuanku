@@ -28,6 +28,7 @@ import { WhatsAppService } from "../services/whatsapp";
 import { generatePayload, generateQrDataUrl, parseMerchantInfo } from "../services/qris-generator";
 import { requireRole, authMiddleware } from "../middleware/auth";
 import { updateBankBalance } from "../utils/bank-balance";
+import { sendCAPIEvent } from "../lib/meta-capi";
 import type { Env, Variables } from "../types";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -236,6 +237,35 @@ app.post("/", async (c) => {
         console.error("[WA] order notification error:", err);
       }
     }
+
+    // Meta Conversions API: Purchase event (fire-and-forget)
+    const userAgent = c.req.header("user-agent") || "";
+    const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim()
+      || c.req.header("x-real-ip")
+      || "";
+    const frontendUrlForCapi = await getFrontendUrl(db, c.env);
+
+    sendCAPIEvent(db, {
+      eventName: "Purchase",
+      eventId: `purchase_${transaction.id}`,
+      eventSourceUrl: `${frontendUrlForCapi}/checkout`,
+      userData: {
+        email: transaction.donorEmail || undefined,
+        phone: transaction.donorPhone || undefined,
+        firstName: transaction.donorName?.split(" ")[0] || undefined,
+        clientIpAddress: clientIp || undefined,
+        clientUserAgent: userAgent || undefined,
+      },
+      customData: {
+        currency: "IDR",
+        value: Number(transaction.totalAmount),
+        contentIds: [transaction.id],
+        contentType: "donation",
+        numItems: transaction.quantity || 1,
+        contentName: transaction.productName,
+        contentCategory: transaction.productType,
+      },
+    }).catch(() => {}); // non-blocking
 
     return c.json({
       success: true,

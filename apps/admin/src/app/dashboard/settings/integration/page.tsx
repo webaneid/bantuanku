@@ -36,6 +36,7 @@ export default function IntegrationSettingsPage() {
     const [form, setForm] = useState({
         meta_domain_verification: "",
         meta_pixel_id: "",
+        meta_capi_access_token: "",
     });
 
     // Populate form from settings
@@ -91,6 +92,15 @@ export default function IntegrationSettingsPage() {
                 label: "Meta Pixel ID",
                 description: "ID Pixel untuk tracking Meta Ads",
                 isPublic: true,
+            },
+            {
+                key: "meta_capi_access_token",
+                value: form.meta_capi_access_token,
+                category: "integration",
+                type: "string",
+                label: "Meta Conversions API Access Token",
+                description: "Access token untuk Meta Conversions API (server-side tracking)",
+                isPublic: false,
             },
         ].map((item) => {
             const existing = integrationSettings.find((s) => s.key === item.key);
@@ -164,6 +174,30 @@ export default function IntegrationSettingsPage() {
                                         ID Pixel untuk tracking konversi Meta Ads (Facebook & Instagram).
                                     </p>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* Meta Conversions API */}
+                        <div>
+                            <h3 className="text-base font-semibold text-gray-900 mb-1">Meta Conversions API</h3>
+                            <p className="text-sm text-gray-500 mb-4">
+                                Server-side tracking untuk meningkatkan akurasi data konversi Meta Ads.
+                            </p>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Access Token
+                                </label>
+                                <input
+                                    type="password"
+                                    value={form.meta_capi_access_token}
+                                    onChange={(e) => setForm((prev) => ({ ...prev, meta_capi_access_token: e.target.value }))}
+                                    placeholder="EAAxxxxxxx..."
+                                    className="form-input"
+                                />
+                                <p className="text-xs text-gray-400 mt-1.5">
+                                    Token akses dari Meta Events Manager untuk Conversions API.
+                                </p>
                             </div>
                         </div>
 
