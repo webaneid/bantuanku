@@ -25,8 +25,13 @@ export function pageView() {
 }
 
 function track(event: string, params?: Record<string, any>) {
-  if (typeof window !== 'undefined' && window.fbq) {
-    window.fbq('track', event, params);
+  if (typeof window !== 'undefined') {
+    if (window.fbq) {
+      console.log('[fbPixel] track:', event, params);
+      window.fbq('track', event, params);
+    } else {
+      console.warn('[fbPixel] fbq not available, skipping:', event);
+    }
   }
 }
 

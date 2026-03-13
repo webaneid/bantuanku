@@ -8,6 +8,7 @@ import { Button } from '@/components/atoms';
 import { formatRupiah } from '@/lib/format';
 import { getImageUrl } from '@/lib/image';
 import { useI18n } from '@/lib/i18n/provider';
+import * as fbPixel from '@/lib/fbPixel';
 import QurbanConfirmModal from './QurbanConfirmModal';
 
 interface AvailablePeriod {
@@ -61,6 +62,17 @@ export default function QurbanSidebar({
   const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
+
+  // Track ViewContent on mount
+  useEffect(() => {
+    fbPixel.viewContent({
+      content_name: qurbanPackage.name,
+      content_ids: [qurbanPackage.packagePeriodId],
+      content_type: 'qurban',
+      value: qurbanPackage.price,
+      currency: 'IDR',
+    });
+  }, []);
 
   // Handle period change - redirect to new packagePeriodId
   const handlePeriodChange = (newPeriodId: string) => {

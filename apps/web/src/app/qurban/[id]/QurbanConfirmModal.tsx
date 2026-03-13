@@ -8,6 +8,7 @@ import { Button } from '@/components/atoms';
 import { useCart } from '@/contexts/CartContext';
 import toast from '@/lib/feedback-toast';
 import { useI18n } from '@/lib/i18n/provider';
+import * as fbPixel from '@/lib/fbPixel';
 
 interface QurbanConfirmModalProps {
   isOpen: boolean;
@@ -71,6 +72,13 @@ export default function QurbanConfirmModal({
         price: qurbanPackage.price,
         adminFee: adminFee,
       },
+    });
+
+    fbPixel.addToCart({
+      content_name: qurbanPackage.name,
+      content_ids: [qurbanPackage.packagePeriodId],
+      content_type: 'qurban',
+      value: total,
     });
 
     toast.success(t('qurbanDetail.confirmModal.toasts.addedToCart'));

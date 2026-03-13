@@ -78,7 +78,10 @@ async function getCapiSettings(db: any): Promise<{ pixelId: string; accessToken:
 export async function sendCAPIEvent(db: any, event: CAPIEvent): Promise<void> {
   try {
     const config = await getCapiSettings(db);
-    if (!config) return;
+    if (!config) {
+      console.warn("[Meta CAPI] Skipped: pixelId or accessToken not configured");
+      return;
+    }
 
     const payload = {
       data: [
@@ -105,6 +108,9 @@ export async function sendCAPIEvent(db: any, event: CAPIEvent): Promise<void> {
     if (!response.ok) {
       const errorBody = await response.text();
       console.error("[Meta CAPI] Error:", response.status, errorBody);
+    } else {
+      const responseBody = await response.json();
+      console.log("[Meta CAPI] Success:", event.eventName, event.eventId, JSON.stringify(responseBody));
     }
   } catch (error) {
     console.error("[Meta CAPI] Failed to send event:", error);

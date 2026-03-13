@@ -16,6 +16,7 @@ import ZakatPertanianCalculatorPage from '../calculator/zakat-pertanian/page';
 import ZakatPeternakanCalculatorPage from '../calculator/zakat-peternakan/page';
 import ZakatBisnisCalculatorPage from '../calculator/zakat-bisnis/page';
 import { ZakatDisplayMetaProvider } from '@/components/zakat/ZakatDisplayMetaContext';
+import ViewContentTracker from '@/components/ViewContentTracker';
 
 // Legacy fallback map by slug
 const calculatorBySlug: Record<string, ComponentType<any>> = {
@@ -217,6 +218,11 @@ export default async function ZakatDetailPage({ params }: Props) {
       return (
         <>
           {jsonLdScripts}
+          <ViewContentTracker
+            contentName={zakatType.name}
+            contentIds={[String(zakatType.id)]}
+            contentType="zakat"
+          />
           <ZakatDisplayMetaProvider
             value={{
               id: zakatType.id,
@@ -240,6 +246,11 @@ export default async function ZakatDetailPage({ params }: Props) {
   return (
     <>
       {jsonLdScripts}
+      <ViewContentTracker
+        contentName={zakatType.name}
+        contentIds={[String(zakatType.id)]}
+        contentType="zakat"
+      />
       <Header />
       <div className="hidden lg:block">
         <Breadcrumb items={[{ label: t('zakatDetail.breadcrumb.home'), href: '/' }, { label: t('zakatDetail.breadcrumb.zakat'), href: '/zakat' }, { label: zakatType.name }]} />

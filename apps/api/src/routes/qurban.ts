@@ -27,6 +27,7 @@ import * as pathModule from "path";
 import { optionalAuthMiddleware } from "../middleware/auth";
 import { success, error } from "../lib/response";
 import { TransactionService } from "../services/transaction";
+import { sendCAPIEvent } from "../lib/meta-capi";
 
 // Helper to fetch CDN settings from database
 const fetchCDNSettings = async (db: any): Promise<GCSConfig | null> => {
@@ -527,6 +528,7 @@ app.post("/orders", async (c) => {
       packageType: qurbanPackages.packageType,
       maxSlots: qurbanPackages.maxSlots,
       packageAvailable: qurbanPackages.isAvailable,
+      packageName: qurbanPackages.name,
     })
     .from(qurbanPackagePeriods)
     .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
@@ -669,6 +671,31 @@ app.post("/orders", async (c) => {
       notes: body.notes,
     })
     .returning();
+
+  // Fire Meta CAPI Purchase event (non-blocking)
+  const userAgent = c.req.header("user-agent") || "";
+  const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim()
+    || c.req.header("x-real-ip")
+    || "";
+  sendCAPIEvent(db, {
+    eventName: "Purchase",
+    eventId: `purchase_qurban_${newOrder[0].id}`,
+    userData: {
+      email: body.donorEmail,
+      phone: body.donorPhone,
+      firstName: body.donorName,
+      clientIpAddress: clientIp,
+      clientUserAgent: userAgent,
+    },
+    customData: {
+      currency: "IDR",
+      value: totalAmount,
+      contentIds: [body.packagePeriodId],
+      contentType: "qurban",
+      numItems: body.quantity || 1,
+      contentName: pkgPeriod.packageName || "Qurban",
+    },
+  }).catch(() => {});
 
   return c.json({
     data: newOrder[0],
