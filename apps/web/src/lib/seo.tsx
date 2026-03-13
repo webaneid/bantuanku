@@ -142,6 +142,8 @@ export async function generateSiteMetadata(overrides?: Partial<Metadata>): Promi
       'ccbot': 'index, follow',
       'anthropic-ai': 'index, follow',
       'claude-web': 'index, follow',
+      // Meta Business Suite domain verification
+      ...(settings.meta_domain_verification ? { 'facebook-domain-verification': settings.meta_domain_verification } : {}),
     },
     ...overrides,
   };

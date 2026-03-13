@@ -7,6 +7,7 @@ import { formatRupiahFull } from '@/lib/format';
 import { Button } from '@/components/atoms';
 import { useCart } from '@/contexts/CartContext';
 import toast from '@/lib/feedback-toast';
+import * as fbPixel from '@/lib/fbPixel';
 import { useI18n } from '@/lib/i18n/provider';
 
 interface DonationConfirmModalProps {
@@ -56,6 +57,13 @@ export default function DonationConfirmModal({
       fidyahData,
     });
 
+    fbPixel.addToCart({
+      content_name: campaignTitle,
+      content_ids: [campaign.id],
+      content_type: programType,
+      value: amount,
+    });
+
     toast.success(t('campaignDetail.confirmModal.toasts.addedToCart'));
     onClose();
   };
@@ -79,6 +87,18 @@ export default function DonationConfirmModal({
       programType,
       organizationName: campaign.organizationName,
       fidyahData,
+    });
+
+    fbPixel.addToCart({
+      content_name: campaignTitle,
+      content_ids: [campaign.id],
+      content_type: programType,
+      value: amount,
+    });
+    fbPixel.initiateCheckout({
+      content_ids: [campaign.id],
+      num_items: 1,
+      value: amount,
     });
 
     toast.success(t('campaignDetail.confirmModal.toasts.redirectCheckout'));

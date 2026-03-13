@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { CartProvider } from '@/contexts/CartContext';
 import { saveReferralCode } from '@/lib/referral';
 import FeedbackToastHost from '@/components/FeedbackToastHost';
+import MetaPixel from '@/components/MetaPixel';
 import { I18nProvider } from '@/lib/i18n/provider';
 
 function ReferralCapture() {
@@ -44,6 +45,7 @@ export function Providers({
       <I18nProvider initialLocale={locale}>
         <CartProvider>
           <ReferralCapture />
+          <MetaPixel />
           {children}
           <FeedbackToastHost />
         </CartProvider>

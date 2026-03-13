@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { Input, Button, Label } from "@/components/atoms";
 import toast from "@/lib/feedback-toast";
+import * as fbPixel from "@/lib/fbPixel";
 import { useI18n } from "@/lib/i18n/provider";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:50245/v1";
@@ -188,6 +189,7 @@ export default function RegisterPage() {
         whatsappNumber: formData.whatsappNumber,
         password: formData.password,
       });
+      fbPixel.completeRegistration({ content_name: "user_registration", status: "success" });
       toast.success(t("auth.register.toastSuccess"));
       router.push("/");
     } catch (error: any) {

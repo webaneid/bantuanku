@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { CogIcon, CreditCardIcon, UsersIcon, ScaleIcon, PaintBrushIcon, ChatBubbleLeftRightIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { CogIcon, CreditCardIcon, UsersIcon, ScaleIcon, PaintBrushIcon, ChatBubbleLeftRightIcon, MagnifyingGlassIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/auth";
 
 const allMenuItems = [
@@ -51,6 +51,12 @@ const allMenuItems = [
     label: "Testimoni Google Maps",
     icon: ChatBubbleLeftRightIcon,
     href: "/dashboard/settings/google-maps",
+    roles: ["super_admin"],
+  },
+  {
+    label: "Integration",
+    icon: LinkIcon,
+    href: "/dashboard/settings/integration",
     roles: ["super_admin"],
   },
   {

@@ -7,6 +7,7 @@ import { Button } from '@/components/atoms';
 import { formatRupiahFull } from '@/lib/format';
 import { getImageUrl } from '@/lib/image';
 import { useI18n } from '@/lib/i18n/provider';
+import * as fbPixel from '@/lib/fbPixel';
 import DonationAmountSelector from './DonationAmountSelector';
 import DonationConfirmModal from './DonationConfirmModal';
 
@@ -54,6 +55,16 @@ export default function CampaignSidebar({
 
   useEffect(() => { setIsMounted(true); }, []);
 
+  // Track ViewContent on mount
+  useEffect(() => {
+    fbPixel.viewContent({
+      content_name: campaign.title,
+      content_ids: [campaign.id],
+      content_type: programType,
+      value: campaign.goal || 0,
+    });
+  }, [campaign.id]);
+
   // Auto-fill amount from query param
   useEffect(() => {
     const amountParam = searchParams.get('amount');
@@ -92,6 +103,13 @@ export default function CampaignSidebar({
   };
 
   const handleFavoriteToggle = () => {
+    if (!isFavorite) {
+      fbPixel.addToWishlist({
+        content_name: campaign.title,
+        content_ids: [campaign.id],
+        value: selectedAmount || 0,
+      });
+    }
     setIsFavorite(!isFavorite);
   };
 
@@ -296,6 +314,7 @@ export default function CampaignSidebar({
                 href={`https://wa.me/${waNumber}?text=${waMessage}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => fbPixel.contact({ content_name: campaign.title })}
                 className="mt-4 inline-flex items-center text-sm text-blue-700 font-medium hover:text-blue-900"
               >
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 24 24">

@@ -11,6 +11,7 @@ import { InputField, TextareaField } from '@/components/molecules/FormField';
 import { Header, Footer } from '@/components/organisms';
 import toast from '@/lib/feedback-toast';
 import { getReferralCode } from '@/lib/referral';
+import * as fbPixel from '@/lib/fbPixel';
 import { useI18n } from '@/lib/i18n/provider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
@@ -87,7 +88,17 @@ export default function CheckoutPage() {
   const [showRegisterPopup, setShowRegisterPopup] = useState(false);
   const [whatsappSameAsPhone, setWhatsappSameAsPhone] = useState(true);
 
-  useEffect(() => { setIsMounted(true); }, []);
+  useEffect(() => {
+    setIsMounted(true);
+    // Track InitiateCheckout when page loads with items
+    if (items.length > 0) {
+      fbPixel.initiateCheckout({
+        content_ids: items.map(i => i.campaignId || i.cartItemId),
+        num_items: items.length,
+        value: getCartTotal(),
+      });
+    }
+  }, []);
 
   // Capture fundraiser referral code from sessionStorage
   useEffect(() => {
@@ -512,6 +523,17 @@ export default function CheckoutPage() {
       }
 
       toast.success(successMessage);
+
+      // Track Purchase event
+      const totalPurchaseAmount = allResults.reduce(
+        (sum, r) => sum + Number(r.data?.amount || r.data?.totalAmount || 0), 0
+      );
+      fbPixel.purchase({
+        content_ids: allResults.map(r => r.data?.id).filter(Boolean),
+        content_type: 'donation',
+        num_items: allResults.length,
+        value: totalPurchaseAmount,
+      });
 
       // Store transaction IDs for payment
       const transactionData = allResults.map((r) => ({

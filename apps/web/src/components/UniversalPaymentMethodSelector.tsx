@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from '@/lib/feedback-toast';
 import api from '@/lib/api';
+import * as fbPixel from '@/lib/fbPixel';
 import { useI18n } from '@/lib/i18n/provider';
 
 interface PaymentMethod {
@@ -127,6 +128,8 @@ export default function UniversalPaymentMethodSelector({
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleSelectMethod = async (methodType: string) => {
+    fbPixel.addPaymentInfo({ content_ids: [transactionId] });
+
     if (methodType === 'bank_transfer' || methodType === 'qris') {
       sessionStorage.setItem('selectedMethodType', methodType);
       router.push(`/invoice/${transactionId}/payment-detail`);

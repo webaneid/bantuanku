@@ -5,6 +5,7 @@ import { ProgramCard } from '@/components/organisms';
 import { fetchCampaigns, calculateDaysLeft, getImageUrlByVariant } from '@/services/campaigns';
 import { fetchCategories } from '@/services/categories';
 import Autocomplete from '@/components/Autocomplete';
+import * as fbPixel from '@/lib/fbPixel';
 
 // Helper function to map campaign to ProgramCard props
 function mapCampaignToCardProps(campaign: any) {
@@ -159,6 +160,15 @@ export default function ProgramListTemplate({
     setFilteredCampaigns(filtered);
     setCurrentPage(1);
   }, [selectedCategory, selectedPillar, selectedUrgency, searchQuery, allCampaigns]);
+
+  // Track Search event (debounced)
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+    const timer = setTimeout(() => {
+      fbPixel.search({ search_string: searchQuery.trim(), content_category: selectedCategory });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedCategory]);
 
   // Calculate pagination
   const totalCampaigns = filteredCampaigns.length;
