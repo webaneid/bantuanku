@@ -1,5 +1,8 @@
 import { MetadataRoute } from 'next';
 
+// Generate sitemap at request time, not build time
+export const dynamic = 'force-dynamic';
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
@@ -56,7 +59,7 @@ async function fetchCampaignPages(apiUrl: string, appUrl: string): Promise<Metad
 
     while (true) {
       const response = await fetch(`${apiUrl}/campaigns?limit=${limit}&page=${page}`, {
-        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(10000),
       });
 
       if (!response.ok) break;
