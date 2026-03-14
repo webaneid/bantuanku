@@ -38,30 +38,73 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Fetch campaigns for dynamic pages
-  try {
-    const response = await fetch(`${apiUrl}/campaigns?limit=100`, {
-      next: { revalidate: 3600 }, // Revalidate every hour
-    });
+  // Fetch all dynamic pages in parallel
+  const [campaignPages, staticContentPages] = await Promise.all([
+    fetchCampaignPages(apiUrl, appUrl),
+    fetchStaticContentPages(apiUrl, appUrl),
+  ]);
 
-    if (!response.ok) {
-      console.error('Failed to fetch campaigns for sitemap');
-      return staticPages;
+  return [...staticPages, ...campaignPages, ...staticContentPages];
+}
+
+async function fetchCampaignPages(apiUrl: string, appUrl: string): Promise<MetadataRoute.Sitemap> {
+  try {
+    // Fetch all campaigns (paginate if needed)
+    const allCampaigns: any[] = [];
+    let page = 1;
+    const limit = 100;
+
+    while (true) {
+      const response = await fetch(`${apiUrl}/campaigns?limit=${limit}&page=${page}`, {
+        next: { revalidate: 3600 },
+      });
+
+      if (!response.ok) break;
+
+      const data = await response.json();
+      const campaigns = data.data?.data || [];
+      allCampaigns.push(...campaigns);
+
+      // Stop if we got fewer than limit (last page)
+      if (campaigns.length < limit) break;
+      page++;
     }
 
-    const data = await response.json();
-    const campaigns = data.data?.data || [];
-
-    const campaignPages: MetadataRoute.Sitemap = campaigns.map((campaign: any) => ({
+    return allCampaigns.map((campaign: any) => ({
       url: `${appUrl}/program/${campaign.slug}`,
       lastModified: campaign.updatedAt ? new Date(campaign.updatedAt) : new Date(campaign.createdAt),
       changeFrequency: 'weekly' as const,
       priority: 0.7,
     }));
-
-    return [...staticPages, ...campaignPages];
   } catch (error) {
-    console.error('Error generating sitemap:', error);
-    return staticPages;
+    console.error('Error fetching campaigns for sitemap:', error);
+    return [];
+  }
+}
+
+async function fetchStaticContentPages(apiUrl: string, appUrl: string): Promise<MetadataRoute.Sitemap> {
+  try {
+    const response = await fetch(`${apiUrl}/pages`, {
+      next: { revalidate: 3600 },
+    });
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    const pages = (data.success ? data.data : data) || [];
+
+    if (!Array.isArray(pages)) return [];
+
+    return pages
+      .filter((page: any) => page.isPublished !== false)
+      .map((page: any) => ({
+        url: `${appUrl}/page/${page.slug}`,
+        lastModified: page.updatedAt ? new Date(page.updatedAt) : new Date(page.createdAt),
+        changeFrequency: 'monthly' as const,
+        priority: 0.5,
+      }));
+  } catch (error) {
+    console.error('Error fetching pages for sitemap:', error);
+    return [];
   }
 }

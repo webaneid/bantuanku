@@ -15,8 +15,11 @@ type Setting = {
     category: string;
 };
 
+const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL || "";
+
 export default function IntegrationSettingsPage() {
     const queryClient = useQueryClient();
+    const [copied, setCopied] = useState("");
     const [feedback, setFeedback] = useState<{
         open: boolean;
         type: "success" | "error";
@@ -236,6 +239,42 @@ export default function IntegrationSettingsPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* SEO & Sitemap */}
+                        {WEB_URL && (
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900 mb-1">SEO & Sitemap</h3>
+                                <p className="text-sm text-gray-500 mb-4">
+                                    URL penting untuk didaftarkan ke Google Search Console dan mesin pencari lainnya.
+                                </p>
+
+                                <div className="space-y-3">
+                                    {[
+                                        { label: "Sitemap URL", url: `${WEB_URL}/sitemap.xml`, desc: "Daftarkan URL ini di Google Search Console agar semua halaman ter-index." },
+                                        { label: "Robots.txt", url: `${WEB_URL}/robots.txt`, desc: "File aturan crawling untuk mesin pencari." },
+                                    ].map((item) => (
+                                        <div key={item.label} className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-gray-700">{item.label}</p>
+                                                <p className="text-sm text-blue-600 truncate">{item.url}</p>
+                                                <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(item.url);
+                                                    setCopied(item.label);
+                                                    setTimeout(() => setCopied(""), 2000);
+                                                }}
+                                                className="shrink-0 text-sm text-gray-500 hover:text-gray-700 border border-gray-200 rounded-md px-3 py-1.5 hover:bg-white transition-colors"
+                                            >
+                                                {copied === item.label ? "Tersalin!" : "Salin"}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="pt-6 border-t border-gray-100 flex justify-end">
                             <button
