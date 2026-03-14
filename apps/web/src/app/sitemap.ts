@@ -3,6 +3,12 @@ import { MetadataRoute } from 'next';
 // Generate sitemap at request time, not build time
 export const dynamic = 'force-dynamic';
 
+function safeDate(value: any): Date {
+  if (!value) return new Date();
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? new Date() : d;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
@@ -52,7 +58,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 async function fetchCampaignPages(apiUrl: string, appUrl: string): Promise<MetadataRoute.Sitemap> {
   try {
-    // Fetch all campaigns (paginate if needed)
     const allCampaigns: any[] = [];
     let page = 1;
     const limit = 100;
@@ -68,14 +73,13 @@ async function fetchCampaignPages(apiUrl: string, appUrl: string): Promise<Metad
       const campaigns = data.data?.data || [];
       allCampaigns.push(...campaigns);
 
-      // Stop if we got fewer than limit (last page)
       if (campaigns.length < limit) break;
       page++;
     }
 
     return allCampaigns.map((campaign: any) => ({
       url: `${appUrl}/program/${campaign.slug}`,
-      lastModified: campaign.updatedAt ? new Date(campaign.updatedAt) : new Date(campaign.createdAt),
+      lastModified: safeDate(campaign.updatedAt || campaign.createdAt),
       changeFrequency: 'weekly' as const,
       priority: 0.7,
     }));
@@ -88,7 +92,7 @@ async function fetchCampaignPages(apiUrl: string, appUrl: string): Promise<Metad
 async function fetchStaticContentPages(apiUrl: string, appUrl: string): Promise<MetadataRoute.Sitemap> {
   try {
     const response = await fetch(`${apiUrl}/pages`, {
-      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) return [];
@@ -102,7 +106,7 @@ async function fetchStaticContentPages(apiUrl: string, appUrl: string): Promise<
       .filter((page: any) => page.isPublished !== false)
       .map((page: any) => ({
         url: `${appUrl}/page/${page.slug}`,
-        lastModified: page.updatedAt ? new Date(page.updatedAt) : new Date(page.createdAt),
+        lastModified: safeDate(page.updatedAt || page.createdAt),
         changeFrequency: 'monthly' as const,
         priority: 0.5,
       }));
