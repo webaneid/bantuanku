@@ -238,35 +238,6 @@ app.post("/", async (c) => {
       }
     }
 
-    // Meta Conversions API: Purchase event (fire-and-forget)
-    const userAgent = c.req.header("user-agent") || "";
-    const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim()
-      || c.req.header("x-real-ip")
-      || "";
-    const frontendUrlForCapi = await getFrontendUrl(db, c.env);
-
-    sendCAPIEvent(db, {
-      eventName: "Purchase",
-      eventId: `purchase_${transaction.id}`,
-      eventSourceUrl: `${frontendUrlForCapi}/checkout`,
-      userData: {
-        email: transaction.donorEmail || undefined,
-        phone: transaction.donorPhone || undefined,
-        firstName: transaction.donorName?.split(" ")[0] || undefined,
-        clientIpAddress: clientIp || undefined,
-        clientUserAgent: userAgent || undefined,
-      },
-      customData: {
-        currency: "IDR",
-        value: Number(transaction.totalAmount),
-        contentIds: [transaction.id],
-        contentType: "product",
-        numItems: transaction.quantity || 1,
-        contentName: transaction.productName,
-        contentCategory: transaction.productType,
-      },
-    }).catch(() => {}); // non-blocking
-
     return c.json({
       success: true,
       data: transaction,
@@ -1289,6 +1260,38 @@ app.post(
     } catch (err) {
       console.error("[WA] mitra/fundraiser notification error:", err);
     }
+
+    // Meta CAPI: fire Purchase on manual approval (paid-success)
+    const tsd = transaction.typeSpecificData as Record<string, any> | null;
+    const frontendUrlForCapi = await getFrontendUrl(db, c.env);
+    const adminUserAgent = c.req.header("user-agent") || "";
+    const adminClientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim()
+      || c.req.header("x-real-ip")
+      || "";
+    sendCAPIEvent(db, {
+      eventName: "Purchase",
+      eventId: tsd?.meta_event_id || `purchase_${transaction.id}`,
+      eventSourceUrl: `${frontendUrlForCapi}/checkout`,
+      userData: {
+        email: transaction.donorEmail || undefined,
+        phone: transaction.donorPhone || undefined,
+        firstName: transaction.donorName?.split(" ")[0] || undefined,
+        clientIpAddress: adminClientIp || undefined,
+        clientUserAgent: adminUserAgent || undefined,
+        fbc: tsd?.meta_fbc || undefined,
+        fbp: tsd?.meta_fbp || undefined,
+        externalId: transaction.donorEmail || transaction.donorPhone || undefined,
+      },
+      customData: {
+        currency: "IDR",
+        value: Number(transaction.totalAmount),
+        contentIds: [transaction.productId],
+        contentType: "product",
+        numItems: transaction.quantity || 1,
+        contentName: transaction.productName,
+        contentCategory: transaction.productType,
+      },
+    }).catch(() => {});
 
     return c.json({
       success: true,

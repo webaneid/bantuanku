@@ -273,7 +273,7 @@ settingsAdmin.get("/", requireRole("super_admin", "admin_finance", "admin_campai
     (acc, setting) => {
       // Decrypt sensitive API keys for display in admin
       let displayValue = setting.value;
-      if (setting.key.includes("_api_key") || setting.key.includes("_secret")) {
+      if (setting.key.includes("_api_key") || setting.key.includes("_secret") || setting.key.includes("_access_token")) {
         displayValue = decrypt(setting.value);
       }
 
@@ -429,7 +429,7 @@ settingsAdmin.put("/batch", requireRole("super_admin", "admin_finance"), zValida
     let finalValue = settingData.value;
 
     // Encrypt sensitive fields
-    if (settingData.key.includes("_api_key") || settingData.key.includes("_secret")) {
+    if (settingData.key.includes("_api_key") || settingData.key.includes("_secret") || settingData.key.includes("_access_token")) {
       finalValue = encrypt(settingData.value);
     }
 

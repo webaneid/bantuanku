@@ -11,14 +11,24 @@ import {
   paymentGatewayCredentials,
   qurbanSavings,
   qurbanSavingsTransactions,
+  settings,
   createId,
 } from "@bantuanku/db";
 import { createPaymentAdapter } from "../services/payment";
 import { createEmailService } from "../services/email";
 import { success, error } from "../lib/response";
 import { paymentRateLimit } from "../middleware/ratelimit";
+import { sendCAPIEvent } from "../lib/meta-capi";
 import type { Env, Variables } from "../types";
 const paymentsRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+const getFrontendUrl = async (db: any, env?: Env): Promise<string> => {
+  if (env?.FRONTEND_URL) return env.FRONTEND_URL.replace(/\/+$/, "");
+  const row = await db.query.settings.findFirst({
+    where: eq(settings.key, "organization_website"),
+  });
+  return (row?.value || "").replace(/\/+$/, "");
+};
 
 const syncQurbanSavingsBalance = async (db: any, savingsId: string) => {
   const savings = await db.query.qurbanSavings.findFirst({
@@ -639,6 +649,39 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
         console.error("Failed to send payment success email:", emailError);
       }
     }
+    // Meta CAPI: fire Purchase event only when payment actually succeeds
+    if (parsed.status === "success") {
+      const userAgent = c.req.header("user-agent") || "";
+      const clientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim()
+        || c.req.header("x-real-ip")
+        || "";
+      const tsd = txn.typeSpecificData as Record<string, any> | null;
+      sendCAPIEvent(db, {
+        eventName: "Purchase",
+        eventId: tsd?.meta_event_id || `purchase_${txn.id}`,
+        eventSourceUrl: `${await getFrontendUrl(db, c.env)}/checkout`,
+        userData: {
+          email: txn.donorEmail || undefined,
+          phone: txn.donorPhone || undefined,
+          firstName: txn.donorName?.split(" ")[0] || undefined,
+          clientIpAddress: clientIp || undefined,
+          clientUserAgent: userAgent || undefined,
+          fbc: tsd?.meta_fbc || undefined,
+          fbp: tsd?.meta_fbp || undefined,
+          externalId: txn.donorEmail || txn.donorPhone || undefined,
+        },
+        customData: {
+          currency: "IDR",
+          value: Number(txn.totalAmount),
+          contentIds: [txn.productId],
+          contentType: "product",
+          numItems: txn.quantity || 1,
+          contentName: txn.productName,
+          contentCategory: txn.productType,
+        },
+      }).catch(() => {});
+    }
+
   } catch (txError) {
     // Transaction failed - all changes rolled back
     console.error("Payment webhook transaction failed:", txError);

@@ -95,11 +95,7 @@ export default function DonationConfirmModal({
       content_type: 'product',
       value: amount,
     });
-    fbPixel.initiateCheckout({
-      content_ids: [campaign.id],
-      num_items: 1,
-      value: amount,
-    });
+    // InitiateCheckout fires on checkout page load (single trigger point)
 
     toast.success(t('campaignDetail.confirmModal.toasts.redirectCheckout'));
     router.push('/checkout');

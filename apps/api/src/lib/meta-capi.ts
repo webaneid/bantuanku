@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { settings } from "@bantuanku/db/schema";
 import { createHash } from "crypto";
+import { decrypt } from "./encryption";
 
 const GRAPH_API_VERSION = "v21.0";
 const GRAPH_API_BASE = "https://graph.facebook.com";
@@ -13,6 +14,7 @@ type UserData = {
   clientUserAgent?: string;
   fbc?: string;
   fbp?: string;
+  externalId?: string;
 };
 
 type CustomData = {
@@ -46,6 +48,7 @@ function buildUserData(userData: UserData) {
   if (userData.clientUserAgent) data.client_user_agent = userData.clientUserAgent;
   if (userData.fbc) data.fbc = userData.fbc;
   if (userData.fbp) data.fbp = userData.fbp;
+  if (userData.externalId) data.external_id = hashSHA256(userData.externalId);
   return data;
 }
 
@@ -69,10 +72,50 @@ async function getCapiSettings(db: any): Promise<{ pixelId: string; accessToken:
     .where(eq(settings.category, "integration"));
 
   const pixelId = integrationSettings.find((s: any) => s.key === "meta_pixel_id")?.value;
-  const accessToken = integrationSettings.find((s: any) => s.key === "meta_capi_access_token")?.value;
+  const rawToken = integrationSettings.find((s: any) => s.key === "meta_capi_access_token")?.value;
 
-  if (!pixelId || !accessToken) return null;
+  if (!pixelId || !rawToken) return null;
+  // Token may be encrypted — decrypt gracefully (returns original if not encrypted)
+  const accessToken = decrypt(rawToken);
   return { pixelId, accessToken };
+}
+
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [1000, 3000, 10000]; // exponential backoff: 1s, 3s, 10s
+
+async function sendWithRetry(
+  url: string,
+  accessToken: string,
+  payload: any,
+  eventLabel: string,
+  attempt = 0,
+): Promise<void> {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (response.ok) {
+    const responseBody = await response.json();
+    console.log("[Meta CAPI] Success:", eventLabel, JSON.stringify(responseBody));
+    return;
+  }
+
+  const errorBody = await response.text();
+  const isRetryable = response.status >= 500 || response.status === 429;
+
+  if (isRetryable && attempt < MAX_RETRIES) {
+    const delay = RETRY_DELAYS[attempt] || 10000;
+    console.warn(`[Meta CAPI] Retrying (${attempt + 1}/${MAX_RETRIES}) after ${delay}ms:`, response.status, errorBody);
+    await new Promise((r) => setTimeout(r, delay));
+    return sendWithRetry(url, accessToken, payload, eventLabel, attempt + 1);
+  }
+
+  console.error("[Meta CAPI] Error:", response.status, errorBody);
 }
 
 export async function sendCAPIEvent(db: any, event: CAPIEvent): Promise<void> {
@@ -97,21 +140,10 @@ export async function sendCAPIEvent(db: any, event: CAPIEvent): Promise<void> {
       ],
     };
 
-    const url = `${GRAPH_API_BASE}/${GRAPH_API_VERSION}/${config.pixelId}/events?access_token=${config.accessToken}`;
+    const url = `${GRAPH_API_BASE}/${GRAPH_API_VERSION}/${config.pixelId}/events`;
+    const eventLabel = `${event.eventName} ${event.eventId || ""}`;
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error("[Meta CAPI] Error:", response.status, errorBody);
-    } else {
-      const responseBody = await response.json();
-      console.log("[Meta CAPI] Success:", event.eventName, event.eventId, JSON.stringify(responseBody));
-    }
+    await sendWithRetry(url, config.accessToken, payload, eventLabel);
   } catch (error) {
     console.error("[Meta CAPI] Failed to send event:", error);
   }

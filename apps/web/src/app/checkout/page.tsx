@@ -35,6 +35,20 @@ function normalizePhone(input: string | null | undefined): string {
   return cleaned;
 }
 
+// Read Meta click/browser IDs from cookies for CAPI signal matching
+function getMetaCookies(): { meta_fbc?: string; meta_fbp?: string } {
+  if (typeof document === 'undefined') return {};
+  const cookies = document.cookie.split(';').reduce((acc, c) => {
+    const [key, ...val] = c.trim().split('=');
+    acc[key] = val.join('=');
+    return acc;
+  }, {} as Record<string, string>);
+  const result: { meta_fbc?: string; meta_fbp?: string } = {};
+  if (cookies['_fbc']) result.meta_fbc = cookies['_fbc'];
+  if (cookies['_fbp']) result.meta_fbp = cookies['_fbp'];
+  return result;
+}
+
 interface Donatur {
   id: string;
   name: string;
@@ -90,12 +104,13 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Track InitiateCheckout when page loads with items
+    // Track InitiateCheckout when page loads with items (single trigger point)
     if (items.length > 0) {
       fbPixel.initiateCheckout({
         content_ids: items.map(i => i.campaignId || i.cartItemId),
         num_items: items.length,
         value: getCartTotal(),
+        eventID: fbPixel.generateEventId('ic'),
       });
     }
   }, []);
@@ -263,6 +278,9 @@ export default function CheckoutPage() {
         : (formData.whatsapp ? normalizePhone(formData.whatsapp) : normalizedPhone);
       const normalizedEmail = formData.email.toLowerCase().trim();
 
+      // Read Meta cookies for CAPI signal matching
+      const metaCookies = getMetaCookies();
+
       // Separate campaign, zakat, and qurban items
       const campaignItems = items.filter(item => item.itemType === 'campaign');
       const zakatItems = items.filter(item => item.itemType === 'zakat');
@@ -274,6 +292,7 @@ export default function CheckoutPage() {
       // Create donations for campaign items
       if (campaignItems.length > 0) {
         const donationPromises = campaignItems.map(async (item) => {
+          const metaEventId = fbPixel.generateEventId('purchase_campaign');
           const transactionData = {
             product_type: 'campaign',
             product_id: item.campaignId,
@@ -290,10 +309,14 @@ export default function CheckoutPage() {
             message: formData.message.trim() || undefined,
             user_id: user?.id || undefined,
             referred_by_fundraiser_code: refCode,
-            type_specific_data: item.fidyahData ? {
-              fidyah_person_count: item.fidyahData.personCount,
-              fidyah_day_count: item.fidyahData.dayCount,
-            } : undefined,
+            type_specific_data: {
+              ...metaCookies,
+              meta_event_id: metaEventId,
+              ...(item.fidyahData ? {
+                fidyah_person_count: item.fidyahData.personCount,
+                fidyah_day_count: item.fidyahData.dayCount,
+              } : {}),
+            },
           };
 
           const response = await fetch(`${API_URL}/transactions`, {
@@ -341,6 +364,7 @@ export default function CheckoutPage() {
         console.log('DEBUG zakatItems:', JSON.stringify(zakatItems, null, 2));
 
         const zakatPromises = zakatItems.map(async (item) => {
+          const metaEventId = fbPixel.generateEventId('purchase_zakat');
           const zakatTypeId =
             item.zakatData?.zakatTypeId ||
             (item.zakatData?.zakatTypeSlug ? zakatTypeMap[item.zakatData.zakatTypeSlug] : undefined) ||
@@ -374,14 +398,18 @@ export default function CheckoutPage() {
             message: formData.message.trim() || undefined,
             user_id: user?.id || undefined,
             referred_by_fundraiser_code: refCode,
-            type_specific_data: item.zakatData ? {
-              zakat_type: item.zakatData.zakatType,
-              zakat_type_id: zakatTypeId,
-              quantity: item.zakatData.quantity,
-              price_per_unit: item.zakatData.pricePerUnit,
-              period_id: item.zakatData.periodId,
-              on_behalf_of: formData.onBehalfOf.trim() || formData.name.trim(),
-            } : undefined,
+            type_specific_data: {
+              ...metaCookies,
+              meta_event_id: metaEventId,
+              ...(item.zakatData ? {
+                zakat_type: item.zakatData.zakatType,
+                zakat_type_id: zakatTypeId,
+                quantity: item.zakatData.quantity,
+                price_per_unit: item.zakatData.pricePerUnit,
+                period_id: item.zakatData.periodId,
+                on_behalf_of: formData.onBehalfOf.trim() || formData.name.trim(),
+              } : {}),
+            },
           };
 
           const response = await fetch(`${API_URL}/transactions`, {
@@ -416,6 +444,7 @@ export default function CheckoutPage() {
       // Create transactions for qurban items
       if (qurbanItems.length > 0) {
         const qurbanPromises = qurbanItems.map(async (item) => {
+          const metaEventId = fbPixel.generateEventId('purchase_qurban');
           if (!item.qurbanData) {
             throw new Error(
               t('checkout.main.validation.qurbanDataMissing', { title: item.title })
@@ -445,6 +474,8 @@ export default function CheckoutPage() {
             user_id: user?.id || undefined,
             referred_by_fundraiser_code: refCode,
             type_specific_data: {
+              ...metaCookies,
+              meta_event_id: metaEventId,
               period_id: item.qurbanData.periodId,
               package_id: item.qurbanData.packageId,
               package_period_id: item.qurbanData.packagePeriodId,
@@ -523,17 +554,6 @@ export default function CheckoutPage() {
       }
 
       toast.success(successMessage);
-
-      // Track Purchase event
-      const totalPurchaseAmount = allResults.reduce(
-        (sum, r) => sum + Number(r.data?.amount || r.data?.totalAmount || 0), 0
-      );
-      fbPixel.purchase({
-        content_ids: allResults.map(r => r.data?.id).filter(Boolean),
-        content_type: 'product',
-        num_items: allResults.length,
-        value: totalPurchaseAmount,
-      });
 
       // Store transaction IDs for payment
       const transactionData = allResults.map((r) => ({

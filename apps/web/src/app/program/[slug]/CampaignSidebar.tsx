@@ -61,7 +61,6 @@ export default function CampaignSidebar({
       content_name: campaign.title,
       content_ids: [campaign.id],
       content_type: 'product',
-      value: campaign.goal || 0,
     });
   }, [campaign.id]);
 

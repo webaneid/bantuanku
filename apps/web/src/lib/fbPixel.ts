@@ -27,18 +27,27 @@ export function pageView() {
   }
 }
 
-function track(event: string, params?: Record<string, any>, attempt = 0) {
+function track(event: string, params?: Record<string, any>, eventID?: string, attempt = 0) {
   if (typeof window === 'undefined') return;
 
   if (window.fbq) {
-    console.log('[fbPixel] track:', event, params);
-    window.fbq('track', event, params);
+    console.log('[fbPixel] track:', event, params, eventID ? `eventID=${eventID}` : '');
+    if (eventID) {
+      window.fbq('track', event, params, { eventID });
+    } else {
+      window.fbq('track', event, params);
+    }
   } else if (attempt < MAX_RETRIES) {
     // fbq not ready yet — retry after short delay
-    setTimeout(() => track(event, params, attempt + 1), RETRY_INTERVAL);
+    setTimeout(() => track(event, params, eventID, attempt + 1), RETRY_INTERVAL);
   } else {
     console.warn('[fbPixel] fbq not available after retries, skipping:', event);
   }
+}
+
+/** Generate a unique event ID for dedup between browser Pixel and server CAPI */
+export function generateEventId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -52,8 +61,10 @@ export function viewContent(params: {
   content_type?: string;
   value?: number;
   currency?: string;
+  eventID?: string;
 }) {
-  track('ViewContent', { currency: 'IDR', ...params });
+  const { eventID, ...rest } = params;
+  track('ViewContent', { currency: 'IDR', ...rest }, eventID);
 }
 
 /** User adds item to cart (e.g. donation amount selected → confirm modal) */
@@ -63,8 +74,10 @@ export function addToCart(params: {
   content_type?: string;
   value?: number;
   currency?: string;
+  eventID?: string;
 }) {
-  track('AddToCart', { currency: 'IDR', ...params });
+  const { eventID, ...rest } = params;
+  track('AddToCart', { currency: 'IDR', ...rest }, eventID);
 }
 
 /** User adds item to wishlist / favorites */
@@ -83,8 +96,10 @@ export function initiateCheckout(params?: {
   num_items?: number;
   value?: number;
   currency?: string;
+  eventID?: string;
 }) {
-  track('InitiateCheckout', { currency: 'IDR', ...params });
+  const { eventID, ...rest } = params || {};
+  track('InitiateCheckout', { currency: 'IDR', ...rest }, eventID);
 }
 
 /** User adds payment info (selects payment method) */
@@ -92,8 +107,10 @@ export function addPaymentInfo(params?: {
   content_ids?: string[];
   value?: number;
   currency?: string;
+  eventID?: string;
 }) {
-  track('AddPaymentInfo', { currency: 'IDR', ...params });
+  const { eventID, ...rest } = params || {};
+  track('AddPaymentInfo', { currency: 'IDR', ...rest }, eventID);
 }
 
 /** Purchase completed */
@@ -104,8 +121,10 @@ export function purchase(params: {
   num_items?: number;
   value: number;
   currency?: string;
+  eventID?: string;
 }) {
-  track('Purchase', { currency: 'IDR', ...params });
+  const { eventID, ...rest } = params;
+  track('Purchase', { currency: 'IDR', ...rest }, eventID);
 }
 
 /** Lead generated (e.g. contact form, inquiry) */
