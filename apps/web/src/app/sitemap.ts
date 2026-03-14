@@ -70,7 +70,7 @@ async function fetchCampaignPages(apiUrl: string, appUrl: string): Promise<Metad
       if (!response.ok) break;
 
       const data = await response.json();
-      const campaigns = data.data?.data || [];
+      const campaigns = Array.isArray(data.data) ? data.data : (data.data?.data || []);
       allCampaigns.push(...campaigns);
 
       if (campaigns.length < limit) break;
