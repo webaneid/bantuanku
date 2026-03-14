@@ -15,8 +15,11 @@ declare global {
 }
 
 // ---------------------------------------------------------------------------
-// Core
+// Core — retry queue for when fbq is not yet initialized
 // ---------------------------------------------------------------------------
+
+const MAX_RETRIES = 20; // 20 x 250ms = 5 seconds max wait
+const RETRY_INTERVAL = 250;
 
 export function pageView() {
   if (typeof window !== 'undefined' && window.fbq) {
@@ -24,14 +27,17 @@ export function pageView() {
   }
 }
 
-function track(event: string, params?: Record<string, any>) {
-  if (typeof window !== 'undefined') {
-    if (window.fbq) {
-      console.log('[fbPixel] track:', event, params);
-      window.fbq('track', event, params);
-    } else {
-      console.warn('[fbPixel] fbq not available, skipping:', event);
-    }
+function track(event: string, params?: Record<string, any>, attempt = 0) {
+  if (typeof window === 'undefined') return;
+
+  if (window.fbq) {
+    console.log('[fbPixel] track:', event, params);
+    window.fbq('track', event, params);
+  } else if (attempt < MAX_RETRIES) {
+    // fbq not ready yet — retry after short delay
+    setTimeout(() => track(event, params, attempt + 1), RETRY_INTERVAL);
+  } else {
+    console.warn('[fbPixel] fbq not available after retries, skipping:', event);
   }
 }
 
