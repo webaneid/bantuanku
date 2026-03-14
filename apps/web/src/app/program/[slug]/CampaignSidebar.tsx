@@ -60,7 +60,7 @@ export default function CampaignSidebar({
     fbPixel.viewContent({
       content_name: campaign.title,
       content_ids: [campaign.id],
-      content_type: programType,
+      content_type: 'product',
       value: campaign.goal || 0,
     });
   }, [campaign.id]);

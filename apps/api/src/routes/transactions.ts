@@ -260,7 +260,7 @@ app.post("/", async (c) => {
         currency: "IDR",
         value: Number(transaction.totalAmount),
         contentIds: [transaction.id],
-        contentType: "donation",
+        contentType: "product",
         numItems: transaction.quantity || 1,
         contentName: transaction.productName,
         contentCategory: transaction.productType,

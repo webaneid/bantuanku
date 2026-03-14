@@ -691,7 +691,7 @@ app.post("/orders", async (c) => {
       currency: "IDR",
       value: totalAmount,
       contentIds: [body.packagePeriodId],
-      contentType: "qurban",
+      contentType: "product",
       numItems: body.quantity || 1,
       contentName: pkgPeriod.packageName || "Qurban",
     },

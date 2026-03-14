@@ -221,7 +221,7 @@ export default async function ZakatDetailPage({ params }: Props) {
           <ViewContentTracker
             contentName={zakatType.name}
             contentIds={[String(zakatType.id)]}
-            contentType="zakat"
+            contentType="product"
           />
           <ZakatDisplayMetaProvider
             value={{
@@ -249,7 +249,7 @@ export default async function ZakatDetailPage({ params }: Props) {
       <ViewContentTracker
         contentName={zakatType.name}
         contentIds={[String(zakatType.id)]}
-        contentType="zakat"
+        contentType="product"
       />
       <Header />
       <div className="hidden lg:block">

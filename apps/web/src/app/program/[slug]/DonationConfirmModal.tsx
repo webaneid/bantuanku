@@ -60,7 +60,7 @@ export default function DonationConfirmModal({
     fbPixel.addToCart({
       content_name: campaignTitle,
       content_ids: [campaign.id],
-      content_type: programType,
+      content_type: 'product',
       value: amount,
     });
 
@@ -92,7 +92,7 @@ export default function DonationConfirmModal({
     fbPixel.addToCart({
       content_name: campaignTitle,
       content_ids: [campaign.id],
-      content_type: programType,
+      content_type: 'product',
       value: amount,
     });
     fbPixel.initiateCheckout({

@@ -530,7 +530,7 @@ export default function CheckoutPage() {
       );
       fbPixel.purchase({
         content_ids: allResults.map(r => r.data?.id).filter(Boolean),
-        content_type: 'donation',
+        content_type: 'product',
         num_items: allResults.length,
         value: totalPurchaseAmount,
       });

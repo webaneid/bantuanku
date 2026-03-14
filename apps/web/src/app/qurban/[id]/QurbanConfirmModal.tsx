@@ -77,7 +77,7 @@ export default function QurbanConfirmModal({
     fbPixel.addToCart({
       content_name: qurbanPackage.name,
       content_ids: [qurbanPackage.packagePeriodId],
-      content_type: 'qurban',
+      content_type: 'product',
       value: total,
     });
 

@@ -68,7 +68,7 @@ export default function QurbanSidebar({
     fbPixel.viewContent({
       content_name: qurbanPackage.name,
       content_ids: [qurbanPackage.packagePeriodId],
-      content_type: 'qurban',
+      content_type: 'product',
       value: qurbanPackage.price,
       currency: 'IDR',
     });
