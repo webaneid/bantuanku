@@ -37,6 +37,7 @@ export default function IntegrationSettingsPage() {
         meta_domain_verification: "",
         meta_pixel_id: "",
         meta_capi_access_token: "",
+        gtm_container_id: "",
     });
 
     // Populate form from settings
@@ -101,6 +102,15 @@ export default function IntegrationSettingsPage() {
                 label: "Meta Conversions API Access Token",
                 description: "Access token untuk Meta Conversions API (server-side tracking)",
                 isPublic: false,
+            },
+            {
+                key: "gtm_container_id",
+                value: form.gtm_container_id,
+                category: "integration",
+                type: "string",
+                label: "Google Tag Manager Container ID",
+                description: "Container ID untuk Google Tag Manager (GTM-XXXXXXXX)",
+                isPublic: true,
             },
         ].map((item) => {
             const existing = integrationSettings.find((s) => s.key === item.key);
@@ -198,6 +208,32 @@ export default function IntegrationSettingsPage() {
                                 <p className="text-xs text-gray-400 mt-1.5">
                                     Token akses dari Meta Events Manager untuk Conversions API.
                                 </p>
+                            </div>
+                        </div>
+
+                        {/* Google Tag Manager */}
+                        <div>
+                            <h3 className="text-base font-semibold text-gray-900 mb-1">Google Tag Manager</h3>
+                            <p className="text-sm text-gray-500 mb-4">
+                                Kelola semua tag tracking (Google Analytics, Search Console, dll) melalui Google Tag Manager.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        GTM Container ID
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={form.gtm_container_id}
+                                        onChange={(e) => setForm((prev) => ({ ...prev, gtm_container_id: e.target.value }))}
+                                        placeholder="contoh: GTM-N8B725H6"
+                                        className="form-input"
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1.5">
+                                        Container ID dari Google Tag Manager. Kosongkan jika tidak ingin mengaktifkan GTM.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 

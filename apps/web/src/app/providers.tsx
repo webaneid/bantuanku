@@ -7,6 +7,7 @@ import { CartProvider } from '@/contexts/CartContext';
 import { saveReferralCode } from '@/lib/referral';
 import FeedbackToastHost from '@/components/FeedbackToastHost';
 import MetaPixel from '@/components/MetaPixel';
+import GoogleTagManager from '@/components/GoogleTagManager';
 import { I18nProvider } from '@/lib/i18n/provider';
 
 function ReferralCapture() {
@@ -46,6 +47,7 @@ export function Providers({
         <CartProvider>
           <ReferralCapture />
           <MetaPixel />
+          <GoogleTagManager />
           {children}
           <FeedbackToastHost />
         </CartProvider>
