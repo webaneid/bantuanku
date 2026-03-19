@@ -184,6 +184,12 @@ const CORE_EXISTING: MigrationEntry[] = [
   {
     file: "packages/db/migrations/112_create_auth_otp_codes.sql",
   },
+  {
+    file: "packages/db/migrations/113_add_slug_to_activity_reports.sql",
+  },
+  {
+    file: "packages/db/migrations/114_add_seo_fields_to_activity_reports.sql",
+  },
 ];
 
 const args = process.argv.slice(2);

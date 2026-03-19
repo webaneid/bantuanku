@@ -37,6 +37,7 @@ export default function IntegrationSettingsPage() {
     });
 
     const [form, setForm] = useState({
+        google_site_verification: "",
         meta_domain_verification: "",
         meta_pixel_id: "",
         meta_capi_access_token: "",
@@ -79,6 +80,15 @@ export default function IntegrationSettingsPage() {
         const integrationSettings = (groupedSettings?.integration || []) as Setting[];
 
         const items = [
+            {
+                key: "google_site_verification",
+                value: form.google_site_verification,
+                category: "integration",
+                type: "string",
+                label: "Google Site Verification",
+                description: "Content ID untuk verifikasi Google Search Console via meta tag HTML",
+                isPublic: true,
+            },
             {
                 key: "meta_domain_verification",
                 value: form.meta_domain_verification,
@@ -235,6 +245,32 @@ export default function IntegrationSettingsPage() {
                                     />
                                     <p className="text-xs text-gray-400 mt-1.5">
                                         Container ID dari Google Tag Manager. Kosongkan jika tidak ingin mengaktifkan GTM.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Google Search Console */}
+                        <div>
+                            <h3 className="text-base font-semibold text-gray-900 mb-1">Google Search Console</h3>
+                            <p className="text-sm text-gray-500 mb-4">
+                                Verifikasi kepemilikan situs melalui tag HTML untuk Google Search Console.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Verification ID
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={form.google_site_verification}
+                                        onChange={(e) => setForm((prev) => ({ ...prev, google_site_verification: e.target.value }))}
+                                        placeholder="contoh: ZpaPozocyA2dHwLIjZhoUa8UGpyMhtczodJ3EDZLvTc"
+                                        className="form-input"
+                                    />
+                                    <p className="text-xs text-gray-400 mt-1.5">
+                                        Isi dengan nilai <code className="bg-gray-100 px-1 rounded">content</code> dari tag verifikasi Google Search Console. Kosongkan jika tidak digunakan.
                                     </p>
                                 </div>
                             </div>

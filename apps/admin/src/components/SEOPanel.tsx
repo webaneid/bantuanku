@@ -63,6 +63,7 @@ interface SEOPanelProps {
     | "page"
     | "zakatType"
     | "qurbanPackage"
+    | "activityReport"
     | "category"
     | "pillar";
   /** Base public URL for preview */
@@ -84,6 +85,7 @@ const ENTITY_URL_PREFIX: Record<string, string> = {
   page: "/pages",
   zakatType: "/zakat",
   qurbanPackage: "/qurban",
+  activityReport: "/laporan",
   category: "/program",
   pillar: "/program",
 };

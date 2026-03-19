@@ -7,6 +7,7 @@ import {
   transactions,
   settings,
   createId,
+  generateSlug,
   indonesiaProvinces,
   indonesiaRegencies,
   indonesiaDistricts,
@@ -17,6 +18,23 @@ import { success, error } from "../../lib/response";
 import { requireRole } from "../../middleware/auth";
 import { WhatsAppService } from "../../services/whatsapp";
 import type { Env, Variables } from "../../types";
+
+// Helper to generate a unique slug for activity reports
+const generateUniqueSlug = async (db: any, title: string, excludeId?: string): Promise<string> => {
+  const baseSlug = generateSlug(title);
+  let slug = baseSlug;
+  let counter = 0;
+  while (true) {
+    const existing = await db.query.activityReports.findFirst({
+      where: eq(activityReports.slug, slug),
+      columns: { id: true },
+    });
+    if (!existing || existing.id === excludeId) break;
+    counter++;
+    slug = `${baseSlug}-${counter}`;
+  }
+  return slug;
+};
 
 // Helper to get frontend URL: env first, fallback to organization_website setting
 const getFrontendUrl = async (db: any, env?: Env): Promise<string> => {
@@ -47,6 +65,17 @@ const createSchema = z.object({
   districtCode: z.string().optional(),
   villageCode: z.string().optional(),
   postalCode: z.string().optional().nullable(), // From AddressForm, not stored in DB
+  // SEO fields
+  focusKeyphrase: z.string().optional(),
+  metaTitle: z.string().max(70).optional(),
+  metaDescription: z.string().max(160).optional(),
+  canonicalUrl: z.string().optional(),
+  noIndex: z.boolean().optional(),
+  noFollow: z.boolean().optional(),
+  ogTitle: z.string().max(70).optional(),
+  ogDescription: z.string().max(160).optional(),
+  ogImageUrl: z.string().optional(),
+  seoScore: z.number().optional(),
 });
 
 const updateSchema = createSchema.partial();
@@ -106,6 +135,7 @@ activityReportsAdmin.get("/:id", requireRole("super_admin", "admin_finance", "ad
   const results = await db
     .select({
       id: activityReports.id,
+      slug: activityReports.slug,
       referenceType: activityReports.referenceType,
       referenceId: activityReports.referenceId,
       referenceName: activityReports.referenceName,
@@ -133,6 +163,17 @@ activityReportsAdmin.get("/:id", requireRole("super_admin", "admin_finance", "ad
       districtName: indonesiaDistricts.name,
       villageName: indonesiaVillages.name,
       villagePostalCode: indonesiaVillages.postalCode,
+      // SEO
+      focusKeyphrase: activityReports.focusKeyphrase,
+      metaTitle: activityReports.metaTitle,
+      metaDescription: activityReports.metaDescription,
+      canonicalUrl: activityReports.canonicalUrl,
+      noIndex: activityReports.noIndex,
+      noFollow: activityReports.noFollow,
+      ogTitle: activityReports.ogTitle,
+      ogDescription: activityReports.ogDescription,
+      ogImageUrl: activityReports.ogImageUrl,
+      seoScore: activityReports.seoScore,
       // Creator
       creatorName: users.name,
       creatorEmail: users.email,
@@ -176,10 +217,13 @@ activityReportsAdmin.post("/", requireRole("super_admin", "admin_campaign", "pro
   const user = c.get("user");
   const body = c.req.valid("json");
 
+  const slug = await generateUniqueSlug(db, body.title);
+
   const [report] = await db
     .insert(activityReports)
     .values({
       id: createId(),
+      slug,
       referenceType: body.referenceType,
       referenceId: body.referenceId,
       referenceName: body.referenceName || null,
@@ -200,6 +244,17 @@ activityReportsAdmin.post("/", requireRole("super_admin", "admin_campaign", "pro
       regencyCode: body.regencyCode || null,
       districtCode: body.districtCode || null,
       villageCode: body.villageCode || null,
+      // SEO fields
+      focusKeyphrase: body.focusKeyphrase || null,
+      metaTitle: body.metaTitle || null,
+      metaDescription: body.metaDescription || null,
+      canonicalUrl: body.canonicalUrl || null,
+      noIndex: body.noIndex || false,
+      noFollow: body.noFollow || false,
+      ogTitle: body.ogTitle || null,
+      ogDescription: body.ogDescription || null,
+      ogImageUrl: body.ogImageUrl || null,
+      seoScore: body.seoScore || 0,
     })
     .returning();
 
@@ -239,7 +294,7 @@ activityReportsAdmin.post("/", requireRole("super_admin", "admin_campaign", "pro
           report_title: report.title,
           report_date: wa.formatDate(new Date(report.activityDate)),
           report_description: stripHtml(report.description || ""),
-          report_url: `${frontendUrl}/program/${report.referenceId}`,
+          report_url: `${frontendUrl}/laporan/${report.slug}`,
         },
       }));
 
@@ -275,7 +330,10 @@ activityReportsAdmin.put("/:id", requireRole("super_admin", "admin_campaign", "p
   if (body.referenceType) updateData.referenceType = body.referenceType;
   if (body.referenceId) updateData.referenceId = body.referenceId;
   if (body.referenceName !== undefined) updateData.referenceName = body.referenceName;
-  if (body.title) updateData.title = body.title;
+  if (body.title) {
+    updateData.title = body.title;
+    updateData.slug = await generateUniqueSlug(db, body.title, id);
+  }
   if (body.activityDate) updateData.activityDate = new Date(body.activityDate);
   if (body.description) updateData.description = body.description;
   if (body.gallery !== undefined) updateData.gallery = body.gallery;
@@ -287,6 +345,17 @@ activityReportsAdmin.put("/:id", requireRole("super_admin", "admin_campaign", "p
   if (body.regencyCode !== undefined) updateData.regencyCode = body.regencyCode || null;
   if (body.districtCode !== undefined) updateData.districtCode = body.districtCode || null;
   if (body.villageCode !== undefined) updateData.villageCode = body.villageCode || null;
+  // SEO fields
+  if (body.focusKeyphrase !== undefined) updateData.focusKeyphrase = body.focusKeyphrase || null;
+  if (body.metaTitle !== undefined) updateData.metaTitle = body.metaTitle || null;
+  if (body.metaDescription !== undefined) updateData.metaDescription = body.metaDescription || null;
+  if (body.canonicalUrl !== undefined) updateData.canonicalUrl = body.canonicalUrl || null;
+  if (body.noIndex !== undefined) updateData.noIndex = body.noIndex;
+  if (body.noFollow !== undefined) updateData.noFollow = body.noFollow;
+  if (body.ogTitle !== undefined) updateData.ogTitle = body.ogTitle || null;
+  if (body.ogDescription !== undefined) updateData.ogDescription = body.ogDescription || null;
+  if (body.ogImageUrl !== undefined) updateData.ogImageUrl = body.ogImageUrl || null;
+  if (body.seoScore !== undefined) updateData.seoScore = body.seoScore;
   if (body.status) {
     updateData.status = body.status;
     updateData.publishedAt = body.status === "published" ? new Date() : null;
@@ -334,7 +403,7 @@ activityReportsAdmin.put("/:id", requireRole("super_admin", "admin_campaign", "p
           report_title: updated.title,
           report_date: wa.formatDate(new Date(updated.activityDate)),
           report_description: stripHtml(updated.description || ""),
-          report_url: `${frontendUrl}/program/${updated.referenceId}`,
+          report_url: `${frontendUrl}/laporan/${updated.slug}`,
         },
       }));
 

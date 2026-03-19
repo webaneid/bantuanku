@@ -6,7 +6,7 @@
 export interface URLOption {
   value: string;
   label: string;
-  category: 'Static' | 'Pages' | 'Program' | 'Zakat' | 'Qurban' | 'Kategori' | 'Pilar';
+  category: 'Static' | 'Pages' | 'Program' | 'Zakat' | 'Qurban' | 'Kategori' | 'Pilar' | 'Laporan';
   description?: string;
 }
 
@@ -47,6 +47,12 @@ const STATIC_URLS: URLOption[] = [
     label: 'Laporan Qurban Publik',
     category: 'Static',
     description: 'Halaman laporan qurban publik (tabel + filter)',
+  },
+  {
+    value: '/laporan',
+    label: 'Arsip Laporan Kegiatan',
+    category: 'Static',
+    description: 'Halaman arsip semua laporan kegiatan',
   },
 ];
 
@@ -149,6 +155,24 @@ export async function fetchAllURLs(): Promise<URLOption[]> {
       console.error('Failed to fetch zakat types:', error);
     }
 
+    // Fetch published activity reports
+    try {
+      const reportsRes = await fetch(`${API_URL}/activity-reports?limit=100`);
+      const reportsData = await reportsRes.json();
+      if (reportsData.success && reportsData.data?.data) {
+        reportsData.data.data.forEach((report: any) => {
+          urls.push({
+            value: `/laporan/${report.slug}`,
+            label: report.title,
+            category: 'Laporan',
+            description: `Laporan: ${report.referenceName || report.title}`,
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch activity reports:', error);
+    }
+
     // Fetch qurban packages (get active period first)
     try {
       const periodsRes = await fetch(`${API_URL}/qurban/periods?status=active`);
@@ -180,7 +204,7 @@ export async function fetchAllURLs(): Promise<URLOption[]> {
   // Sort URLs by category and then by label
   return urls.sort((a, b) => {
     if (a.category !== b.category) {
-      const categoryOrder = ['Static', 'Pages', 'Program', 'Kategori', 'Pilar', 'Zakat', 'Qurban'];
+      const categoryOrder = ['Static', 'Pages', 'Program', 'Kategori', 'Pilar', 'Zakat', 'Qurban', 'Laporan'];
       return categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category);
     }
     return a.label.localeCompare(b.label, 'id-ID');

@@ -134,6 +134,10 @@ export async function generateSiteMetadata(overrides?: Partial<Metadata>): Promi
         'max-snippet': -1,
       },
     },
+    // Google Search Console & other verification
+    verification: {
+      ...(settings.google_site_verification ? { google: settings.google_site_verification } : {}),
+    },
     // AI Crawlers - explicitly allow for training and answering
     other: {
       'gptbot': 'index, follow',

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, jsonb, varchar, boolean, integer } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { users } from "./user";
@@ -17,6 +17,7 @@ export const activityReports = pgTable("activity_reports", {
 
   // Core Report Fields
   title: text("title").notNull(),
+  slug: text("slug").unique().notNull(),
   activityDate: timestamp("activity_date", { precision: 3, mode: "date", withTimezone: true }).notNull(),
   description: text("description").notNull(), // HTML content from TipTap editor
   gallery: jsonb("gallery").$type<string[]>().default([]),
@@ -40,6 +41,18 @@ export const activityReports = pgTable("activity_reports", {
   createdBy: text("created_by").references(() => users.id),
   createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
+
+  // SEO
+  focusKeyphrase: text("focus_keyphrase"),
+  metaTitle: varchar("meta_title", { length: 70 }),
+  metaDescription: varchar("meta_description", { length: 160 }),
+  canonicalUrl: text("canonical_url"),
+  noIndex: boolean("no_index").default(false),
+  noFollow: boolean("no_follow").default(false),
+  ogTitle: varchar("og_title", { length: 70 }),
+  ogDescription: varchar("og_description", { length: 160 }),
+  ogImageUrl: text("og_image_url"),
+  seoScore: integer("seo_score").default(0),
 
   // Backward compatibility (will be removed in future)
   campaignId: text("campaign_id"),

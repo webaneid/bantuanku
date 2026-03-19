@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -8,6 +8,7 @@ import Autocomplete from "@/components/Autocomplete";
 import RichTextEditor from "@/components/RichTextEditor";
 import MediaLibrary from "@/components/MediaLibrary";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import SEOPanel, { type SEOData } from "@/components/SEOPanel";
 import { AddressForm, type AddressValue } from "@/components/forms/AddressForm";
 import api from "@/lib/api";
 
@@ -41,6 +42,10 @@ export default function CreateActivityReportPage() {
     message: "",
   });
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
+  const [seoValues, setSeoValues] = useState<Partial<SEOData>>({});
+  const handleSEOChange = useCallback((data: Partial<SEOData>) => {
+    setSeoValues(data);
+  }, []);
 
   // Fetch campaigns
   const { data: campaignsData } = useQuery({
@@ -252,6 +257,7 @@ export default function CreateActivityReportPage() {
       typeSpecificData: Object.keys(typeSpecificData).length > 0 ? typeSpecificData : undefined,
       status,
       ...addressFormData,
+      ...seoValues,
     });
   };
 
@@ -566,6 +572,21 @@ export default function CreateActivityReportPage() {
           </div>
         </div>
       </form>
+
+      {/* SEO Panel */}
+      <SEOPanel
+        value={seoValues}
+        onChange={handleSEOChange}
+        contentData={{
+          title: title,
+          slug: "",
+          description: description?.replace(/<[^>]*>/g, "").substring(0, 160) || "",
+          content: description,
+          imageUrl: gallery[0],
+        }}
+        entityType="activityReport"
+        disabled={createMutation.isPending}
+      />
 
       {/* Form Actions */}
       <div className="form-page-actions">

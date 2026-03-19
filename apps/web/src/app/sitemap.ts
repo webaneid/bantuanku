@@ -25,6 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${appUrl}/qurban/laporan`, lastModified: now, changeFrequency: 'weekly', priority: 0.6 },
     { url: `${appUrl}/wakaf`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${appUrl}/daftar-mitra`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${appUrl}/laporan`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
   ];
 
   // Zakat calculator pages
@@ -40,13 +41,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // Fetch all dynamic pages in parallel
-  const [campaignPages, zakatTypePages, qurbanPages, categoryPages, pillarPages, staticContentPages] = await Promise.all([
+  const [campaignPages, zakatTypePages, qurbanPages, categoryPages, pillarPages, staticContentPages, reportPages] = await Promise.all([
     fetchCampaignPages(apiUrl, appUrl),
     fetchZakatTypePages(apiUrl, appUrl),
     fetchQurbanPages(apiUrl, appUrl),
     fetchCategoryPages(apiUrl, appUrl),
     fetchPillarPages(apiUrl, appUrl),
     fetchStaticContentPages(apiUrl, appUrl),
+    fetchReportPages(apiUrl, appUrl),
   ]);
 
   return [
@@ -58,6 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categoryPages,
     ...pillarPages,
     ...staticContentPages,
+    ...reportPages,
   ];
 }
 
@@ -235,6 +238,42 @@ async function fetchStaticContentPages(apiUrl: string, appUrl: string): Promise<
       }));
   } catch (error) {
     console.error('Error fetching pages for sitemap:', error);
+    return [];
+  }
+}
+
+async function fetchReportPages(apiUrl: string, appUrl: string): Promise<MetadataRoute.Sitemap> {
+  try {
+    const allReports: any[] = [];
+    let page = 1;
+    const limit = 100;
+
+    while (true) {
+      const response = await fetch(`${apiUrl}/activity-reports?limit=${limit}&page=${page}`, {
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!response.ok) break;
+
+      const data = await response.json();
+      const reports = data.data?.data || [];
+      if (!Array.isArray(reports)) break;
+      allReports.push(...reports);
+
+      if (reports.length < limit) break;
+      page++;
+    }
+
+    return allReports
+      .filter((r: any) => r.slug)
+      .map((r: any) => ({
+        url: `${appUrl}/laporan/${r.slug}`,
+        lastModified: safeDate(r.publishedAt || r.activityDate || r.createdAt),
+        changeFrequency: 'monthly' as const,
+        priority: 0.6,
+      }));
+  } catch (error) {
+    console.error('Error fetching reports for sitemap:', error);
     return [];
   }
 }

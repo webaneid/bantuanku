@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useMemo } from "react";
+import { use, useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -8,6 +8,7 @@ import Autocomplete from "@/components/Autocomplete";
 import RichTextEditor from "@/components/RichTextEditor";
 import MediaLibrary from "@/components/MediaLibrary";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import SEOPanel, { type SEOData } from "@/components/SEOPanel";
 import { AddressForm, type AddressValue } from "@/components/forms/AddressForm";
 import api from "@/lib/api";
 
@@ -35,6 +36,10 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
   const [typeSpecificData, setTypeSpecificData] = useState<any>({});
   const [addressFormData, setAddressFormData] = useState<Partial<AddressValue>>({});
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
+  const [seoValues, setSeoValues] = useState<Partial<SEOData>>({});
+  const handleSEOChange = useCallback((data: Partial<SEOData>) => {
+    setSeoValues(data);
+  }, []);
   const [feedback, setFeedback] = useState({
     open: false,
     type: "success" as "success" | "error",
@@ -77,6 +82,18 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
       setVideoUrl(report.videoUrl || "");
       setStatus(report.status || "draft");
       setTypeSpecificData(report.typeSpecificData || {});
+      setSeoValues({
+        focusKeyphrase: report.focusKeyphrase || "",
+        metaTitle: report.metaTitle || "",
+        metaDescription: report.metaDescription || "",
+        canonicalUrl: report.canonicalUrl || "",
+        noIndex: report.noIndex || false,
+        noFollow: report.noFollow || false,
+        ogTitle: report.ogTitle || "",
+        ogDescription: report.ogDescription || "",
+        ogImageUrl: report.ogImageUrl || "",
+        seoScore: report.seoScore || 0,
+      });
     }
   }, [report]);
 
@@ -259,6 +276,7 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
       typeSpecificData: Object.keys(typeSpecificData).length > 0 ? typeSpecificData : undefined,
       status,
       ...addressFormData,
+      ...seoValues,
     });
   };
 
@@ -602,6 +620,21 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
           </div>
         </div>
       </form>
+
+      {/* SEO Panel */}
+      <SEOPanel
+        value={seoValues}
+        onChange={handleSEOChange}
+        contentData={{
+          title: title,
+          slug: report?.slug || "",
+          description: description?.replace(/<[^>]*>/g, "").substring(0, 160) || "",
+          content: description,
+          imageUrl: gallery[0],
+        }}
+        entityType="activityReport"
+        disabled={updateMutation.isPending}
+      />
 
       {/* Form Actions */}
       <div className="form-page-actions">
