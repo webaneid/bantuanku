@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: QurbanPageProps): Promise<Met
     const response = await fetchPackageDetail(params.id);
     const pkg = response.data;
     const settings = await fetchSeoSettings();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
     const siteName = settings.site_name || t('qurbanPage.defaults.organizationName');
 
     // SEO Title: metaTitle > name
@@ -264,7 +264,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
   }
 
   // Generate JSON-LD
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
   const packageImageUrl = qurbanPackage.imageUrl ? getQurbanImageUrl(qurbanPackage.imageUrl) : null;
   const productImageUrl = toAbsoluteSeoUrl(appUrl, packageImageUrl);
 

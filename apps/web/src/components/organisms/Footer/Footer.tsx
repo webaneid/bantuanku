@@ -29,6 +29,24 @@ export interface FooterProps extends React.HTMLAttributes<HTMLElement> {
   };
 }
 
+function normalizePublicHref(href: string): string {
+  const normalized = href.trim();
+
+  switch (normalized) {
+    case '/tentang':
+      return '/page/tentang-kami';
+    case '/kontak':
+    case '/faq':
+    case '/syarat-ketentuan':
+    case '/kebijakan-privasi':
+      return '/documentation';
+    case '/infaq':
+      return '/program';
+    default:
+      return normalized;
+  }
+}
+
 // Social media icon configurations
 const socialMediaIcons = {
   facebook: {
@@ -113,7 +131,7 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
     const logo = logoProp || settings.organization_logo || '/logo.svg';
     const organizationName = nameProp || settings.organization_name || 'Bantuanku';
     const organizationAbout = aboutProp || settings.organization_about || t('footer.defaultAbout');
-    const organizationAboutUrl = aboutUrlProp ?? settings.organization_about_url;
+    const organizationAboutUrl = aboutUrlProp ?? settings.organization_about_url ?? '/page/tentang-kami';
     const organizationAboutUrlLabel = aboutUrlLabelProp || settings.organization_about_url_label || t('common.readMore');
     const phone = phoneProp ?? settings.organization_phone;
     const whatsapp = whatsappProp ?? settings.organization_whatsapp;
@@ -130,7 +148,7 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
           if (Array.isArray(parsedCategories) && parsedCategories.length > 0) {
             return parsedCategories.map((cat: any) => ({
               label: cat.name,
-              href: cat.slug.startsWith('/') ? cat.slug : `/${cat.slug}`,
+              href: normalizePublicHref(cat.slug.startsWith('/') ? cat.slug : `/${cat.slug}`),
             }));
           }
         } catch (error) {
@@ -139,20 +157,20 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
       }
 
       return [
+        { label: t('common.program'), href: '/program' },
         { label: t('common.menuZakat'), href: '/zakat' },
         { label: t('common.menuQurban'), href: '/qurban' },
-        { label: t('common.menuInfaq'), href: '/infaq' },
         { label: t('common.menuWakaf'), href: '/wakaf' },
+        { label: 'Laporan', href: '/laporan' },
       ];
     }, [programLinksProp, settings.frontend_service_categories, t]);
 
     const aboutLinks = useMemo(() => {
       return [
-        { label: t('footer.aboutUs'), href: '/tentang' },
-        { label: t('footer.contact'), href: '/kontak' },
-        { label: t('footer.faq'), href: '/faq' },
-        { label: t('footer.terms'), href: '/syarat-ketentuan' },
-        { label: t('footer.privacyPolicy'), href: '/kebijakan-privasi' },
+        { label: t('footer.aboutUs'), href: '/page/tentang-kami' },
+        { label: 'Daftar Mitra', href: '/daftar-mitra' },
+        { label: 'Laporan Kegiatan', href: '/laporan' },
+        { label: 'Dokumentasi', href: '/documentation' },
       ];
     }, [t]);
 
@@ -165,10 +183,10 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
             return parsedColumns.map((col: any) => ({
               ...col,
               items: col.items.map((item: any) => ({
-                ...item,
-                href: item.url.startsWith('/') ? item.url : `/${item.url}`,
-              })),
-            }));
+                    ...item,
+                    href: normalizePublicHref(item.url.startsWith('/') ? item.url : `/${item.url}`),
+                  })),
+                }));
           }
         } catch (error) {
           console.error('Failed to parse footer columns:', error);

@@ -122,14 +122,65 @@ type ProgramPageSettings = {
   description: string;
 };
 
+function normalizePublicHref(url: string): string {
+  const normalizedUrl = url.trim();
+
+  switch (normalizedUrl) {
+    case "/tentang":
+    case "/tentang-kami":
+      return "/page/tentang-kami";
+    case "/infaq":
+      return "/program";
+    case "/kontak":
+    case "/faq":
+    case "/syarat-ketentuan":
+    case "/kebijakan-privasi":
+      return "/documentation";
+    default:
+      return normalizedUrl || "/";
+  }
+}
+
+function normalizeMenuItems(items: MenuItem[]): MenuItem[] {
+  return items.map((item) => ({
+    ...item,
+    url: normalizePublicHref(item.url),
+  }));
+}
+
+function normalizeFooterColumns(columns: FooterColumn[]): FooterColumn[] {
+  return columns.map((column) => ({
+    ...column,
+    items: normalizeMenuItems(column.items),
+  }));
+}
+
+function normalizeHeroSlides(slides: HeroSlide[]): HeroSlide[] {
+  return slides.map((slide) => ({
+    ...slide,
+    ctaLink: normalizePublicHref(slide.ctaLink),
+  }));
+}
+
+function normalizeCtaSection(section: CTASection): CTASection {
+  return {
+    ...section,
+    buttons: section.buttons.map((button) => ({
+      ...button,
+      url: normalizePublicHref(button.url),
+    })),
+  };
+}
+
 // Dummy data for header menu
 const DUMMY_MENU_ITEMS: MenuItem[] = [
   { id: "1", label: "Beranda", url: "/" },
   { id: "2", label: "Zakat", url: "/zakat" },
   { id: "3", label: "Qurban", url: "/qurban" },
-  { id: "4", label: "Infaq/Sedekah", url: "/infaq" },
+  { id: "4", label: "Program", url: "/program" },
   { id: "5", label: "Wakaf", url: "/wakaf" },
-  { id: "6", label: "Tentang", url: "/tentang" },
+  { id: "6", label: "Laporan", url: "/laporan" },
+  { id: "7", label: "Tentang", url: "/page/tentang-kami" },
 ];
 
 // Dummy data for footer columns
@@ -138,9 +189,9 @@ const DUMMY_FOOTER_COLUMNS: FooterColumn[] = [
     id: "1",
     title: "Informasi",
     items: [
-      { id: "1-1", label: "Tentang Kami", url: "/tentang" },
-      { id: "1-2", label: "Kontak", url: "/kontak" },
-      { id: "1-3", label: "FAQ", url: "/faq" },
+      { id: "1-1", label: "Tentang Kami", url: "/page/tentang-kami" },
+      { id: "1-2", label: "Daftar Mitra", url: "/daftar-mitra" },
+      { id: "1-3", label: "Dokumentasi", url: "/documentation" },
     ],
   },
   {
@@ -150,6 +201,7 @@ const DUMMY_FOOTER_COLUMNS: FooterColumn[] = [
       { id: "2-1", label: "Zakat", url: "/zakat" },
       { id: "2-2", label: "Qurban", url: "/qurban" },
       { id: "2-3", label: "Program", url: "/program" },
+      { id: "2-4", label: "Laporan", url: "/laporan" },
     ],
   },
 ];
@@ -299,7 +351,7 @@ const DUMMY_CTA_SECTION: CTASection = {
     },
     {
       text: "Tentang Kami",
-      url: "/tentang",
+      url: "/page/tentang-kami",
       variant: "outline",
     },
   ],
@@ -468,7 +520,7 @@ export default function FrontendSettingsPage() {
         try {
           const loadedMenu = JSON.parse(menuSetting.value);
           if (Array.isArray(loadedMenu) && loadedMenu.length > 0) {
-            setMenuItems(loadedMenu);
+            setMenuItems(normalizeMenuItems(loadedMenu));
           }
         } catch (error) {
           console.error("Failed to parse menu items:", error);
@@ -481,7 +533,7 @@ export default function FrontendSettingsPage() {
         try {
           const loadedFooter = JSON.parse(footerSetting.value);
           if (Array.isArray(loadedFooter) && loadedFooter.length > 0) {
-            setFooterColumns(loadedFooter);
+            setFooterColumns(normalizeFooterColumns(loadedFooter));
           }
         } catch (error) {
           console.error("Failed to parse footer columns:", error);
@@ -494,7 +546,7 @@ export default function FrontendSettingsPage() {
         try {
           const loadedSlides = JSON.parse(heroSetting.value);
           if (Array.isArray(loadedSlides) && loadedSlides.length > 0) {
-            setHeroSlides(loadedSlides);
+            setHeroSlides(normalizeHeroSlides(loadedSlides));
           }
         } catch (error) {
           console.error("Failed to parse hero slides:", error);
@@ -572,7 +624,7 @@ export default function FrontendSettingsPage() {
         try {
           const loadedCta = JSON.parse(ctaSetting.value);
           if (loadedCta) {
-            setCtaSection(loadedCta);
+            setCtaSection(normalizeCtaSection(loadedCta));
           }
         } catch (error) {
           console.error("Failed to parse CTA section:", error);
@@ -1077,7 +1129,7 @@ export default function FrontendSettingsPage() {
       if (activeTab === "header-menu") {
         payload.push({
           key: "frontend_header_menu",
-          value: JSON.stringify(menuItems),
+          value: JSON.stringify(normalizeMenuItems(menuItems)),
           category: "frontend",
           type: "json" as const,
           label: "Header Menu",
@@ -1090,7 +1142,7 @@ export default function FrontendSettingsPage() {
       if (activeTab === "footer-menu") {
         payload.push({
           key: "frontend_footer_menu",
-          value: JSON.stringify(footerColumns),
+          value: JSON.stringify(normalizeFooterColumns(footerColumns)),
           category: "frontend",
           type: "json" as const,
           label: "Footer Menu",
@@ -1103,7 +1155,7 @@ export default function FrontendSettingsPage() {
       if (activeTab === "body-landingpage") {
         payload.push({
           key: "frontend_hero_slides",
-          value: JSON.stringify(heroSlides),
+          value: JSON.stringify(normalizeHeroSlides(heroSlides)),
           category: "frontend",
           type: "json" as const,
           label: "Hero Slider",
@@ -1169,7 +1221,7 @@ export default function FrontendSettingsPage() {
         // Also save CTA section
         payload.push({
           key: "frontend_cta_section",
-          value: JSON.stringify(ctaSection),
+          value: JSON.stringify(normalizeCtaSection(ctaSection)),
           category: "frontend",
           type: "json" as const,
           label: "Section CTA",

@@ -62,7 +62,7 @@ activityReportsPublic.get("/", async (c) => {
   const referenceType = c.req.query("reference_type");
   const offset = (page - 1) * limit;
 
-  const conditions = [eq(activityReports.status, "published")];
+  const conditions = [eq(activityReports.status, "published"), eq(activityReports.noIndex, false)];
   if (referenceType) {
     conditions.push(eq(activityReports.referenceType, referenceType));
   }
@@ -166,6 +166,7 @@ activityReportsPublic.get("/campaign/:campaignId", async (c) => {
     .where(
       and(
         eq(activityReports.status, "published"),
+        eq(activityReports.noIndex, false),
         or(
           and(
             eq(activityReports.referenceType, "campaign"),

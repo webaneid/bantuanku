@@ -111,7 +111,7 @@ export async function generateMetadata({ params }: CampaignPageProps): Promise<M
       fetchSeoSettings(),
     ]);
     const categoryLabel = campaign.categoryName || campaign.category || '';
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
     const campaignUrl = `${appUrl}/program/${campaign.slug}`;
     const featureImage = getImageUrlByVariant(campaign.imageUrl, ['large', 'medium']);
 
@@ -261,7 +261,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
   }
 
   // Generate JSON-LD Schema for Campaign
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
   const featureImage = getImageUrlByVariant(campaign.imageUrl, ['large', 'medium']);
   const schemaImage = resolveCampaignOgImage(appUrl, [
     (campaign as any).ogImageUrl,

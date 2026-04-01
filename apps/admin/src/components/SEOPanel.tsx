@@ -82,12 +82,12 @@ const SLUG_MAX = 75;
 
 const ENTITY_URL_PREFIX: Record<string, string> = {
   campaign: "/program",
-  page: "/pages",
+  page: "/page",
   zakatType: "/zakat",
   qurbanPackage: "/qurban",
   activityReport: "/laporan",
-  category: "/program",
-  pillar: "/program",
+  category: "/program/kategori",
+  pillar: "/program/pilar",
 };
 
 const DEFAULT_SEO: SEOData = {
@@ -102,6 +102,25 @@ const DEFAULT_SEO: SEOData = {
   ogImageUrl: "",
   seoScore: 0,
 };
+
+const DEFAULT_PUBLIC_SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.org").replace(/\/+$/, "");
+
+function safeHost(value: string): string | null {
+  try {
+    return new URL(value).host.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+function isInternalHref(href: string, baseUrl: string = DEFAULT_PUBLIC_SITE_URL): boolean {
+  if (!href) return false;
+  if (href.startsWith("/")) return true;
+
+  const baseHost = safeHost(baseUrl);
+  const hrefHost = safeHost(href);
+  return Boolean(baseHost && hrefHost && baseHost === hrefHost);
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────
 
@@ -150,7 +169,7 @@ function countInternalLinks(html: string): number {
   const links = html.match(/<a\s[^>]*href\s*=\s*["'][^"']*["'][^>]*>/gi) || [];
   return links.filter((l) => {
     const href = l.match(/href=["']([^"']*)["']/)?.[1] || "";
-    return href.startsWith("/") || href.includes("bantuanku.com");
+    return isInternalHref(href);
   }).length;
 }
 
@@ -158,7 +177,7 @@ function countExternalLinks(html: string): number {
   const links = html.match(/<a\s[^>]*href\s*=\s*["'][^"']*["'][^>]*>/gi) || [];
   return links.filter((l) => {
     const href = l.match(/href=["']([^"']*)["']/)?.[1] || "";
-    return href.startsWith("http") && !href.includes("bantuanku.com");
+    return href.startsWith("http") && !isInternalHref(href);
   }).length;
 }
 
@@ -466,15 +485,18 @@ function SERPPreview({
   slug,
   description,
   urlPrefix,
+  baseUrl,
 }: {
   title: string;
   slug: string;
   description: string;
   urlPrefix: string;
+  baseUrl?: string;
 }) {
   const displayTitle = title || "Judul Halaman";
   const displayDesc = description || "Deskripsi halaman akan tampil di sini...";
-  const displayUrl = `bantuanku.com${urlPrefix}/${slug || "slug"}`;
+  const siteUrl = (baseUrl || DEFAULT_PUBLIC_SITE_URL).replace(/\/+$/, "");
+  const displayUrl = `${siteUrl}${urlPrefix}/${slug || "slug"}`;
 
   return (
     <div className="border border-gray-200 rounded-lg p-3 bg-white">
@@ -611,6 +633,7 @@ export default function SEOPanel({
 }: SEOPanelProps) {
   const seo = useMemo(() => ({ ...DEFAULT_SEO, ...value }), [value]);
   const urlPrefix = ENTITY_URL_PREFIX[entityType] || "";
+  const resolvedBaseUrl = (baseUrl || DEFAULT_PUBLIC_SITE_URL).replace(/\/+$/, "");
 
   const update = useCallback(
     (field: keyof SEOData, val: string | boolean | number) => {
@@ -730,6 +753,7 @@ export default function SEOPanel({
           slug={contentData.slug}
           description={effectiveDesc}
           urlPrefix={urlPrefix}
+          baseUrl={resolvedBaseUrl}
         />
 
         {/* SEO Checks */}
@@ -802,7 +826,7 @@ export default function SEOPanel({
                 className="form-input text-sm"
                 value={seo.canonicalUrl}
                 onChange={(e) => update("canonicalUrl", e.target.value)}
-                placeholder={`https://bantuanku.com${urlPrefix}/${contentData.slug || "slug"}`}
+                placeholder={`${resolvedBaseUrl}${urlPrefix}/${contentData.slug || "slug"}`}
                 disabled={disabled}
               />
               <p className="text-xs text-gray-400 mt-0.5">Kosongkan untuk auto-generate</p>

@@ -3,7 +3,7 @@ import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSeoSettings();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
 
   let seo: Record<string, any> = {};
   try {
@@ -64,7 +64,7 @@ export default async function WakafLayout({
   children: React.ReactNode;
 }) {
   const settings = await fetchSeoSettings();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
   const siteName = settings.site_name || 'Bantuanku';
 
   const collectionPageJsonLd = {

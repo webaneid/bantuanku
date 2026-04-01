@@ -18,6 +18,19 @@ export interface HeaderProps extends React.HTMLAttributes<HTMLElement> {
   showSearch?: boolean;
 }
 
+function normalizePublicHref(href: string): string {
+  const normalized = href.trim();
+
+  switch (normalized) {
+    case '/tentang':
+      return '/page/tentang-kami';
+    case '/infaq':
+      return '/program';
+    default:
+      return normalized;
+  }
+}
+
 export const Header = React.forwardRef<HTMLElement, HeaderProps>(
   ({ logo: logoProp, showSearch = true, className, ...props }, ref) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -45,7 +58,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
             // Convert MenuItem format to menu format with href
             return parsed.map((item) => ({
               label: item.label,
-              href: item.url,
+              href: normalizePublicHref(item.url),
             }));
           }
         } catch (error) {
@@ -54,11 +67,12 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
       }
       return [
         { label: t('common.menuHome'), href: '/' },
+        { label: t('common.program'), href: '/program' },
         { label: t('common.menuZakat'), href: '/zakat' },
         { label: t('common.menuQurban'), href: '/qurban' },
-        { label: t('common.menuInfaq'), href: '/infaq' },
         { label: t('common.menuWakaf'), href: '/wakaf' },
-        { label: t('common.menuAbout'), href: '/tentang' },
+        { label: 'Laporan', href: '/laporan' },
+        { label: t('common.menuAbout'), href: '/page/tentang-kami' },
       ];
     }, [settings.frontend_header_menu, t]);
 

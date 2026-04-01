@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (!zakatType) return { title: t('zakatPage.defaults.title') };
 
     const settings = await fetchSeoSettings();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
     const siteName = settings.site_name || 'Bantuanku';
 
     const zt = zakatType as any;
@@ -160,7 +160,7 @@ export default async function ZakatDetailPage({ params }: Props) {
   }
 
   // Generate JSON-LD
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
   const toAbsoluteUrl = (url: string) =>
     url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
 

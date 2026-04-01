@@ -16,6 +16,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const categoriesResponse = await fetchCategories();
     const categories = categoriesResponse.data || [];
     const category = categories.find((cat: any) => cat.slug === params.slug);
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
 
     if (!category) {
       return {
@@ -23,9 +24,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       };
     }
 
+    const title = `${category.name} - Program Donasi`;
+    const description = `Lihat semua program donasi dalam kategori ${category.name}. Salurkan bantuan Anda untuk berbagai program kebaikan.`;
+    const canonical = `${appUrl}/program/kategori/${params.slug}`;
+
     return {
-      title: `${category.name} - Program Donasi`,
-      description: `Lihat semua program donasi dalam kategori ${category.name}. Salurkan bantuan Anda untuk berbagai program kebaikan.`,
+      title,
+      description,
+      alternates: { canonical },
+      openGraph: {
+        type: 'website',
+        url: canonical,
+        title,
+        description,
+        locale: 'id_ID',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+      },
     };
   } catch (error) {
     return {

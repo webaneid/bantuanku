@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
 
   // Fetch settings
   let settings: Record<string, any> = {};

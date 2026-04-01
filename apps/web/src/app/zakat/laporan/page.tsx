@@ -1,9 +1,11 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Header, Footer, Breadcrumb } from '@/components/organisms';
 import { fetchPublicZakatReport } from '@/services/public-reports';
 import ZakatReportFilters from './ZakatReportFilters';
 import ZakatTitipanTable from './ZakatTitipanTable';
 import ZakatActivityTable from './ZakatActivityTable';
+import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
 
 interface PageProps {
   searchParams?: {
@@ -11,6 +13,53 @@ interface PageProps {
     periodId?: string;
     zakatTypeId?: string;
     program?: string;
+  };
+}
+
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const settings = await fetchSeoSettings();
+  const siteName = settings.site_name || 'Bantuanku';
+  const canonical = `${appUrl}/zakat/laporan`;
+  const hasVariant = Boolean(
+    searchParams?.tab === 'kegiatan' ||
+    searchParams?.periodId ||
+    searchParams?.zakatTypeId ||
+    searchParams?.program
+  );
+  const description = 'Laporan publik zakat Bantuanku untuk melihat titipan zakat dan kegiatan penyaluran secara transparan.';
+  const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og-image.jpg');
+
+  return {
+    title: `Laporan Zakat Publik | ${siteName}`,
+    description,
+    alternates: { canonical },
+    robots: {
+      index: !hasVariant,
+      follow: true,
+      googleBot: {
+        index: !hasVariant,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
+    openGraph: {
+      type: 'website',
+      url: canonical,
+      title: 'Laporan Zakat Publik',
+      description,
+      siteName,
+      locale: 'id_ID',
+      ...(ogImageUrl ? { images: [{ url: ogImageUrl, width: 1200, height: 630, alt: 'Laporan Zakat Publik' }] } : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Laporan Zakat Publik',
+      description,
+      ...(ogImageUrl ? { images: [ogImageUrl] } : {}),
+    },
   };
 }
 

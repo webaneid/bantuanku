@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { Header, Footer, Breadcrumb } from '@/components/organisms';
 import { getImageUrl } from '@/lib/image';
 import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
@@ -10,6 +10,33 @@ import { fetchActivePeriods, fetchPackagesByPeriod, getAnimalTypeLabel, getQurba
 import LaporanDetailClient from './LaporanDetailClient';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
+
+function slugifyReportTitle(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+}
+
+function inferCanonicalReportUrl(appUrl: string, report: any, currentSlug: string): string {
+  if (report?.canonicalUrl) {
+    return report.canonicalUrl.startsWith('http')
+      ? report.canonicalUrl
+      : `${appUrl}${report.canonicalUrl.startsWith('/') ? report.canonicalUrl : `/${report.canonicalUrl}`}`;
+  }
+
+  const titleSlug = slugifyReportTitle(report?.title || '');
+  const duplicateSuffixPattern = new RegExp(`^${titleSlug}-(?:\\d+|[a-z0-9]{4,12})$`);
+
+  if (titleSlug && duplicateSuffixPattern.test(currentSlug)) {
+    return `${appUrl}/laporan/${titleSlug}`;
+  }
+
+  return `${appUrl}/laporan/${currentSlug}`;
+}
 
 function getSquareVariantUrl(imageUrl: string): string {
   const [pathname, query = ''] = imageUrl.split('?');
@@ -74,7 +101,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const seoTitle = report.metaTitle || report.title;
   const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').substring(0, 160);
   const seoDescription = report.metaDescription || stripHtml(report.description);
-  const canonicalUrl = report.canonicalUrl || `${appUrl}/laporan/${slug}`;
+  const canonicalUrl = inferCanonicalReportUrl(appUrl, report, slug);
 
   // OG image: ogImageUrl > first gallery image > site default
   const ogImageUrl = resolveOgImageUrl(
@@ -131,6 +158,11 @@ export default async function LaporanDetailPage({ params }: PageProps) {
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const canonicalUrl = inferCanonicalReportUrl(appUrl, report, slug);
+
+  if (canonicalUrl !== `${appUrl}/laporan/${slug}`) {
+    permanentRedirect(canonicalUrl);
+  }
 
   // Fetch sidebar data
   let sidebarCampaigns: any[] = [];

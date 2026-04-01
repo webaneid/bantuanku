@@ -20,6 +20,7 @@
     "migrate:liability": "tsx src/migrations/migrate-to-liability-model.ts",
     "db:seed:zakat": "tsx src/seed-zakat.ts",
     "db:seed:zakat-coa": "tsx src/seed-zakat-coa.ts",
+    "cleanup:activity-reports:duplicates": "tsx scripts/cleanup-duplicate-activity-reports.ts",
     "migrate:address": "tsx scripts/run-migration.ts migrations/002-indonesia-address.sql",
     "db:seed:address": "tsx scripts/seed-indonesia-address.ts",
     "migrate:donatur-address": "tsx scripts/run-migration.ts migrations/016_update_donatur_address.sql",

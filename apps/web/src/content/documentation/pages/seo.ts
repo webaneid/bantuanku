@@ -109,9 +109,9 @@ export const seoDoc: DocumentationPage = {
                 '<table style="width:100%; border-collapse:collapse; margin:12px 0;">' +
                 '<thead><tr style="background:#f3f4f6;"><th style="padding:8px; text-align:left; border:1px solid #e5e7eb;">Entity</th><th style="padding:8px; text-align:left; border:1px solid #e5e7eb;">URL Preview</th></tr></thead>' +
                 '<tbody>' +
-                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Campaign</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.com<strong>/program</strong>/[slug]</td></tr>' +
-                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Zakat Type</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.com<strong>/zakat</strong>/[slug]</td></tr>' +
-                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Qurban Package</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.com<strong>/qurban</strong>/[slug]</td></tr>' +
+                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Campaign</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.org<strong>/program</strong>/[slug]</td></tr>' +
+                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Zakat Type</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.org<strong>/zakat</strong>/[slug]</td></tr>' +
+                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Qurban Package</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.org<strong>/qurban</strong>/[slug]</td></tr>' +
                 '</tbody></table>',
         },
         {
@@ -124,11 +124,11 @@ export const seoDoc: DocumentationPage = {
                 '<table style="width:100%; border-collapse:collapse; margin:12px 0;">' +
                 '<thead><tr style="background:#f3f4f6;"><th style="padding:8px; text-align:left; border:1px solid #e5e7eb;">Tab</th><th style="padding:8px; text-align:left; border:1px solid #e5e7eb;">Halaman</th><th style="padding:8px; text-align:left; border:1px solid #e5e7eb;">URL</th></tr></thead>' +
                 '<tbody>' +
-                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">🏠 Homepage</td><td style="padding:8px; border:1px solid #e5e7eb;">Halaman utama website</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.com/</td></tr>' +
-                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">📋 Arsip Program</td><td style="padding:8px; border:1px solid #e5e7eb;">Daftar semua program</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.com/program</td></tr>' +
-                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">🕌 Arsip Zakat</td><td style="padding:8px; border:1px solid #e5e7eb;">Daftar jenis zakat</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.com/zakat</td></tr>' +
-                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">🐄 Arsip Qurban</td><td style="padding:8px; border:1px solid #e5e7eb;">Daftar paket qurban</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.com/qurban</td></tr>' +
-                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">🤲 Arsip Wakaf</td><td style="padding:8px; border:1px solid #e5e7eb;">Daftar program wakaf</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.com/wakaf</td></tr>' +
+                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">🏠 Homepage</td><td style="padding:8px; border:1px solid #e5e7eb;">Halaman utama website</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.org/</td></tr>' +
+                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">📋 Arsip Program</td><td style="padding:8px; border:1px solid #e5e7eb;">Daftar semua program</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.org/program</td></tr>' +
+                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">🕌 Arsip Zakat</td><td style="padding:8px; border:1px solid #e5e7eb;">Daftar jenis zakat</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.org/zakat</td></tr>' +
+                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">🐄 Arsip Qurban</td><td style="padding:8px; border:1px solid #e5e7eb;">Daftar paket qurban</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.org/qurban</td></tr>' +
+                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">🤲 Arsip Wakaf</td><td style="padding:8px; border:1px solid #e5e7eb;">Daftar program wakaf</td><td style="padding:8px; border:1px solid #e5e7eb;">bantuanku.org/wakaf</td></tr>' +
                 '</tbody></table>' +
 
                 '<p><strong>Cara menggunakan:</strong></p>' +
@@ -153,7 +153,7 @@ export const seoDoc: DocumentationPage = {
                 '<li>Buka <strong>Campaigns → Categories</strong>.</li>' +
                 '<li>Klik ikon <strong>✏️ Edit</strong> pada kategori yang ingin dioptimasi.</li>' +
                 '<li>Di form edit, Anda akan menemukan <strong>panel SEO</strong> dengan semua field standar.</li>' +
-                '<li>URL preview: <code>bantuanku.com/program?kategori=[slug]</code></li>' +
+                '<li>URL preview: <code>bantuanku.org/program/kategori/[slug]</code></li>' +
                 '<li>Simpan perubahan.</li>' +
                 '</ol>' +
 
@@ -162,7 +162,7 @@ export const seoDoc: DocumentationPage = {
                 '<li>Buka <strong>Campaigns → Pillars</strong>.</li>' +
                 '<li>Klik ikon <strong>✏️ Edit</strong> pada pilar yang ingin dioptimasi.</li>' +
                 '<li>Di form edit, Anda akan menemukan <strong>panel SEO</strong> dengan field standar.</li>' +
-                '<li>URL preview: <code>bantuanku.com/program?pilar=[slug]</code></li>' +
+                '<li>URL preview: <code>bantuanku.org/program/pilar/[slug]</code></li>' +
                 '<li>Simpan perubahan.</li>' +
                 '</ol>' +
                 '<p>Dengan mengoptimasi SEO kategori dan pilar, setiap halaman arsip kategori/pilar akan memiliki meta title, description, dan Open Graph yang tepat.</p>',

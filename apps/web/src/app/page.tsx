@@ -25,7 +25,7 @@ import { normalizeLocale, translate } from '@/lib/i18n';
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSeoSettings();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
   const toAbsoluteUrl = (url: string) =>
     url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
 
@@ -177,7 +177,7 @@ function getDefaultSections(t: TranslateFn) {
         },
         {
           text: t('home.cta.buttons.about'),
-          url: '/tentang',
+          url: '/page/tentang-kami',
           variant: 'outline' as const,
         },
       ],
@@ -342,6 +342,14 @@ export default async function HomePage() {
 
   let fullAddress: string | undefined;
   let footerProgramLinks: Array<{ label: string; href: string }> = [];
+  const crawlPriorityLinks = [
+    { label: 'Program Donasi', href: '/program' },
+    { label: 'Laporan Kegiatan', href: '/laporan' },
+    { label: 'Tentang Kami', href: '/page/tentang-kami' },
+    { label: 'Zakat', href: '/zakat' },
+    { label: 'Qurban', href: '/qurban' },
+    { label: 'Daftar Mitra', href: '/daftar-mitra' },
+  ];
 
   try {
     settings = await fetchPublicSettings();
@@ -428,8 +436,14 @@ export default async function HomePage() {
     console.error('Failed to fetch frontend settings:', error);
   }
 
+  const normalizedFooterProgramLinks = Array.from(
+    new Map(
+      [...crawlPriorityLinks, ...footerProgramLinks].map((link) => [link.href, link])
+    ).values()
+  );
+
   // WebSite JSON-LD for homepage
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
   const webSiteJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
@@ -456,6 +470,28 @@ export default async function HomePage() {
         <section className="categories-section py-12 bg-gray-50">
           <div className="container">
             <CategoryGrid categories={serviceCategoriesData} />
+          </div>
+        </section>
+
+        <section className="py-8 bg-white border-b border-gray-200">
+          <div className="container">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Jelajahi Halaman Penting</h2>
+                <p className="text-sm text-gray-600">Akses cepat ke halaman utama Bantuanku untuk program, laporan, profil lembaga, dan kerja sama.</p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {crawlPriorityLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="inline-flex items-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-primary-500 hover:text-primary-600"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -693,7 +729,7 @@ export default async function HomePage() {
         whatsapp={settings.organization_whatsapp}
         email={settings.organization_email}
         address={fullAddress || settings.organization_detail_address}
-        programLinks={footerProgramLinks}
+        programLinks={normalizedFooterProgramLinks}
         socialMedia={{
           facebook: settings.social_media_facebook,
           instagram: settings.social_media_instagram,

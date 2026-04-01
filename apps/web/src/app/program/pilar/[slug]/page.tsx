@@ -31,6 +31,7 @@ async function fetchPillarBySlug(slug: string) {
 // Generate metadata for SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const pillar = await fetchPillarBySlug(params.slug);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
 
   if (!pillar) {
     return {
@@ -38,9 +39,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const title = `${pillar.name} - Program Donasi`;
+  const description = pillar.description || `Lihat semua program donasi untuk pilar ${pillar.name}. Salurkan bantuan Anda untuk berbagai program kebaikan.`;
+  const canonical = `${appUrl}/program/pilar/${params.slug}`;
+
   return {
-    title: `${pillar.name} - Program Donasi`,
-    description: pillar.description || `Lihat semua program donasi untuk pilar ${pillar.name}. Salurkan bantuan Anda untuk berbagai program kebaikan.`,
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: 'website',
+      url: canonical,
+      title,
+      description,
+      locale: 'id_ID',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
   };
 }
 

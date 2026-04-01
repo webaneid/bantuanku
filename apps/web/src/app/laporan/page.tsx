@@ -1,6 +1,8 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Header, Footer, Breadcrumb } from '@/components/organisms';
 import { getImageUrlByVariant } from '@/lib/image';
+import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
@@ -23,6 +25,56 @@ interface PaginationData {
   limit: number;
   total: number;
   totalPages: number;
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: { page?: string };
+}): Promise<Metadata> {
+  const page = Math.max(1, parseInt(searchParams?.page || '1', 10) || 1);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const settings = await fetchSeoSettings();
+  const siteName = settings.site_name || 'Bantuanku';
+  const canonical = `${appUrl}/laporan`;
+  const title = page > 1
+    ? `Arsip Laporan Kegiatan - Halaman ${page} | ${siteName}`
+    : `Arsip Laporan Kegiatan | ${siteName}`;
+  const description = 'Dokumentasi penyaluran donasi, zakat, qurban, dan kegiatan sosial Bantuanku yang dipublikasikan secara terbuka.';
+  const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og-image.jpg');
+  const isPaginated = page > 1;
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    robots: {
+      index: !isPaginated,
+      follow: true,
+      googleBot: {
+        index: !isPaginated,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
+    openGraph: {
+      type: 'website',
+      url: canonical,
+      title: 'Arsip Laporan Kegiatan',
+      description,
+      siteName,
+      locale: 'id_ID',
+      ...(ogImageUrl ? { images: [{ url: ogImageUrl, width: 1200, height: 630, alt: 'Arsip Laporan Kegiatan' }] } : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Arsip Laporan Kegiatan',
+      description,
+      ...(ogImageUrl ? { images: [ogImageUrl] } : {}),
+    },
+  };
 }
 
 async function fetchReports(page: number = 1): Promise<{ data: Report[]; pagination: PaginationData }> {

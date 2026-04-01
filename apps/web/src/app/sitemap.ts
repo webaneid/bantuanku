@@ -9,8 +9,35 @@ function safeDate(value: any): Date {
   return isNaN(d.getTime()) ? new Date() : d;
 }
 
+function slugifyTitle(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+}
+
+function toAbsoluteUrl(appUrl: string, value?: string | null): string | null {
+  if (!value) return null;
+  if (value.startsWith('http://') || value.startsWith('https://')) return value;
+  return `${appUrl}${value.startsWith('/') ? value : `/${value}`}`;
+}
+
+function buildReportCanonicalUrl(appUrl: string, report: any): string | null {
+  const explicitCanonical = toAbsoluteUrl(appUrl, report.canonicalUrl);
+  if (explicitCanonical) return explicitCanonical;
+
+  const titleSlug = slugifyTitle(report.title || '');
+  if (titleSlug) return `${appUrl}/laporan/${titleSlug}`;
+  if (report.slug) return `${appUrl}/laporan/${report.slug}`;
+
+  return null;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
   const now = new Date();
@@ -264,14 +291,28 @@ async function fetchReportPages(apiUrl: string, appUrl: string): Promise<Metadat
       page++;
     }
 
-    return allReports
-      .filter((r: any) => r.slug)
-      .map((r: any) => ({
-        url: `${appUrl}/laporan/${r.slug}`,
-        lastModified: safeDate(r.publishedAt || r.activityDate || r.createdAt),
+    const dedupedReports = new Map<string, MetadataRoute.Sitemap[number]>();
+
+    for (const report of allReports) {
+      if (!report?.slug || report?.noIndex === true) continue;
+
+      const canonicalUrl = buildReportCanonicalUrl(appUrl, report);
+      if (!canonicalUrl) continue;
+
+      const entry = {
+        url: canonicalUrl,
+        lastModified: safeDate(report.publishedAt || report.activityDate || report.updatedAt || report.createdAt),
         changeFrequency: 'monthly' as const,
         priority: 0.6,
-      }));
+      };
+
+      const existing = dedupedReports.get(canonicalUrl);
+      if (!existing || entry.lastModified.getTime() > safeDate(existing.lastModified).getTime()) {
+        dedupedReports.set(canonicalUrl, entry);
+      }
+    }
+
+    return Array.from(dedupedReports.values());
   } catch (error) {
     console.error('Error fetching reports for sitemap:', error);
     return [];

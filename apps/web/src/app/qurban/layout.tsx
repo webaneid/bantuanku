@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = (key: string, params?: Record<string, string | number>) =>
     translate(locale, key, params);
   const settings = await fetchSeoSettings();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
 
   let seo: Record<string, any> = {};
   try {
@@ -77,7 +77,7 @@ export default async function QurbanLayout({
   const t = (key: string, params?: Record<string, string | number>) =>
     translate(locale, key, params);
   const settings = await fetchSeoSettings();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
   const siteName = settings.site_name || t('qurbanPage.defaults.organizationName');
 
   const collectionPageJsonLd = {

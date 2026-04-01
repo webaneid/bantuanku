@@ -68,7 +68,7 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
       fetchSeoSettings(),
     ]);
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.com";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.org";
     const siteName = settings.site_name || "Bantuanku";
     const toAbsoluteUrl = (url: string) =>
       url.startsWith("data:") ? "" : url.startsWith("http") ? url : `${appUrl}${url.startsWith("/") ? url : `/${url}`}`;
@@ -228,7 +228,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
   }
 
   const featureImage = page.featureImageUrl ? getImageUrl(page.featureImageUrl) : null;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.org";
   const toAbsoluteUrl = (url: string) =>
     url.startsWith("data:") ? "" : url.startsWith("http") ? url : `${appUrl}${url.startsWith("/") ? url : `/${url}`}`;
 

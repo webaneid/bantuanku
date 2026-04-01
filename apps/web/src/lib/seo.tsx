@@ -72,7 +72,7 @@ export async function fetchSeoSettings(): Promise<Record<string, any>> {
 
 export async function generateSiteMetadata(overrides?: Partial<Metadata>): Promise<Metadata> {
   const settings = await fetchSeoSettings();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
 
   const title = overrides?.title || `${settings.site_name} - ${settings.site_tagline}`;
   const description = overrides?.description || settings.site_description;
@@ -204,7 +204,7 @@ export interface JsonLdArticle {
 }
 
 export function generateOrganizationJsonLd(settings: Record<string, any>): JsonLdOrganization {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
   const orgLogo = settings.organization_logo || settings.og_image;
 
   return {

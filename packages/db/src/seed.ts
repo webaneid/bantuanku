@@ -238,7 +238,7 @@ async function seed() {
     { key: "minimum_donation", value: "10000", label: "Donasi Minimum (IDR)", category: "payment", type: "number", isPublic: true },
     // Organization settings - used by WA notifications, invoices, etc.
     { key: "organization_name", value: "Bantuanku", label: "Nama Organisasi", category: "organization", type: "string", isPublic: true },
-    { key: "organization_website", value: process.env.FRONTEND_URL || "https://donasimui.jalaseo.com", label: "Website Organisasi", category: "organization", type: "string", isPublic: true },
+    { key: "organization_website", value: process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.org", label: "Website Organisasi", category: "organization", type: "string", isPublic: true },
     { key: "organization_whatsapp", value: "08123456789", label: "WhatsApp Organisasi", category: "organization", type: "string", isPublic: true },
   ];
 
