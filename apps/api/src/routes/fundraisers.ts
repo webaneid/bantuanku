@@ -12,6 +12,8 @@ import {
   campaigns,
   zakatTypes,
   qurbanPackages,
+  qurbanPackagePeriods,
+  qurbanPeriods,
   createId,
 } from "@bantuanku/db";
 import { success, error, paginated } from "../lib/response";
@@ -531,9 +533,22 @@ app.get("/active-programs", authMiddleware, async (c) => {
     .orderBy(zakatTypes.displayOrder);
 
   const qurbanList = await db
-    .select({ id: qurbanPackages.id, name: qurbanPackages.name, animalType: qurbanPackages.animalType, packageType: qurbanPackages.packageType })
-    .from(qurbanPackages)
-    .where(eq(qurbanPackages.isAvailable, true))
+    .select({
+      id: qurbanPackagePeriods.id,
+      name: qurbanPackages.name,
+      animalType: qurbanPackages.animalType,
+      packageType: qurbanPackages.packageType,
+    })
+    .from(qurbanPackagePeriods)
+    .innerJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+    .innerJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
+    .where(
+      and(
+        eq(qurbanPackages.isAvailable, true),
+        eq(qurbanPackagePeriods.isAvailable, true),
+        eq(qurbanPeriods.status, "active")
+      )
+    )
     .orderBy(qurbanPackages.name);
 
   const programs = [

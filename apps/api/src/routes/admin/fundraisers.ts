@@ -11,6 +11,8 @@ import {
   campaigns,
   zakatTypes,
   qurbanPackages,
+  qurbanPackagePeriods,
+  qurbanPeriods,
   createId,
 } from "@bantuanku/db";
 import { eq, ilike, or, desc, and, sql, count } from "drizzle-orm";
@@ -683,13 +685,21 @@ app.get("/active-programs", async (c) => {
 
     const qurbanList = await db
       .select({
-        id: qurbanPackages.id,
+        id: qurbanPackagePeriods.id,
         name: qurbanPackages.name,
         animalType: qurbanPackages.animalType,
         packageType: qurbanPackages.packageType,
       })
-      .from(qurbanPackages)
-      .where(eq(qurbanPackages.isAvailable, true))
+      .from(qurbanPackagePeriods)
+      .innerJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+      .innerJoin(qurbanPeriods, eq(qurbanPackagePeriods.periodId, qurbanPeriods.id))
+      .where(
+        and(
+          eq(qurbanPackages.isAvailable, true),
+          eq(qurbanPackagePeriods.isAvailable, true),
+          eq(qurbanPeriods.status, "active")
+        )
+      )
       .orderBy(qurbanPackages.name);
 
     const programs = [
