@@ -139,6 +139,7 @@ export function getAnimalTypeLabel(animalType: string): string {
   const map: Record<string, string> = {
     cow: 'Sapi',
     goat: 'Kambing',
+    sheep: 'Domba',
   };
   return map[animalType] || animalType;
 }

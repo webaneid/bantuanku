@@ -11,6 +11,7 @@ import {
   qurbanExecutions,
   qurbanSharedGroups,
   transactions,
+  zakatDistributions,
   zakatPeriods,
   zakatTypes,
 } from "@bantuanku/db";
@@ -25,7 +26,8 @@ publicStats.get("/", async (c) => {
   const [
     totalCampaigns,
     totalDonors,
-    totalDisbursed,
+    universalDisbursed,
+    legacyZakatDisbursed,
     totalPartners,
   ] = await Promise.all([
     // Count active campaigns
@@ -42,11 +44,17 @@ publicStats.get("/", async (c) => {
       .from(transactions)
       .where(eq(transactions.paymentStatus, "paid")),
 
-    // Total amount disbursed (paid disbursements)
+    // Universal disbursements (all types) with status = 'paid'
     db
       .select({ sum: sql<number>`coalesce(sum(${disbursements.amount}), 0)` })
       .from(disbursements)
       .where(eq(disbursements.status, "paid")),
+
+    // Legacy zakat distributions (old system) with status = 'disbursed'
+    db
+      .select({ sum: sql<number>`coalesce(sum(${zakatDistributions.amount}), 0)` })
+      .from(zakatDistributions)
+      .where(eq(zakatDistributions.status, "disbursed")),
 
     // Total active partners (verified/active collaborator state)
     db
@@ -55,10 +63,14 @@ publicStats.get("/", async (c) => {
       .where(inArray(mitra.status, ["verified"])),
   ]);
 
+  const totalDisbursed =
+    Number(universalDisbursed[0]?.sum || 0) +
+    Number(legacyZakatDisbursed[0]?.sum || 0);
+
   return success(c, {
     totalDonors: Number(totalDonors[0]?.count || 0),
     totalCampaigns: Number(totalCampaigns[0]?.count || 0),
-    totalDisbursed: Number(totalDisbursed[0]?.sum || 0),
+    totalDisbursed,
     totalPartners: Number(totalPartners[0]?.count || 0),
   });
 });

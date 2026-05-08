@@ -41,6 +41,7 @@ const QURBAN_INCOME_LABELS: Record<string, string> = {
 const QURBAN_EXPENSE_LABELS: Record<string, string> = {
   'qurban_purchase_sapi': 'Pembelian Sapi Qurban',
   'qurban_purchase_kambing': 'Pembelian Kambing Qurban',
+  'qurban_purchase_domba': 'Pembelian Domba Qurban',
   'qurban_execution_fee': 'Biaya Penyembelihan & Distribusi',
 };
 
@@ -49,6 +50,8 @@ const ANIMAL_LABELS: Record<string, string> = {
   sapi: 'Sapi',
   goat: 'Kambing',
   kambing: 'Kambing',
+  sheep: 'Domba',
+  domba: 'Domba',
 };
 
 export default function QurbanReportPage() {

@@ -390,6 +390,7 @@ export const idMessages: Messages = {
       allPackages: "Semua Paket",
       cow: "Sapi",
       goat: "Kambing",
+      sheep: "Domba",
       individual: "Individu",
       shared: "Patungan",
     },

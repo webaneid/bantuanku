@@ -18,6 +18,7 @@ function animalLabel(value: string) {
   const key = (value || '').toLowerCase();
   if (key === 'cow' || key === 'sapi') return 'Sapi';
   if (key === 'goat' || key === 'kambing') return 'Kambing';
+  if (key === 'sheep' || key === 'domba') return 'Domba';
   return value || '-';
 }
 

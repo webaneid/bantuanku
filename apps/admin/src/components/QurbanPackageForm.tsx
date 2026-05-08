@@ -24,7 +24,7 @@ export interface PackagePeriod {
 export interface QurbanPackageFormData {
   name: string;
   description: string;
-  animalType: "cow" | "goat";
+  animalType: "cow" | "goat" | "sheep";
   packageType: "individual" | "shared";
   maxSlots?: number;
   imageUrl?: string;
@@ -225,6 +225,7 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
                   >
                     <option value="cow">🐄 Sapi</option>
                     <option value="goat">🐐 Kambing</option>
+                    <option value="sheep">🐑 Domba</option>
                   </select>
                   {errors.animalType && <p className="form-error">{errors.animalType.message}</p>}
                 </div>

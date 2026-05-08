@@ -43,7 +43,7 @@ function mapQurbanPackageToCardProps(
     id: pkg.packagePeriodId, // Use packagePeriodId as unique identifier
     slug: pkg.packagePeriodId, // Use packagePeriodId for routing
     name: pkg.name,
-    category: pkg.animalType === 'cow' ? ('sapi' as const) : ('kambing' as const),
+    category: pkg.animalType === 'cow' ? ('sapi' as const) : pkg.animalType === 'sheep' ? ('domba' as const) : ('kambing' as const),
     packageType: pkg.packageType, // Add packageType for filtering
     price: pkg.price,
     image: getQurbanImageUrlByVariant(pkg.imageUrl, ['medium', 'thumbnail', 'large']),
@@ -58,7 +58,7 @@ export default function QurbanPage() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('');
   const [qurbanPackages, setQurbanPackages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [animalFilter, setAnimalFilter] = useState<'all' | 'sapi' | 'kambing'>('all');
+  const [animalFilter, setAnimalFilter] = useState<'all' | 'sapi' | 'kambing' | 'domba'>('all');
 
   // Page settings state
   const [pageTitle, setPageTitle] = useState("");
@@ -258,6 +258,19 @@ export default function QurbanPage() {
               }`}
             >
               {t('qurbanPage.filters.goat')}
+            </button>
+            <button
+              onClick={() => {
+                setAnimalFilter('domba');
+                setTypeFilter('all');
+              }}
+              className={`px-6 py-3 rounded-lg border-2 font-semibold text-sm transition-colors ${
+                animalFilter === 'domba'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {t('qurbanPage.filters.sheep')}
             </button>
             <button
               onClick={() => {

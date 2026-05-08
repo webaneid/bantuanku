@@ -52,10 +52,11 @@ app.get("/", async (c) => {
     .select({
       totalDistributions: sql<number>`COUNT(*)`,
       totalAmount: sql<number>`COALESCE(SUM(${disbursements.amount}), 0)`,
-      disbursedAmount: sql<number>`COALESCE(SUM(CASE WHEN ${disbursements.status} = 'paid' THEN ${disbursements.amount} ELSE 0 END), 0)`,
+      disbursedAmount: sql<number>`COALESCE(SUM(CASE WHEN ${disbursements.status} IN ('approved', 'paid') THEN ${disbursements.amount} ELSE 0 END), 0)`,
+      paidAmount: sql<number>`COALESCE(SUM(CASE WHEN ${disbursements.status} = 'paid' THEN ${disbursements.amount} ELSE 0 END), 0)`,
       approvedAmount: sql<number>`COALESCE(SUM(CASE WHEN ${disbursements.status} = 'approved' THEN ${disbursements.amount} ELSE 0 END), 0)`,
       draftAmount: sql<number>`COALESCE(SUM(CASE WHEN ${disbursements.status} = 'draft' THEN ${disbursements.amount} ELSE 0 END), 0)`,
-      disbursedCount: sql<number>`COUNT(CASE WHEN ${disbursements.status} = 'paid' THEN 1 END)`,
+      disbursedCount: sql<number>`COUNT(CASE WHEN ${disbursements.status} IN ('approved', 'paid') THEN 1 END)`,
       approvedCount: sql<number>`COUNT(CASE WHEN ${disbursements.status} = 'approved' THEN 1 END)`,
       draftCount: sql<number>`COUNT(CASE WHEN ${disbursements.status} = 'draft' THEN 1 END)`,
     })
@@ -70,7 +71,7 @@ app.get("/", async (c) => {
       count: sql<number>`COUNT(*)`,
     })
     .from(disbursements)
-    .where(and(distributionConditions, eq(disbursements.status, "paid")))
+    .where(and(distributionConditions, sql`${disbursements.status} IN ('approved', 'paid')`))
     .groupBy(distributionAsnaf);
 
   // Get donations by zakat type
@@ -95,15 +96,15 @@ app.get("/", async (c) => {
       zakatTypeId: sql<string>`${distributionZakatTypeId}`,
       zakatTypeName: zakatTypes.name,
       zakatTypeSlug: zakatTypes.slug,
-      totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${disbursements.status} = 'paid' THEN ${disbursements.amount} ELSE 0 END), 0)`,
-      count: sql<number>`COUNT(CASE WHEN ${disbursements.status} = 'paid' THEN 1 END)`,
+      totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${disbursements.status} IN ('approved', 'paid') THEN ${disbursements.amount} ELSE 0 END), 0)`,
+      count: sql<number>`COUNT(CASE WHEN ${disbursements.status} IN ('approved', 'paid') THEN 1 END)`,
     })
     .from(disbursements)
     .leftJoin(zakatTypes, sql`${distributionZakatTypeId} = ${zakatTypes.id}`)
     .where(distributionConditions)
     .groupBy(distributionZakatTypeId, zakatTypes.name, zakatTypes.slug);
 
-  // Calculate balance (paid donations - disbursed distributions)
+  // Calculate balance: paid donations - (approved + paid) disbursements
   const paidDonations = Number(donationsStats[0]?.paidAmount || 0);
   const disbursedDistributions = Number(distributionsStats[0]?.disbursedAmount || 0);
   const balance = paidDonations - disbursedDistributions;
@@ -204,8 +205,8 @@ app.get("/recent-distributions", async (c) => {
     })
     .from(disbursements)
     .leftJoin(zakatTypes, sql`COALESCE(${disbursements.typeSpecificData} ->> 'zakatTypeId', ${disbursements.typeSpecificData} ->> 'zakat_type_id') = ${zakatTypes.id}`)
-    .where(and(eq(disbursements.disbursementType, "zakat"), eq(disbursements.status, "paid")))
-    .orderBy(sql`COALESCE(${disbursements.paidAt}, ${disbursements.createdAt}) DESC`)
+    .where(and(eq(disbursements.disbursementType, "zakat"), sql`${disbursements.status} IN ('approved', 'paid')`))
+    .orderBy(sql`COALESCE(${disbursements.paidAt}, ${disbursements.approvedAt}, ${disbursements.createdAt}) DESC`)
     .limit(limit);
 
   const enrichedData = recentDistributions.map((row) => ({

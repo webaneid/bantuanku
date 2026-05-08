@@ -390,6 +390,7 @@ export const enMessages: Messages = {
       allPackages: "All Packages",
       cow: "Cow",
       goat: "Goat",
+      sheep: "Sheep",
       individual: "Individual",
       shared: "Shared",
     },

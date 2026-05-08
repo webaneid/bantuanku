@@ -12,7 +12,7 @@ export interface QurbanCardProps {
   id: string;
   slug: string;
   name: string;
-  category: 'sapi' | 'kambing';
+  category: 'sapi' | 'kambing' | 'domba';
   ownerName?: string | null;
   price: number;
   image: string;
@@ -70,9 +70,10 @@ export const QurbanCard: React.FC<QurbanCardProps> = ({
           <div className={cn(
             "qurban-card__category",
             category === 'sapi' && "qurban-card__category--sapi",
-            category === 'kambing' && "qurban-card__category--kambing"
+            category === 'kambing' && "qurban-card__category--kambing",
+            category === 'domba' && "qurban-card__category--domba"
           )}>
-            {category === 'sapi' ? t('qurbanPage.filters.cow') : t('qurbanPage.filters.goat')}
+            {category === 'sapi' ? t('qurbanPage.filters.cow') : category === 'domba' ? t('qurbanPage.filters.sheep') : t('qurbanPage.filters.goat')}
           </div>
 
           {ownerName && (
