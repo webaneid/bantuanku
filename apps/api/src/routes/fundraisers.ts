@@ -468,20 +468,29 @@ app.post("/me/disbursements", authMiddleware, async (c) => {
     const sourceBank = await getDefaultSourceBankFromSettings(db);
     const service = new DisbursementService(db);
     const availability = await service.getRevenueShareAvailability("revenue_share_fundraiser", fundraiser.id);
+    const MIN_WITHDRAWAL = 500_000;
+    const TRANSFER_FEE = 6_500;
+
     const requestedAmount = Math.floor(body.amount);
 
     if (requestedAmount <= 0) {
       return error(c, "Jumlah dana tidak valid", 400);
     }
 
+    if (requestedAmount < MIN_WITHDRAWAL) {
+      return error(c, `Minimal pencairan adalah Rp ${MIN_WITHDRAWAL.toLocaleString("id-ID")}`, 400);
+    }
+
     if (requestedAmount > availability.totalAvailable) {
       return error(c, "Jumlah dana melebihi hak bagi hasil yang tersedia", 400);
     }
 
+    const netAmount = requestedAmount - TRANSFER_FEE;
+
     const recipientBank = recipientBankAccounts[0];
     const created = await service.create({
       disbursement_type: "revenue_share",
-      amount: requestedAmount,
+      amount: netAmount,
       category: "revenue_share_fundraiser",
       source_bank_id: sourceBank.id,
       recipient_type: "fundraiser",

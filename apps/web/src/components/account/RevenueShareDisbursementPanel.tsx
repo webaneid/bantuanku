@@ -123,6 +123,9 @@ export default function RevenueShareDisbursementPanel({
   const disbursements: DisbursementListItem[] = disbursementsData?.data || [];
   const pagination = disbursementsData?.pagination;
 
+  const MIN_WITHDRAWAL = 500_000;
+  const TRANSFER_FEE = 6_500;
+
   const maxAmount = availabilityData?.availability?.totalAvailable || 0;
   const canSubmit = useMemo(() => {
     if (!availabilityData?.canSubmit) return false;
@@ -130,6 +133,7 @@ export default function RevenueShareDisbursementPanel({
     if (maxAmount <= 0) return false;
     const amountNumber = Number(form.amount);
     if (!Number.isFinite(amountNumber) || amountNumber <= 0) return false;
+    if (amountNumber < MIN_WITHDRAWAL) return false;
     if (amountNumber > maxAmount) return false;
     return form.purpose.trim().length >= 3;
   }, [availabilityData, form.amount, form.purpose, maxAmount]);
@@ -412,6 +416,12 @@ export default function RevenueShareDisbursementPanel({
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
                 <p className="mt-1 text-xs text-gray-500">{t("account.revenueShareDisbursement.modal.maxAmount", { amount: formatRupiahFull(maxAmount) })}</p>
+                <p className="mt-0.5 text-xs text-gray-500">Minimal pencairan: {formatRupiahFull(MIN_WITHDRAWAL)}</p>
+                {Number(form.amount) >= MIN_WITHDRAWAL && (
+                  <p className="mt-0.5 text-xs text-warning-700">
+                    Biaya transfer Rp 6.500 — Anda akan menerima {formatRupiahFull(Math.max(0, Number(form.amount) - TRANSFER_FEE))}
+                  </p>
+                )}
               </div>
             </div>
 
