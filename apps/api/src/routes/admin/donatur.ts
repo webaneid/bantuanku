@@ -571,6 +571,7 @@ donaturAdmin.put(
       if (updateData.name !== undefined) userSync.name = updateData.name;
       if (updateData.phone !== undefined) userSync.phone = updateData.phone;
       if (updateData.whatsappNumber !== undefined) userSync.whatsappNumber = updateData.whatsappNumber;
+      if (updateData.passwordHash !== undefined) userSync.passwordHash = updateData.passwordHash;
       await db
         .update(users)
         .set(userSync)

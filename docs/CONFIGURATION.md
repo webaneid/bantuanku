@@ -61,8 +61,8 @@ apps/
 - Configuration: Platform environment variables (set in dashboard)
 - Port: **N/A** (handled by platform)
 - Command: `vercel --prod` or `netlify deploy --prod`
-- Result: Admin available at `https://admin.bantuanku.com`
-- Connects to: `https://api.bantuanku.com/v1` (from `NEXT_PUBLIC_API_URL` platform env)
+- Result: Admin available at `https://admin.bantuanku.org`
+- Connects to: `https://api.bantuanku.org/v1` (from `NEXT_PUBLIC_API_URL` platform env)
 
 ---
 
@@ -77,7 +77,7 @@ apps/
 - `[dev]` section in `wrangler.toml` **ONLY affects local development**
 - `wrangler deploy` (production) **completely ignores** `[dev]` section
 - Production Cloudflare Workers run on their edge network without ports
-- Custom domains (like `api.bantuanku.com`) are configured in Cloudflare dashboard
+- Custom domains (like `api.bantuanku.org`) are configured in Cloudflare dashboard
 
 ### 2. Environment Separation
 
@@ -87,7 +87,7 @@ apps/
 .dev.vars            → DATABASE_URL=postgresql://localhost:5432/bantuanku
 
 # Production
-Platform Env Vars    → NEXT_PUBLIC_API_URL=https://api.bantuanku.com/v1
+Platform Env Vars    → NEXT_PUBLIC_API_URL=https://api.bantuanku.org/v1
 Cloudflare Secrets   → DATABASE_URL=postgresql://prod-host:5432/bantuanku
 ```
 
@@ -166,13 +166,13 @@ NEXT_PUBLIC_API_URL=http://localhost:50245/v1
 
 **Vercel**:
 1. Dashboard → Project → Settings → Environment Variables
-2. Add: `NEXT_PUBLIC_API_URL` = `https://api.bantuanku.com/v1`
+2. Add: `NEXT_PUBLIC_API_URL` = `https://api.bantuanku.org/v1`
 3. Scope: Production
 4. Redeploy
 
 **Netlify**:
 1. Dashboard → Site → Site Settings → Environment Variables
-2. Add: `NEXT_PUBLIC_API_URL` = `https://api.bantuanku.com/v1`
+2. Add: `NEXT_PUBLIC_API_URL` = `https://api.bantuanku.org/v1`
 3. Redeploy
 
 ---
