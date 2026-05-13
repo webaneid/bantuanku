@@ -16,6 +16,7 @@ interface Donatur {
   whatsappNumber: string | null;
   website: string | null;
   isActive: boolean;
+  userId: string | null;
   emailVerifiedAt: string | null;
   lastLoginAt: string | null;
   createdAt: string;
@@ -271,6 +272,7 @@ export default function DonaturPage() {
               phone: editingDonatur.phone ?? undefined,
               whatsappNumber: editingDonatur.whatsappNumber ?? undefined,
               website: editingDonatur.website ?? undefined,
+              userId: editingDonatur.userId ?? undefined,
             }
           : null}
       />

@@ -156,6 +156,7 @@ donaturAdmin.get("/", async (c) => {
         lastLoginAt: donatur.lastLoginAt,
         createdAt: donatur.createdAt,
         updatedAt: donatur.updatedAt,
+        userId: donatur.userId,
         // Address names from joined tables
         provinceName: indonesiaProvinces.name,
         regencyName: indonesiaRegencies.name,
