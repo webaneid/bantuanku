@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Header, Footer, ZakatCard, Breadcrumb } from '@/components/organisms';
 import { useAuth } from '@/lib/auth';
 import { fetchPublicSettings } from '@/services/settings';
-import { fetchZakatConfig, fetchZakatPeriods, fetchZakatTypes, formatCurrency, getImageUrl, type ZakatPeriod, type ZakatType } from '@/services/zakat';
+import { fetchZakatConfig, fetchZakatPeriods, fetchZakatTypes, formatCurrency, getImageUrl, logZakatMaalCalculation, type ZakatPeriod, type ZakatType } from '@/services/zakat';
 import { useZakatDisplayMeta } from '@/components/zakat/ZakatDisplayMetaContext';
 import ZakatConfirmModal from '@/components/zakat/ZakatConfirmModal';
 import ZakatOwnerInfo from '@/components/zakat/ZakatOwnerInfo';
@@ -55,7 +55,8 @@ export default function ZakatMaalPage() {
   const [uangTunai, setUangTunai] = useState(0);
   const [saham, setSaham] = useState(0);
   const [realEstate, setRealEstate] = useState(0);
-  const [emas, setEmas] = useState(0);
+  const [emasGram, setEmasGram] = useState(0);     // input dalam gram
+  const [emasRupiah, setEmasRupiah] = useState(0); // input langsung Rp
   const [mobil, setMobil] = useState(0);
   const [hutang, setHutang] = useState(0);
 
@@ -119,19 +120,27 @@ export default function ZakatMaalPage() {
     setSelectedAmount(amount);
     setSelectedType(type);
 
-    if (type === 'infaq') {
-      // Show program selection modal for infaq
-      setShowProgramModal(true);
-    } else {
-      // Show zakat confirmation modal for zakat
+    if (type === 'zakat') {
+      // Log kalkulasi ke server (fire-and-forget, tidak blokir UI)
+      // emas = emasRupiah + emasGramRupiah (computed), kirim nilai total
+      logZakatMaalCalculation(
+        { uangTunai, saham, realEstate, emas, kendaraan: mobil, hutang },
+        token ?? undefined,
+      );
       setShowModal(true);
+    } else {
+      setShowProgramModal(true);
     }
   };
 
   const goldPricePerGram = config?.goldPricePerGram || 0;
-  const nishabGoldGrams = 85;
+  const nishabGoldGrams = config?.nisabGoldGrams ?? 85;
   const nishabEmas = nishabGoldGrams * goldPricePerGram;
-  const zakatMalPercentage = 0.025; // 2.5%
+  const zakatMalPercentage = ((config?.zakatMaalRateBps ?? 250) / 10000);
+
+  // Nilai emas: dari input gram (auto-convert) + input Rp langsung
+  const emasGramRupiah = Math.round(emasGram * goldPricePerGram);
+  const emas = emasRupiah + emasGramRupiah;
 
   const jumlahHarta = uangTunai + saham + realEstate + emas + mobil;
   const hartaBersih = jumlahHarta - hutang;
@@ -324,21 +333,62 @@ export default function ZakatMaalPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              {/* Field D: Emas — dua cara input: gram atau Rp langsung */}
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700">
                   {t('zakatCalculator.maal.fields.gold')}
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">Rp</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={emas || ''}
-                    onChange={(e) => setEmas(parseInt(e.target.value) || 0)}
-                    className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder={t('zakatCalculator.common.zeroPlaceholder')}
-                  />
+
+                {/* Input gram — auto-konversi ke Rp */}
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+                  <p className="text-xs font-medium text-amber-800">
+                    {t('zakatCalculator.maal.fields.goldGramLabel')}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={emasGram || ''}
+                        onChange={(e) => setEmasGram(parseFloat(e.target.value) || 0)}
+                        className="w-full px-4 py-3 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white"
+                        placeholder={t('zakatCalculator.maal.fields.goldGramPlaceholder')}
+                      />
+                    </div>
+                    <span className="text-sm font-semibold text-amber-700 whitespace-nowrap">gram</span>
+                  </div>
+                  {emasGram > 0 && (
+                    <p className="text-sm font-semibold text-amber-700">
+                      {t('zakatCalculator.maal.fields.goldGramAuto', { amount: formatCurrency(emasGramRupiah) })}
+                    </p>
+                  )}
                 </div>
+
+                {/* Input Rp langsung */}
+                <div>
+                  <p className="text-xs font-medium text-gray-600 mb-1">
+                    {t('zakatCalculator.maal.fields.goldRupiahLabel')}
+                  </p>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">Rp</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={emasRupiah || ''}
+                      onChange={(e) => setEmasRupiah(parseInt(e.target.value) || 0)}
+                      className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder={t('zakatCalculator.common.zeroPlaceholder')}
+                    />
+                  </div>
+                </div>
+
+                {/* Total nilai emas (hanya tampil jika ada input) */}
+                {(emasGram > 0 || emasRupiah > 0) && (
+                  <p className="text-xs text-gray-500 text-right">
+                    {t('zakatCalculator.maal.fields.goldTotal', { amount: formatCurrency(emas) })}
+                  </p>
+                )}
               </div>
 
               <div>

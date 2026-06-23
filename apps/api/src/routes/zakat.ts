@@ -1,7 +1,10 @@
 import { Hono } from "hono";
 import { eq, and, desc, inArray } from "drizzle-orm";
-import { mitra, settings, zakatPeriods, zakatTypes } from "@bantuanku/db";
-import { success } from "../lib/response";
+import { mitra, settings, zakatPeriods, zakatTypes, zakatCalculatorConfigs } from "@bantuanku/db";
+import { z } from "zod";
+import { success, error } from "../lib/response";
+import { optionalAuthMiddleware } from "../middleware/auth";
+import { getGoldPrice, saveCalculationLog } from "../services/zakat";
 import type { Env, Variables } from "../types";
 
 const zakat = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -41,6 +44,13 @@ zakat.get("/config", async (c) => {
         break;
     }
   });
+
+  // Baca nisab dan rate dari zakatCalculatorConfigs; fallback ke default jika belum di-seed
+  const maalConfig = await db.query.zakatCalculatorConfigs.findFirst({
+    where: eq(zakatCalculatorConfigs.type, "maal"),
+  });
+  config.nisabGoldGrams = maalConfig?.nisabGoldGram ? parseFloat(maalConfig.nisabGoldGram as string) : 85;
+  config.zakatMaalRateBps = maalConfig?.rateBps ?? 250;
 
   return success(c, config);
 });
@@ -117,6 +127,72 @@ zakat.get("/types", async (c) => {
   });
 
   return success(c, enrichedTypes);
+});
+
+// POST /zakat/calculate/maal — Hitung zakat maal & log hasilnya
+const maalCalculateSchema = z.object({
+  uangTunai: z.number().min(0).default(0),
+  saham: z.number().min(0).default(0),
+  realEstate: z.number().min(0).default(0),
+  emas: z.number().min(0).default(0),
+  kendaraan: z.number().min(0).default(0),
+  hutang: z.number().min(0).default(0),
+});
+
+zakat.post("/calculate/maal", optionalAuthMiddleware, async (c) => {
+  const db = c.get("db");
+  const user = c.get("user");
+
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return error(c, "Body harus JSON", 400);
+  }
+
+  const parsed = maalCalculateSchema.safeParse(body);
+  if (!parsed.success) {
+    return error(c, "Input tidak valid", 400, parsed.error.issues);
+  }
+  const input = parsed.data;
+
+  const goldPrice = await getGoldPrice(db);
+  const maalConfig = await db.query.zakatCalculatorConfigs.findFirst({
+    where: eq(zakatCalculatorConfigs.type, "maal"),
+  });
+
+  const nisabGoldGram = maalConfig?.nisabGoldGram ? parseFloat(maalConfig.nisabGoldGram as string) : 85;
+  const rateBps = maalConfig?.rateBps ?? 250;
+  const nisabValue = Math.round(nisabGoldGram * goldPrice);
+
+  const totalAssets = input.uangTunai + input.saham + input.realEstate + input.emas + input.kendaraan;
+  const hartaBersih = totalAssets - input.hutang;
+  const isWajib = hartaBersih >= nisabValue;
+  const zakatTahunan = isWajib ? Math.floor((hartaBersih * rateBps) / 10000) : 0;
+  const zakatBulanan = Math.floor(zakatTahunan / 12);
+
+  await saveCalculationLog(
+    db,
+    {
+      type: "maal",
+      nisabValue,
+      isAboveNisab: isWajib,
+      zakatAmount: zakatTahunan,
+      inputData: { ...input, totalAssets, hartaBersih },
+    },
+    user?.id,
+  );
+
+  return success(c, {
+    goldPricePerGram: goldPrice,
+    nisabGoldGram,
+    nisabValue,
+    totalAssets,
+    hartaBersih,
+    isWajib,
+    zakatTahunan,
+    zakatBulanan,
+  });
 });
 
 export default zakat;

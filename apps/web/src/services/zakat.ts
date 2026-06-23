@@ -29,6 +29,8 @@ export interface ZakatConfig {
   zakatFitrahPerPerson: number;
   ricePricePerKg: number;
   fidyahPerDay: number;
+  nisabGoldGrams: number;
+  zakatMaalRateBps: number;
 }
 
 export interface ZakatCalculationResult {
@@ -38,6 +40,17 @@ export interface ZakatCalculationResult {
   totalAssets: number;
   zakatAmount: number;
   details: any;
+}
+
+export interface ZakatMaalResult {
+  goldPricePerGram: number;
+  nisabGoldGram: number;
+  nisabValue: number;
+  totalAssets: number;
+  hartaBersih: number;
+  isWajib: boolean;
+  zakatTahunan: number;
+  zakatBulanan: number;
 }
 
 export interface ZakatPeriod {
@@ -140,22 +153,21 @@ export async function calculateZakatFitrah(params: {
   }
 }
 
-// Calculate Zakat Maal
-export async function calculateZakatMaal(params: {
-  savings: number;
-  deposits?: number;
-  stocks?: number;
-  otherAssets?: number;
-  debts?: number;
-}, token?: string): Promise<ZakatCalculationResult> {
+// Log kalkulasi zakat maal ke server (fire-and-forget, tidak blokir UI)
+export async function logZakatMaalCalculation(
+  params: {
+    uangTunai: number;
+    saham: number;
+    realEstate: number;
+    emas: number;
+    kendaraan: number;
+    hutang: number;
+  },
+  token?: string,
+): Promise<ZakatMaalResult | null> {
   try {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const response = await fetch(`${API_URL}/zakat/calculate/maal`, {
       method: 'POST',
@@ -163,15 +175,11 @@ export async function calculateZakatMaal(params: {
       body: JSON.stringify(params),
     });
 
-    if (!response.ok) {
-      throw new Error(`Failed to calculate zakat maal: ${response.statusText}`);
-    }
-
+    if (!response.ok) return null;
     const data = await response.json();
-    return data.data;
-  } catch (error) {
-    console.error('Error calculating zakat maal:', error);
-    throw error;
+    return data.data as ZakatMaalResult;
+  } catch {
+    return null;
   }
 }
 
