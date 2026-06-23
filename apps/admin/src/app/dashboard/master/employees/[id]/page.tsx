@@ -560,18 +560,32 @@ export default function ViewEmployeePage() {
                 </div>
               )}
 
-              {(employeeData.bankName || employeeData.bankAccount) && (
+              {/* Rekening Bank — prioritas dari entityBankAccounts, fallback ke legacy fields */}
+              {(employeeData.bankAccounts?.length > 0 || employeeData.bankName || employeeData.bankAccount) && (
                 <div className="flex items-start gap-3">
                   <BuildingLibraryIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Rekening Bank</p>
-                    <p className="font-medium text-gray-900">
-                      {employeeData.bankName} - {employeeData.bankAccount}
-                    </p>
-                    {employeeData.bankAccountName && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        a.n. {employeeData.bankAccountName}
-                      </p>
+                    {employeeData.bankAccounts?.length > 0 ? (
+                      <div className="space-y-2 mt-1">
+                        {employeeData.bankAccounts.map((acc: { id: string; bankName: string; accountNumber: string; accountHolderName: string }, idx: number) => (
+                          <div key={acc.id ?? idx} className="bg-gray-50 rounded-lg px-3 py-2">
+                            <p className="font-medium text-gray-900">{acc.bankName} — {acc.accountNumber}</p>
+                            <p className="text-sm text-gray-600">a.n. {acc.accountHolderName}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        <p className="font-medium text-gray-900">
+                          {employeeData.bankName} - {employeeData.bankAccount}
+                        </p>
+                        {employeeData.bankAccountName && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            a.n. {employeeData.bankAccountName}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

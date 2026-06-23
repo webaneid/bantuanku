@@ -73,6 +73,23 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
     },
   });
 
+  const disbursement = data?.data;
+
+  // Fetch rekening employee jika disbursement tidak punya data rekening penerima
+  const needsEmployeeBankFallback =
+    disbursement?.recipientType === "employee" &&
+    disbursement?.recipientId &&
+    !disbursement?.recipientBankAccount;
+
+  const { data: employeeFallbackData } = useQuery({
+    queryKey: ["employee-bank-fallback", disbursement?.recipientId],
+    queryFn: async () => {
+      const response = await api.get(`/admin/employees/${disbursement!.recipientId}`);
+      return response.data.data;
+    },
+    enabled: !!needsEmployeeBankFallback,
+  });
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ status, rejection_reason }: { status: string; rejection_reason?: string }) => {
       const response = await api.patch(`/admin/disbursements/${id}/status`, {
@@ -162,7 +179,6 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
     },
   });
 
-  const disbursement = data?.data;
   const bankAccounts = bankAccountsData?.data || [];
 
   useEffect(() => {
@@ -434,15 +450,41 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Rekening Tujuan
                   </label>
-                  <input
-                    type="text"
-                    value={`${disbursement.recipientBankName || ""} - ${disbursement.recipientBankAccount || ""} (${disbursement.recipientBankAccountName || ""})`}
-                    className="form-input w-full bg-gray-100"
-                    disabled
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Rekening penerima dari data pengajuan
-                  </p>
+                  {disbursement.recipientBankAccount ? (
+                    <>
+                      <input
+                        type="text"
+                        value={`${disbursement.recipientBankName || ""} - ${disbursement.recipientBankAccount} (${disbursement.recipientBankAccountName || ""})`}
+                        className="form-input w-full bg-gray-100"
+                        disabled
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Rekening penerima dari data pengajuan</p>
+                    </>
+                  ) : employeeFallbackData?.bankAccounts?.length > 0 ? (
+                    <div className="space-y-2">
+                      {employeeFallbackData.bankAccounts.map((acc: { id: string; bankName: string; accountNumber: string; accountHolderName: string }) => (
+                        <div key={acc.id} className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                          <p className="font-medium text-gray-900">{acc.bankName} — {acc.accountNumber}</p>
+                          <p className="text-sm text-gray-600">a.n. {acc.accountHolderName}</p>
+                        </div>
+                      ))}
+                      <p className="text-xs text-yellow-700">
+                        Rekening tidak tersimpan di pengajuan ini. Rekening di atas diambil dari data karyawan saat ini.
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        value="Rekening belum diisi"
+                        className="form-input w-full bg-gray-100 text-gray-400"
+                        disabled
+                      />
+                      <p className="text-xs text-red-500 mt-1">
+                        Rekening penerima tidak ditemukan. Pastikan data rekening karyawan sudah diisi.
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

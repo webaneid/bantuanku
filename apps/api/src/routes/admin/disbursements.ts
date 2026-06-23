@@ -419,6 +419,27 @@ disbursementsAdmin.post("/", requireRole("super_admin", "admin_finance", "admin_
     body.recipient_bank_account_name = bank.accountHolderName;
   }
 
+  // Auto-populate rekening employee jika belum diisi
+  if (body.recipient_type === "employee" && body.recipient_id && !body.recipient_bank_account) {
+    const [empBank] = await db
+      .select()
+      .from(entityBankAccounts)
+      .where(
+        and(
+          eq(entityBankAccounts.entityType, "employee"),
+          eq(entityBankAccounts.entityId, body.recipient_id)
+        )
+      )
+      .orderBy(desc(entityBankAccounts.createdAt))
+      .limit(1);
+
+    if (empBank) {
+      body.recipient_bank_name = empBank.bankName;
+      body.recipient_bank_account = empBank.accountNumber;
+      body.recipient_bank_account_name = empBank.accountHolderName;
+    }
+  }
+
   try {
     const disbursement = await service.create({
       disbursement_type: body.disbursement_type,
