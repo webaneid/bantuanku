@@ -390,31 +390,54 @@
   }
 
   blockquote {
-    border-left: 4px solid $primary-400;
-    background: $primary-50;
-    border-radius: 0 $radius-md $radius-md 0;
-    padding: $spacing-sm $spacing-md $spacing-sm $spacing-lg;
+    position: relative;
+    border: none;
+    border-left: 5px solid $primary-400;
+    background: linear-gradient(150deg, $primary-50 0%, #ffffff 100%);
+    border-radius: 0 $radius-lg $radius-lg 0;
+    padding: $spacing-lg $spacing-lg $spacing-md $spacing-lg;
     margin: $spacing-lg 0;
-    color: $gray-700;
-    font-style: italic;
+    overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+
+    &::before {
+      content: '\201C';
+      position: absolute;
+      top: -0.5rem;
+      right: 0.875rem;
+      font-size: 5rem;
+      line-height: 1;
+      color: $primary-200;
+      font-family: Georgia, 'Times New Roman', serif;
+      pointer-events: none;
+      user-select: none;
+    }
 
     p {
-      margin-bottom: $spacing-xs;
+      position: relative;
+      font-style: italic;
+      font-weight: 500;
+      color: $gray-700;
+      margin-bottom: 0;
+      padding-right: 2.5rem;
+      line-height: 1.75;
 
-      &:last-child {
-        margin-bottom: 0;
+      &:not(:last-child) {
+        margin-bottom: $spacing-xs;
       }
     }
 
-    // Citation attribution via data-citation attribute
     &[data-citation]::after {
       content: '— ' attr(data-citation);
       display: block;
-      margin-top: $spacing-xs;
+      margin-top: $spacing-sm;
+      padding-top: $spacing-xs;
+      border-top: 1px solid $primary-200;
       font-size: 0.8125rem;
       font-style: normal;
-      font-weight: 500;
+      font-weight: 700;
       color: $primary-600;
+      letter-spacing: 0.01em;
     }
   }
 
