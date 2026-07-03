@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq, desc, and, or, sql } from "drizzle-orm";
+import { eq, desc, and, or, sql, notInArray } from "drizzle-orm";
 import {
   fundraisers,
   fundraiserReferrals,
@@ -22,6 +22,11 @@ import type { Env, Variables } from "../types";
 import { DisbursementService } from "../services/disbursement";
 import { z } from "zod";
 import { setCookie, getCookie } from "hono/cookie";
+import {
+  getDefaultSourceBankFromSettings,
+  findMyFundraiser,
+  getMyBankAccounts,
+} from "../lib/fundraiser-helpers";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -40,86 +45,6 @@ async function getFundraiserCommission(db: any): Promise<string> {
     where: eq(settings.key, "amil_fundraiser_percentage"),
   });
   return setting?.value || "5.00";
-}
-
-async function getDefaultSourceBankFromSettings(db: any) {
-  const allSettings = await db.query.settings.findMany();
-  const paymentSettings = allSettings.filter((s: any) => s.category === "payment");
-  const bankAccountsSetting = paymentSettings.find((s: any) => s.key === "payment_bank_accounts");
-
-  if (!bankAccountsSetting?.value) {
-    throw new Error("Rekening sumber belum dikonfigurasi admin");
-  }
-
-  let bankAccounts: any[] = [];
-  try {
-    bankAccounts = JSON.parse(bankAccountsSetting.value);
-  } catch {
-    throw new Error("Konfigurasi rekening sumber tidak valid");
-  }
-
-  if (!Array.isArray(bankAccounts) || bankAccounts.length === 0) {
-    throw new Error("Rekening sumber belum tersedia");
-  }
-
-  const preferred = bankAccounts.find((acc: any) => {
-    const programs = Array.isArray(acc.programs) && acc.programs.length > 0 ? acc.programs : ["general"];
-    return programs.includes("general");
-  });
-
-  return preferred || bankAccounts[0];
-}
-
-// Helper: find fundraiser for current user (checks both donatur and employee links)
-async function findMyFundraiser(db: any, user: { id: string; email?: string }) {
-  // Find donatur record
-  const donaturRecord = await db.query.donatur.findFirst({
-    where: eq(donatur.email, user.email || ""),
-  });
-
-  // Find employee record
-  const [empRecord] = await db
-    .select()
-    .from(employees)
-    .where(eq(employees.userId, user.id))
-    .limit(1);
-
-  // Build OR conditions for fundraiser lookup
-  const conditions = [];
-  if (donaturRecord) conditions.push(eq(fundraisers.donaturId, donaturRecord.id));
-  if (empRecord) conditions.push(eq(fundraisers.employeeId, empRecord.id));
-
-  if (conditions.length === 0) {
-    return { donaturRecord, empRecord, fundraiser: null };
-  }
-
-  const fundraiser = await db.query.fundraisers.findFirst({
-    where: conditions.length === 1 ? conditions[0] : or(...conditions),
-  });
-
-  return { donaturRecord, empRecord, fundraiser };
-}
-
-// Helper: get bank accounts for fundraiser (checks both donatur and employee entity types)
-async function getMyBankAccounts(db: any, donaturRecord: any, empRecord: any) {
-  const conditions = [];
-  if (donaturRecord) {
-    conditions.push(
-      and(eq(entityBankAccounts.entityType, "donatur"), eq(entityBankAccounts.entityId, donaturRecord.id))
-    );
-  }
-  if (empRecord) {
-    conditions.push(
-      and(eq(entityBankAccounts.entityType, "employee"), eq(entityBankAccounts.entityId, empRecord.id))
-    );
-  }
-  if (conditions.length === 0) return [];
-
-  return db
-    .select()
-    .from(entityBankAccounts)
-    .where(conditions.length === 1 ? conditions[0] : or(...conditions))
-    .orderBy(desc(entityBankAccounts.createdAt));
 }
 
 // GET /fundraisers/validate/:code - Public: validate code
@@ -529,10 +454,14 @@ app.post("/me/disbursements", authMiddleware, async (c) => {
 app.get("/active-programs", authMiddleware, async (c) => {
   const db = c.get("db");
 
+  const EXCLUDED_PILLARS = ["Wakaf", "Fidyah"];
   const campaignList = await db
     .select({ id: campaigns.id, name: campaigns.title, slug: campaigns.slug, pillar: campaigns.pillar })
     .from(campaigns)
-    .where(eq(campaigns.status, "active"))
+    .where(and(
+      eq(campaigns.status, "active"),
+      notInArray(campaigns.pillar, EXCLUDED_PILLARS)
+    ))
     .orderBy(desc(campaigns.createdAt));
 
   const zakatList = await db

@@ -11,6 +11,8 @@ import {
   settings as settingsTable,
   createId,
   generateSlug,
+  donatur,
+  fundraisers,
   type MediaVariant,
 } from "@bantuanku/db";
 import { eq, and, desc } from "drizzle-orm";
@@ -285,11 +287,31 @@ app.get("/:slug", async (c) => {
           .orderBy(desc(qurbanPeriods.gregorianYear), desc(qurbanPackagePeriods.createdAt))
       : [];
 
+    // Find active fundraiser code linked to this mitra's user account
+    let fundraiserCode: string | null = null;
+    if (mitraRecord.userId) {
+      const donaturOfMitra = await db.query.donatur.findFirst({
+        where: eq(donatur.userId, mitraRecord.userId),
+        columns: { id: true },
+      });
+      if (donaturOfMitra) {
+        const activeFundraiser = await db.query.fundraisers.findFirst({
+          where: and(
+            eq(fundraisers.donaturId, donaturOfMitra.id),
+            eq(fundraisers.status, "active")
+          ),
+          columns: { code: true },
+        });
+        if (activeFundraiser) fundraiserCode = activeFundraiser.code;
+      }
+    }
+
     return success(c, {
       ...mitraRecord,
       campaigns: mitraCampaigns,
       zakatTypes: mitraZakatTypes,
       qurbanPackages: mitraQurbanPackages,
+      fundraiserCode,
     });
   } catch (err: any) {
     console.error("Error fetching mitra profile:", err);

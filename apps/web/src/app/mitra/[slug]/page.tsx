@@ -7,6 +7,7 @@ import { getImageUrl } from '@/lib/image';
 import { calculateDaysLeft } from '@/services/campaigns';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchCompleteAddress, formatCompleteAddress } from '@/services/address';
+import MitraReferralCapture from './MitraReferralCapture';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
@@ -131,6 +132,7 @@ export default async function MitraProfilePage({ params, searchParams }: MitraPa
 
   return (
     <div className="min-h-screen flex flex-col">
+      {mitraData.fundraiserCode && <MitraReferralCapture code={mitraData.fundraiserCode} />}
       <Header />
 
       <main className="flex-1 bg-gray-50">

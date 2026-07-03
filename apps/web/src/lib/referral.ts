@@ -1,6 +1,6 @@
 const REF_KEY = "bantuanku_ref";
 const REF_EXPIRY_KEY = "bantuanku_ref_expiry";
-const EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 jam
+const EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
 
 export function saveReferralCode(code: string) {
   if (typeof window === "undefined") return;

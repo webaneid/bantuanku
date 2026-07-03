@@ -15,12 +15,17 @@ import {
   qurbanPeriods,
   createId,
 } from "@bantuanku/db";
-import { eq, ilike, or, desc, and, sql, count } from "drizzle-orm";
+import { eq, ilike, or, desc, and, sql, count, notInArray } from "drizzle-orm";
 import { z } from "zod";
 import { requireRoles } from "../../middleware/auth";
 import { success, error, paginated } from "../../lib/response";
 import { DisbursementService } from "../../services/disbursement";
 import type { Env, Variables } from "../../types";
+import {
+  getDefaultSourceBankFromSettings,
+  findMyFundraiser,
+  getMyBankAccounts,
+} from "../../lib/fundraiser-helpers";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -41,34 +46,6 @@ async function getFundraiserCommission(db: any): Promise<string> {
   return setting?.value || "5.00";
 }
 
-async function getDefaultSourceBankFromSettings(db: any) {
-  const allSettings = await db.query.settings.findMany();
-  const paymentSettings = allSettings.filter((s: any) => s.category === "payment");
-  const bankAccountsSetting = paymentSettings.find((s: any) => s.key === "payment_bank_accounts");
-
-  if (!bankAccountsSetting?.value) {
-    throw new Error("Rekening sumber belum dikonfigurasi admin");
-  }
-
-  let bankAccounts: any[] = [];
-  try {
-    bankAccounts = JSON.parse(bankAccountsSetting.value);
-  } catch {
-    throw new Error("Konfigurasi rekening sumber tidak valid");
-  }
-
-  if (!Array.isArray(bankAccounts) || bankAccounts.length === 0) {
-    throw new Error("Rekening sumber belum tersedia");
-  }
-
-  const preferred = bankAccounts.find((acc: any) => {
-    const programs = Array.isArray(acc.programs) && acc.programs.length > 0 ? acc.programs : ["general"];
-    return programs.includes("general");
-  });
-
-  return preferred || bankAccounts[0];
-}
-
 // Helper: get bank accounts for a fundraiser's entity (employee or donatur)
 async function getFundraiserBankAccounts(db: any, fundraiserData: any) {
   const entityType = fundraiserData.employeeId ? "employee" : "donatur";
@@ -84,55 +61,6 @@ async function getFundraiserBankAccounts(db: any, fundraiserData: any) {
         eq(entityBankAccounts.entityId, entityId)
       )
     );
-}
-
-// Helper: find fundraiser for current user (checks both donatur and employee links)
-async function findMyFundraiser(db: any, user: { id: string; email?: string }) {
-  const donaturRecord = await db.query.donatur.findFirst({
-    where: eq(donatur.email, user!.email || ""),
-  });
-
-  const [empRecord] = await db
-    .select()
-    .from(employees)
-    .where(eq(employees.userId, user!.id))
-    .limit(1);
-
-  const conditions = [];
-  if (donaturRecord) conditions.push(eq(fundraisers.donaturId, donaturRecord.id));
-  if (empRecord) conditions.push(eq(fundraisers.employeeId, empRecord.id));
-
-  if (conditions.length === 0) {
-    return { donaturRecord, empRecord, fundraiser: null };
-  }
-
-  const fundraiser = await db.query.fundraisers.findFirst({
-    where: conditions.length === 1 ? conditions[0] : or(...conditions),
-  });
-
-  return { donaturRecord, empRecord, fundraiser };
-}
-
-// Helper: get bank accounts from both donatur and employee entities
-async function getMyBankAccounts(db: any, donaturRecord: any, empRecord: any) {
-  const conditions = [];
-  if (donaturRecord) {
-    conditions.push(
-      and(eq(entityBankAccounts.entityType, "donatur"), eq(entityBankAccounts.entityId, donaturRecord.id))
-    );
-  }
-  if (empRecord) {
-    conditions.push(
-      and(eq(entityBankAccounts.entityType, "employee"), eq(entityBankAccounts.entityId, empRecord.id))
-    );
-  }
-  if (conditions.length === 0) return [];
-
-  return db
-    .select()
-    .from(entityBankAccounts)
-    .where(conditions.length === 1 ? conditions[0] : or(...conditions))
-    .orderBy(desc(entityBankAccounts.createdAt));
 }
 
 // Validation schemas
@@ -540,19 +468,26 @@ app.post("/me/disbursements", async (c) => {
     const sourceBank = await getDefaultSourceBankFromSettings(db);
     const service = new DisbursementService(db);
     const availability = await service.getRevenueShareAvailability("revenue_share_fundraiser", fundraiser.id);
+    const MIN_WITHDRAWAL = 500_000;
+    const TRANSFER_FEE = 6_500;
     const requestedAmount = Math.floor(body.amount);
 
     if (requestedAmount <= 0) {
       return error(c, "Jumlah dana tidak valid", 400);
     }
+    if (requestedAmount < MIN_WITHDRAWAL) {
+      return error(c, `Minimal pencairan adalah Rp ${MIN_WITHDRAWAL.toLocaleString("id-ID")}`, 400);
+    }
     if (requestedAmount > availability.totalAvailable) {
       return error(c, "Jumlah dana melebihi hak bagi hasil yang tersedia", 400);
     }
 
+    const netAmount = requestedAmount - TRANSFER_FEE;
+
     const recipientBank = recipientBankAccounts[0];
     const created = await service.create({
       disbursement_type: "revenue_share",
-      amount: requestedAmount,
+      amount: netAmount,
       category: "revenue_share_fundraiser",
       source_bank_id: sourceBank.id,
       recipient_type: "fundraiser",
@@ -607,7 +542,9 @@ app.get("/", async (c) => {
       conditions.push(
         or(
           ilike(fundraisers.code, `%${search}%`),
-          ilike(fundraisers.slug, `%${search}%`)
+          ilike(fundraisers.slug, `%${search}%`),
+          ilike(donatur.name, `%${search}%`),
+          ilike(employees.name, `%${search}%`)
         )
       );
     }
@@ -662,6 +599,7 @@ app.get("/active-programs", async (c) => {
   try {
     const db = c.get("db");
 
+    const EXCLUDED_PILLARS = ["Wakaf", "Fidyah"];
     const campaignList = await db
       .select({
         id: campaigns.id,
@@ -670,7 +608,10 @@ app.get("/active-programs", async (c) => {
         pillar: campaigns.pillar,
       })
       .from(campaigns)
-      .where(eq(campaigns.status, "active"))
+      .where(and(
+        eq(campaigns.status, "active"),
+        notInArray(campaigns.pillar, EXCLUDED_PILLARS)
+      ))
       .orderBy(desc(campaigns.createdAt));
 
     const zakatList = await db

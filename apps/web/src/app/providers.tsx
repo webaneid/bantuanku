@@ -10,12 +10,21 @@ import MetaPixel from '@/components/MetaPixel';
 import GoogleTagManager from '@/components/GoogleTagManager';
 import { I18nProvider } from '@/lib/i18n/provider';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
+
 function ReferralCapture() {
   const searchParams = useSearchParams();
   useEffect(() => {
     const ref = searchParams.get('ref');
     if (ref) {
       saveReferralCode(ref);
+      // Set server-side cookie (30 hari) sebagai fallback untuk checkout
+      fetch(`${API_URL}/fundraisers/track-referral`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ code: ref }),
+      }).catch(() => {/* non-blocking, ignore error */});
     }
   }, [searchParams]);
   return null;

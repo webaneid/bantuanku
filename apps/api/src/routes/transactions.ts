@@ -27,6 +27,7 @@ import { RevenueShareService } from "../services/revenue-share";
 import { WhatsAppService } from "../services/whatsapp";
 import { generatePayload, generateQrDataUrl, parseMerchantInfo } from "../services/qris-generator";
 import { requireRole, authMiddleware } from "../middleware/auth";
+import { getCookie } from "hono/cookie";
 import { updateBankBalance } from "../utils/bank-balance";
 import { sendCAPIEvent } from "../lib/meta-capi";
 import type { Env, Variables } from "../types";
@@ -167,6 +168,13 @@ async function detectAndFetchTransaction(db: any, id: string) {
 app.post("/", async (c) => {
   const db = c.get("db");
   const body = await c.req.json();
+
+  // Cookie fallback: jika frontend tidak kirim referral code (localStorage expired),
+  // coba baca dari server cookie "fundraiser_ref" (30 hari)
+  if (!body.referred_by_fundraiser_code) {
+    const cookieRef = getCookie(c, "fundraiser_ref");
+    if (cookieRef) body.referred_by_fundraiser_code = cookieRef;
+  }
 
   try {
     const service = new TransactionService(db);
