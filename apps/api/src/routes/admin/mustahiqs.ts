@@ -6,8 +6,9 @@ import {
   indonesiaDistricts,
   indonesiaVillages,
   entityBankAccounts,
+  zakatDistributions,
 } from "@bantuanku/db";
-import { eq, ilike, or, desc, and } from "drizzle-orm";
+import { eq, ilike, or, desc, and, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { Env, Variables } from "../../types";
 import { normalizeContactData } from "../../lib/contact-helpers";
@@ -101,7 +102,7 @@ app.get("/", async (c) => {
 
     // Get mustahiqs
     const mustahiqList = await db.query.mustahiqs.findMany({
-      where: whereClause ? (conditions.length > 1 ? or(...conditions) : conditions[0]) : undefined,
+      where: whereClause ? (conditions.length > 1 ? and(...conditions) : conditions[0]) : undefined,
       limit,
       offset,
       orderBy: [desc(mustahiqs.createdAt)],
@@ -144,7 +145,7 @@ app.get("/", async (c) => {
 
     // Get total count
     const totalMustahiqs = await db.query.mustahiqs.findMany({
-      where: whereClause ? (conditions.length > 1 ? or(...conditions) : conditions[0]) : undefined,
+      where: whereClause ? (conditions.length > 1 ? and(...conditions) : conditions[0]) : undefined,
     });
 
     return c.json({
@@ -400,6 +401,19 @@ app.delete("/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
   try {
     const db = c.get("db");
     const id = c.req.param("id");
+
+    // Guard: cegah hapus jika sudah ada riwayat distribusi zakat
+    const [distCount] = await db
+      .select({ total: sql<number>`count(*)` })
+      .from(zakatDistributions)
+      .where(eq(zakatDistributions.mustahiqId, id));
+
+    if (Number(distCount?.total || 0) > 0) {
+      return c.json(
+        { error: `Mustahiq tidak dapat dihapus karena memiliki ${distCount.total} riwayat distribusi zakat. Nonaktifkan mustahiq jika tidak lagi digunakan.` },
+        400
+      );
+    }
 
     // Delete associated bank accounts first
     await db

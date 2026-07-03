@@ -190,6 +190,9 @@ const CORE_EXISTING: MigrationEntry[] = [
   {
     file: "packages/db/migrations/114_add_seo_fields_to_activity_reports.sql",
   },
+  {
+    file: "packages/db/migrations/115_add_fk_mustahiq_to_zakat_distributions.sql",
+  },
 ];
 
 const args = process.argv.slice(2);

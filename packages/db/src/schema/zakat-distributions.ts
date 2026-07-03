@@ -3,6 +3,7 @@ import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { zakatTypes } from "./zakat-types";
 import { users } from "./user";
+import { mustahiqs } from "./mustahiq";
 
 export const zakatDistributions = pgTable("zakat_distributions", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -14,7 +15,7 @@ export const zakatDistributions = pgTable("zakat_distributions", {
   // Penerima (8 Asnaf)
   recipientType: text("recipient_type"), // "coordinator" or "direct"
   coordinatorId: text("coordinator_id"), // employee ID if type is coordinator
-  mustahiqId: text("mustahiq_id"), // mustahiq ID if type is direct
+  mustahiqId: text("mustahiq_id").references(() => mustahiqs.id, { onDelete: "set null" }), // mustahiq ID if type is direct
   recipientCategory: text("recipient_category").notNull(), // fakir, miskin, amil, mualaf, riqab, gharim, fisabilillah, ibnus_sabil
   recipientName: text("recipient_name").notNull(),
   recipientContact: text("recipient_contact"),
