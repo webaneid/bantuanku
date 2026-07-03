@@ -172,6 +172,56 @@ export default function MitraPage() {
           </div>
         </div>
 
+        {/* Dokumen Registrasi */}
+        {(mitraMe.ktpUrl || mitraMe.bankBookUrl || mitraMe.npwpUrl) && (
+          <div className="card mb-6">
+            <div className="card-header">
+              <h2 className="text-lg font-semibold">Dokumen Registrasi</h2>
+            </div>
+            <div className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {([
+                { key: "ktpUrl", label: "KTP Penanggung Jawab" },
+                { key: "bankBookUrl", label: "Buku Rekening" },
+                { key: "npwpUrl", label: "NPWP" },
+              ] as const).map(({ key, label }) => {
+                const url = mitraMe[key] as string | null;
+                const isPdf = url?.toLowerCase().includes(".pdf");
+                return (
+                  <div key={key} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                      <span className="text-xs font-medium text-gray-600">{label}</span>
+                    </div>
+                    {url ? (
+                      <a href={url} target="_blank" rel="noopener noreferrer" className="block group">
+                        {isPdf ? (
+                          <div className="flex flex-col items-center justify-center gap-2 py-6 text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors">
+                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span className="text-xs font-medium">Lihat PDF</span>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={url} alt={label} className="w-full h-32 object-cover group-hover:opacity-90 transition-opacity" />
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                              <span className="text-white text-xs font-medium bg-black/50 px-2 py-1 rounded">Lihat Gambar</span>
+                            </div>
+                          </div>
+                        )}
+                      </a>
+                    ) : (
+                      <div className="flex items-center justify-center py-6 text-gray-400 text-xs">
+                        Belum diupload
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Program List */}
         <div className="card">
           <div className="card-header">

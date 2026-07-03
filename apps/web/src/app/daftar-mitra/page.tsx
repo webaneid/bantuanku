@@ -6,6 +6,7 @@ import { useMutation } from "@tanstack/react-query";
 import toast from "@/lib/feedback-toast";
 import api from "@/lib/api";
 import { Header as Navbar, Footer, Breadcrumb } from "@/components/organisms";
+import Autocomplete from "@/components/Autocomplete";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:50245/v1";
 
@@ -208,7 +209,6 @@ export default function DaftarMitraPage() {
     registerMutation.mutate(payload);
   };
 
-  const selectClass = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white disabled:bg-gray-50 disabled:text-gray-400";
   const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500";
 
   return (
@@ -297,31 +297,42 @@ export default function DaftarMitraPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Provinsi</label>
-                    <select value={selectedProvinceCode} onChange={(e) => setSelectedProvinceCode(e.target.value)} className={selectClass}>
-                      <option value="">Pilih Provinsi</option>
-                      {provinces.map((p) => <option key={p.code} value={p.code}>{p.name}</option>)}
-                    </select>
+                    <Autocomplete
+                      options={provinces.map((p) => ({ value: p.code, label: p.name }))}
+                      value={selectedProvinceCode}
+                      onChange={setSelectedProvinceCode}
+                      placeholder="Cari provinsi..."
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Kabupaten / Kota</label>
-                    <select value={selectedRegencyCode} onChange={(e) => setSelectedRegencyCode(e.target.value)} disabled={!selectedProvinceCode} className={selectClass}>
-                      <option value="">Pilih Kabupaten/Kota</option>
-                      {regencies.map((r) => <option key={r.code} value={r.code}>{r.name}</option>)}
-                    </select>
+                    <Autocomplete
+                      options={regencies.map((r) => ({ value: r.code, label: r.name }))}
+                      value={selectedRegencyCode}
+                      onChange={setSelectedRegencyCode}
+                      placeholder="Cari kabupaten/kota..."
+                      disabled={!selectedProvinceCode}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan</label>
-                    <select value={selectedDistrictCode} onChange={(e) => setSelectedDistrictCode(e.target.value)} disabled={!selectedRegencyCode} className={selectClass}>
-                      <option value="">Pilih Kecamatan</option>
-                      {districts.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
-                    </select>
+                    <Autocomplete
+                      options={districts.map((d) => ({ value: d.code, label: d.name }))}
+                      value={selectedDistrictCode}
+                      onChange={setSelectedDistrictCode}
+                      placeholder="Cari kecamatan..."
+                      disabled={!selectedRegencyCode}
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Desa / Kelurahan</label>
-                    <select value={selectedVillageCode} onChange={(e) => setSelectedVillageCode(e.target.value)} disabled={!selectedDistrictCode} className={selectClass}>
-                      <option value="">Pilih Desa/Kelurahan</option>
-                      {villages.map((v) => <option key={v.code} value={v.code}>{v.name}</option>)}
-                    </select>
+                    <Autocomplete
+                      options={villages.map((v) => ({ value: v.code, label: v.name }))}
+                      value={selectedVillageCode}
+                      onChange={setSelectedVillageCode}
+                      placeholder="Cari desa/kelurahan..."
+                      disabled={!selectedDistrictCode}
+                    />
                   </div>
                 </div>
               </div>
