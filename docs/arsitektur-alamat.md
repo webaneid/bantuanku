@@ -217,16 +217,31 @@ Pemakai `AddressForm` yang ditemukan:
 
 ### Cascading Address di Web Publik
 
-Form registrasi mitra (`apps/web/src/app/daftar-mitra/page.tsx`) mengimplementasikan cascading address selector secara mandiri (tidak menggunakan `AddressForm` admin karena komponen tersebut ada di `apps/admin`). Pola yang dipakai:
+Form registrasi mitra (`apps/web/src/app/daftar-mitra/page.tsx`) mengimplementasikan cascading address selector secara mandiri (tidak menggunakan `AddressForm` admin karena komponen tersebut ada di `apps/admin`).
+
+**Komponen UI:** Setiap level alamat menggunakan `<Autocomplete>` dari `apps/web/src/components/Autocomplete.tsx` (bukan `<select>` biasa). Ini memungkinkan user mengetik dan menyaring pilihan — penting karena kecamatan bisa ribuan pilihan.
+
+Data di-map dari `{ code, name }` (response API) ke `{ value, label }` (format `AutocompleteOption`):
+
+```tsx
+<Autocomplete
+  options={provinces.map((p) => ({ value: p.code, label: p.name }))}
+  value={selectedProvinceCode}
+  onChange={setSelectedProvinceCode}
+  placeholder="Cari provinsi..."
+/>
+```
+
+Pola cascade:
 
 - Fetch `/v1/indonesia/provinces` saat mount
-- Fetch `/v1/indonesia/regencies/:provinceCode` saat province dipilih
-- Fetch `/v1/indonesia/districts/:regencyCode` saat regency dipilih
-- Fetch `/v1/indonesia/villages/:districtCode` saat district dipilih
-- Reset level bawah saat level atas berubah
-- Payload dikirim ke `POST /mitra/register` berisi: `detailAddress`, `provinceCode`, `regencyCode`, `districtCode`, `villageCode`
+- Fetch `/v1/indonesia/regencies/:provinceCode` saat province dipilih; reset regency/district/village
+- Fetch `/v1/indonesia/districts/:regencyCode` saat regency dipilih; reset district/village
+- Fetch `/v1/indonesia/villages/:districtCode` saat district dipilih; reset village
+- Clear pada `Autocomplete` (tombol ✕) memicu reset cascade via `useEffect`
+- Payload dikirim ke `POST /mitra/register`: `detailAddress`, `provinceCode`, `regencyCode`, `districtCode`, `villageCode`
 
-Pola ini ekuivalen dengan `AddressForm` admin tetapi tidak menggunakan komponen/hook yang sama. Jika di masa depan dibutuhkan address selector di halaman publik lain, pola ini bisa diekstrak menjadi hook atau komponen di `apps/web`.
+Pola ini ekuivalen dengan `AddressForm` admin tetapi tidak menggunakan komponen/hook yang sama. Jika di masa depan dibutuhkan address selector di halaman publik lain, pola ini bisa diekstrak menjadi hook di `apps/web`.
 
 ## Read/JOIN Pattern
 

@@ -57,7 +57,7 @@ Base path: `/mitra`.
 | `GET` | `/check-slug/:slug` | Cek ketersediaan slug. |
 | `GET` | `/:slug` | Profil publik mitra (hanya status `verified`). |
 
-Profil publik tidak mengembalikan mitra berstatus `rejected` atau `suspended`. Implementasi saat ini masih bisa mengembalikan `pending`, karena guard hanya mengecualikan dua status tersebut.
+Profil publik hanya mengembalikan mitra berstatus `verified`. Guard menggunakan `!== "verified"` sehingga `pending`, `rejected`, dan `suspended` semua diblokir.
 
 ## Endpoint Admin
 
@@ -107,11 +107,37 @@ Setiap transaksi `paid` yang terkait dengan program milik mitra akan menghasilka
 
 ---
 
+## Admin UI — Mitra Dashboard
+
+Halaman `/dashboard/mitra` (`apps/admin/src/app/dashboard/mitra/page.tsx`) punya dua branch berdasarkan role:
+
+### Branch: Super Admin / Admin
+Menampilkan list semua mitra dengan filter status dan search. Bisa klik ke detail mitra.
+
+### Branch: Mitra (isMitra)
+Mitra yang login (`roles = ["mitra"]`) melihat dashboard pribadi:
+
+| Section | Sumber Data | Keterangan |
+|---------|-------------|------------|
+| Status badge | `mitraMe.status` | Tampilkan status verifikasi |
+| Stats (4 kartu) | `mitraMe.*` | Total program, donasi masuk, bagi hasil, saldo |
+| Dokumen Registrasi | `mitraMe.ktpUrl`, `bankBookUrl`, `npwpUrl` | Preview gambar (thumbnail + hover overlay) atau ikon PDF + link; hanya tampil jika ada minimal 1 dokumen |
+| Program Saya | `GET /admin/mitra/me` → programs | List campaign/zakat/qurban yang dimiliki mitra; klik buka halaman edit program |
+
+**Dokumen Registrasi** — deteksi format:
+- URL mengandung `.pdf` → tampilkan ikon dokumen + teks "Lihat PDF" + link buka di tab baru
+- URL lainnya → tampilkan `<img>` thumbnail + overlay "Lihat Gambar" saat hover + link buka di tab baru
+- URL kosong/null → tampilkan teks "Belum diupload"
+
+Catatan: dokumen diupload saat registrasi via `POST /mitra/upload-document` (no auth, `uploadedBy: null`). Setelah mitra diaktivasi dan login, dokumen tetap dapat dilihat karena URL tersimpan di field `mitra.ktpUrl` / `mitra.bankBookUrl` / `mitra.npwpUrl` yang dikembalikan `GET /admin/mitra/me`.
+
+---
+
 ## Catatan Kritis
 
 1. Slug mitra unik tetapi nullable di schema. Public register selalu membuat slug.
 2. Admin create dapat langsung membuat user jika password dikirim; public register tidak membuat user otomatis.
-3. Delete mitra hanya menolak jika ada campaign aktif. Relasi lain seperti zakat/qurban milik `userId` tidak dicek dalam guard delete saat ini.
+3. ~~Delete mitra hanya menolak jika ada campaign aktif.~~ **Sudah diperbaiki** — guard sekarang juga mengecek zakat type dan qurban package yang linked lewat `mitra.userId`.
 4. ~~Profil publik saat ini menolak `rejected` dan `suspended`, tetapi tidak menolak `pending`.~~ **Sudah diperbaiki** — guard sekarang `!== "verified"`.
 5. Agregat keuangan di tabel `mitra` adalah field tersimpan; laporan program juga menghitung data dari transaksi/program aktual.
 6. `postalCode` ada di Zod validation schema (publik dan admin) tetapi tidak ada kolom `postal_code` di tabel `mitra`. Field ini di-destructure dan dibuang — tidak pernah disimpan ke DB.
@@ -132,5 +158,7 @@ Semua gap yang ditemukan per 2026-07-03 sudah diperbaiki. Lihat bagian Perbaikan
 | Perkuat delete guard | `apps/api/src/routes/admin/mitra.ts` | Tambah pengecekan zakat type dan qurban package yang linked lewat `mitra.userId` sebelum delete |
 | Block `pending` di profil publik | `apps/api/src/routes/mitra.ts` | Ganti guard `=== "rejected" \|\| === "suspended"` menjadi `!== "verified"` — hanya mitra terverifikasi yang tampil publik |
 | Cascading address selector di form publik | `apps/web/src/app/daftar-mitra/page.tsx` | Ganti textarea alamat biasa dengan cascading province→regency→district→village menggunakan endpoint `/v1/indonesia/*` |
+| Address selector pakai `<Autocomplete>` | `apps/web/src/app/daftar-mitra/page.tsx` | Ganti `<select>` native dengan komponen `Autocomplete` dari `apps/web/src/components/Autocomplete.tsx` — support search/filter, penting untuk kecamatan/desa yang ribuan pilihan |
 | Document upload via file picker | `apps/web/src/app/daftar-mitra/page.tsx`, `apps/api/src/routes/mitra.ts` | Ganti URL text input KTP/NPWP/buku rekening dengan file upload ke endpoint publik `POST /mitra/upload-document` (kategori `document`, GCS/local) |
 | Daftarkan `/daftar-mitra` di URL registry | `apps/admin/src/lib/url-registry.ts` | Tambah ke `STATIC_URLS` kategori Static agar bisa dipilih di `URLAutocomplete` component |
+| Dokumen Registrasi di mitra dashboard | `apps/admin/src/app/dashboard/mitra/page.tsx` | Tambah section "Dokumen Registrasi" di view mitra (isMitra branch): menampilkan KTP, Buku Rekening, NPWP sebagai thumbnail/preview gambar atau link PDF — data dari `GET /admin/mitra/me` (field `ktpUrl`, `bankBookUrl`, `npwpUrl`) |
