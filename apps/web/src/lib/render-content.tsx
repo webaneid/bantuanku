@@ -20,7 +20,7 @@ function CtaBlockDisplay({
     <div className="not-prose my-8 rounded-2xl overflow-hidden shadow-md">
       <div className="bg-gradient-to-br from-primary-500 to-primary-900 px-6 py-8 md:px-10 md:py-10 text-center">
         {title && (
-          <h3 className="text-xl md:text-2xl font-bold text-white mb-3 leading-snug">{title}</h3>
+          <div className="text-2xl font-bold text-white mb-3 leading-snug tracking-tight">{title}</div>
         )}
         {description && (
           <p className="text-sm md:text-base text-primary-100 mb-6 max-w-sm mx-auto leading-relaxed">
