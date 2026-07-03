@@ -5,7 +5,7 @@
   border: 1px solid $gray-300;
   border-radius: $radius-md;
   background: white;
-  overflow: hidden;
+  overflow: visible; // allow link dialog dropdown to overflow
 
   &:focus-within {
     border-color: $primary-500;
@@ -20,6 +20,7 @@
   padding: $spacing-sm;
   border-bottom: 1px solid $gray-200;
   background: $gray-50;
+  border-radius: $radius-md $radius-md 0 0;
   flex-wrap: wrap;
 
   button {
@@ -34,6 +35,8 @@
     border-radius: $radius-sm;
     cursor: pointer;
     transition: all $transition-fast;
+    font-size: 0.8125rem;
+    font-weight: 600;
 
     &:hover:not(:disabled) {
       background: $gray-200;
@@ -60,13 +63,103 @@
     height: 24px;
     background: $gray-300;
     margin: 0 4px;
+    flex-shrink: 0;
+  }
+}
+
+// Link dialog — sits between toolbar and content
+.rich-text-link-dialog {
+  position: relative;
+  z-index: 10;
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $gray-200;
+  background: $primary-50;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+
+  &-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $gray-600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &-newtab {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: 0.875rem;
+    color: $gray-700;
+    cursor: pointer;
+
+    input[type='checkbox'] {
+      width: 14px;
+      height: 14px;
+      accent-color: $primary-600;
+      cursor: pointer;
+    }
+  }
+
+  &-actions {
+    display: flex;
+    gap: $spacing-xs;
+    flex-wrap: wrap;
+  }
+}
+
+.rich-text-link-btn-apply {
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: none;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  background: $primary-600;
+  color: white;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: $primary-700;
+  }
+}
+
+.rich-text-link-btn-remove {
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border: 1px solid $danger-300;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  background: white;
+  color: $danger-600;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $danger-50;
+  }
+}
+
+.rich-text-link-btn-cancel {
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1px solid $gray-300;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  background: white;
+  color: $gray-600;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $gray-100;
   }
 }
 
 .rich-text-editor-content {
   padding: $spacing-md;
   min-height: 200px;
-  max-height: 500px;
   overflow-y: auto;
   font-size: 0.9375rem;
   line-height: 1.6;
@@ -85,7 +178,6 @@
     float: left;
   }
 
-  // Typography styles
   p {
     margin-bottom: $spacing-md;
 
@@ -102,32 +194,51 @@
     font-style: italic;
   }
 
+  s {
+    text-decoration: line-through;
+    color: $gray-500;
+  }
+
+  a {
+    color: $primary-600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+
+    &:hover {
+      color: $primary-700;
+    }
+  }
+
   h1,
   h2,
   h3,
-  h4,
-  h5,
-  h6 {
+  h4 {
     font-weight: 600;
     margin-top: $spacing-lg;
-    margin-bottom: $spacing-md;
+    margin-bottom: $spacing-sm;
     line-height: 1.3;
+    color: $gray-900;
 
     &:first-child {
       margin-top: 0;
     }
   }
 
-  h1 {
-    font-size: 1.875rem;
-  }
-
   h2 {
-    font-size: 1.5rem;
+    font-size: 1.375rem;
+    padding-bottom: $spacing-xs;
+    border-bottom: 2px solid $gray-100;
   }
 
   h3 {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
+  }
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: $gray-700;
   }
 
   ul,
@@ -153,14 +264,16 @@
   }
 
   blockquote {
-    border-left: 4px solid $gray-300;
-    padding-left: $spacing-md;
+    border-left: 4px solid $primary-400;
+    background: $primary-50;
+    border-radius: 0 $radius-md $radius-md 0;
+    padding: $spacing-sm $spacing-md $spacing-sm $spacing-lg;
     margin: $spacing-lg 0;
-    color: $gray-600;
+    color: $gray-700;
     font-style: italic;
 
     p {
-      margin-bottom: $spacing-sm;
+      margin-bottom: $spacing-xs;
 
       &:last-child {
         margin-bottom: 0;
