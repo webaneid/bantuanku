@@ -14,33 +14,31 @@ function CtaBlockDisplay({
   buttonUrl: string;
 }) {
   const isExternal = buttonUrl.startsWith("http://") || buttonUrl.startsWith("https://");
+  const btnClass =
+    "inline-block px-8 py-2.5 bg-white text-primary-700 font-bold rounded-full hover:bg-primary-50 transition-colors shadow-sm text-sm md:text-base";
   return (
-    <div className="not-prose my-8 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200 p-6 md:p-8 text-center shadow-sm">
-      {title && (
-        <h3 className="text-lg md:text-xl font-bold text-primary-900 mb-2">{title}</h3>
-      )}
-      {description && (
-        <p className="text-sm md:text-base text-gray-600 mb-5 max-w-sm mx-auto">{description}</p>
-      )}
-      {buttonText && buttonUrl && (
-        isExternal ? (
-          <a
-            href={buttonUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block px-7 py-3 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-700 transition-colors text-sm md:text-base shadow-md hover:shadow-lg"
-          >
-            {buttonText}
-          </a>
-        ) : (
-          <Link
-            href={buttonUrl}
-            className="inline-block px-7 py-3 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-700 transition-colors text-sm md:text-base shadow-md hover:shadow-lg"
-          >
-            {buttonText}
-          </Link>
-        )
-      )}
+    <div className="not-prose my-8 rounded-2xl overflow-hidden shadow-md">
+      <div className="bg-gradient-to-br from-primary-500 to-primary-900 px-6 py-8 md:px-10 md:py-10 text-center">
+        {title && (
+          <h3 className="text-xl md:text-2xl font-bold text-white mb-3 leading-snug">{title}</h3>
+        )}
+        {description && (
+          <p className="text-sm md:text-base text-primary-100 mb-6 max-w-sm mx-auto leading-relaxed">
+            {description}
+          </p>
+        )}
+        {buttonText && buttonUrl && (
+          isExternal ? (
+            <a href={buttonUrl} target="_blank" rel="noopener noreferrer" className={btnClass}>
+              {buttonText}
+            </a>
+          ) : (
+            <Link href={buttonUrl} className={btnClass}>
+              {buttonText}
+            </Link>
+          )
+        )}
+      </div>
     </div>
   );
 }

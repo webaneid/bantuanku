@@ -111,6 +111,19 @@ export const FigureNode = Node.create({
           };
         },
       },
+      {
+        // Backward-compat: parse plain <img> tags from old content
+        tag: "img",
+        getAttrs(dom) {
+          const el = dom as HTMLElement;
+          const alt = el.getAttribute("alt") || "";
+          return {
+            src: el.getAttribute("src") || null,
+            alt,
+            caption: alt, // show alt as caption for existing images
+          };
+        },
+      },
     ];
   },
 

@@ -5,7 +5,6 @@ import { ReactNodeViewRenderer, NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 import { useState, useEffect } from "react";
 import { Pencil, Trash2, ExternalLink } from "lucide-react";
-import URLAutocomplete from "../URLAutocomplete";
 
 // ── NodeView ────────────────────────────────────────────────────────────────
 
@@ -115,11 +114,13 @@ function CtaBlockView({ node, updateAttributes, deleteNode, selected }: NodeView
               placeholder="Donasi Sekarang"
             />
 
-            <label className="rich-text-cta-form-label">URL Tombol</label>
-            <URLAutocomplete
+            <label className="rich-text-cta-form-label">URL Tombol <span>(contoh: /program/slug atau https://...)</span></label>
+            <input
+              type="text"
+              className="rich-text-cta-form-input"
               value={form.buttonUrl}
-              onChange={(url) => setForm((f) => ({ ...f, buttonUrl: url }))}
-              placeholder="Pilih halaman atau ketik URL..."
+              onChange={(e) => setForm((f) => ({ ...f, buttonUrl: e.target.value }))}
+              placeholder="/program/nama-program atau https://..."
             />
 
             <div className="rich-text-cta-form-actions">

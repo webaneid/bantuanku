@@ -345,7 +345,12 @@ export default function RichTextEditor({
       )}
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
-      <EditorContent editor={editor} style={{ minHeight, maxHeight }} />
+      <div
+        className="rich-text-scroll-container"
+        style={{ minHeight: `${minHeight}px`, maxHeight: `${maxHeight}px` }}
+      >
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 }
