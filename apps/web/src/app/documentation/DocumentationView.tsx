@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RenderContent } from "@/lib/render-content";
 import { getDocumentationManifest, getDocumentationPageBySlug } from "@/lib/documentation";
 
 type DocumentationViewProps = {
@@ -81,10 +82,7 @@ export default function DocumentationView({ slug }: DocumentationViewProps) {
                 {page.sections.map((section) => (
                   <section key={section.id} id={section.id} className="scroll-mt-24">
                     <h3 className="text-xl font-semibold text-gray-900 mb-3">{section.heading}</h3>
-                    <div
-                      className="prose prose-sm md:prose-base max-w-none text-gray-700"
-                      dangerouslySetInnerHTML={{ __html: section.bodyHtml }}
-                    />
+                    <RenderContent html={section.bodyHtml} className="prose prose-sm md:prose-base max-w-none text-gray-700" />
                   </section>
                 ))}
               </div>

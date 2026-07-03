@@ -65,6 +65,73 @@
     margin: 0 4px;
     flex-shrink: 0;
   }
+
+  // cite button — text, not icon
+  .rich-text-toolbar-cite {
+    width: auto;
+    padding: 0 $spacing-xs;
+    font-size: 0.75rem;
+    font-style: italic;
+    color: $gray-500;
+
+    &.is-active {
+      color: $primary-700;
+    }
+  }
+}
+
+// Table contextual controls row
+.rich-text-table-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px $spacing-sm;
+  background: $warning-50;
+  border-bottom: 1px solid $warning-200;
+  flex-wrap: wrap;
+
+  &-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: $warning-700;
+    margin-right: 2px;
+  }
+
+  &-sep {
+    width: 1px;
+    height: 18px;
+    background: $warning-300;
+    margin: 0 4px;
+    flex-shrink: 0;
+  }
+
+  button {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid $warning-300;
+    border-radius: $radius-sm;
+    background: white;
+    color: $warning-700;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:hover {
+      background: $warning-100;
+    }
+
+    &.danger {
+      border-color: $danger-300;
+      color: $danger-600;
+
+      &:hover {
+        background: $danger-50;
+      }
+    }
+  }
 }
 
 // Link dialog — sits between toolbar and content
@@ -154,6 +221,39 @@
 
   &:hover {
     background: $gray-100;
+  }
+}
+
+// Citation dialog — reuses link dialog structure but different bg
+.rich-text-citation-dialog {
+  position: relative;
+  z-index: 10;
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $gray-200;
+  background: $gray-50;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.rich-text-citation-input {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 0.875rem;
+  border: 1px solid $gray-300;
+  border-radius: $radius-sm;
+  background: white;
+  color: $gray-900;
+  outline: none;
+  transition: border-color $transition-fast;
+
+  &:focus {
+    border-color: $primary-500;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &::placeholder {
+    color: $gray-400;
   }
 }
 
@@ -279,6 +379,69 @@
         margin-bottom: 0;
       }
     }
+
+    // Citation attribution via data-citation attribute
+    &[data-citation]::after {
+      content: '— ' attr(data-citation);
+      display: block;
+      margin-top: $spacing-xs;
+      font-size: 0.8125rem;
+      font-style: normal;
+      font-weight: 500;
+      color: $primary-600;
+    }
+  }
+
+  // Tiptap table
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: $spacing-lg 0;
+    font-size: 0.875rem;
+    overflow: hidden;
+    border-radius: $radius-md;
+    border: 1px solid $gray-200;
+
+    th,
+    td {
+      border: 1px solid $gray-200;
+      padding: $spacing-xs $spacing-sm;
+      text-align: left;
+      vertical-align: top;
+      min-width: 80px;
+      position: relative;
+
+      // Tiptap selection highlight
+      &.selectedCell {
+        background: $primary-50;
+      }
+
+      p {
+        margin-bottom: 0;
+      }
+    }
+
+    th {
+      background: $gray-50;
+      font-weight: 600;
+      color: $gray-700;
+    }
+
+    // Column resize handle (Tiptap adds this when resizable: true — kept for future)
+    .column-resize-handle {
+      position: absolute;
+      right: -2px;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: $primary-400;
+      cursor: col-resize;
+    }
+  }
+
+  // Prevent Tiptap table wrapper from adding extra scroll
+  .tableWrapper {
+    overflow-x: auto;
   }
 
   code {
@@ -312,6 +475,223 @@
     margin: $spacing-xl 0;
   }
 
+  // Figure (image + caption)
+  figure.rich-text-figure {
+    position: relative;
+    margin: $spacing-lg 0;
+    display: block;
+
+    &.is-selected img {
+      outline: 2px solid $primary-500;
+      outline-offset: 2px;
+    }
+
+    .rich-text-figure-edit-btn {
+      position: absolute;
+      top: $spacing-xs;
+      right: $spacing-xs;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      border: none;
+      border-radius: $radius-sm;
+      cursor: pointer;
+      z-index: 5;
+
+      &:hover { background: rgba(0, 0, 0, 0.8); }
+    }
+
+    .rich-text-figure-placeholder {
+      width: 100%;
+      height: 120px;
+      border: 2px dashed $gray-300;
+      border-radius: $radius-md;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: $gray-400;
+      font-size: 0.875rem;
+      cursor: pointer;
+      background: $gray-50;
+    }
+
+    img {
+      width: 100%;
+      border-radius: $radius-md;
+      display: block;
+    }
+
+    figcaption {
+      margin-top: $spacing-xs;
+      font-size: 0.8125rem;
+      color: $gray-500;
+      text-align: center;
+      font-style: italic;
+      padding: $spacing-xs;
+      border-radius: $radius-sm;
+      outline: none;
+      min-height: 1.5em;
+      cursor: text;
+      transition: background $transition-fast;
+
+      &:empty::before {
+        content: attr(data-placeholder);
+        color: $gray-400;
+        pointer-events: none;
+      }
+
+      &:focus,
+      &.is-editing {
+        background: $gray-100;
+      }
+    }
+  }
+
   // Custom scrollbar
   @extend .scrollbar-thin;
+}
+
+// CTA Block preview in editor
+.rich-text-cta-block {
+  border: 2px dashed $primary-300;
+  border-radius: $radius-md;
+  background: $primary-50;
+  margin: $spacing-lg 0;
+  overflow: hidden;
+
+  &.is-selected {
+    border-color: $primary-500;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+
+  &-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px $spacing-sm;
+    background: $primary-100;
+    border-bottom: 1px solid $primary-200;
+  }
+
+  &-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $primary-600;
+  }
+
+  &-actions {
+    display: flex;
+    gap: 4px;
+
+    button {
+      display: flex;
+      align-items: center;
+      padding: 3px 6px;
+      font-size: 0.75rem;
+      border: 1px solid $primary-300;
+      border-radius: $radius-sm;
+      background: white;
+      color: $primary-600;
+      cursor: pointer;
+      transition: all $transition-fast;
+
+      &:hover { background: $primary-50; }
+      &.danger { border-color: $danger-300; color: $danger-600; &:hover { background: $danger-50; } }
+    }
+  }
+
+  &-preview {
+    padding: $spacing-md;
+    text-align: center;
+  }
+
+  &-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: $primary-800;
+    margin-bottom: 4px;
+  }
+
+  &-desc {
+    font-size: 0.875rem;
+    color: $gray-600;
+    margin-bottom: $spacing-sm;
+  }
+
+  &-btn {
+    display: inline-block;
+    padding: 6px 18px;
+    background: $primary-600;
+    color: white;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  &-empty {
+    font-size: 0.875rem;
+    color: $gray-400;
+    font-style: italic;
+  }
+}
+
+// CTA edit form (renders inside NodeViewWrapper)
+.rich-text-cta-form {
+  border-top: 1px solid $primary-200;
+  padding: $spacing-md;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+
+  &-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $gray-600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: -4px;
+
+    span {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: $gray-400;
+    }
+  }
+
+  &-input,
+  &-textarea {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 0.875rem;
+    border: 1px solid $gray-300;
+    border-radius: $radius-sm;
+    background: white;
+    color: $gray-900;
+    outline: none;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      border-color: $primary-500;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    &::placeholder { color: $gray-400; }
+  }
+
+  &-actions {
+    display: flex;
+    gap: $spacing-xs;
+    padding-top: $spacing-xs;
+  }
 }

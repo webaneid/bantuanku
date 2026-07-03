@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n/provider';
+import { RenderContent } from '@/lib/render-content';
 
 interface QurbanTabsProps {
   packageId: string;
@@ -62,13 +63,11 @@ export default function QurbanTabs({
                 {mobileMetaContent}
               </div>
             )}
-            <div className="prose prose-sm max-w-none">
-              {packageDescription ? (
-                <div dangerouslySetInnerHTML={{ __html: packageDescription }} />
-              ) : (
-                <p className="text-gray-500">{t('qurbanDetail.tabs.noDescription')}</p>
-              )}
-            </div>
+            {packageDescription ? (
+              <RenderContent html={packageDescription} className="prose prose-sm max-w-none" />
+            ) : (
+              <p className="text-gray-500">{t('qurbanDetail.tabs.noDescription')}</p>
+            )}
           </div>
         )}
 

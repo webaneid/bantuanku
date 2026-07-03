@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { getImageUrlByVariant } from '@/lib/image';
+import { RenderContent } from '@/lib/render-content';
 
 interface ReportDetail {
   id: string;
@@ -146,10 +147,7 @@ export default function LaporanDetailClient({ report }: { report: ReportDetail }
 
         {/* Description */}
         <div className="bg-white rounded-lg shadow-sm p-6 md:p-8">
-          <div
-            className="prose prose-sm md:prose-base max-w-none text-gray-700 prose-img:rounded-lg prose-headings:text-gray-900"
-            dangerouslySetInnerHTML={{ __html: report.description }}
-          />
+          <RenderContent html={report.description} className="prose prose-sm md:prose-base max-w-none text-gray-700 prose-img:rounded-lg prose-headings:text-gray-900" />
         </div>
 
         {/* Video */}

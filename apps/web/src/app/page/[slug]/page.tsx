@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { RenderContent } from "@/lib/render-content";
 import { notFound } from "next/navigation";
 import { Header, Footer, Breadcrumb } from "@/components/organisms";
 import { getImageUrl } from "@/lib/image";
@@ -299,10 +300,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
               )}
 
               <div className="bg-white rounded-lg shadow-sm p-6 md:p-8">
-                <div
-                  className="prose prose-sm md:prose-base max-w-none text-gray-700"
-                  dangerouslySetInnerHTML={{ __html: page.content }}
-                />
+                <RenderContent html={page.content} className="prose prose-sm md:prose-base max-w-none text-gray-700" />
               </div>
             </article>
 

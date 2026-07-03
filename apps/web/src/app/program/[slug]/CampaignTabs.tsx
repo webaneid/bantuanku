@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
 import { getImageUrlByVariant } from '@/lib/image';
+import { RenderContent } from '@/lib/render-content';
 
 interface Donation {
   id: string;
@@ -202,10 +203,7 @@ export default function CampaignTabs({
                 {mobileMetaContent}
               </div>
             )}
-            <div
-              className="prose prose-gray max-w-none"
-              dangerouslySetInnerHTML={{ __html: campaignDescription }}
-            />
+            <RenderContent html={campaignDescription} className="prose prose-gray max-w-none" />
             {youtubeEmbedUrl && (
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-gray-900">{t('campaignDetail.tabs.videoTitle')}</h3>
@@ -330,10 +328,7 @@ export default function CampaignTabs({
                             </div>
                           )}
 
-                          <div
-                            className="prose prose-gray max-w-none mb-4 text-gray-600"
-                            dangerouslySetInnerHTML={{ __html: report.description }}
-                          />
+                          <RenderContent html={report.description} className="prose prose-gray max-w-none mb-4 text-gray-600" />
 
                           {/* Video Embed */}
                           {report.videoUrl && getYoutubeEmbedUrl(report.videoUrl) && (

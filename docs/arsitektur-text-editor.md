@@ -16,34 +16,43 @@ Dokumen ini adalah source of truth untuk sistem rich text editor di Bantuanku. E
 
 ---
 
-## State Saat Ini (Audit 2026-07-03)
+## State Saat Ini (Update 2026-07-03)
 
-### Yang Sudah Ada
+### Implementasi Per Fase
+
+| Fase | Status | Selesai |
+|------|--------|---------|
+| Fase 1 — H2/H3/H4, Strikethrough, Link+URLAutocomplete | ✅ Selesai | 2026-07-03 |
+| Fase 2 — Table + BlockquoteWithCitation | ✅ Selesai | 2026-07-03 |
+| Fase 3 — Image+Caption (FigureNode) + CTA Block | ✅ Selesai | 2026-07-03 |
+
+### Fitur Aktif (Fase 1 + 2)
 
 | Fitur | Status | Keterangan |
 |-------|--------|------------|
 | Bold / Italic | ✅ Ada | Toolbar + StarterKit |
+| Strikethrough | ✅ Ada | Toolbar + StarterKit |
 | Bullet List | ✅ Ada | Toolbar + StarterKit |
 | Ordered List | ✅ Ada | Toolbar + StarterKit |
-| Blockquote | ✅ Ada | Toolbar + StarterKit (tanpa citation) |
+| Heading H2 / H3 / H4 | ✅ Ada | Toolbar expose H2, H3, H4 |
+| Blockquote | ✅ Ada | Via `BlockquoteWithCitation` custom extension |
+| Blockquote Citation | ✅ Ada | Tombol `— cite` muncul saat kursor di blockquote; output `data-citation` attr |
+| Table | ✅ Ada | Insert 3×3 dengan header row, contextual controls row |
+| Table controls | ✅ Ada | Tambah/hapus kolom & baris, hapus tabel |
+| Link + URLAutocomplete | ✅ Ada | Dialog dengan URLAutocomplete + checkbox "buka di tab baru" |
 | Undo / Redo | ✅ Ada | Toolbar + StarterKit History |
-| Heading (H2–H4) | ⚠️ Parsial | StarterKit punya Heading extension, tapi toolbar tidak expose tombol heading |
 | Paragraph | ✅ Ada | Default |
-| CSS editor (admin) | ✅ Ada | `_rich-text-editor.scss` — cover heading, list, blockquote, code, pre |
-| CSS render web | ✅ Ada | Tailwind `prose` class pada semua halaman yang render konten |
+| CSS editor (admin) | ✅ Ada | `_rich-text-editor.scss` — cover semua blok termasuk table dan citation |
+| CSS render web | ✅ Ada | Tailwind `prose` class (citation via `[data-citation]::after` belum di web) |
 
-### Yang Belum Ada
+### Fitur Tambahan Fase 3
 
-| Fitur | Status |
-|-------|--------|
-| Tombol H2 / H3 / H4 di toolbar | ❌ Belum |
-| Blockquote dengan citation | ❌ Belum |
-| Table | ❌ Belum |
-| Image dengan caption | ❌ Belum |
-| CTA Block (title, deskripsi, tombol) | ❌ Belum |
-| Link / URL dengan URLAutocomplete | ❌ Belum |
-| Strikethrough | ❌ Belum expose (ada di StarterKit) |
-| Design frontend untuk semua blok | ⚠️ Parsial — prose-only, tidak ada custom styling per-blok |
+| Fitur | Status | Keterangan |
+|-------|--------|------------|
+| Image dengan caption (FigureNode) | ✅ Ada | `apps/admin/src/components/editor/FigureNode.tsx` |
+| CTA Block | ✅ Ada | `apps/admin/src/components/editor/CtaBlock.tsx` |
+| CTA hydration di web | ✅ Ada | `apps/web/src/lib/render-content.tsx` + `html-react-parser` |
+| CSS citation di web | ✅ Ada | `globals.scss` — `.prose blockquote[data-citation]::after` |
 
 ### Pemakai `RichTextEditor` Saat Ini
 
@@ -55,24 +64,28 @@ Dokumen ini adalah source of truth untuk sistem rich text editor di Bantuanku. E
 | `activity-reports/create/page.tsx` | `description` | Isi laporan kegiatan |
 | `activity-reports/[id]/edit/page.tsx` | `description` | Edit laporan kegiatan |
 
-### Library Terpasang
+### Library Terpasang di `apps/admin`
 
 ```json
+"@tiptap/extension-link": "^3.15.3",
 "@tiptap/extension-placeholder": "^3.15.3",
+"@tiptap/extension-table": "^3.15.3",
+"@tiptap/extension-table-cell": "^3.15.3",
+"@tiptap/extension-table-header": "^3.15.3",
+"@tiptap/extension-table-row": "^3.15.3",
 "@tiptap/react": "^3.15.3",
 "@tiptap/starter-kit": "^3.15.3"
 ```
 
-### Library yang Perlu Ditambahkan
+> `@tiptap/extension-blockquote` tersedia sebagai hoisted dependency dari StarterKit — tidak perlu install terpisah.
+
+### Library apps/web (ditambahkan Fase 3)
 
 ```json
-"@tiptap/extension-image": "^3.x",
-"@tiptap/extension-link": "^3.x",
-"@tiptap/extension-table": "^3.x",
-"@tiptap/extension-table-row": "^3.x",
-"@tiptap/extension-table-cell": "^3.x",
-"@tiptap/extension-table-header": "^3.x"
+"html-react-parser": "^6.1.3"
 ```
+
+> `@tiptap/extension-image` tidak diperlukan — `FigureNode` adalah custom extension yang handle segalanya sendiri.
 
 ---
 
@@ -129,18 +142,32 @@ Dokumen ini adalah source of truth untuk sistem rich text editor di Bantuanku. E
 
 ## Desain Custom Extensions
 
-### 1. BlockquoteWithCitation
+### 1. BlockquoteWithCitation ✅ Diimplementasikan
 
-Blockquote standar Tiptap tidak mendukung `<cite>`. Implementasi:
+Extend `Blockquote` dari `@tiptap/extension-blockquote` dengan attribute `citation`:
 
-- Node group: `block`
-- Konten: dua paragraf — satu isi quote, satu citation (optional)
-- Input: ketik di dalam blockquote; tekan Tab atau klik area citation untuk isi sumber
+```ts
+const BlockquoteWithCitation = Blockquote.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      citation: {
+        default: null,
+        parseHTML: (el) => el.getAttribute("data-citation") || null,
+        renderHTML: (attrs) => attrs.citation ? { "data-citation": attrs.citation } : {},
+      },
+    };
+  },
+});
+```
+
+- Citation disimpan sebagai `data-citation` HTML attribute (bukan `<cite>` child node)
+- Di admin SCSS: `blockquote[data-citation]::after { content: '— ' attr(data-citation); ... }`
+- Di web: perlu ditambahkan override `prose blockquote[data-citation]::after` (belum done)
 - Output HTML:
   ```html
-  <blockquote>
+  <blockquote data-citation="Yusuf Qardhawi">
     <p>Zakat bukan sekadar kewajiban, melainkan hak fakir miskin atas harta kita.</p>
-    <cite>— Yusuf Qardhawi</cite>
   </blockquote>
   ```
 
@@ -445,39 +472,44 @@ npm install --workspace=apps/web html-react-parser
 
 ## Gap Implementasi
 
-| Gap | Prioritas | Catatan |
-|-----|-----------|---------|
-| Tombol H2/H3/H4 di toolbar | Tinggi | Extension sudah ada, tinggal expose di toolbar |
-| Extension Link + dialog URL | Tinggi | `@tiptap/extension-link` + dialog URLAutocomplete |
-| Extension Table + toolbar | Tinggi | Perlu install 4 extension |
-| FigureNode (image + caption) | Tinggi | Custom node + MediaLibrary popup |
-| BlockquoteWithCitation | Sedang | Custom node atau extend Blockquote |
-| CTA Block | Sedang | Custom atom node + dialog edit + `RenderContent` di web |
-| SCSS table/figure/cta di admin | Tinggi | Extend `_rich-text-editor.scss` |
-| CSS custom blok di web | Tinggi | `prose blockquote cite`, `figure figcaption`, CTA hydration |
-| `html-react-parser` di web | Sedang | Hanya jika CTA diimplementasikan |
-| H4 CSS di admin SCSS | Rendah | Saat ini ada `h4` di grup tapi ukuran belum didefinisikan |
+Semua fase selesai. Tidak ada gap yang tersisa. Zakat detail page (`/zakat/[slug]`) tidak render HTML editor — `description` field ditampilkan sebagai plain text, bukan HTML.
 
 ---
 
-## Urutan Implementasi Rekomendasi
+## Urutan Implementasi
 
-**Fase 1 — Toolbar Heading & Link (low effort, high value)**
-1. Tambah tombol H2/H3/H4 di toolbar
-2. Install `@tiptap/extension-link`, tambah tombol link + dialog URL sederhana
-3. Tambah SCSS heading H4 dan link
+**Fase 1 — ✅ SELESAI (2026-07-03): Toolbar Heading & Link**
+- H2/H3/H4 tombol di toolbar (Heading2Icon, Heading3Icon, Heading4Icon dari lucide)
+- Strikethrough toolbar
+- `@tiptap/extension-link` + dialog link pakai `URLAutocomplete`
+- Dialog link: URLAutocomplete + checkbox "Buka di tab baru"
+- SCSS: H4 style, strikethrough, link hover, link dialog styles
 
-**Fase 2 — Table & Blockquote Citation**
-1. Install table extensions, tambah tombol insert table
-2. Custom `BlockquoteWithCitation` node
-3. Extend SCSS untuk table dan blockquote primary border
+**Fase 2 — ✅ SELESAI (2026-07-03): Table & Blockquote Citation**
+- `@tiptap/extension-table` + TableRow/TableCell/TableHeader
+- Insert table 3×3 dengan header row
+- Contextual toolbar row saat kursor di dalam table (add/delete col/row, delete table)
+- `BlockquoteWithCitation` = `Blockquote.extend({ addAttributes: { citation } })`
+- Citation disimpan sebagai `data-citation` HTML attr; ditampilkan via CSS `::after`
+- Tombol `— cite` muncul di toolbar hanya saat kursor di blockquote
+- Dialog citation: input text + Simpan/Hapus Sumber/Batal
+- SCSS: table (th/td), citation `::after`, table controls row dengan warning color
 
-**Fase 3 — Image + Caption & CTA**
-1. Install `@tiptap/extension-image`
-2. Custom `FigureNode` dengan MediaLibrary popup
-3. Custom `CtaBlock` atom node + dialog edit fields
-4. `RenderContent` di web untuk hydrate CTA
-5. CSS figure/figcaption dan CTA di web
+**Fase 3 — ✅ SELESAI (2026-07-03): Image + Caption & CTA**
+- `FigureNode` custom extension (`apps/admin/src/components/editor/FigureNode.tsx`)
+  - `atom: true`, ReactNodeViewRenderer, click "Sisipkan Gambar" → MediaLibrary popup terbuka otomatis
+  - Figcaption editable inline via `contentEditable + onBlur → updateAttributes`
+  - "Ganti Gambar" button muncul saat node selected
+  - Output: `<figure><img src alt><figcaption>caption</figcaption></figure>`
+- `CtaBlock` custom extension (`apps/admin/src/components/editor/CtaBlock.tsx`)
+  - `atom: true`, ReactNodeViewRenderer, form dialog terbuka otomatis saat baru insert
+  - Fields: title, description, buttonText, buttonUrl (pakai URLAutocomplete)
+  - Preview card di editor; output: `<div data-type="cta-block" data-title data-description data-button-text data-button-url>`
+- `RenderContent` di web (`apps/web/src/lib/render-content.tsx`)
+  - Pakai `html-react-parser` untuk hydrate `data-type="cta-block"` → React component
+  - `CtaBlockDisplay`: gradient card + Link (internal) / `<a>` (eksternal)
+  - Dipakai di: CampaignTabs, QurbanTabs, LaporanDetailClient, DocumentationView, `page/[slug]/page.tsx`
+- CSS citation di web: `globals.scss` — `.prose blockquote[data-citation]::after`
 
 ---
 
