@@ -1,14 +1,14 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { formatDateWIB } from "@/lib/timezone";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import Autocomplete from "@/components/Autocomplete";
 import Pagination from "@/components/Pagination";
 import api from "@/lib/api";
-import { format, formatDistanceToNow } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
+import { formatDistanceToNow } from "date-fns";
 import { formatRupiah } from "@/lib/format";
 import { toast } from "react-hot-toast";
 
@@ -377,9 +377,7 @@ export default function DonationsPage() {
                     <div className="text-sm text-gray-700">{resolvePaymentMethod(donation)}</div>
                   </td>
                   <td className="text-gray-600 text-sm">
-                    {format(new Date(donation.createdAt), "dd MMM yyyy, HH:mm", {
-                      locale: idLocale,
-                    })}
+                    {formatDateWIB(donation.createdAt, "dd MMM yyyy, HH:mm")}
                   </td>
                   <td>
                     <div className="table-actions">
@@ -468,9 +466,7 @@ export default function DonationsPage() {
               <div className="table-card-row">
                 <span className="table-card-row-label">Dibuat</span>
                 <span className="table-card-row-value">
-                  {format(new Date(donation.createdAt), "dd MMM yyyy, HH:mm", {
-                    locale: idLocale,
-                  })}
+                  {formatDateWIB(donation.createdAt, "dd MMM yyyy, HH:mm")}
                 </span>
               </div>
 

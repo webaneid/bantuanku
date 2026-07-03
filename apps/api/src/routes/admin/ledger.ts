@@ -253,7 +253,7 @@ ledgerAdmin.post("/", zValidator("json", createSchema), async (c) => {
       description: body.description,
       notes: body.notes,
       status: "draft",
-      createdBy: user.id,
+      createdBy: user!.id,
     })
     .returning();
 
@@ -327,7 +327,7 @@ ledgerAdmin.post("/:id/submit", requireRole("super_admin", "admin_finance"), zVa
     .update(ledger)
     .set({
       status: "submitted",
-      submittedBy: user.id,
+      submittedBy: user!.id,
       submittedAt: new Date(),
       updatedAt: new Date(),
     })
@@ -361,7 +361,7 @@ ledgerAdmin.post("/:id/approve", requireRole("super_admin", "admin_finance"), zV
     .update(ledger)
     .set({
       status: "approved",
-      approvedBy: user.id,
+      approvedBy: user!.id,
       approvedAt: new Date(),
       updatedAt: new Date(),
     })
@@ -398,7 +398,7 @@ ledgerAdmin.post("/:id/reject", requireRole("super_admin", "admin_finance"), zVa
     .update(ledger)
     .set({
       status: "rejected",
-      rejectedBy: user.id,
+      rejectedBy: user!.id,
       rejectedAt: new Date(),
       rejectionReason: body.reason,
       updatedAt: new Date(),
@@ -456,7 +456,7 @@ ledgerAdmin.post("/:id/pay", requireRole("super_admin", "admin_finance"), zValid
         .update(ledger)
         .set({
           status: "paid",
-          paidBy: user.id,
+          paidBy: user!.id,
           paidAt: new Date(body.transactionDate),
           paymentMethod: body.paymentMethod,
           metadata: {
@@ -476,18 +476,18 @@ ledgerAdmin.post("/:id/pay", requireRole("super_admin", "admin_finance"), zValid
           title: `Payment Proof - ${body.paymentMethod}`,
           description: body.notes || `Payment made via ${body.paymentMethod}`,
           fileUrl: body.proofUrl,
-          uploadedBy: user.id,
+          uploadedBy: user!.id,
         });
       }
 
       // 3. Get campaign and expense account
-      const campaign = await tx.query.campaigns.findFirst({
-        where: eq(campaigns.id, existing.campaignId),
-      });
+      const campaign = existing.campaignId
+        ? await tx.query.campaigns.findFirst({ where: eq(campaigns.id, existing.campaignId) })
+        : null;
 
-      const expenseAccount = await tx.query.chartOfAccounts.findFirst({
-        where: eq(chartOfAccounts.id, existing.expenseAccountId),
-      });
+      const expenseAccount = existing.expenseAccountId
+        ? await tx.query.chartOfAccounts.findFirst({ where: eq(chartOfAccounts.id, existing.expenseAccountId) })
+        : null;
 
       if (!expenseAccount) {
         throw new Error("Expense account not found");
@@ -503,11 +503,11 @@ ledgerAdmin.post("/:id/pay", requireRole("super_admin", "admin_finance"), zValid
         amount: existing.amount,
         purpose: existing.purpose,
         recipientName: existing.recipientName,
-        campaignTitle: (await db.query.campaigns.findFirst({
-          where: eq(campaigns.id, existing.campaignId),
-        }))?.title || 'Unknown Campaign',
+        campaignTitle: existing.campaignId
+          ? (await db.query.campaigns.findFirst({ where: eq(campaigns.id, existing.campaignId) }))?.title || 'Unknown Campaign'
+          : 'Unknown Campaign',
         paymentMethod: body.paymentMethod,
-        createdBy: user.id,
+        createdBy: user!.id,
       });
     } catch (ledgerError) {
       console.error("Failed to create disbursement ledger entry:", ledgerError);
@@ -586,7 +586,7 @@ ledgerAdmin.post("/:id/evidence", zValidator("json", attachEvidenceSchema), asyn
       description: data.description,
       fileUrl: data.fileUrl,
       amount: data.amount,
-      uploadedBy: user.id,
+      uploadedBy: user!.id,
     })
     .returning();
 

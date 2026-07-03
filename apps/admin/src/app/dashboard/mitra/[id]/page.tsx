@@ -5,10 +5,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { formatRupiah } from "@/lib/format";
 import api from "@/lib/api";
+import { formatDateWIB } from "@/lib/timezone";
 
 const statusBadgeMap: Record<string, string> = {
   pending: "bg-warning-50 text-warning-700",
@@ -363,19 +362,19 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
               {data.createdAt && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">Terdaftar</span>
-                  <span>{format(new Date(data.createdAt), "dd MMM yyyy, HH:mm", { locale: idLocale })}</span>
+                  <span>{formatDateWIB(data.createdAt, "dd MMM yyyy, HH:mm")}</span>
                 </div>
               )}
               {data.verifiedAt && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">Diverifikasi</span>
-                  <span>{format(new Date(data.verifiedAt), "dd MMM yyyy, HH:mm", { locale: idLocale })}</span>
+                  <span>{formatDateWIB(data.verifiedAt, "dd MMM yyyy, HH:mm")}</span>
                 </div>
               )}
               {data.rejectedAt && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">Ditolak</span>
-                  <span>{format(new Date(data.rejectedAt), "dd MMM yyyy, HH:mm", { locale: idLocale })}</span>
+                  <span>{formatDateWIB(data.rejectedAt, "dd MMM yyyy, HH:mm")}</span>
                 </div>
               )}
               {data.rejectionReason && (
@@ -714,7 +713,7 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
                     </td>
                     <td className="text-sm text-gray-600">
                       {program.createdAt
-                        ? format(new Date(program.createdAt), "dd MMM yyyy", { locale: idLocale })
+                        ? formatDateWIB(program.createdAt, "dd MMM yyyy")
                         : "-"}
                     </td>
                   </tr>

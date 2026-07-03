@@ -616,7 +616,7 @@ settingsAdmin.post("/auto-update-silver-price", requireRole("super_admin", "admi
       return error(c, `Failed to fetch exchange rate: HTTP ${exchangeResponse.status}`, 500);
     }
 
-    const exchangeData = await exchangeResponse.json();
+    const exchangeData = await exchangeResponse.json() as any;
     const usdToIdr = exchangeData.rates?.IDR;
 
     if (!usdToIdr) {

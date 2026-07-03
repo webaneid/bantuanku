@@ -4,8 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Wallet, Eye, X, TrendingUp, Plus, Check, XCircle, ArrowRight, UserPlus, CheckCircle } from "lucide-react";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
 import api from "@/lib/api";
 import DonorModal from "@/components/modals/DonorModal";
 import Autocomplete from "@/components/Autocomplete";
@@ -13,6 +11,7 @@ import Pagination from "@/components/Pagination";
 import { formatRupiah } from "@/lib/format";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import { useAuth } from "@/lib/auth";
+import { formatDateWIB, todayWIBDateInput } from "@/lib/timezone";
 
 interface Savings {
   id: string;
@@ -90,7 +89,7 @@ export default function QurbanSavingsPage() {
     installmentAmount: "",
     installmentFrequency: "monthly" as "weekly" | "monthly" | "custom",
     installmentDay: "",
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: todayWIBDateInput(),
     notes: "",
   });
   const [feedback, setFeedback] = useState<{
@@ -321,7 +320,7 @@ export default function QurbanSavingsPage() {
         installmentAmount: "",
         installmentFrequency: "monthly",
         installmentDay: "",
-        startDate: new Date().toISOString().split('T')[0],
+        startDate: todayWIBDateInput(),
         notes: "",
       });
       setFeedback({
@@ -491,7 +490,7 @@ export default function QurbanSavingsPage() {
                       <div>
                         <div className="mono text-sm text-gray-900">{saving.savingsNumber}</div>
                         <div className="text-xs text-gray-500">
-                          {format(new Date(saving.createdAt), "dd MMM yyyy", { locale: id })}
+                          {formatDateWIB(saving.createdAt, "dd MMM yyyy")}
                         </div>
                       </div>
                     </td>
@@ -577,7 +576,7 @@ export default function QurbanSavingsPage() {
                   <div className="table-card-row">
                     <span className="table-card-row-label">Tanggal</span>
                     <span className="table-card-row-value">
-                      {format(new Date(saving.createdAt), "dd MMM yyyy", { locale: id })}
+                      {formatDateWIB(saving.createdAt, "dd MMM yyyy")}
                     </span>
                   </div>
 

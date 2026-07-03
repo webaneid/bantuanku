@@ -1,14 +1,13 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useState } from "react";
+import { formatDateWIB } from "@/lib/timezone";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { EyeIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useRouter } from "next/navigation";
 import Autocomplete from "@/components/Autocomplete";
 import Pagination from "@/components/Pagination";
 import api from "@/lib/api";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { formatRupiah } from "@/lib/format";
 import { getCategoryLabel } from "@/lib/category-utils";
 
@@ -345,9 +344,7 @@ export default function TransactionsPage() {
                   </td>
                   <td>{renderStatusBadge(transaction.paymentStatus)}</td>
                   <td className="text-gray-600 text-sm">
-                    {format(new Date(transaction.createdAt), "dd MMM yyyy, HH:mm", {
-                      locale: idLocale,
-                    })}
+                    {formatDateWIB(transaction.createdAt, "dd MMM yyyy, HH:mm")}
                   </td>
                   <td>
                     <div className="table-actions">
@@ -431,9 +428,7 @@ export default function TransactionsPage() {
               <div className="table-card-row">
                 <span className="table-card-row-label">Dibuat</span>
                 <span className="table-card-row-value">
-                  {format(new Date(transaction.createdAt), "dd MMM yyyy, HH:mm", {
-                    locale: idLocale,
-                  })}
+                  {formatDateWIB(transaction.createdAt, "dd MMM yyyy, HH:mm")}
                 </span>
               </div>
 

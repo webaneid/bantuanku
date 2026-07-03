@@ -81,7 +81,7 @@ app.get("/periods/:id/detail", async (c) => {
   const db = c.get("db");
   const user = c.get("user");
   const { id } = c.req.param();
-  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+  const isMitra = user?.roles?.length === 1 && user!.roles.includes("mitra");
 
   // Get period
   const period = await db
@@ -105,7 +105,7 @@ app.get("/periods/:id/detail", async (c) => {
     .where(
       and(
         eq(qurbanPackagePeriods.periodId, id),
-        ...(isMitra && user ? [eq(qurbanPackages.createdBy, user.id)] : [])
+        ...(isMitra && user ? [eq(qurbanPackages.createdBy, user!.id)] : [])
       )
     );
 
@@ -288,9 +288,9 @@ app.get("/packages", async (c) => {
   const apiUrl = (c.env as any)?.API_URL || "http://localhost:50245";
 
   // If mitra, only show own packages
-  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+  const isMitra = user?.roles?.length === 1 && user!.roles.includes("mitra");
   const packageConditions: any[] = [];
-  if (isMitra && user) packageConditions.push(eq(qurbanPackages.createdBy, user.id));
+  if (isMitra && user) packageConditions.push(eq(qurbanPackages.createdBy, user!.id));
   const packageWhere = packageConditions.length > 0 ? and(...packageConditions) : undefined;
 
   // Get all packages
@@ -360,7 +360,7 @@ app.get("/packages/:id", async (c) => {
   const user = c.get("user");
   const { id } = c.req.param();
   const apiUrl = (c.env as any)?.API_URL || "http://localhost:50245";
-  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+  const isMitra = user?.roles?.length === 1 && user!.roles.includes("mitra");
 
   // First, try to find as master package ID
   const pkg = await db
@@ -1482,7 +1482,7 @@ app.post("/orders", requireRole("super_admin", "admin_campaign"), async (c) => {
         .insert(qurbanSharedGroups)
         .values({
           id: createId(),
-          packageId: pkgPeriod.packageId,
+          packageId: pkgPeriod.packageId!,
           packagePeriodId: packagePeriodId,
           groupNumber: nextGroupNumber,
           maxSlots: maxSlots,
@@ -1718,7 +1718,7 @@ app.post("/orders/:id/payment-proof", requireRole("super_admin", "admin_campaign
     paymentChannel: body.payment_channel || null,
     paymentProof: body.payment_proof_url || null,
     status: isVerified ? "verified" : "pending",
-    verifiedBy: isVerified ? user.id : null,
+    verifiedBy: isVerified ? user!.id : null,
     verifiedAt: isVerified ? new Date() : null,
     installmentNumber: null,
     notes: body.notes || "Bukti pembayaran",
@@ -1771,7 +1771,7 @@ app.post("/orders/:id/approve-payment", requireRole("super_admin", "admin_campai
       .update(qurbanPayments)
       .set({
         status: "verified",
-        verifiedBy: user.id,
+        verifiedBy: user!.id,
         verifiedAt: new Date(),
         updatedAt: new Date(),
       })
@@ -1848,7 +1848,7 @@ app.post("/orders/:id/reject-payment", requireRole("super_admin", "admin_campaig
       .update(qurbanPayments)
       .set({
         status: "rejected",
-        verifiedBy: user.id,
+        verifiedBy: user!.id,
         verifiedAt: new Date(),
         notes: body.reason || "Ditolak oleh admin",
         updatedAt: new Date(),
@@ -1953,7 +1953,7 @@ app.post("/payments/:id/verify", requireRole("super_admin", "admin_campaign"), a
     .update(qurbanPayments)
     .set({
       status: "verified",
-      verifiedBy: user.id,
+      verifiedBy: user!.id,
       verifiedAt: new Date(),
       updatedAt: new Date(),
     })
@@ -2021,7 +2021,7 @@ app.post("/payments/:id/reject", requireRole("super_admin", "admin_campaign"), a
     .update(qurbanPayments)
     .set({
       status: "rejected",
-      verifiedBy: user.id,
+      verifiedBy: user!.id,
       verifiedAt: new Date(),
       notes: body.notes,
       updatedAt: new Date(),
@@ -2065,7 +2065,7 @@ app.put("/payments/:id", requireRole("super_admin", "admin_campaign"), async (c)
   if (body.status !== undefined) {
     updateData.status = body.status;
     if (body.status === "verified") {
-      updateData.verifiedBy = user.id;
+      updateData.verifiedBy = user!.id;
       updateData.verifiedAt = new Date();
     }
   }
@@ -2246,7 +2246,7 @@ app.get("/periods/:id/summary", async (c) => {
   const db = c.get("db");
   const user = c.get("user");
   const { id } = c.req.param();
-  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+  const isMitra = user?.roles?.length === 1 && user!.roles.includes("mitra");
 
   // Get all package_period_ids for this period
   const packagePeriods = await db
@@ -2260,7 +2260,7 @@ app.get("/periods/:id/summary", async (c) => {
     .where(
       and(
         eq(qurbanPackagePeriods.periodId, id),
-        ...(isMitra && user ? [eq(qurbanPackages.createdBy, user.id)] : [])
+        ...(isMitra && user ? [eq(qurbanPackages.createdBy, user!.id)] : [])
       )
     );
 
@@ -2339,7 +2339,7 @@ app.get("/periods/:id/summary", async (c) => {
         eq(disbursements.referenceType, "qurban_period"),
         eq(disbursements.referenceId, id),
         eq(disbursements.status, "paid"),
-        ...(isMitra && user ? [eq(disbursements.createdBy, user.id)] : [])
+        ...(isMitra && user ? [eq(disbursements.createdBy, user!.id)] : [])
       )
     );
 

@@ -1,3 +1,8 @@
+import { formatInTimeZone } from 'date-fns-tz';
+import { id as indonesianLocale } from 'date-fns/locale';
+
+const INDONESIA_TZ = 'Asia/Jakarta';
+
 /**
  * Format number to Indonesian Rupiah currency
  * @param amount - Number to format
@@ -103,7 +108,7 @@ export function truncate(text: string, maxLength: number): string {
 }
 
 /**
- * Format date to Indonesian locale in the viewer's local timezone
+ * Format date to Indonesian locale in WIB (Asia/Jakarta) timezone
  * @param date - Date object or string
  * @param format - Format type ('short', 'long', 'full')
  * @returns Formatted date string
@@ -114,19 +119,14 @@ export function formatDate(
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date;
 
-  const options: Intl.DateTimeFormatOptions =
+  const fmtStr =
     format === 'short'
-      ? { day: 'numeric', month: 'short', year: 'numeric' }
+      ? 'd MMM yyyy'
       : format === 'long'
-      ? { day: 'numeric', month: 'long', year: 'numeric' }
-      : {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        };
+      ? 'd MMMM yyyy'
+      : 'EEEE, d MMMM yyyy';
 
-  return d.toLocaleDateString('id-ID', options);
+  return formatInTimeZone(d, INDONESIA_TZ, fmtStr, { locale: indonesianLocale });
 }
 
 /**
@@ -157,7 +157,7 @@ export function getRelativeTime(date: Date | string): string {
 }
 
 /**
- * Format date with time in the viewer's local timezone
+ * Format date with time in WIB (Asia/Jakarta) timezone
  * @param date - Date object or string
  * @param includeSeconds - Include seconds in time (default: false)
  * @returns Formatted datetime string (e.g., "31 Jan 2026, 14:30")
@@ -167,22 +167,6 @@ export function formatDateTime(
   includeSeconds: boolean = false
 ): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-
-  const dateOptions: Intl.DateTimeFormatOptions = {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  };
-
-  const timeOptions: Intl.DateTimeFormatOptions = {
-    hour: '2-digit',
-    minute: '2-digit',
-    ...(includeSeconds && { second: '2-digit' }),
-    hour12: false
-  };
-
-  const datePart = d.toLocaleDateString('id-ID', dateOptions);
-  const timePart = d.toLocaleTimeString('id-ID', timeOptions);
-
-  return `${datePart}, ${timePart}`;
+  const fmtStr = includeSeconds ? 'd MMM yyyy, HH:mm:ss' : 'd MMM yyyy, HH:mm';
+  return formatInTimeZone(d, INDONESIA_TZ, fmtStr);
 }

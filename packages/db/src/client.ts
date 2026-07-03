@@ -1,4 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore -- pg has no bundled types; @types/pg conflicts with ESM usage
 import pkg from "pg";
 const { Pool } = pkg;
 import * as schema from "./schema";

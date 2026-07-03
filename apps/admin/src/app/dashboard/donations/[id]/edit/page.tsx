@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
+import { formatDateWIB } from "@/lib/timezone";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon, CloudArrowUpIcon, PaperClipIcon, TrashIcon } from "@heroicons/react/24/outline";
@@ -8,8 +9,6 @@ import Autocomplete from "@/components/Autocomplete";
 import MediaLibrary from "@/components/MediaLibrary";
 import api from "@/lib/api";
 import { toast } from "react-hot-toast";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 
 export default function EditDonationPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -404,9 +403,7 @@ export default function EditDonationPage({ params }: { params: Promise<{ id: str
                         {evidence.title}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {format(new Date(evidence.uploadedAt), "dd MMM yyyy HH:mm", {
-                          locale: idLocale,
-                        })}
+                        {formatDateWIB(evidence.uploadedAt, "dd MMM yyyy HH:mm")}
                       </p>
                     </div>
                     <a

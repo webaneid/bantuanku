@@ -1,6 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { bankAccounts } from "@bantuanku/db";
-import type { DB } from "../types";
+import type { Database } from "@bantuanku/db";
 
 /**
  * Update bank balance (sesuai blueprint COA)
@@ -9,7 +9,7 @@ import type { DB } from "../types";
  * @param amount - Amount to add/subtract (positive = increase, negative = decrease)
  */
 export async function updateBankBalance(
-  db: DB,
+  db: Database,
   bankAccountId: string,
   amount: number
 ): Promise<void> {

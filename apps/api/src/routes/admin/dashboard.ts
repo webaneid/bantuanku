@@ -245,13 +245,13 @@ dashboard.get("/enhanced-stats", async (c) => {
       .where(eq(disbursements.status, "submitted")),
 
     db.select({
-      date: sql<string>`date(${transactions.paidAt})`,
+      date: sql<string>`date(${transactions.paidAt} AT TIME ZONE 'Asia/Jakarta')`,
       count: sql<number>`count(*)`,
       amount: sql<number>`coalesce(sum(${transactions.totalAmount}), 0)`,
     }).from(transactions)
       .where(and(eq(transactions.paymentStatus, "paid"), gte(transactions.paidAt, currentStart)))
-      .groupBy(sql`date(${transactions.paidAt})`)
-      .orderBy(sql`date(${transactions.paidAt})`),
+      .groupBy(sql`date(${transactions.paidAt} AT TIME ZONE 'Asia/Jakarta')`)
+      .orderBy(sql`date(${transactions.paidAt} AT TIME ZONE 'Asia/Jakarta')`),
   ]);
 
   const currentAmount = Number(currentPeriodStats[0]?.amount || 0);

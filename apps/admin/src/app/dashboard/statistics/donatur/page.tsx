@@ -22,6 +22,7 @@ import {
   Download,
 } from "lucide-react";
 import api from "@/lib/api";
+import { todayWIBDateInput } from "@/lib/timezone";
 
 const PIE_COLORS = ["#035a52", "#d2aa55", "#296585", "#e74c3c", "#8b5cf6", "#f59e0b"];
 
@@ -80,7 +81,7 @@ export default function StatistikDonaturPage() {
       link.href = url;
       const filename = startDate && endDate
         ? `donatur-${startDate}-to-${endDate}.csv`
-        : `donatur-all-${new Date().toISOString().split("T")[0]}.csv`;
+        : `donatur-all-${todayWIBDateInput()}.csv`;
       link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();

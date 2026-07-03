@@ -3224,7 +3224,7 @@ export default function FrontendSettingsPage() {
         }}
         selectedUrl={slideForm.image}
         accept="image/*"
-        category="activity"
+        category="general"
       />
 
       {deleteColumnId && (

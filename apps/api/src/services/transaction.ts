@@ -456,27 +456,27 @@ export class TransactionService {
       .returning();
 
     // Create fundraiser referral record
+    // commissionAmount dan commissionPercentage dikosongkan di sini — nilai final
+    // ditetapkan oleh RevenueShareService.calculateForPaidTransaction() saat paid,
+    // yang memakai global amil_fundraiser_percentage (bukan per-fundraiser rate).
     if (fundraiser && referredByFundraiserId) {
-      const commissionPct = parseFloat(fundraiser.commissionPercentage || "5.00");
-      const commissionAmount = Math.floor(totalAmount * commissionPct / 100);
-
       await this.db.insert(fundraiserReferrals).values({
         fundraiserId: referredByFundraiserId,
         transactionId: result[0].id,
         donationAmount: totalAmount,
-        commissionPercentage: fundraiser.commissionPercentage || "5.00",
-        commissionAmount,
+        commissionPercentage: "0.00",
+        commissionAmount: 0,
         status: "pending",
       });
 
-      // Update fundraiser stats
+      // Update fundraiser pipeline stats (count & volume saja)
+      // currentBalance dan totalCommissionEarned HANYA di-update saat transaksi paid
+      // via RevenueShareService.calculateForPaidTransaction() — bukan di sini
       await this.db
         .update(fundraisers)
         .set({
           totalReferrals: (fundraiser.totalReferrals || 0) + 1,
           totalDonationAmount: (fundraiser.totalDonationAmount || 0) + totalAmount,
-          totalCommissionEarned: (fundraiser.totalCommissionEarned || 0) + commissionAmount,
-          currentBalance: (fundraiser.currentBalance || 0) + commissionAmount,
           updatedAt: new Date(),
         })
         .where(eq(fundraisers.id, referredByFundraiserId));

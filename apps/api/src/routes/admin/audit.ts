@@ -111,13 +111,13 @@ auditAdmin.get("/stats", requireRole("super_admin"), async (c) => {
 
   const byDate = await db
     .select({
-      date: sql<string>`date(${auditLogs.createdAt})`,
+      date: sql<string>`date(${auditLogs.createdAt} AT TIME ZONE 'Asia/Jakarta')`,
       count: sql<number>`count(*)`,
     })
     .from(auditLogs)
     .where(whereClause)
-    .groupBy(sql`date(${auditLogs.createdAt})`)
-    .orderBy(sql`date(${auditLogs.createdAt})`);
+    .groupBy(sql`date(${auditLogs.createdAt} AT TIME ZONE 'Asia/Jakarta')`)
+    .orderBy(sql`date(${auditLogs.createdAt} AT TIME ZONE 'Asia/Jakarta')`);
 
   return success(c, {
     byEntity,

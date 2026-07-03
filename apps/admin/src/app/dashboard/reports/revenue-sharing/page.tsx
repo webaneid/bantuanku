@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import api from "@/lib/api";
+import { formatDateWIB, todayWIBDateInput } from "@/lib/timezone";
 import { formatRupiah } from "@/lib/format";
 import ExportButton from "@/components/reports/ExportButton";
 import { exportToExcel } from "@/utils/export-excel";
@@ -91,7 +90,7 @@ export default function RevenueSharingReportPage() {
   const handleExportExcel = () => {
     exportToExcel({
       data: rows.map((r) => ({
-        date: format(new Date(r.calculatedAt), "dd/MM/yyyy", { locale: idLocale }),
+        date: formatDateWIB(r.calculatedAt, "dd/MM/yyyy"),
         transaction: r.transactionNumber || "-",
         product: r.productName || "-",
         productType: productTypeLabels[r.productType || ""] || r.productType || "-",
@@ -114,7 +113,7 @@ export default function RevenueSharingReportPage() {
         { header: "Amil Net", key: "amilNet", width: 16, format: "currency" },
         { header: "Dana Program", key: "program", width: 16, format: "currency" },
       ],
-      filename: `Bagi-Hasil-Amil-${new Date().toISOString().slice(0, 10)}`,
+      filename: `Bagi-Hasil-Amil-${todayWIBDateInput()}`,
       title: "Laporan Bagi Hasil Amil",
       summaryRow: {
         date: "TOTAL",
@@ -199,7 +198,7 @@ export default function RevenueSharingReportPage() {
                 {rows.map((row) => (
                   <tr key={row.id} className="hover:bg-gray-50">
                     <td className="text-sm text-gray-700">
-                      {format(new Date(row.calculatedAt), "dd MMM yyyy", { locale: idLocale })}
+                      {formatDateWIB(row.calculatedAt, "dd MMM yyyy")}
                     </td>
                     <td>
                       <div className="text-sm font-medium text-gray-900">{row.transactionNumber || "-"}</div>
@@ -261,7 +260,7 @@ export default function RevenueSharingReportPage() {
                 <div className="table-card-header-left">
                   <div className="table-card-header-title">{row.productName || "-"}</div>
                   <div className="table-card-header-subtitle">
-                    {format(new Date(row.calculatedAt), "dd MMM yyyy", { locale: idLocale })} · {row.transactionNumber || "-"}
+                    {formatDateWIB(row.calculatedAt, "dd MMM yyyy")} · {row.transactionNumber || "-"}
                   </div>
                 </div>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">

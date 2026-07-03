@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatDate } from '@/lib/format';
 
 interface DisbursementRow {
   id: string;
@@ -70,7 +71,7 @@ export default function QurbanPenyaluranTable({ rows, totalDisbursed }: { rows: 
                 <td>{d.recipientName}</td>
                 <td>{d.category || '-'}</td>
                 <td className="mono">Rp {formatRupiah(d.amount)}</td>
-                <td>{d.paidAt ? new Date(d.paidAt).toLocaleDateString('id-ID') : '-'}</td>
+                <td>{d.paidAt ? formatDate(d.paidAt) : '-'}</td>
               </tr>
             ))}
             {rows.length === 0 && (
@@ -115,7 +116,7 @@ export default function QurbanPenyaluranTable({ rows, totalDisbursed }: { rows: 
             <div className="table-card-row">
               <span className="table-card-row-label">Tanggal</span>
               <span className="table-card-row-value">
-                {d.paidAt ? new Date(d.paidAt).toLocaleDateString('id-ID') : '-'}
+                {d.paidAt ? formatDate(d.paidAt) : '-'}
               </span>
             </div>
           </div>

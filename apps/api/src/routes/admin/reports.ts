@@ -232,14 +232,14 @@ reportsAdmin.get("/donations-summary", requireRole("super_admin", "admin_finance
 
   const byDate = await db
     .select({
-      date: sql<string>`date(${transactions.createdAt})`,
+      date: sql<string>`date(${transactions.createdAt} AT TIME ZONE 'Asia/Jakarta')`,
       totalDonations: sql<number>`count(*)`,
       totalAmount: sql<number>`sum(${transactions.totalAmount})`,
     })
     .from(transactions)
     .where(whereClause)
-    .groupBy(sql`date(${transactions.createdAt})`)
-    .orderBy(sql`date(${transactions.createdAt})`);
+    .groupBy(sql`date(${transactions.createdAt} AT TIME ZONE 'Asia/Jakarta')`)
+    .orderBy(sql`date(${transactions.createdAt} AT TIME ZONE 'Asia/Jakarta')`);
 
   return success(c, {
     summary,

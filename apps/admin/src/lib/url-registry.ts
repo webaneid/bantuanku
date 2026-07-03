@@ -54,6 +54,12 @@ const STATIC_URLS: URLOption[] = [
     category: 'Static',
     description: 'Halaman arsip semua laporan kegiatan',
   },
+  {
+    value: '/daftar-mitra',
+    label: 'Daftar Mitra',
+    category: 'Static',
+    description: 'Form pendaftaran mitra lembaga baru',
+  },
 ];
 
 /**

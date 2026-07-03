@@ -10,6 +10,7 @@ import MediaLibrary from "@/components/MediaLibrary";
 import AdminPaymentMethodList from "@/components/AdminPaymentMethodList";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import { useAuth } from "@/lib/auth";
+import { todayWIBDateInput } from "@/lib/timezone";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
@@ -52,7 +53,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
   const [paymentData, setPaymentData] = useState({
     destination_bank_id: "",
     transfer_proof_url: "",
-    transfer_date: new Date().toISOString().slice(0, 10),
+    transfer_date: todayWIBDateInput(),
     transferred_amount: 0,
     additional_fees: 0,
   });
@@ -186,7 +187,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
       setPaymentData({
         destination_bank_id: "",
         transfer_proof_url: "",
-        transfer_date: new Date().toISOString().slice(0, 10),
+        transfer_date: todayWIBDateInput(),
         transferred_amount: disbursement.amount || 0,
         additional_fees: 0,
       });

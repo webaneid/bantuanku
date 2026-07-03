@@ -238,7 +238,7 @@ app.post("/", requireRoles("super_admin", "admin_campaign"), async (c) => {
       description: description || null,
       notes: notes || null,
       status: status || "draft",
-      createdBy: user.id,
+      createdBy: user!.id,
     })
     .returning();
 
@@ -387,7 +387,7 @@ app.post("/:id/approve", requireRoles("super_admin", "admin_campaign"), async (c
     .update(zakatDistributions)
     .set({
       status: "approved",
-      approvedBy: user.id,
+      approvedBy: user!.id,
       approvedAt: new Date(),
       sourceBankId,
       sourceBankName,
@@ -439,7 +439,7 @@ app.post("/:id/disburse", requireRoles("super_admin", "admin_campaign"), async (
       .update(zakatDistributions)
       .set({
         status: "disbursed",
-        disbursedBy: user.id,
+        disbursedBy: user!.id,
         disbursedAt: new Date(),
         updatedAt: new Date(),
       })
@@ -516,7 +516,7 @@ app.post("/:id/disburse", requireRoles("super_admin", "admin_campaign"), async (
             },
             createdBy: existing[0].createdBy,
             approvedBy: existing[0].approvedBy || null,
-            paidBy: user.id,
+            paidBy: user!.id,
             paidAt: new Date(),
             approvedAt: existing[0].approvedAt || null,
           });
@@ -605,7 +605,7 @@ app.post("/:id/add-report", requireRoles("super_admin", "admin_campaign", "progr
       reportDate: new Date(reportDate),
       reportDescription,
       reportPhotos: JSON.stringify(reportPhotos),
-      reportAddedBy: user.id,
+      reportAddedBy: user!.id,
       reportAddedAt: new Date(),
       updatedAt: new Date(),
     })

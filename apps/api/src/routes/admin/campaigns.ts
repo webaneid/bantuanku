@@ -100,10 +100,10 @@ campaignsAdmin.get("/", coordinatorFilter, async (c) => {
   }
 
   // Filter by mitra if user has mitra role only
-  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+  const isMitra = user?.roles?.length === 1 && user!.roles.includes("mitra");
   if (isMitra && user) {
     const mitraRecord = await db.query.mitra.findFirst({
-      where: eq(mitra.userId, user.id),
+      where: eq(mitra.userId, user!.id),
     });
     if (mitraRecord) {
       conditions.push(eq(campaigns.mitraId, mitraRecord.id));
@@ -185,7 +185,7 @@ campaignsAdmin.post(
     if (user?.roles?.includes("program_coordinator")) {
       // Get employee ID for this user
       const employee = await db.query.employees.findFirst({
-        where: eq(employees.userId, user.id),
+        where: eq(employees.userId, user!.id),
       });
       if (employee) {
         finalCoordinatorId = employee.id;
@@ -235,7 +235,7 @@ campaignsAdmin.post(
       imageUrl: cleanImageUrl || "",
       images: cleanImages,
       videoUrl: body.videoUrl,
-      goal: finalGoal,
+      goal: finalGoal ?? 0,
       category: body.category || "",
       categoryId: body.categoryId,
       pillar: body.pillar,
@@ -294,7 +294,7 @@ campaignsAdmin.get("/:id", async (c) => {
   }
 
   // Mitra can only see their own campaigns
-  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+  const isMitra = user?.roles?.length === 1 && user!.roles.includes("mitra");
   if (isMitra) {
     const mitraRecord = await db.query.mitra.findFirst({
       where: eq(mitra.userId, user!.id),
@@ -396,12 +396,12 @@ const updateCampaign = async (c: any) => {
 
   if (user?.roles?.includes("program_coordinator") || isEmployeeRole) {
     const employee = await db.query.employees.findFirst({
-      where: eq(employees.userId, user.id),
+      where: eq(employees.userId, user!.id),
     });
 
     if (employee) {
       // Check if coordinator owns this campaign OR created it
-      const isOwner = campaign.coordinatorId === employee.id || campaign.createdBy === user.id;
+      const isOwner = campaign.coordinatorId === employee.id || campaign.createdBy === user!.id;
 
       if (!isOwner) {
         return error(c, "You can only edit campaigns you are responsible for", 403);
@@ -597,12 +597,12 @@ campaignsAdmin.post(
 
     if (user?.roles?.includes("program_coordinator") || isEmployeeRole) {
       const employee = await db.query.employees.findFirst({
-        where: eq(employees.userId, user.id),
+        where: eq(employees.userId, user!.id),
       });
 
       if (employee) {
         // Check if coordinator owns this campaign OR created it
-        const isOwner = campaign.coordinatorId === employee.id || campaign.createdBy === user.id;
+        const isOwner = campaign.coordinatorId === employee.id || campaign.createdBy === user!.id;
 
         if (!isOwner) {
           return error(c, "You can only create updates for campaigns you are responsible for", 403);

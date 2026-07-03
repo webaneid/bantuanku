@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatDate } from '@/lib/format';
 
 interface PenerimaanRow {
   id: string;
@@ -78,7 +79,7 @@ export default function QurbanPenerimaanTable({ rows }: { rows: PenerimaanRow[] 
             {paginatedRows.map((row, index) => (
               <tr key={row.id}>
                 <td>{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</td>
-                <td>{row.paidAt ? new Date(row.paidAt).toLocaleDateString('id-ID') : '-'}</td>
+                <td>{row.paidAt ? formatDate(row.paidAt) : '-'}</td>
                 <td>{row.programName}</td>
                 <td>{row.packageName}</td>
                 <td>{animalLabel(row.animalType)}</td>
@@ -112,7 +113,7 @@ export default function QurbanPenerimaanTable({ rows }: { rows: PenerimaanRow[] 
             <div className="table-card-row">
               <span className="table-card-row-label">Tanggal</span>
               <span className="table-card-row-value">
-                {row.paidAt ? new Date(row.paidAt).toLocaleDateString('id-ID') : '-'}
+                {row.paidAt ? formatDate(row.paidAt) : '-'}
               </span>
             </div>
             <div className="table-card-row">

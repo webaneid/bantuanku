@@ -49,7 +49,7 @@ evidencesAdmin.get("/:id", async (c) => {
           email: true,
         },
       },
-      disbursement: true,
+      ledgerEntry: true,
     },
   });
 
@@ -88,7 +88,7 @@ evidencesAdmin.post("/", zValidator("json", createSchema), async (c) => {
     .insert(evidences)
     .values({
       ...body,
-      uploadedBy: user.id,
+      uploadedBy: user!.id,
     })
     .returning();
 
@@ -132,7 +132,7 @@ evidencesAdmin.delete("/:id", async (c) => {
   const existing = await db.query.evidences.findFirst({
     where: eq(evidences.id, id),
     with: {
-      disbursement: true,
+      ledgerEntry: { columns: { id: true, status: true } },
     },
   });
 
@@ -141,7 +141,7 @@ evidencesAdmin.delete("/:id", async (c) => {
   }
 
   // Only allow deletion if disbursement is still in draft or submitted status
-  if (existing.disbursement.status !== "draft" && existing.disbursement.status !== "submitted") {
+  if (existing.ledgerEntry?.status !== "draft" && existing.ledgerEntry?.status !== "submitted") {
     return errorResponse(c, "Cannot delete evidence from approved/paid disbursement", 400);
   }
 

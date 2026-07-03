@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { formatDateWIB } from "@/lib/timezone";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { EyeIcon, PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Modal from "@/components/Modal";
 import Autocomplete from "@/components/Autocomplete";
@@ -482,9 +481,7 @@ export default function CampaignsPage() {
                     </span>
                   </td>
                   <td className="text-gray-600 text-sm">
-                    {format(new Date(campaign.createdAt), "EEEE, dd MMM yyyy", {
-                      locale: idLocale,
-                    })}
+                    {formatDateWIB(campaign.createdAt, "EEEE, dd MMM yyyy")}
                   </td>
                   <td>
                     <div className="table-actions">

@@ -146,9 +146,8 @@ finance.post("/ledger", zValidator("json", createDisbursementSchema), async (c) 
     id: disbursementId,
     referenceId,
     ...body,
-    status: "pending",
-    requestedBy: user!.id,
-    requestedAt: new Date(),
+    status: "draft",
+    createdBy: user!.id,
   });
 
   return success(c, { id: disbursementId, referenceId }, "Disbursement created", 201);
@@ -252,9 +251,9 @@ finance.post("/ledger/:id/complete", async (c) => {
   await db
     .update(ledger)
     .set({
-      status: "completed",
-      completedAt: new Date(),
-      proofUrl: body.proofUrl,
+      status: "paid",
+      paidAt: new Date(),
+      paidBy: user!.id,
       updatedAt: new Date(),
     })
     .where(eq(ledger.id, id));
@@ -263,6 +262,7 @@ finance.post("/ledger/:id/complete", async (c) => {
     disbursementId: disbursement.id,
     amount: disbursement.amount,
     purpose: disbursement.purpose,
+    campaignTitle: disbursement.purpose || "Pencairan Dana",
     recipientName: disbursement.recipientName,
     createdBy: user!.id,
   });

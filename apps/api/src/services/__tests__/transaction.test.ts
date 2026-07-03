@@ -1,6 +1,9 @@
+// @ts-ignore
 import { describe, it, expect, beforeAll } from "bun:test";
-import { db } from "@bantuanku/db/client";
+import { createDb } from "@bantuanku/db/client";
 import { TransactionService } from "../transaction";
+
+const db = createDb(process.env.DATABASE_URL!);
 
 describe("TransactionService", () => {
   let service: TransactionService;
@@ -100,21 +103,21 @@ describe("TransactionService", () => {
       });
 
       expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
+      expect(Array.isArray(result.data)).toBe(true);
     });
   });
 
   describe("getById", () => {
     it("should get transaction by id", async () => {
       const allTransactions = await service.list({ limit: 1 });
-      if (allTransactions.length === 0) {
+      if (allTransactions.data.length === 0) {
         console.log("No transactions found, skipping test");
         return;
       }
 
-      const transaction = await service.getById(allTransactions[0].id);
+      const transaction = await service.getById(allTransactions.data[0].id);
       expect(transaction).toBeDefined();
-      expect(transaction?.id).toBe(allTransactions[0].id);
+      expect(transaction?.id).toBe(allTransactions.data[0].id);
     });
   });
 });

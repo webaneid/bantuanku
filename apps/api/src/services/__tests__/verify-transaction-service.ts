@@ -86,7 +86,7 @@ async function verify() {
       console.log(`   - Quantity: ${qurbanTx.quantity}`);
       console.log(`   - Unit Price: Rp ${qurbanTx.unitPrice.toLocaleString()}`);
       console.log(`   - Subtotal: Rp ${qurbanTx.subtotal.toLocaleString()}`);
-      console.log(`   - Admin Fee: Rp ${qurbanTx.adminFee.toLocaleString()}`);
+      console.log(`   - Admin Fee: Rp ${(qurbanTx.adminFee || 0).toLocaleString()}`);
       console.log(`   - Total: Rp ${qurbanTx.totalAmount.toLocaleString()}`);
     } else {
       console.log("⚠️  No qurban package periods found");
@@ -95,15 +95,15 @@ async function verify() {
     // Test 4: List Transactions
     console.log("\n📋 Test 4: List Transactions");
     const list = await service.list({ limit: 3 });
-    console.log(`✅ Listed ${list.length} transactions`);
-    list.forEach((tx, i) => {
+    console.log(`✅ Listed ${list.data.length} transactions`);
+    list.data.forEach((tx, i) => {
       console.log(`   ${i + 1}. ${tx.transactionNumber} - ${tx.productType} - ${tx.productName}`);
     });
 
     // Test 5: Get by ID
     console.log("\n📋 Test 5: Get Transaction by ID");
-    if (list.length > 0) {
-      const tx = await service.getById(list[0].id);
+    if (list.data.length > 0) {
+      const tx = await service.getById(list.data[0].id);
       console.log(`✅ Retrieved transaction: ${tx?.transactionNumber}`);
     }
 

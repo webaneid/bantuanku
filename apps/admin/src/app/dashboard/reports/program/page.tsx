@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import api from "@/lib/api";
 import { formatRupiah } from "@/lib/format";
 import ExportButton from "@/components/reports/ExportButton";
 import { exportToExcel, exportMultiSheetExcel } from "@/utils/export-excel";
+import { formatDateWIB } from "@/lib/timezone";
 
 interface ProgramRow {
   id: string;
@@ -111,7 +110,7 @@ export default function ProgramReportPage() {
           title: `Pemasukan - ${detailData.campaign.title}`,
           subtitle: `Periode: ${startDate} s/d ${endDate}`,
           data: detailData.income.map((t) => ({
-            date: t.paidAt ? format(new Date(t.paidAt), "dd/MM/yyyy", { locale: idLocale }) : "-",
+            date: t.paidAt ? formatDateWIB(t.paidAt, "dd/MM/yyyy") : "-",
             number: t.transactionNumber,
             donor: t.donorName,
             amount: t.totalAmount,
@@ -129,7 +128,7 @@ export default function ProgramReportPage() {
           title: `Pengeluaran - ${detailData.campaign.title}`,
           subtitle: `Periode: ${startDate} s/d ${endDate}`,
           data: detailData.expense.map((d) => ({
-            date: d.paidAt ? format(new Date(d.paidAt), "dd/MM/yyyy", { locale: idLocale }) : "-",
+            date: d.paidAt ? formatDateWIB(d.paidAt, "dd/MM/yyyy") : "-",
             number: d.disbursementNumber,
             category: d.category,
             recipient: d.recipientName,
@@ -354,7 +353,7 @@ export default function ProgramReportPage() {
                     <tbody>
                       {detailData.income.map((t) => (
                         <tr key={t.id}>
-                          <td className="text-sm text-gray-600">{t.paidAt ? format(new Date(t.paidAt), "dd MMM yyyy", { locale: idLocale }) : "-"}</td>
+                          <td className="text-sm text-gray-600">{t.paidAt ? formatDateWIB(t.paidAt, "dd MMM yyyy") : "-"}</td>
                           <td className="text-sm">{t.transactionNumber}</td>
                           <td className="text-sm">{t.donorName}</td>
                           <td className="text-right text-sm mono text-success-600 font-medium">Rp {formatRupiah(t.totalAmount)}</td>
@@ -391,7 +390,7 @@ export default function ProgramReportPage() {
                     <tbody>
                       {detailData.expense.map((d) => (
                         <tr key={d.id}>
-                          <td className="text-sm text-gray-600">{d.paidAt ? format(new Date(d.paidAt), "dd MMM yyyy", { locale: idLocale }) : "-"}</td>
+                          <td className="text-sm text-gray-600">{d.paidAt ? formatDateWIB(d.paidAt, "dd MMM yyyy") : "-"}</td>
                           <td className="text-sm">{d.disbursementNumber}</td>
                           <td className="text-sm">{d.recipientName}</td>
                           <td className="text-sm">{d.purpose || "-"}</td>

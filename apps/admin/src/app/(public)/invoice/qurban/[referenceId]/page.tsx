@@ -2,12 +2,11 @@
 
 import { use, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { formatRupiah } from "@/lib/format";
 import api from "@/lib/api";
 import { ClipboardIcon, PrinterIcon, PaperClipIcon } from "@heroicons/react/24/outline";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import { formatDateWIB } from "@/lib/timezone";
 
 export default function QurbanInvoicePage({
   params,
@@ -353,14 +352,14 @@ export default function QurbanInvoicePage({
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Tanggal Order</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {format(new Date(order.created_at), "dd MMMM yyyy, HH:mm", { locale: idLocale })}
+                    {formatDateWIB(order.created_at, "dd MMMM yyyy, HH:mm")}
                   </p>
                 </div>
                 {order.confirmed_at && (
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Tanggal Konfirmasi</p>
                     <p className="text-sm font-medium text-gray-900">
-                      {format(new Date(order.confirmed_at), "dd MMMM yyyy, HH:mm", { locale: idLocale })}
+                      {formatDateWIB(order.confirmed_at, "dd MMMM yyyy, HH:mm")}
                     </p>
                   </div>
                 )}
@@ -396,9 +395,7 @@ export default function QurbanInvoicePage({
                             Rp {formatRupiah(payment.amount)}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {format(new Date(payment.created_at), "dd MMM yyyy, HH:mm", {
-                              locale: idLocale,
-                            })}
+                            {formatDateWIB(payment.created_at, "dd MMM yyyy, HH:mm")}
                           </p>
                         </div>
                         <span

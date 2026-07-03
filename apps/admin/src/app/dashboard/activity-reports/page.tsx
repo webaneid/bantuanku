@@ -4,13 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { EyeIcon, PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Modal from "@/components/Modal";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import Autocomplete from "@/components/Autocomplete";
 import Pagination from "@/components/Pagination";
+import { formatDateWIB } from "@/lib/timezone";
 
 export default function ActivityReportsPage() {
   const router = useRouter();
@@ -200,7 +199,7 @@ export default function ActivityReportsPage() {
                     </td>
                     <td>
                       <div className="text-sm text-gray-600">
-                        {format(new Date(report.activityDate), "dd MMM yyyy", { locale: idLocale })}
+                        {formatDateWIB(report.activityDate, "dd MMM yyyy")}
                       </div>
                     </td>
                     <td>
@@ -268,7 +267,7 @@ export default function ActivityReportsPage() {
                 <div className="table-card-row">
                   <span className="table-card-row-label">Tanggal Kegiatan</span>
                   <span className="table-card-row-value">
-                    {format(new Date(report.activityDate), "dd MMM yyyy", { locale: idLocale })}
+                    {formatDateWIB(report.activityDate, "dd MMM yyyy")}
                   </span>
                 </div>
 

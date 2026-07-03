@@ -55,14 +55,14 @@ analyticsAdmin.get("/overview", requireRole("super_admin", "admin_finance", "adm
 
   const donationTrend = await db
     .select({
-      date: sql<string>`date(${transactions.paidAt})`,
+      date: sql<string>`date(${transactions.paidAt} AT TIME ZONE 'Asia/Jakarta')`,
       count: sql<number>`count(*)`,
       amount: sql<number>`coalesce(sum(${transactions.totalAmount}), 0)`,
     })
     .from(transactions)
     .where(and(eq(transactions.paymentStatus, "paid"), gte(transactions.paidAt, startDate)))
-    .groupBy(sql`date(${transactions.paidAt})`)
-    .orderBy(sql`date(${transactions.paidAt})`);
+    .groupBy(sql`date(${transactions.paidAt} AT TIME ZONE 'Asia/Jakarta')`)
+    .orderBy(sql`date(${transactions.paidAt} AT TIME ZONE 'Asia/Jakarta')`);
 
   return success(c, {
     totalCampaigns: Number(totalCampaigns.count),

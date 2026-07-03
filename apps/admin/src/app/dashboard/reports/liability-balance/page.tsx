@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { todayWIBDateInput } from "@/lib/timezone";
 import { formatRupiah } from "@/lib/format";
 import ExportButton from "@/components/reports/ExportButton";
 import { exportToExcel } from "@/utils/export-excel";
@@ -86,7 +87,7 @@ export default function LiabilityBalanceReportPage() {
         { header: "Sisa Titipan", key: "remainingLiability", width: 18, format: "currency" },
         { header: "% Disalurkan", key: "percentage", width: 14 },
       ],
-      filename: `Saldo-Titipan-Dana-${new Date().toISOString().slice(0, 10)}`,
+      filename: `Saldo-Titipan-Dana-${todayWIBDateInput()}`,
       title: "Laporan Saldo Titipan Dana",
       summaryRow: {
         campaign: "TOTAL",

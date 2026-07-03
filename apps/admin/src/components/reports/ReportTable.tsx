@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { formatRupiah } from "@/lib/format";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { formatDateWIB } from "@/lib/timezone";
 
 interface Column {
   key: string;
@@ -50,7 +49,7 @@ function formatCellValue(value: any, col: Column): React.ReactNode {
     case "date":
       try {
         const d = typeof value === "string" ? new Date(value) : value;
-        return format(d, "dd MMM yyyy", { locale: idLocale });
+        return formatDateWIB(d, "dd MMM yyyy");
       } catch {
         return String(value);
       }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { format, startOfMonth } from "date-fns";
+import { todayWIBDateInput, startOfMonthWIBInput } from "@/lib/timezone";
 import { formatRupiah } from "@/lib/format";
 
 type DashboardResponse = {
@@ -53,8 +53,8 @@ const quickLinks = [
 ];
 
 export default function ReportsPage() {
-  const today = format(new Date(), "yyyy-MM-dd");
-  const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
+  const today = todayWIBDateInput();
+  const monthStart = startOfMonthWIBInput();
 
   const [startDate, setStartDate] = useState(monthStart);
   const [endDate, setEndDate] = useState(today);

@@ -4,8 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import {
   EyeIcon,
   PencilIcon,

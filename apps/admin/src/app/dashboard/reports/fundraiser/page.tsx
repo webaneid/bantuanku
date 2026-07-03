@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import api from "@/lib/api";
+import { formatDateWIB, todayWIBDateInput } from "@/lib/timezone";
 import { formatRupiah } from "@/lib/format";
 import ExportButton from "@/components/reports/ExportButton";
 import { exportToExcel } from "@/utils/export-excel";
@@ -106,7 +105,7 @@ export default function FundraiserReportPage() {
         { header: "Dibayar", key: "paid", width: 18, format: "currency" },
         { header: "Sisa", key: "balance", width: 18, format: "currency" },
       ],
-      filename: `Laporan-Per-Influencer-${new Date().toISOString().slice(0, 10)}`,
+      filename: `Laporan-Per-Influencer-${todayWIBDateInput()}`,
       title: "Laporan Per Influencer",
     });
   };
@@ -276,7 +275,7 @@ export default function FundraiserReportPage() {
                     <tbody>
                       {detailData.referrals.map((r) => (
                         <tr key={r.id}>
-                          <td className="text-sm text-gray-600">{format(new Date(r.createdAt), "dd MMM yyyy", { locale: idLocale })}</td>
+                          <td className="text-sm text-gray-600">{formatDateWIB(r.createdAt, "dd MMM yyyy")}</td>
                           <td className="text-sm">{r.transactionNumber}</td>
                           <td className="text-sm">{r.donorName}</td>
                           <td className="text-sm">{r.productName}</td>
@@ -305,7 +304,7 @@ export default function FundraiserReportPage() {
                     <tbody>
                       {detailData.disbursements.map((d) => (
                         <tr key={d.id}>
-                          <td className="text-sm text-gray-600">{d.paidAt ? format(new Date(d.paidAt), "dd MMM yyyy", { locale: idLocale }) : "-"}</td>
+                          <td className="text-sm text-gray-600">{d.paidAt ? formatDateWIB(d.paidAt, "dd MMM yyyy") : "-"}</td>
                           <td className="text-sm">{d.disbursementNumber}</td>
                           <td className="text-right text-sm mono text-success-600 font-medium">Rp {formatRupiah(d.amount)}</td>
                         </tr>

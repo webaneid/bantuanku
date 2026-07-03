@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { formatDateWIB } from "@/lib/timezone";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, TrendingUp, Plus, Check, XCircle, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
-import { id } from "date-fns/locale";
 import api from "@/lib/api";
 import Autocomplete from "@/components/Autocomplete";
 import MediaLibrary from "@/components/MediaLibrary";
@@ -468,7 +468,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
                       <div className="flex-1">
                         <p className="font-semibold text-lg">{formatPrice(trx.amount)}</p>
                         <p className="text-sm text-gray-600">
-                          {format(new Date(trx.createdAt), "dd MMM yyyy HH:mm", { locale: id })}
+                          {formatDateWIB(trx.createdAt, "dd MMM yyyy HH:mm")}
                         </p>
                         {trx.paymentMethod && (
                           <p className="text-xs text-gray-500 mt-1">Via: {trx.paymentMethod}</p>
@@ -540,7 +540,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
               )}
               <div>
                 <p className="text-sm text-gray-600">Dibuat</p>
-                <p>{format(new Date(savings.createdAt), "dd MMMM yyyy", { locale: id })}</p>
+                <p>{formatDateWIB(savings.createdAt, "dd MMMM yyyy")}</p>
               </div>
             </div>
           </div>

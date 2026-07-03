@@ -4,8 +4,6 @@ import { use, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon, PaperClipIcon } from "@heroicons/react/24/outline";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import {
   formatRupiah,
   getPaymentStatusLabel,
@@ -19,6 +17,7 @@ import AdminPaymentMethodList from "@/components/AdminPaymentMethodList";
 import MediaLibrary from "@/components/MediaLibrary";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
+import { formatDateWIB, todayWIBDateInput } from "@/lib/timezone";
 
 export default function TransactionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -41,7 +40,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
   const [rejectReason, setRejectReason] = useState("");
   const [paymentForm, setPaymentForm] = useState({
     amount: 0,
-    paymentDate: new Date().toISOString().split("T")[0],
+    paymentDate: todayWIBDateInput(),
     paymentMethod: "",
     paymentProof: "",
   });
@@ -123,7 +122,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
     const remainingAmount = transaction.totalAmount - transaction.paidAmount;
     setPaymentForm({
       amount: remainingAmount,
-      paymentDate: new Date().toISOString().split("T")[0],
+      paymentDate: todayWIBDateInput(),
       paymentMethod: transaction.paymentMethodId || "",
       paymentProof: "",
     });
@@ -259,9 +258,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
               <label className="text-sm text-gray-500">Tanggal Transaksi</label>
               <div className="font-semibold">
                 {transaction.createdAt
-                  ? format(new Date(transaction.createdAt), "dd MMM yyyy, HH:mm", {
-                      locale: idLocale,
-                    })
+                  ? formatDateWIB(transaction.createdAt, "dd MMM yyyy, HH:mm")
                   : "-"}
               </div>
             </div>
@@ -493,9 +490,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
                         <div>
                           <p className="text-gray-500">Tanggal Transfer</p>
                           <p className="text-gray-900 font-medium">
-                            {payment.paymentDate && format(new Date(payment.paymentDate), "dd MMM yyyy, HH:mm", {
-                              locale: idLocale,
-                            })}
+                            {payment.paymentDate && formatDateWIB(payment.paymentDate, "dd MMM yyyy, HH:mm")}
                           </p>
                         </div>
                         <div>

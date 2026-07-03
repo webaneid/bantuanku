@@ -235,7 +235,7 @@ activityReportsAdmin.post("/", requireRole("super_admin", "admin_campaign", "pro
       typeSpecificData: body.typeSpecificData || null,
       status: body.status || "draft",
       publishedAt: body.status === "published" ? new Date() : null,
-      createdBy: user.id,
+      createdBy: user!.id,
       createdAt: new Date(),
       updatedAt: new Date(),
       // Address fields

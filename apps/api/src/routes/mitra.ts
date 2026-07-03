@@ -7,14 +7,46 @@ import {
   qurbanPackages,
   qurbanPackagePeriods,
   qurbanPeriods,
+  media as mediaTable,
+  settings as settingsTable,
   createId,
   generateSlug,
+  type MediaVariant,
 } from "@bantuanku/db";
 import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
+import * as fs from "fs";
+import * as pathModule from "path";
 import { normalizeContactData } from "../lib/contact-helpers";
 import { success, error } from "../lib/response";
+import { uploadToGCS, generateGCSPath, type GCSConfig } from "../lib/gcs";
+import { processSingleWebp } from "../lib/image-processor";
 import type { Env, Variables } from "../types";
+
+const IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const PDF_MAX_SIZE = 10 * 1024 * 1024;
+
+const sanitizeDocName = (value: string): string =>
+  value.toLowerCase().replace(/\.[^/.]+$/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80);
+
+const ensureDir = (dirPath: string): void => {
+  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+};
+
+const fetchCDNConfig = async (db: any): Promise<GCSConfig | null> => {
+  try {
+    const rows = await db.select().from(settingsTable).where(eq(settingsTable.category, "cdn"));
+    if (rows.find((s: any) => s.key === "cdn_enabled")?.value !== "true") return null;
+    const cfg: GCSConfig = {
+      bucketName: rows.find((s: any) => s.key === "gcs_bucket_name")?.value || "",
+      projectId: rows.find((s: any) => s.key === "gcs_project_id")?.value || "",
+      clientEmail: rows.find((s: any) => s.key === "gcs_client_email")?.value || "",
+      privateKey: rows.find((s: any) => s.key === "gcs_private_key")?.value || "",
+    };
+    if (!cfg.bucketName || !cfg.projectId || !cfg.clientEmail || !cfg.privateKey) return null;
+    return cfg;
+  } catch { return null; }
+};
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -37,7 +69,6 @@ const mitraRegisterSchema = z.object({
   regencyCode: z.string().optional(),
   districtCode: z.string().optional(),
   villageCode: z.string().optional(),
-  postalCode: z.string().optional().nullable(),
 
   ktpUrl: z.string().optional(),
   bankBookUrl: z.string().optional(),
@@ -57,7 +88,7 @@ app.post("/register", async (c) => {
     const body = await c.req.json();
     const validated = mitraRegisterSchema.parse(body);
 
-    const { bankAccounts, postalCode, ...data } = validated;
+    const { bankAccounts, ...data } = validated;
 
     // Normalize kontak
     const normalized = normalizeContactData(data);
@@ -159,7 +190,7 @@ app.get("/:slug", async (c) => {
       },
     });
 
-    if (!mitraRecord || mitraRecord.status === "rejected" || mitraRecord.status === "suspended") {
+    if (!mitraRecord || mitraRecord.status !== "verified") {
       return error(c, "Mitra tidak ditemukan", 404);
     }
 
@@ -263,6 +294,120 @@ app.get("/:slug", async (c) => {
   } catch (err: any) {
     console.error("Error fetching mitra profile:", err);
     return error(c, "Gagal memuat profil mitra", 500);
+  }
+});
+
+// POST /mitra/upload-document - Public document upload for registration (no auth)
+// Category fixed as "document": accepts image or PDF, no multi-variant processing
+app.post("/upload-document", async (c) => {
+  try {
+    const db = c.get("db");
+    const body = await c.req.parseBody();
+    const file = body["file"] as File;
+
+    if (!file || typeof file === "string") {
+      return error(c, "File wajib diupload", 400);
+    }
+
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+
+    if (!isImage && !isPdf) {
+      return error(c, "Hanya file gambar atau PDF yang diperbolehkan", 400);
+    }
+    if (isImage && file.size > IMAGE_MAX_SIZE) {
+      return error(c, "Ukuran gambar maksimal 5MB", 400);
+    }
+    if (isPdf && file.size > PDF_MAX_SIZE) {
+      return error(c, "Ukuran PDF maksimal 10MB", 400);
+    }
+
+    const id = createId();
+    const timestamp = Date.now();
+    const baseName = sanitizeDocName(file.name) || "dokumen";
+    const uploadsDir = pathModule.join(process.cwd(), "uploads");
+    ensureDir(uploadsDir);
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const cdnConfig = await fetchCDNConfig(db);
+
+    const uploadBinary = async (payload: Buffer, filename: string, mime: string): Promise<{ path: string; url: string }> => {
+      if (cdnConfig) {
+        try {
+          const gcsPath = generateGCSPath(filename);
+          const gcsUrl = await uploadToGCS(cdnConfig, payload, gcsPath, mime);
+          return { path: gcsUrl, url: gcsUrl };
+        } catch { /* fallback to local */ }
+      }
+      const localPath = `/uploads/${filename}`;
+      fs.writeFileSync(pathModule.join(uploadsDir, filename), payload);
+      if (!global.uploadedFiles) global.uploadedFiles = new Map();
+      global.uploadedFiles.set(filename, payload);
+      return { path: localPath, url: localPath };
+    };
+
+    let finalFilename: string;
+    let path: string;
+    let fullUrl: string;
+    let mimeType = file.type;
+    let finalSize = file.size;
+    let finalWidth: number | null = null;
+    let finalHeight: number | null = null;
+    let variants: Record<string, MediaVariant> | null = null;
+
+    if (isPdf) {
+      finalFilename = `${timestamp}-${id}-${baseName}.pdf`;
+      const uploaded = await uploadBinary(buffer, finalFilename, file.type);
+      path = uploaded.path;
+      fullUrl = uploaded.url;
+    } else {
+      const processed = await processSingleWebp(buffer);
+      finalFilename = `${timestamp}-${id}-${baseName}-original.webp`;
+      const uploaded = await uploadBinary(processed.buffer, finalFilename, processed.mimeType);
+      path = uploaded.path;
+      fullUrl = uploaded.url;
+      mimeType = processed.mimeType;
+      finalSize = processed.size;
+      finalWidth = processed.width;
+      finalHeight = processed.height;
+      variants = {
+        original: {
+          variant: "original",
+          width: processed.width,
+          height: processed.height,
+          mimeType: processed.mimeType,
+          size: processed.size,
+          path: uploaded.path,
+          url: uploaded.url,
+        },
+      };
+    }
+
+    const apiUrl = c.env?.API_URL || process.env.API_URL || "http://localhost:50245";
+    const responseUrl = fullUrl.startsWith("http") ? fullUrl : `${apiUrl}${fullUrl}`;
+
+    await db.insert(mediaTable).values({
+      id,
+      filename: finalFilename,
+      originalName: file.name,
+      mimeType,
+      size: finalSize,
+      url: path,
+      path,
+      width: finalWidth,
+      height: finalHeight,
+      variants,
+      folder: cdnConfig ? "gcs" : "uploads",
+      category: "document",
+      uploadedBy: null,
+    });
+
+    return success(c, { url: responseUrl }, "Dokumen berhasil diupload");
+  } catch (err: any) {
+    console.error("Error uploading mitra document:", err);
+    return error(c, "Gagal mengupload dokumen", 500);
   }
 });
 

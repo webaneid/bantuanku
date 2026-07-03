@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import MediaLibrary from "./MediaLibrary";
 import Autocomplete from "./Autocomplete";
 import api from "@/lib/api";
+import { todayWIBDateInput } from "@/lib/timezone";
 import FeedbackDialog from "./FeedbackDialog";
 
 interface PaymentModalProps {
@@ -42,7 +43,7 @@ export default function PaymentModal({
     sourceAccountId: "",
     bankName: disbursement.recipientBank || "",
     accountNumber: disbursement.recipientAccount || "",
-    transactionDate: new Date().toISOString().split("T")[0],
+    transactionDate: todayWIBDateInput(),
     notes: "",
     proofUrl: "",
   });

@@ -27,6 +27,7 @@ import * as pathModule from "path";
 import { optionalAuthMiddleware } from "../middleware/auth";
 import { success, error } from "../lib/response";
 import { TransactionService } from "../services/transaction";
+import type { Env, Variables } from "../types";
 
 
 // Helper to fetch CDN settings from database
@@ -72,7 +73,7 @@ const generateSavingsConversionTxNumber = () => {
   return `TRX-SAV-CONV-${y}${m}${d}-${suffix}`;
 };
 
-const app = new Hono();
+const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // Set user context if token ada (tidak memblokir public routes)
 app.use("*", optionalAuthMiddleware);
@@ -230,7 +231,7 @@ app.get("/packages/:packagePeriodId", async (c) => {
   }
 
   // Fetch all package periods for this package master (for period switcher)
-  const packageMasterId = pkg[0].id;
+  const packageMasterId = pkg[0].id!;
   const allPeriods = await db
     .select({
       periodId: qurbanPackagePeriods.periodId,
@@ -491,10 +492,8 @@ app.get("/orders/:id", async (c) => {
         animalType: qurbanPackages.animalType,
         description: qurbanPackages.description,
       },
-      sharedGroup: qurbanSharedGroups.id ? {
-        id: qurbanSharedGroups.id,
-        groupNumber: qurbanSharedGroups.groupNumber,
-      } : null,
+      sharedGroupId: qurbanSharedGroups.id,
+      sharedGroupNumber: qurbanSharedGroups.groupNumber,
     })
     .from(qurbanOrders)
     .leftJoin(qurbanPackages, eq(qurbanOrders.packageId, qurbanPackages.id))
@@ -561,7 +560,7 @@ app.post("/orders", async (c) => {
   let sharedGroupId = null;
 
   // Handle shared group assignment
-  if (pkgPeriod.package.packageType === "shared") {
+  if (pkgPeriod.packageType === "shared") {
     // Find open group with available slots for this package-period
     const openGroup = await db
       .select()
@@ -606,7 +605,7 @@ app.post("/orders", async (c) => {
           packageId: pkgPeriod.packageId, // Legacy field
           packagePeriodId: body.packagePeriodId, // New field
           groupNumber,
-          maxSlots: pkgPeriod.package.maxSlots || 1,
+          maxSlots: pkgPeriod.maxSlots || 1,
           slotsFilled: 1,
           status: "open",
         })
@@ -905,7 +904,6 @@ app.get("/savings", async (c) => {
             id: true,
             name: true,
             animalType: true,
-            price: true,
           },
         },
         targetPeriod: {
@@ -928,7 +926,6 @@ app.get("/savings", async (c) => {
                 id: true,
                 name: true,
                 animalType: true,
-                price: true,
               },
             },
             period: {
@@ -1227,7 +1224,7 @@ app.post("/savings/:id/deposit", async (c) => {
         eq(qurbanPackagePeriods.periodId, savings[0].targetPeriodId)
       ),
     });
-    targetPackagePeriodId = packagePeriod?.id;
+    targetPackagePeriodId = packagePeriod?.id ?? null;
   }
 
   if (!targetPackagePeriodId) {
@@ -1354,7 +1351,7 @@ app.post("/savings/:id/convert", async (c) => {
   const now = new Date();
 
   // Handle shared group for sapi patungan
-  if (pkgPeriod.package.packageType === "shared") {
+  if (pkgPeriod.package?.packageType === "shared") {
     // Find open group with available slots for this package-period
     const openGroup = await db
       .select()
@@ -1399,7 +1396,7 @@ app.post("/savings/:id/convert", async (c) => {
           packageId: pkgPeriod.packageId,
           packagePeriodId: targetPackagePeriodId,
           groupNumber,
-          maxSlots: pkgPeriod.package.maxSlots || 1,
+          maxSlots: pkgPeriod.package?.maxSlots || 1,
           slotsFilled: 1,
           status: "open",
         })
@@ -1568,16 +1565,17 @@ app.post("/orders/:id/confirm-payment", zValidator("json", confirmPaymentSchema)
       where: eq(paymentMethods.code, paymentMethodId),
     });
 
-    if (paymentMethod?.details) {
+    if ((paymentMethod as any)?.details) {
       const existingMetadata = order.metadata || {};
       const newMetadata: any = { ...existingMetadata };
 
+      const pm = paymentMethod as any;
       if (paymentMethodId.startsWith('bank-')) {
-        newMetadata.bankName = paymentMethod.details.bankName || paymentMethod.name;
-        newMetadata.accountNumber = paymentMethod.details.accountNumber;
-        newMetadata.accountName = paymentMethod.details.accountName;
+        newMetadata.bankName = pm.details.bankName || pm.name;
+        newMetadata.accountNumber = pm.details.accountNumber;
+        newMetadata.accountName = pm.details.accountName;
       } else if (paymentMethodId.includes('qris')) {
-        newMetadata.qrisName = paymentMethod.details.name || paymentMethod.name;
+        newMetadata.qrisName = pm.details.name || pm.name;
       }
 
       updateData.metadata = newMetadata;

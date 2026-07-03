@@ -12,7 +12,7 @@ Aplikasi ini dibuat dan dikembangkan oleh **[Webane Indonesia](https://webane.co
 
 | Layer | Technology |
 |-------|-----------|
-| **Runtime** | Node.js (dev via tsx), target: Cloudflare Workers |
+| **Runtime** | Node.js (Hono via `@hono/node-server`), PM2-ready |
 | **API Framework** | Hono |
 | **Frontend** | Next.js 15 (admin), Next.js 14 (web) |
 | **UI** | React 19 (admin), React 18 (web), TailwindCSS 3 |
@@ -21,7 +21,7 @@ Aplikasi ini dibuat dan dikembangkan oleh **[Webane Indonesia](https://webane.co
 | **Language** | TypeScript |
 | **Auth** | JWT (jose), bcryptjs |
 | **Email** | Resend |
-| **Payment** | Flip, iPaymu, Midtrans, Xendit, Manual, QRIS |
+| **Payment** | Manual bank/cash, manual QRIS, Flip, iPaymu, Xendit, Midtrans (status per gateway docs) |
 | **Storage** | Google Cloud Storage, local uploads fallback |
 | **Image** | Sharp |
 | **WhatsApp** | Custom AI bot, GoWA integration |
@@ -32,20 +32,20 @@ Aplikasi ini dibuat dan dikembangkan oleh **[Webane Indonesia](https://webane.co
 ```
 bantuanku/                        # npm workspaces monorepo
 ├── apps/
-│   ├── api/                      # @bantuanku/api  — Hono API (port 50245)
+│   ├── api/                      # @bantuanku/api  — Hono API (default 50245, PM2 production 3001)
 │   │   ├── src/
 │   │   │   ├── routes/           # 22 public + 41 admin route modules
 │   │   │   ├── services/         # 16 service modules (payment, whatsapp, ledger, etc)
 │   │   │   ├── middleware/       # auth, db, cache, ratelimit, security, compression, coordinator-filter
 │   │   │   ├── lib/              # jwt, password, response, gcs, image-processor, contact-helpers
 │   │   │   └── utils/            # timezone, bank-balance
-│   │   └── server-node.ts        # Node.js dev entry point
-│   ├── admin/                    # @bantuanku/admin — Next.js 15 admin panel (port 3001)
+│   │   └── server-node.ts        # Node.js API entry point
+│   ├── admin/                    # @bantuanku/admin — Next.js 15 admin panel (start port 3002)
 │   │   └── src/
 │   │       ├── app/dashboard/    # 18 dashboard modules
 │   │       ├── components/       # CampaignForm, MediaLibrary, SEOPanel, Sidebar, etc
 │   │       └── lib/              # api, auth, format, url-registry, category-utils
-│   └── web/                      # @bantuanku/web  — Next.js 14 public website (port 3002)
+│   └── web/                      # @bantuanku/web  — Next.js 14 public website (start port 3003)
 │       └── src/
 │           ├── app/              # program, zakat, qurban, checkout, account, invoice, etc
 │           ├── components/       # Atomic Design: atoms/molecules/organisms/templates
@@ -69,12 +69,24 @@ bantuanku/                        # npm workspaces monorepo
 - ✅ Admin dashboard
 
 ### Phase 2 — Payment & Finance
-- ✅ Payment gateway integration (Flip, iPaymu, Midtrans, Xendit, Manual)
-- ✅ QRIS generation
+- ✅ Manual payment flow (bank transfer, cash, proof upload, admin verification)
+- ✅ Manual QRIS configuration/display
+- ⚠️ Payment gateway adapters documented per implementation status (Flip, iPaymu, Xendit, Midtrans)
 - ✅ Invoice generation (PDF via jsPDF + html2canvas)
 - ✅ Double-entry ledger (Chart of Accounts, Journal Entries, Ledger Lines)
 - ✅ Unified disbursement management (campaign, zakat, qurban, operational, vendor, revenue_share)
 - ✅ Revenue sharing (amil, developer, fundraiser, mitra splits)
+
+#### Payment Gateway Status
+
+| Gateway | Status README | Source of truth |
+|---------|---------------|-----------------|
+| Manual bank/cash | Active settings-based payment flow. | `docs/arsitektur-universal-payment.md` |
+| Manual QRIS | Active settings-based QRIS display/configuration. | `docs/arsitektur-universal-payment.md` |
+| Flip | Implemented and currently the healthiest gateway path, with documented risk around 19-digit provider IDs. | `docs/arsitektur-payment-gateway-flip.md` |
+| iPaymu | Adapter exists, but checkout/webhook/settings gaps are documented; not treated as fully healthy end-to-end. | `docs/arsitektur-payment-gateway-ipaymu.md` |
+| Xendit | Adapter/settings pieces exist, but frontend route/settings mismatch make it partial/dormant. | `docs/arsitektur-payment-gateway-xendit.md` |
+| Midtrans | Adapter exists, but no normal admin/settings payment path and webhook signature handling is incomplete. | `docs/arsitektur-payment-gateway-midtrans.md` |
 
 ### Phase 3 — Features Enhancement
 - ✅ Zakat system (types, periods, distributions, calculator configs)
@@ -289,12 +301,17 @@ All require authentication. Staff-only routes blocked for `mitra` role.
 
 ## Deployment
 
-### Production (Cloudflare Workers)
+### Production (Node.js + PM2)
 
 ```bash
+npm install
+npm run db:manifest:run:dry
+npm run db:manifest:run
 npm run build
-npm run deploy
+pm2 start ecosystem.config.cjs
 ```
+
+Detail deployment resmi ada di `docs/arsitektur-deployment.md`.
 
 ### Environment Variables (Production)
 

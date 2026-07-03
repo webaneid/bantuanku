@@ -89,13 +89,13 @@ async function getFundraiserBankAccounts(db: any, fundraiserData: any) {
 // Helper: find fundraiser for current user (checks both donatur and employee links)
 async function findMyFundraiser(db: any, user: { id: string; email?: string }) {
   const donaturRecord = await db.query.donatur.findFirst({
-    where: eq(donatur.email, user.email || ""),
+    where: eq(donatur.email, user!.email || ""),
   });
 
   const [empRecord] = await db
     .select()
     .from(employees)
-    .where(eq(employees.userId, user.id))
+    .where(eq(employees.userId, user!.id))
     .limit(1);
 
   const conditions = [];
@@ -180,7 +180,7 @@ app.get("/me", async (c) => {
     const db = c.get("db");
     const user = c.get("user");
 
-    const { donaturRecord, empRecord, fundraiser } = await findMyFundraiser(db, user);
+    const { donaturRecord, empRecord, fundraiser } = await findMyFundraiser(db, user!);
 
     if (!fundraiser) {
       return error(c, "Anda belum terdaftar sebagai fundraiser", 404);
@@ -202,13 +202,13 @@ app.get("/me/has-bank-account", async (c) => {
     const user = c.get("user");
 
     const donaturRecord = await db.query.donatur.findFirst({
-      where: eq(donatur.email, user.email || ""),
+      where: eq(donatur.email, user!.email || ""),
     });
 
     const [empRecord] = await db
       .select()
       .from(employees)
-      .where(eq(employees.userId, user.id))
+      .where(eq(employees.userId, user!.id))
       .limit(1);
 
     const bankAccounts = await getMyBankAccounts(db, donaturRecord, empRecord);
@@ -233,7 +233,7 @@ app.post("/me/apply", async (c) => {
     const [emp] = await db
       .select()
       .from(employees)
-      .where(eq(employees.userId, user.id))
+      .where(eq(employees.userId, user!.id))
       .limit(1);
 
     if (!emp) {
@@ -241,7 +241,7 @@ app.post("/me/apply", async (c) => {
     }
 
     // Check if already registered (by donaturId OR employeeId — unified)
-    const { fundraiser: existing } = await findMyFundraiser(db, user);
+    const { fundraiser: existing } = await findMyFundraiser(db, user!);
 
     if (existing) {
       return error(c, "Anda sudah terdaftar sebagai fundraiser", 400);
@@ -249,7 +249,7 @@ app.post("/me/apply", async (c) => {
 
     // Check bank account (from both donatur and employee)
     const donaturRecord = await db.query.donatur.findFirst({
-      where: eq(donatur.email, user.email || ""),
+      where: eq(donatur.email, user!.email || ""),
     });
     const bankAccounts = await getMyBankAccounts(db, donaturRecord, emp);
 
@@ -293,7 +293,7 @@ app.post("/me/save-bank-account", async (c) => {
     const [emp] = await db
       .select()
       .from(employees)
-      .where(eq(employees.userId, user.id))
+      .where(eq(employees.userId, user!.id))
       .limit(1);
 
     if (!emp) {
@@ -351,7 +351,7 @@ app.get("/me/referrals", async (c) => {
     const limit = parseInt(c.req.query("limit") || "10");
     const offset = (page - 1) * limit;
 
-    const { fundraiser } = await findMyFundraiser(db, user);
+    const { fundraiser } = await findMyFundraiser(db, user!);
 
     if (!fundraiser) return error(c, "Fundraiser tidak ditemukan", 404);
 
@@ -397,7 +397,7 @@ app.get("/me/disbursement-availability", async (c) => {
     const db = c.get("db");
     const user = c.get("user");
 
-    const { donaturRecord, empRecord, fundraiser } = await findMyFundraiser(db, user);
+    const { donaturRecord, empRecord, fundraiser } = await findMyFundraiser(db, user!);
 
     if (!fundraiser) return error(c, "Fundraiser tidak ditemukan", 404);
 
@@ -453,7 +453,7 @@ app.get("/me/disbursements", async (c) => {
     const limit = parseInt(c.req.query("limit") || "10");
     const offset = (page - 1) * limit;
 
-    const { fundraiser } = await findMyFundraiser(db, user);
+    const { fundraiser } = await findMyFundraiser(db, user!);
 
     if (!fundraiser) return error(c, "Fundraiser tidak ditemukan", 404);
 
@@ -521,7 +521,7 @@ app.post("/me/disbursements", async (c) => {
     });
     const body = bodySchema.parse(await c.req.json());
 
-    const { donaturRecord, empRecord, fundraiser } = await findMyFundraiser(db, user);
+    const { donaturRecord, empRecord, fundraiser } = await findMyFundraiser(db, user!);
 
     if (!fundraiser) return error(c, "Fundraiser tidak ditemukan", 404);
     if (fundraiser.status !== "active") {
@@ -569,12 +569,12 @@ app.post("/me/disbursements", async (c) => {
       type_specific_data: {
         request_source: "admin_my_fundraiser",
       },
-      created_by: user.id,
+      created_by: user!.id,
     });
 
     const submitted = await service.updateStatus(created.id, {
       status: "submitted",
-      user_id: user.id,
+      user_id: user!.id,
     });
 
     return success(c, submitted, "Permintaan pencairan berhasil diajukan", 201);
@@ -883,7 +883,7 @@ app.post("/", requireRoles("super_admin", "admin_campaign"), async (c) => {
         code,
         slug,
         status: "active", // Admin create = auto active
-        approvedBy: user.id,
+        approvedBy: user!.id,
         approvedAt: new Date(),
         commissionPercentage: validated.commissionPercentage?.toString() || await getFundraiserCommission(db),
         notes: validated.notes || null,
@@ -980,7 +980,7 @@ app.post("/:id/approve", requireRoles("super_admin", "admin_campaign"), async (c
       .update(fundraisers)
       .set({
         status: "active",
-        approvedBy: user.id,
+        approvedBy: user!.id,
         approvedAt: new Date(),
         updatedAt: new Date(),
       })

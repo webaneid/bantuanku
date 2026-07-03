@@ -2,12 +2,11 @@
 
 import { use, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { formatCurrency } from "@/lib/utils";
 import api from "@/lib/api";
 import { ClipboardIcon, PrinterIcon } from "@heroicons/react/24/outline";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import { formatDateWIB } from "@/lib/timezone";
 
 export default function ZakatInvoicePage({
   params,
@@ -258,14 +257,14 @@ export default function ZakatInvoicePage({
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Tanggal Pembayaran</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {format(new Date(donation.paidAt), "dd MMMM yyyy, HH:mm", { locale: idLocale })}
+                    {formatDateWIB(donation.paidAt, "dd MMMM yyyy, HH:mm")}
                   </p>
                 </div>
               )}
               <div>
                 <p className="text-sm text-gray-500 mb-1">Tanggal Donasi</p>
                 <p className="text-sm font-medium text-gray-900">
-                  {format(new Date(donation.createdAt), "dd MMMM yyyy, HH:mm", { locale: idLocale })}
+                  {formatDateWIB(donation.createdAt, "dd MMMM yyyy, HH:mm")}
                 </p>
               </div>
               {donation.paymentReference && (

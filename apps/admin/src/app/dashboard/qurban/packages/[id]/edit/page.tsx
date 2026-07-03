@@ -7,6 +7,7 @@ import QurbanPackageForm, { QurbanPackageFormData } from "@/components/QurbanPac
 import { useState } from "react";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
+import { toWIBDateInput } from "@/lib/timezone";
 
 export default function EditQurbanPackagePage() {
   const router = useRouter();
@@ -121,9 +122,7 @@ export default function EditQurbanPackagePage() {
       price: p.price,
       stock: p.stock,
       isAvailable: p.isAvailable ?? true,
-      executionDateOverride: p.executionDateOverride
-        ? new Date(p.executionDateOverride).toISOString().split("T")[0]
-        : "",
+      executionDateOverride: toWIBDateInput(p.executionDateOverride),
       executionTimeNote: p.executionTimeNote || "",
       executionLocation: p.executionLocation || "",
       executionNotes: p.executionNotes || "",

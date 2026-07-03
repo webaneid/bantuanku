@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { getImageUrlByVariant } from '@/lib/image';
+import { formatDate } from '@/lib/format';
 
 interface ActivityRow {
   id: string;
@@ -55,13 +56,6 @@ const getYoutubeEmbedUrl = (url: string): string | null => {
   }
 };
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-};
 
 const ITEMS_PER_PAGE = 10;
 
@@ -152,7 +146,7 @@ export default function ZakatActivityTable({ activities }: { activities: Activit
               <tr key={row.id}>
                 <td>{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</td>
                 <td>
-                  {row.activityDate ? new Date(row.activityDate).toLocaleDateString('id-ID') : '-'}
+                  {row.activityDate ? formatDate(row.activityDate) : '-'}
                 </td>
                 <td>{row.programName}</td>
                 <td>{row.zakatTypeName || '-'}</td>
@@ -202,7 +196,7 @@ export default function ZakatActivityTable({ activities }: { activities: Activit
             <div className="table-card-row">
               <span className="table-card-row-label">Tanggal</span>
               <span className="table-card-row-value">
-                {row.activityDate ? new Date(row.activityDate).toLocaleDateString('id-ID') : '-'}
+                {row.activityDate ? formatDate(row.activityDate) : '-'}
               </span>
             </div>
             <div className="table-card-row">

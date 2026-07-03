@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { formatRupiah } from "@/lib/format";
 import Pagination from "@/components/Pagination";
 import { BankAccountForm, type BankAccountValue } from "@/components/forms/BankAccountForm";
 import RevenueShareDisbursementPanel from "@/components/fundraiser/RevenueShareDisbursementPanel";
 import api from "@/lib/api";
 import { toast } from "react-hot-toast";
+import { formatDateWIB } from "@/lib/timezone";
 
 const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL || "";
 
@@ -479,7 +478,7 @@ export default function MyFundraiserPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Terdaftar</span>
-                  <span>{format(new Date(fundraiser.createdAt), "dd MMM yyyy", { locale: idLocale })}</span>
+                  <span>{formatDateWIB(fundraiser.createdAt, "dd MMM yyyy")}</span>
                 </div>
               </div>
             </div>
@@ -537,7 +536,7 @@ export default function MyFundraiserPage() {
                     referrals.map((ref: any) => (
                       <tr key={ref.id}>
                         <td className="text-sm">
-                          {format(new Date(ref.createdAt), "dd MMM yyyy", { locale: idLocale })}
+                          {formatDateWIB(ref.createdAt, "dd MMM yyyy")}
                         </td>
                         <td className="text-sm">{ref.donorName || "-"}</td>
                         <td className="text-sm">{ref.productName || "-"}</td>

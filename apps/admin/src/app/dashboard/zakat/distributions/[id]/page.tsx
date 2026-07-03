@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
 import api from "@/lib/api";
+import { todayWIBDateInput } from "@/lib/timezone";
 import { formatRupiah } from "@/lib/format";
 import { ArrowLeftIcon, XMarkIcon, PhotoIcon } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
@@ -56,7 +57,7 @@ export default function ZakatDistributionDetailPage() {
     transferProof: "",
   });
   const [reportForm, setReportForm] = useState<DisburseFormData>({
-    reportDate: new Date().toISOString().split('T')[0],
+    reportDate: todayWIBDateInput(),
     reportDescription: "",
     reportPhotos: [],
   });
@@ -177,7 +178,7 @@ export default function ZakatDistributionDetailPage() {
       toast.success("Laporan kegiatan berhasil ditambahkan");
       setShowReportModal(false);
       setReportForm({
-        reportDate: new Date().toISOString().split('T')[0],
+        reportDate: todayWIBDateInput(),
         reportDescription: "",
         reportPhotos: [],
       });

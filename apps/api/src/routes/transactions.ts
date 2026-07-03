@@ -138,6 +138,25 @@ const syncQurbanSavingsBalance = async (db: any, savingsId: string) => {
     .where(eq(qurbanSavings.id, savingsId));
 };
 
+// Sync paidAmount from actual non-rejected payment records to prevent drift
+const syncTransactionPaidAmount = async (db: any, transactionId: string): Promise<number> => {
+  const [result] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${transactionPayments.amount}), 0)` })
+    .from(transactionPayments)
+    .where(
+      and(
+        eq(transactionPayments.transactionId, transactionId),
+        sql`${transactionPayments.status} != 'rejected'`
+      )
+    );
+  const paidAmount = Number(result?.total || 0);
+  await db
+    .update(transactions)
+    .set({ paidAmount, updatedAt: new Date() })
+    .where(eq(transactions.id, transactionId));
+  return paidAmount;
+};
+
 // Legacy function - kept for compatibility but returns null
 // All data should now use universal transactions table
 async function detectAndFetchTransaction(db: any, id: string) {
@@ -251,7 +270,7 @@ app.post("/", async (c) => {
 });
 
 // GET /transactions - List transactions (NEW) - Admin only
-app.get("/", authMiddleware, async (c) => {
+app.get("/", authMiddleware, requireRole("super_admin", "admin_finance"), async (c) => {
   const db = c.get("db");
   const query = c.req.query();
 
@@ -357,23 +376,7 @@ app.get("/:id", async (c) => {
     });
   }
 
-  // Fall back to old tables for backward compatibility
-  const transaction = await detectAndFetchTransaction(db, id);
-
-  if (!transaction) {
-    return c.json(
-      {
-        success: false,
-        message: "Transaction not found",
-      },
-      404
-    );
-  }
-
-  return c.json({
-    success: true,
-    data: transaction,
-  });
+  return c.json({ success: false, message: "Transaction not found" }, 404);
 });
 
 // POST /transactions/:id/confirm-payment - Confirm payment method
@@ -413,51 +416,7 @@ app.post("/:id/confirm-payment", async (c) => {
     });
   }
 
-  // Fall back to old tables
-  const transaction = await detectAndFetchTransaction(db, id);
-
-  if (!transaction) {
-    return c.json(
-      {
-        success: false,
-        message: "Transaction not found",
-      },
-      404
-    );
-  }
-
-  // Update payment method based on type
-  if (transaction.type === "donation") {
-    await db
-      .update(donations)
-      .set({
-        paymentMethodId,
-        updatedAt: new Date(),
-      })
-      .where(eq(donations.id, id));
-  } else if (transaction.type === "zakat") {
-    await db
-      .update(zakatDonations)
-      .set({
-        paymentMethodId,
-        updatedAt: new Date(),
-      })
-      .where(eq(zakatDonations.id, id));
-  } else if (transaction.type === "qurban") {
-    await db
-      .update(qurbanOrders)
-      .set({
-        paymentMethodId,
-        metadata: metadata ? JSON.stringify(metadata) : undefined,
-        updatedAt: new Date(),
-      })
-      .where(eq(qurbanOrders.id, id));
-  }
-
-  return c.json({
-    success: true,
-    message: "Payment method confirmed",
-  });
+  return c.json({ success: false, message: "Transaction not found" }, 404);
 });
 
 // POST /transactions/:id/payments - Create payment record (Admin)
@@ -521,10 +480,12 @@ app.post(
 
     // Get updated transaction to determine new status
     const updatedTransaction = await service.getById(id);
+    const paid = updatedTransaction!.paidAmount ?? 0;
+    const total = updatedTransaction!.totalAmount;
     const newStatus =
-      updatedTransaction!.paidAmount >= updatedTransaction!.totalAmount && paymentProof
+      paid >= total && paymentProof
         ? "processing"
-        : updatedTransaction!.paidAmount > 0 && updatedTransaction!.paidAmount < updatedTransaction!.totalAmount
+        : paid > 0 && paid < total
         ? "partial"
         : "pending";
 
@@ -760,191 +721,7 @@ app.post("/:id/upload-proof", async (c) => {
     });
   }
 
-  // Fall back to old tables
-  const transaction = await detectAndFetchTransaction(db, id);
-
-  if (!transaction) {
-    return c.json(
-      {
-        success: false,
-        message: "Transaction not found",
-      },
-      404
-    );
-  }
-
-  // Security: Check payment proof upload limit (max 10 uploads per transaction)
-  let uploadCount = 0;
-  if (transaction.type === "donation") {
-    const payments = await db
-      .select()
-      .from(donationPayments)
-      .where(eq(donationPayments.donationId, id));
-    uploadCount = payments.length;
-  } else if (transaction.type === "zakat") {
-    const payments = await db
-      .select()
-      .from(zakatPayments)
-      .where(eq(zakatPayments.zakatDonationId, id));
-    uploadCount = payments.length;
-  } else if (transaction.type === "qurban") {
-    const payments = await db
-      .select()
-      .from(qurbanPayments)
-      .where(eq(qurbanPayments.orderId, id));
-    uploadCount = payments.length;
-  }
-
-  if (uploadCount >= 10) {
-    return c.json(
-      {
-        success: false,
-        message: "Upload limit reached. Please contact admin for assistance.",
-      },
-      429
-    );
-  }
-
-  // Upload to GCS
-  const timestamp = Date.now();
-  const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-  const filename = `${timestamp}-${sanitizedFilename}`;
-  const path = `payment-proofs/${transaction.type}/${id}/${filename}`;
-
-  // Convert File to Buffer
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-
-  // Get GCS config from database
-  const gcsConfig = await fetchCDNSettings(db);
-
-  if (!gcsConfig) {
-    console.error("[Upload] CDN not configured or disabled");
-    return c.json(
-      {
-        success: false,
-        message: "Storage service not available. Please contact administrator.",
-      },
-      500
-    );
-  }
-
-  let fileUrl: string;
-  try {
-    fileUrl = await uploadToGCS(gcsConfig, buffer, path, file.type);
-  } catch (error: any) {
-    console.error("[Upload] GCS upload failed:", error);
-    return c.json(
-      {
-        success: false,
-        message: "Failed to upload file. Please try again.",
-        error: error.message,
-      },
-      500
-    );
-  }
-
-  // Create payment record based on type
-  if (transaction.type === "donation") {
-    // Generate payment number
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    const paymentTimestamp = Date.now().toString().slice(-6);
-    const paymentNumber = `DN-${year}${month}${day}-${paymentTimestamp}`;
-
-    await db.insert(donationPayments).values({
-      id: createId(),
-      paymentNumber,
-      donationId: id,
-      amount,
-      paymentDate: paymentDate,
-      paymentMethod: transaction.data.paymentMethodId || "bank_transfer",
-      paymentProof: fileUrl,
-      status: "pending",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    // Update donation status to processing (menunggu verifikasi admin)
-    await db
-      .update(donations)
-      .set({
-        paymentStatus: "processing",
-        updatedAt: new Date(),
-      })
-      .where(eq(donations.id, id));
-  } else if (transaction.type === "zakat") {
-    // Generate payment number
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    const paymentTimestamp = Date.now().toString().slice(-6);
-    const paymentNumber = `ZK-${year}${month}${day}-${paymentTimestamp}`;
-
-    await db.insert(zakatPayments).values({
-      id: createId(),
-      paymentNumber,
-      zakatDonationId: id,
-      amount,
-      paymentDate: paymentDate,
-      paymentMethod: transaction.data.paymentMethodId || "bank_transfer",
-      paymentProof: fileUrl,
-      status: "pending",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    // Update zakat status to processing (menunggu verifikasi admin)
-    await db
-      .update(zakatDonations)
-      .set({
-        paymentStatus: "processing",
-        updatedAt: new Date(),
-      })
-      .where(eq(zakatDonations.id, id));
-  } else if (transaction.type === "qurban") {
-    // Generate payment number
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    const paymentTimestamp = Date.now().toString().slice(-6);
-    const paymentNumber = `QB-${year}${month}${day}-${paymentTimestamp}`;
-
-    await db.insert(qurbanPayments).values({
-      id: createId(),
-      paymentNumber,
-      orderId: id,
-      amount,
-      paymentDate: paymentDate,
-      paymentMethod: transaction.data.paymentMethodId || "bank_transfer",
-      paymentProof: fileUrl,
-      status: "pending",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-
-    // Update qurban status to processing (menunggu verifikasi admin)
-    await db
-      .update(qurbanOrders)
-      .set({
-        paymentStatus: "processing",
-        updatedAt: new Date(),
-      })
-      .where(eq(qurbanOrders.id, id));
-  }
-
-  return c.json({
-    success: true,
-    message: "Payment proof uploaded successfully",
-    data: {
-      fileUrl,
-      amount,
-    },
-  });
+  return c.json({ success: false, message: "Transaction not found" }, 404);
 });
 
 // PUT /transactions/:id - Update transaction
@@ -1017,67 +794,111 @@ app.post(
       return c.json(
         {
           success: false,
-          message: "Only transactions with status 'processing' or 'partial' can be approved",
+          message: "Only transactions with status 'pending', 'processing', or 'partial' can be approved",
         },
         400
       );
     }
 
-    // Update transaction status to paid
-    await db
-      .update(transactions)
-      .set({
-        paymentStatus: "paid",
-        paidAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(transactions.id, id));
-
-    // Update all pending transaction_payments to verified
-    await db
-      .update(transactionPayments)
-      .set({
-        status: "verified",
-        verifiedAt: new Date(),
-        verifiedBy: c.get("user")?.id,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(transactionPayments.transactionId, id),
-          eq(transactionPayments.status, "pending")
-        )
-      );
-
-    // Update bank balance with actual transfer amount (totalAmount + uniqueCode)
-    if (transaction.bankAccountId) {
-      const actualTransferAmount = transaction.totalAmount + (transaction.uniqueCode || 0);
-      await updateBankBalance(db, transaction.bankAccountId, actualTransferAmount);
+    // Idempotency: jika sudah paid, return success tanpa redo side effects
+    if (transaction.paymentStatus === "paid") {
+      return c.json({ success: true, message: "Payment already approved" });
     }
 
-    // Update product collected amount based on product type
-    if (transaction.productType === "campaign") {
-      await db
-        .update(campaigns)
-        .set({
-          collected: sql`${campaigns.collected} + ${transaction.totalAmount}`,
-          donorCount: sql`${campaigns.donorCount} + 1`,
-        })
-        .where(eq(campaigns.id, transaction.productId));
-    }
-    // Qurban shared group: confirm slot when payment is approved
-    if (transaction.productType === "qurban") {
-      await service.confirmSharedGroupSlot(id);
-    }
-
-    // Calculate revenue sharing snapshot (amil/developer/fundraiser/mitra) once transaction is paid
-    const revenueShareService = new RevenueShareService(db);
-    await revenueShareService.calculateForPaidTransaction(id);
-
-    // Sync qurban savings balance if this transaction is a savings deposit
+    // Object result agar TypeScript bisa track mutasi di dalam async callback
+    const approveCtx = {
+      newPaymentStatus: "partial" as "paid" | "partial",
+      wasProcessed: true,
+    };
     const savingsId = (transaction.typeSpecificData as any)?.savings_id;
-    if (transaction.category === "qurban_savings" && savingsId) {
-      await syncQurbanSavingsBalance(db, savingsId);
+    const verifiedBy = c.get("user")?.id;
+
+    // Atomic DB block: semua operasi DB dalam satu transaction
+    await db.transaction(async (tx: any) => {
+      // Re-fetch status di dalam transaction untuk guard race condition concurrent request
+      const [freshRow] = await tx
+        .select({ paymentStatus: transactions.paymentStatus, paidAmount: transactions.paidAmount })
+        .from(transactions)
+        .where(eq(transactions.id, id))
+        .limit(1);
+
+      if (!freshRow || freshRow.paymentStatus === "paid") {
+        approveCtx.wasProcessed = false;
+        return;
+      }
+
+      // Pending payment records SEBELUM di-verify (untuk tahu berapa yang di-approve sekarang)
+      const pendingPayments = await tx
+        .select({ amount: transactionPayments.amount })
+        .from(transactionPayments)
+        .where(
+          and(
+            eq(transactionPayments.transactionId, id),
+            eq(transactionPayments.status, "pending")
+          )
+        );
+      const amountVerifiedNow = pendingPayments.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
+
+      // Tentukan status berdasarkan paidAmount vs totalAmount
+      approveCtx.newPaymentStatus = (freshRow.paidAmount ?? 0) >= transaction.totalAmount ? "paid" : "partial";
+
+      await tx
+        .update(transactions)
+        .set({
+          paymentStatus: approveCtx.newPaymentStatus,
+          ...(approveCtx.newPaymentStatus === "paid" ? { paidAt: new Date() } : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(transactions.id, id));
+
+      await tx
+        .update(transactionPayments)
+        .set({
+          status: "verified",
+          verifiedAt: new Date(),
+          verifiedBy,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(transactionPayments.transactionId, id),
+            eq(transactionPayments.status, "pending")
+          )
+        );
+
+      // Bank balance: update sebesar jumlah yang diverifikasi sekarang (per-installment)
+      if (transaction.bankAccountId && amountVerifiedNow > 0) {
+        await updateBankBalance(tx, transaction.bankAccountId, amountVerifiedNow);
+      }
+
+      // Side effects hanya saat fully paid
+      if (approveCtx.newPaymentStatus === "paid") {
+        if (transaction.productType === "campaign") {
+          await tx
+            .update(campaigns)
+            .set({
+              collected: sql`${campaigns.collected} + ${transaction.totalAmount}`,
+              donorCount: sql`${campaigns.donorCount} + 1`,
+            })
+            .where(eq(campaigns.id, transaction.productId));
+        }
+        if (transaction.productType === "qurban") {
+          await new TransactionService(tx).confirmSharedGroupSlot(id);
+        }
+        await new RevenueShareService(tx).calculateForPaidTransaction(id);
+      }
+
+      // Sync savings balance untuk setiap setoran yang di-approve
+      if (transaction.category === "qurban_savings" && savingsId) {
+        await syncQurbanSavingsBalance(tx, savingsId);
+      }
+
+      // Sync paidAmount dari actual payment records (cegah drift)
+      await syncTransactionPaidAmount(tx, id);
+    });
+
+    if (!approveCtx.wasProcessed) {
+      return c.json({ success: true, message: "Payment already approved" });
     }
 
     // WhatsApp notification: pembayaran dikonfirmasi
@@ -1156,8 +977,8 @@ app.post(
               });
             }
           }
-        } else {
-          // Generic payment approved notification
+        } else if (approveCtx.newPaymentStatus === "paid") {
+          // Generic payment approved notification (only when fully paid)
           const frontendUrl = await getFrontendUrl(db, c.env);
           await wa.send({
             phone: transaction.donorPhone,
@@ -1177,8 +998,8 @@ app.post(
       }
     }
 
-    // WhatsApp notification: mitra & fundraiser
-    try {
+    // WhatsApp notification: mitra & fundraiser (only on full payment)
+    if (approveCtx.newPaymentStatus === "paid") try {
       const revenueShare = await db.query.revenueShares.findFirst({
         where: eq(revenueShares.transactionId, id),
       });
@@ -1261,37 +1082,39 @@ app.post(
       console.error("[WA] mitra/fundraiser notification error:", err);
     }
 
-    // Meta CAPI: fire Purchase on manual approval (paid-success)
-    const tsd = transaction.typeSpecificData as Record<string, any> | null;
-    const frontendUrlForCapi = await getFrontendUrl(db, c.env);
-    const adminUserAgent = c.req.header("user-agent") || "";
-    const adminClientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim()
-      || c.req.header("x-real-ip")
-      || "";
-    sendCAPIEvent(db, {
-      eventName: "Purchase",
-      eventId: tsd?.meta_event_id || `purchase_${transaction.id}`,
-      eventSourceUrl: `${frontendUrlForCapi}/checkout`,
-      userData: {
-        email: transaction.donorEmail || undefined,
-        phone: transaction.donorPhone || undefined,
-        firstName: transaction.donorName?.split(" ")[0] || undefined,
-        clientIpAddress: adminClientIp || undefined,
-        clientUserAgent: adminUserAgent || undefined,
-        fbc: tsd?.meta_fbc || undefined,
-        fbp: tsd?.meta_fbp || undefined,
-        externalId: transaction.donorEmail || transaction.donorPhone || undefined,
-      },
-      customData: {
-        currency: "IDR",
-        value: Number(transaction.totalAmount),
-        contentIds: [transaction.productId],
-        contentType: "product",
-        numItems: transaction.quantity || 1,
-        contentName: transaction.productName,
-        contentCategory: transaction.productType,
-      },
-    }).catch(() => {});
+    // Meta CAPI: fire Purchase only on full payment
+    if (approveCtx.newPaymentStatus === "paid") {
+      const tsd = transaction.typeSpecificData as Record<string, any> | null;
+      const frontendUrlForCapi = await getFrontendUrl(db, c.env);
+      const adminUserAgent = c.req.header("user-agent") || "";
+      const adminClientIp = c.req.header("x-forwarded-for")?.split(",")[0]?.trim()
+        || c.req.header("x-real-ip")
+        || "";
+      sendCAPIEvent(db, {
+        eventName: "Purchase",
+        eventId: tsd?.meta_event_id || `purchase_${transaction.id}`,
+        eventSourceUrl: `${frontendUrlForCapi}/checkout`,
+        userData: {
+          email: transaction.donorEmail || undefined,
+          phone: transaction.donorPhone || undefined,
+          firstName: transaction.donorName?.split(" ")[0] || undefined,
+          clientIpAddress: adminClientIp || undefined,
+          clientUserAgent: adminUserAgent || undefined,
+          fbc: tsd?.meta_fbc || undefined,
+          fbp: tsd?.meta_fbp || undefined,
+          externalId: transaction.donorEmail || transaction.donorPhone || undefined,
+        },
+        customData: {
+          currency: "IDR",
+          value: Number(transaction.totalAmount),
+          contentIds: [transaction.productId],
+          contentType: "product",
+          numItems: transaction.quantity || 1,
+          contentName: transaction.productName,
+          contentCategory: transaction.productType,
+        },
+      }).catch(() => {});
+    }
 
     return c.json({
       success: true,
@@ -1332,43 +1155,55 @@ app.post(
       return c.json(
         {
           success: false,
-          message: "Only transactions with status 'processing' or 'partial' can be rejected",
+          message: "Only transactions with status 'pending', 'processing', or 'partial' can be rejected",
         },
         400
       );
     }
 
-    // Update transaction status to failed
-    const updateData: any = {
-      paymentStatus: "failed",
-      updatedAt: new Date(),
-    };
+    const rejectedBy = c.get("user")?.id;
 
-    if (reason) {
-      updateData.metadata = sql`json_set(COALESCE(metadata, '{}'), '$.rejectionReason', ${reason})`;
-    }
+    await db.transaction(async (tx: any) => {
+      // Pending records yang akan di-reject
+      const pendingToReject = await tx
+        .select({ amount: transactionPayments.amount })
+        .from(transactionPayments)
+        .where(
+          and(
+            eq(transactionPayments.transactionId, id),
+            eq(transactionPayments.status, "pending")
+          )
+        );
+      const rejectedAmount = pendingToReject.reduce((sum: number, p: any) => sum + Number(p.amount), 0);
 
-    await db
-      .update(transactions)
-      .set(updateData)
-      .where(eq(transactions.id, id));
+      await tx
+        .update(transactions)
+        .set({
+          paymentStatus: "failed",
+          paidAmount: sql`GREATEST(0, ${transactions.paidAmount} - ${rejectedAmount})`,
+          updatedAt: new Date(),
+        })
+        .where(eq(transactions.id, id));
 
-    // Update all pending transaction_payments to rejected
-    await db
-      .update(transactionPayments)
-      .set({
-        status: "rejected",
-        rejectedAt: new Date(),
-        rejectedBy: c.get("user")?.id,
-        rejectionReason: reason,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(transactionPayments.transactionId, id),
-          eq(transactionPayments.status, "pending")
-        )
-      );
+      await tx
+        .update(transactionPayments)
+        .set({
+          status: "rejected",
+          rejectedAt: new Date(),
+          rejectedBy,
+          rejectionReason: reason,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(transactionPayments.transactionId, id),
+            eq(transactionPayments.status, "pending")
+          )
+        );
+
+      // Sync paidAmount dari actual payment records (cegah drift)
+      await syncTransactionPaidAmount(tx, id);
+    });
 
     // WhatsApp notification: pembayaran ditolak
     if (transaction.donorPhone) {

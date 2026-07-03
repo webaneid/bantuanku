@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { formatDateWIB } from "@/lib/timezone";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, XCircle, Eye, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
-import { id } from "date-fns/locale";
 import api from "@/lib/api";
 import Link from "next/link";
 import FeedbackDialog from "@/components/FeedbackDialog";
@@ -253,10 +253,10 @@ export default function PendingDepositsPage() {
                     </td>
                     <td>
                       <div className="text-sm text-gray-600">
-                        {format(new Date(deposit.transactionDate), "dd MMM yyyy", { locale: id })}
+                        {formatDateWIB(deposit.transactionDate, "dd MMM yyyy")}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {format(new Date(deposit.transactionDate), "HH:mm", { locale: id })}
+                        {formatDateWIB(deposit.transactionDate, "HH:mm")}
                       </div>
                     </td>
                     <td>
@@ -345,7 +345,7 @@ export default function PendingDepositsPage() {
                 <div className="table-card-row">
                   <span className="table-card-row-label">Tanggal</span>
                   <span className="table-card-row-value">
-                    {format(new Date(deposit.transactionDate), "dd MMM yyyy HH:mm", { locale: id })}
+                    {formatDateWIB(deposit.transactionDate, "dd MMM yyyy HH:mm")}
                   </span>
                 </div>
 

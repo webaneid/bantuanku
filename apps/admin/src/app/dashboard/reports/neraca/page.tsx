@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format, startOfYear } from "date-fns";
+import { todayWIBDateInput, startOfYearWIBInput } from "@/lib/timezone";
 import api from "@/lib/api";
 import { formatRupiah } from "@/lib/format";
 
@@ -34,8 +34,8 @@ type NeracaResponse = {
 };
 
 export default function NeracaReportPage() {
-  const [startDate, setStartDate] = useState(format(startOfYear(new Date()), "yyyy-MM-dd"));
-  const [endDate, setEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [startDate, setStartDate] = useState(startOfYearWIBInput());
+  const [endDate, setEndDate] = useState(todayWIBDateInput());
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["reports-neraca", startDate, endDate],

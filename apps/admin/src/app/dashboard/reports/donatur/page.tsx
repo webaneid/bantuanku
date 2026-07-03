@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import api from "@/lib/api";
 import { formatRupiah } from "@/lib/format";
 import ExportButton from "@/components/reports/ExportButton";
 import { exportToExcel } from "@/utils/export-excel";
+import { formatDateWIB } from "@/lib/timezone";
 
 interface TopDonor {
   userId: string | null;
@@ -97,7 +96,7 @@ export default function DonaturReportPage() {
         frequency: Number(d.totalDonations),
         total: Number(d.totalAmount),
         avg: Math.round(Number(d.avgDonation)),
-        lastDonation: d.lastDonation ? format(new Date(d.lastDonation), "dd/MM/yyyy") : "-",
+        lastDonation: d.lastDonation ? formatDateWIB(d.lastDonation, "dd/MM/yyyy") : "-",
       })),
       columns: [
         { header: "#", key: "rank", width: 5 },
@@ -202,7 +201,7 @@ export default function DonaturReportPage() {
                     <tbody>
                       {detailData.transactions.map((t) => (
                         <tr key={t.id}>
-                          <td className="text-sm text-gray-600">{t.paidAt ? format(new Date(t.paidAt), "dd MMM yyyy", { locale: idLocale }) : "-"}</td>
+                          <td className="text-sm text-gray-600">{t.paidAt ? formatDateWIB(t.paidAt, "dd MMM yyyy") : "-"}</td>
                           <td className="text-sm">{t.transactionNumber}</td>
                           <td className="text-sm">
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
@@ -234,7 +233,7 @@ export default function DonaturReportPage() {
                         <div className="table-card-header-left">
                           <div className="table-card-header-title">{t.productName}</div>
                           <div className="table-card-header-subtitle">
-                            {t.paidAt ? format(new Date(t.paidAt), "dd MMM yyyy", { locale: idLocale }) : "-"} · {t.transactionNumber}
+                            {t.paidAt ? formatDateWIB(t.paidAt, "dd MMM yyyy") : "-"} · {t.transactionNumber}
                           </div>
                         </div>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
@@ -284,7 +283,7 @@ export default function DonaturReportPage() {
                         <td className="text-right text-sm mono text-success-600 font-medium">Rp {formatRupiah(Number(d.totalAmount))}</td>
                         <td className="text-right text-sm mono">Rp {formatRupiah(Math.round(Number(d.avgDonation)))}</td>
                         <td className="text-sm text-gray-600">
-                          {d.lastDonation ? format(new Date(d.lastDonation), "dd MMM yyyy", { locale: idLocale }) : "-"}
+                          {d.lastDonation ? formatDateWIB(d.lastDonation, "dd MMM yyyy") : "-"}
                         </td>
                       </tr>
                     ))}
@@ -313,7 +312,7 @@ export default function DonaturReportPage() {
                   <div className="table-card-row">
                     <span className="table-card-row-label">Terakhir</span>
                     <span className="table-card-row-value text-sm">
-                      {d.lastDonation ? format(new Date(d.lastDonation), "dd MMM yyyy", { locale: idLocale }) : "-"}
+                      {d.lastDonation ? formatDateWIB(d.lastDonation, "dd MMM yyyy") : "-"}
                     </span>
                   </div>
                 </div>

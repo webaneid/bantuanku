@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format, startOfMonth } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
+import { todayWIBDateInput, startOfMonthWIBInput, formatDateWIB } from "@/lib/timezone";
 import api from "@/lib/api";
 import { formatRupiah } from "@/lib/format";
 import ExportButton from "@/components/reports/ExportButton";
@@ -53,8 +52,8 @@ const PRODUCT_TYPE_LABEL: Record<string, string> = {
 };
 
 export default function UniqueCodesReportPage() {
-  const today = format(new Date(), "yyyy-MM-dd");
-  const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+  const today = todayWIBDateInput();
+  const [startDate, setStartDate] = useState(startOfMonthWIBInput());
   const [endDate, setEndDate] = useState(today);
 
   const { data, isLoading } = useQuery({
@@ -82,7 +81,7 @@ export default function UniqueCodesReportPage() {
   const handleExportExcel = () => {
     exportToExcel({
       data: detail.map((row) => ({
-        paidAt: row.paidAt ? format(new Date(row.paidAt), "dd/MM/yyyy HH:mm", { locale: idLocale }) : "-",
+        paidAt: row.paidAt ? formatDateWIB(row.paidAt, "dd/MM/yyyy HH:mm") : "-",
         transactionNumber: row.transactionNumber,
         donorName: row.donorName || "Anonim",
         productName: row.productName || "-",
@@ -246,7 +245,7 @@ export default function UniqueCodesReportPage() {
                     {detail.map((row) => (
                       <tr key={row.id} className="hover:bg-gray-50">
                         <td className="text-sm text-gray-700">
-                          {row.paidAt ? format(new Date(row.paidAt), "dd MMM yyyy HH:mm", { locale: idLocale }) : "-"}
+                          {row.paidAt ? formatDateWIB(row.paidAt, "dd MMM yyyy HH:mm") : "-"}
                         </td>
                         <td className="text-sm text-gray-900">{row.transactionNumber}</td>
                         <td className="text-sm text-gray-900">{row.donorName || "Anonim"}</td>

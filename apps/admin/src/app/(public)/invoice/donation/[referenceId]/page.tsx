@@ -2,12 +2,11 @@
 
 import { use, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { formatRupiah } from "@/lib/format";
 import api from "@/lib/api";
 import { ClipboardIcon, PrinterIcon, PaperClipIcon } from "@heroicons/react/24/outline";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import { formatDateWIB } from "@/lib/timezone";
 
 export default function DonationInvoicePage({
   params,
@@ -239,21 +238,21 @@ export default function DonationInvoicePage({
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Tanggal Pembayaran</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {format(new Date(donation.paidAt), "dd MMMM yyyy, HH:mm", { locale: idLocale })}
+                    {formatDateWIB(donation.paidAt, "dd MMMM yyyy, HH:mm")}
                   </p>
                 </div>
               )}
               <div>
                 <p className="text-sm text-gray-500 mb-1">Tanggal Donasi</p>
                 <p className="text-sm font-medium text-gray-900">
-                  {format(new Date(donation.createdAt), "dd MMMM yyyy, HH:mm", { locale: idLocale })}
+                  {formatDateWIB(donation.createdAt, "dd MMMM yyyy, HH:mm")}
                 </p>
               </div>
               {donation.expiredAt && donation.paymentStatus === "pending" && (
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Kadaluarsa</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {format(new Date(donation.expiredAt), "dd MMMM yyyy, HH:mm", { locale: idLocale })}
+                    {formatDateWIB(donation.expiredAt, "dd MMMM yyyy, HH:mm")}
                   </p>
                 </div>
               )}
@@ -283,9 +282,7 @@ export default function DonationInvoicePage({
                         {evidence.title}
                       </p>
                       <p className="text-xs text-gray-500">
-                        Diupload {format(new Date(evidence.uploadedAt), "dd MMM yyyy HH:mm", {
-                          locale: idLocale,
-                        })}
+                        Diupload {formatDateWIB(evidence.uploadedAt, "dd MMM yyyy HH:mm")}
                       </p>
                     </div>
                     <button

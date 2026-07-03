@@ -18,8 +18,9 @@ import { extractPath } from "./media";
 import { getCurrentYearWIB } from "../../utils/timezone";
 import { WhatsAppService } from "../../services/whatsapp";
 import { TransactionService } from "../../services/transaction";
+import type { Env, Variables } from "../../types";
 
-const app = new Hono();
+const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // Apply auth middleware to all routes
 app.use("*", requireAuth);
@@ -269,7 +270,7 @@ app.get("/", async (c) => {
   const db = c.get("db");
   const user = c.get("user");
   const { status, period_id } = c.req.query();
-  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+  const isMitra = user?.roles?.length === 1 && user!.roles.includes("mitra");
 
   let query = db
     .select({
@@ -307,7 +308,7 @@ app.get("/", async (c) => {
     conditions.push(eq(qurbanSavings.targetPeriodId, period_id));
   }
   if (isMitra && user) {
-    const scope = await getMitraOwnedQurbanScope(db, user.id);
+    const scope = await getMitraOwnedQurbanScope(db, user!.id);
     const ownConditions: any[] = [];
     if (scope.packageIds.length > 0) {
       ownConditions.push(inArray(qurbanSavings.targetPackageId, scope.packageIds));
@@ -475,11 +476,11 @@ app.get("/:id", async (c) => {
   const db = c.get("db");
   const user = c.get("user");
   const { id } = c.req.param();
-  const isMitra = user?.roles?.length === 1 && user.roles.includes("mitra");
+  const isMitra = user?.roles?.length === 1 && user!.roles.includes("mitra");
   const conditions: any[] = [eq(qurbanSavings.id, id)];
 
   if (isMitra && user) {
-    const scope = await getMitraOwnedQurbanScope(db, user.id);
+    const scope = await getMitraOwnedQurbanScope(db, user!.id);
     const ownConditions: any[] = [];
     if (scope.packageIds.length > 0) {
       ownConditions.push(inArray(qurbanSavings.targetPackageId, scope.packageIds));
@@ -825,7 +826,7 @@ app.post("/:id/transactions/:txId/verify", requireRole("super_admin", "admin_cam
       .update(qurbanSavingsTransactions)
       .set({
         status: "verified",
-        verifiedBy: user.id,
+        verifiedBy: user!.id,
         verifiedAt: now,
       })
       .where(eq(qurbanSavingsTransactions.id, txId));
@@ -856,7 +857,7 @@ app.post("/:id/transactions/:txId/verify", requireRole("super_admin", "admin_cam
       .update(transactionPayments)
       .set({
         status: "verified",
-        verifiedBy: user.id,
+        verifiedBy: user!.id,
         verifiedAt: now,
         updatedAt: now,
       })
@@ -990,7 +991,7 @@ app.post("/:id/transactions/:txId/reject", requireRole("super_admin", "admin_cam
       .update(qurbanSavingsTransactions)
       .set({
         status: "rejected",
-        verifiedBy: user.id,
+        verifiedBy: user!.id,
         verifiedAt: now,
         notes: body.notes || null,
       })
@@ -1016,7 +1017,7 @@ app.post("/:id/transactions/:txId/reject", requireRole("super_admin", "admin_cam
       .update(transactionPayments)
       .set({
         status: "rejected",
-        rejectedBy: user.id,
+        rejectedBy: user!.id,
         rejectedAt: now,
         rejectionReason: body.notes || null,
         notes: body.notes || null,

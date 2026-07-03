@@ -15,7 +15,7 @@ async function verify() {
     // Test 1: GET /v1/transactions - List transactions
     console.log("📋 Test 1: GET /v1/transactions");
     const listResponse = await fetch(`${BASE_URL}/v1/transactions?limit=5`);
-    const listData = await listResponse.json();
+    const listData = await listResponse.json() as any;
     console.log(`Status: ${listResponse.status}`);
     console.log(`Success: ${listData.success}`);
     console.log(`Data count: ${listData.data?.length || 0}\n`);
@@ -25,7 +25,7 @@ async function verify() {
 
     // First, get a campaign
     const campaignsResponse = await fetch(`${BASE_URL}/v1/campaigns?limit=1`);
-    const campaignsData = await campaignsResponse.json();
+    const campaignsData = await campaignsResponse.json() as any;
 
     if (campaignsData.success && campaignsData.data.length > 0) {
       const campaign = campaignsData.data[0];
@@ -48,7 +48,7 @@ async function verify() {
         }),
       });
 
-      const createData = await createResponse.json();
+      const createData = await createResponse.json() as any;
       console.log(`Status: ${createResponse.status}`);
       console.log(`Success: ${createData.success}`);
       if (createData.success) {
@@ -60,7 +60,7 @@ async function verify() {
         // Test 3: GET /v1/transactions/:id
         console.log("📋 Test 3: GET /v1/transactions/:id");
         const detailResponse = await fetch(`${BASE_URL}/v1/transactions/${createData.data.id}`);
-        const detailData = await detailResponse.json();
+        const detailData = await detailResponse.json() as any;
         console.log(`Status: ${detailResponse.status}`);
         console.log(`Success: ${detailData.success}`);
         if (detailData.success) {

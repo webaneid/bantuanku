@@ -1786,7 +1786,7 @@ export default function GeneralSettingsPage() {
           });
           setShowLogoLibrary(false);
         }}
-        category="financial"
+        category="general"
         accept="image/*"
         selectedUrl={orgForm.organizationLogo}
       />
@@ -1815,7 +1815,7 @@ export default function GeneralSettingsPage() {
           });
           setShowFaviconLibrary(false);
         }}
-        category="financial"
+        category="general"
         accept="image/*"
         selectedUrl={orgForm.organizationFavicon}
       />
@@ -1844,7 +1844,7 @@ export default function GeneralSettingsPage() {
           });
           setShowInstitutionLogoLibrary(false);
         }}
-        category="financial"
+        category="general"
         accept="image/*"
         selectedUrl={orgForm.organizationInstitutionLogo}
       />

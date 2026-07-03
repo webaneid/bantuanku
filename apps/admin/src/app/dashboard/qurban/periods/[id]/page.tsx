@@ -5,11 +5,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Calendar, Users, TrendingUp, Printer, Eye, CheckCircle2, Clock, Scissors, MapPin, Weight, Camera, X, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
 import api from "@/lib/api";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import MediaLibrary from "@/components/MediaLibrary";
 import Pagination from "@/components/Pagination";
+import { formatDateWIB, toWIBDateInput } from "@/lib/timezone";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -361,7 +361,7 @@ export default function PeriodDetailPage() {
   const openExecutionForm = (target: typeof executionTarget) => {
     setExecutionTarget(target);
     setExecForm({
-      execution_date: period?.executionDate ? format(new Date(period.executionDate), "yyyy-MM-dd") : "",
+      execution_date: period?.executionDate ? toWIBDateInput(period.executionDate) : "",
       location: "", animal_weight: "", animal_condition: "",
       distribution_method: "", distribution_notes: "", photos: [], video_url: "", recipient_count: "",
     });
@@ -428,8 +428,8 @@ export default function PeriodDetailPage() {
             <div className="flex gap-4 text-sm text-gray-600">
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                {format(new Date(period.startDate), "dd MMM yyyy", { locale: localeId })} -
-                {format(new Date(period.endDate), "dd MMM yyyy", { locale: localeId })}
+                {formatDateWIB(period.startDate, "dd MMM yyyy")} -
+                {formatDateWIB(period.endDate, "dd MMM yyyy")}
               </span>
               <span>Tahun Hijriah: {period.hijriYear}</span>
             </div>
@@ -451,7 +451,7 @@ export default function PeriodDetailPage() {
           <h1 className="text-3xl font-bold mb-2">LAPORAN QURBAN</h1>
           <h2 className="text-xl font-semibold">{period.name}</h2>
           <p className="text-sm mt-2">
-            Periode: {format(new Date(period.startDate), "dd MMM yyyy")} - {format(new Date(period.endDate), "dd MMM yyyy")}
+            Periode: {formatDateWIB(period.startDate, "dd MMM yyyy")} - {formatDateWIB(period.endDate, "dd MMM yyyy")}
           </p>
           <p className="text-sm">Tahun Hijriah: {period.hijriYear}</p>
         </div>
@@ -820,7 +820,7 @@ export default function PeriodDetailPage() {
                           <div className="text-xs text-gray-600 space-y-1 mb-3 bg-green-50 rounded-lg p-2.5">
                             <p className="flex items-center gap-1.5">
                               <Calendar className="h-3 w-3" />
-                              {format(new Date(exec.executionDate), "dd MMM yyyy", { locale: localeId })}
+                              {formatDateWIB(exec.executionDate, "dd MMM yyyy")}
                             </p>
                             <p className="flex items-center gap-1.5">
                               <MapPin className="h-3 w-3" />
@@ -947,7 +947,7 @@ export default function PeriodDetailPage() {
                           <div className="text-xs text-gray-600 space-y-1 mb-3 bg-green-50 rounded-lg p-2.5">
                             <p className="flex items-center gap-1.5">
                               <Calendar className="h-3 w-3" />
-                              {format(new Date(exec.executionDate), "dd MMM yyyy", { locale: localeId })}
+                              {formatDateWIB(exec.executionDate, "dd MMM yyyy")}
                             </p>
                             <p className="flex items-center gap-1.5">
                               <MapPin className="h-3 w-3" />
@@ -1033,7 +1033,7 @@ export default function PeriodDetailPage() {
                           <div className="text-xs text-gray-600 space-y-1 mb-3 bg-green-50 rounded-lg p-2.5">
                             <p className="flex items-center gap-1.5">
                               <Calendar className="h-3 w-3" />
-                              {format(new Date(exec.executionDate), "dd MMM yyyy", { locale: localeId })}
+                              {formatDateWIB(exec.executionDate, "dd MMM yyyy")}
                             </p>
                             <p className="flex items-center gap-1.5">
                               <MapPin className="h-3 w-3" />
@@ -1133,9 +1133,9 @@ export default function PeriodDetailPage() {
                       </td>
                       <td className="text-gray-600">
                         {d.paidAt
-                          ? format(new Date(d.paidAt), "dd MMM yyyy", { locale: localeId })
+                          ? formatDateWIB(d.paidAt, "dd MMM yyyy")
                           : d.createdAt
-                          ? format(new Date(d.createdAt), "dd MMM yyyy", { locale: localeId })
+                          ? formatDateWIB(d.createdAt, "dd MMM yyyy")
                           : "-"}
                       </td>
                       <td className="print:hidden">
@@ -1190,9 +1190,9 @@ export default function PeriodDetailPage() {
                     <span className="table-card-row-label">Tanggal</span>
                     <span className="table-card-row-value">
                       {d.paidAt
-                        ? format(new Date(d.paidAt), "dd MMM yyyy", { locale: localeId })
+                        ? formatDateWIB(d.paidAt, "dd MMM yyyy")
                         : d.createdAt
-                        ? format(new Date(d.createdAt), "dd MMM yyyy", { locale: localeId })
+                        ? formatDateWIB(d.createdAt, "dd MMM yyyy")
                         : "-"}
                     </span>
                   </div>
@@ -1343,7 +1343,7 @@ export default function PeriodDetailPage() {
                       </td>
                       <td className="text-gray-600">
                         {report.activityDate
-                          ? format(new Date(report.activityDate), "dd MMM yyyy", { locale: localeId })
+                          ? formatDateWIB(report.activityDate, "dd MMM yyyy")
                           : "-"}
                       </td>
                       <td>
@@ -1385,7 +1385,7 @@ export default function PeriodDetailPage() {
                       <div className="table-card-header-title">{report.title}</div>
                       <div className="table-card-header-subtitle">
                         {report.activityDate
-                          ? format(new Date(report.activityDate), "dd MMM yyyy", { locale: localeId })
+                          ? formatDateWIB(report.activityDate, "dd MMM yyyy")
                           : "-"}
                       </div>
                     </div>
@@ -1429,7 +1429,7 @@ export default function PeriodDetailPage() {
       <div className="hidden print:block mt-12 pt-6 border-t-2 border-gray-800">
         <div className="flex justify-between text-sm">
           <div>
-            <p>Dicetak pada: {format(new Date(), "dd MMMM yyyy HH:mm", { locale: localeId })}</p>
+            <p>Dicetak pada: {formatDateWIB(new Date(), "dd MMMM yyyy HH:mm")}</p>
           </div>
           <div className="text-right">
             <p className="mb-12">Panitia Qurban</p>
@@ -1622,7 +1622,7 @@ export default function PeriodDetailPage() {
                 <div>
                   <span className="text-xs font-semibold text-gray-500 uppercase">Tanggal</span>
                   <p className="text-gray-900 mt-1 font-medium">
-                    {format(new Date(viewExecution.executionDate), "dd MMMM yyyy", { locale: localeId })}
+                    {formatDateWIB(viewExecution.executionDate, "dd MMMM yyyy")}
                   </p>
                 </div>
                 <div>

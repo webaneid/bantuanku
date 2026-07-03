@@ -4,11 +4,10 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { Plus, Edit, Trash2, Eye } from "lucide-react";
 import Autocomplete from "@/components/Autocomplete";
 import { useAuth } from "@/lib/auth";
+import { formatDateWIB, toWIBDateInput } from "@/lib/timezone";
 
 export default function ZakatPeriodsPage() {
   const router = useRouter();
@@ -145,9 +144,9 @@ export default function ZakatPeriodsPage() {
       name: period.name,
       year: period.year.toString(),
       hijriYear: period.hijriYear || "",
-      startDate: period.startDate ? format(new Date(period.startDate), "yyyy-MM-dd") : "",
-      endDate: period.endDate ? format(new Date(period.endDate), "yyyy-MM-dd") : "",
-      executionDate: period.executionDate ? format(new Date(period.executionDate), "yyyy-MM-dd") : "",
+      startDate: period.startDate ? toWIBDateInput(period.startDate) : "",
+      endDate: period.endDate ? toWIBDateInput(period.endDate) : "",
+      executionDate: period.executionDate ? toWIBDateInput(period.executionDate) : "",
       status: period.status || "draft",
       description: period.description || "",
     });
@@ -308,14 +307,14 @@ export default function ZakatPeriodsPage() {
                   <td>
                     {period.startDate && period.endDate ? (
                       <div className="text-sm">
-                        {format(new Date(period.startDate), "dd MMM", { locale: idLocale })} - {format(new Date(period.endDate), "dd MMM yyyy", { locale: idLocale })}
+                        {formatDateWIB(period.startDate, "dd MMM")} - {formatDateWIB(period.endDate, "dd MMM yyyy")}
                       </div>
                     ) : "-"}
                   </td>
                   <td>
                     {period.executionDate ? (
                       <span className="text-orange-600 font-medium">
-                        {format(new Date(period.executionDate), "dd MMM yyyy", { locale: idLocale })}
+                        {formatDateWIB(period.executionDate, "dd MMM yyyy")}
                       </span>
                     ) : (
                       "-"

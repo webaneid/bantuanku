@@ -113,7 +113,12 @@ export class RevenueShareService {
     }
 
     const previousAmount = referral.commissionAmount || 0;
-    const delta = fundraiserAmount - previousAmount;
+
+    // Jika referral belum pernah dibayar (status "pending"), kredit full amount ke balance.
+    // Jika sudah pernah dibayar (re-approval karena rate berubah), hanya kredit delta.
+    // Dengan ini currentBalance tidak perlu di-update saat create() — hanya saat paid.
+    const isFirstApproval = referral.status === "pending";
+    const balanceDelta = isFirstApproval ? fundraiserAmount : (fundraiserAmount - previousAmount);
 
     await this.db
       .update(fundraiserReferrals)
@@ -126,12 +131,12 @@ export class RevenueShareService {
       })
       .where(eq(fundraiserReferrals.id, referral.id));
 
-    if (delta !== 0) {
+    if (balanceDelta !== 0) {
       await this.db
         .update(fundraisers)
         .set({
-          totalCommissionEarned: sql`${fundraisers.totalCommissionEarned} + ${delta}`,
-          currentBalance: sql`${fundraisers.currentBalance} + ${delta}`,
+          totalCommissionEarned: sql`${fundraisers.totalCommissionEarned} + ${balanceDelta}`,
+          currentBalance: sql`${fundraisers.currentBalance} + ${balanceDelta}`,
           updatedAt: new Date(),
         })
         .where(eq(fundraisers.id, referral.fundraiserId));

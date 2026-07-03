@@ -4,12 +4,11 @@ import { use, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { formatRupiah } from "@/lib/format";
 import Pagination from "@/components/Pagination";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
+import { formatDateWIB } from "@/lib/timezone";
 
 const WEB_URL = process.env.NEXT_PUBLIC_WEB_URL || "";
 
@@ -508,12 +507,12 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Terdaftar</span>
-                  <span>{format(new Date(data.createdAt), "dd MMM yyyy, HH:mm", { locale: idLocale })}</span>
+                  <span>{formatDateWIB(data.createdAt, "dd MMM yyyy, HH:mm")}</span>
                 </div>
                 {data.approvedAt && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">Disetujui</span>
-                    <span>{format(new Date(data.approvedAt), "dd MMM yyyy, HH:mm", { locale: idLocale })}</span>
+                    <span>{formatDateWIB(data.approvedAt, "dd MMM yyyy, HH:mm")}</span>
                   </div>
                 )}
                 {data.notes && (
@@ -600,7 +599,7 @@ export default function FundraiserDetailPage({ params }: { params: Promise<{ id:
                     referrals.map((ref: any) => (
                       <tr key={ref.id}>
                         <td className="text-sm text-gray-600">
-                          {format(new Date(ref.createdAt), "dd MMM yyyy", { locale: idLocale })}
+                          {formatDateWIB(ref.createdAt, "dd MMM yyyy")}
                         </td>
                         <td>
                           <button

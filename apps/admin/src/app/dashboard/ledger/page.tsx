@@ -8,8 +8,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
+import { formatDateWIB } from "@/lib/timezone";
 import { formatRupiah } from "@/lib/format";
 import {
   EyeIcon,
@@ -188,7 +187,7 @@ export default function LedgerPage() {
                 </td>
                 <td>{getStatusBadge(entry.status)}</td>
                 <td className="text-gray-600 text-sm">
-                  {format(new Date(entry.createdAt), "dd MMM yyyy", { locale: idLocale })}
+                  {formatDateWIB(entry.createdAt, "dd MMM yyyy")}
                 </td>
                 <td>
                   <div className="table-actions">
@@ -282,7 +281,7 @@ export default function LedgerPage() {
             <div className="table-card-row">
               <span className="table-card-row-label">Tanggal</span>
               <span className="table-card-row-value">
-                {format(new Date(entry.createdAt), "dd MMM yyyy", { locale: idLocale })}
+                {formatDateWIB(entry.createdAt, "dd MMM yyyy")}
               </span>
             </div>
 

@@ -7,6 +7,7 @@ import CampaignForm, { CampaignFormData } from "@/components/CampaignForm";
 import { useState } from "react";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
+import { toWIBDateInput } from "@/lib/timezone";
 
 export default function EditCampaignPage() {
   const router = useRouter();
@@ -46,8 +47,8 @@ export default function EditCampaignPage() {
     mitraId: campaignData.mitraId,
     mitraName: campaignData.mitraName,
     status: campaignData.status,
-    startDate: campaignData.startDate ? new Date(campaignData.startDate).toISOString().split('T')[0] : undefined,
-    endDate: campaignData.endDate ? new Date(campaignData.endDate).toISOString().split('T')[0] : undefined,
+    startDate: toWIBDateInput(campaignData.startDate) || undefined,
+    endDate: toWIBDateInput(campaignData.endDate) || undefined,
     isFeatured: campaignData.isFeatured,
     isUrgent: campaignData.isUrgent,
     // SEO fields

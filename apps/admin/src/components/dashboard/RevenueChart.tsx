@@ -11,8 +11,7 @@ import {
 } from "recharts";
 import { BarChart3 } from "lucide-react";
 import { formatRupiah } from "@/lib/format";
-import { format, parseISO } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
+import { formatDateWIB } from "@/lib/timezone";
 
 interface TrendItem {
   date: string;
@@ -37,7 +36,7 @@ function CustomTooltip({ active, payload, label }: any) {
 
   let dateStr = label;
   try {
-    dateStr = format(parseISO(label), "d MMMM yyyy", { locale: idLocale });
+    dateStr = formatDateWIB(label, "d MMMM yyyy");
   } catch {}
 
   return (
@@ -98,7 +97,7 @@ export default function RevenueChart({
                   tick={{ fontSize: 11, fill: "#6b7280" }}
                   tickFormatter={(val) => {
                     try {
-                      return format(parseISO(val), "d MMM", { locale: idLocale });
+                      return formatDateWIB(val, "d MMM");
                     } catch {
                       return val;
                     }

@@ -4,10 +4,9 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Plus, Edit, Trash2, Calendar, Eye } from "lucide-react";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { formatDateWIB } from "@/lib/timezone";
 
 interface Period {
   id: string;
@@ -216,10 +215,10 @@ export default function PeriodsPage() {
                     </td>
                     <td className="text-sm">{period.hijriYear} H</td>
                     <td className="text-sm text-gray-600">
-                      {format(new Date(period.startDate), "d MMMM", { locale: idLocale })} - {format(new Date(period.endDate), "d MMMM yyyy", { locale: idLocale })}
+                      {formatDateWIB(period.startDate, "d MMMM")} - {formatDateWIB(period.endDate, "d MMMM yyyy")}
                     </td>
                     <td className="text-sm text-gray-600">
-                      {format(new Date(period.executionDate), "dd MMM yyyy", { locale: idLocale })}
+                      {formatDateWIB(period.executionDate, "dd MMM yyyy")}
                     </td>
                     <td>
                       <span
@@ -302,14 +301,14 @@ export default function PeriodsPage() {
                 <div className="table-card-row">
                   <span className="table-card-row-label">Waktu</span>
                   <span className="table-card-row-value">
-                    {format(new Date(period.startDate), "d MMMM", { locale: idLocale })} - {format(new Date(period.endDate), "d MMMM yyyy", { locale: idLocale })}
+                    {formatDateWIB(period.startDate, "d MMMM")} - {formatDateWIB(period.endDate, "d MMMM yyyy")}
                   </span>
                 </div>
 
                 <div className="table-card-row">
                   <span className="table-card-row-label">Tanggal Penyembelihan</span>
                   <span className="table-card-row-value">
-                    {format(new Date(period.executionDate), "dd MMM yyyy", { locale: idLocale })}
+                    {formatDateWIB(period.executionDate, "dd MMM yyyy")}
                   </span>
                 </div>
 

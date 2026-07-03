@@ -5,10 +5,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon, PencilIcon, TrashIcon, XMarkIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import api from "@/lib/api";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import Modal from "@/components/Modal";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import { formatDateWIB } from "@/lib/timezone";
 
 const getYouTubeEmbedUrl = (url: string): string | null => {
   try {
@@ -208,7 +207,7 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
               {report.status === "draft" ? "Draft" : "Published"}
             </span>
             <div className="text-sm text-gray-500">
-              Dibuat: {format(new Date(report.createdAt), "dd MMMM yyyy, HH:mm", { locale: idLocale })}
+              Dibuat: {formatDateWIB(report.createdAt, "dd MMMM yyyy, HH:mm")}
             </div>
           </div>
         </div>
@@ -236,7 +235,7 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Tanggal Kegiatan</h3>
           <p className="text-lg text-gray-900">
-            {format(new Date(report.activityDate), "dd MMMM yyyy", { locale: idLocale })}
+            {formatDateWIB(report.activityDate, "dd MMMM yyyy")}
           </p>
         </div>
 
@@ -406,7 +405,7 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
           <div className="border-t border-gray-200 pt-6 text-sm text-gray-500">
             <p>Dibuat oleh: {report.creator.name}</p>
             {report.publishedAt && (
-              <p>Dipublikasikan: {format(new Date(report.publishedAt), "dd MMMM yyyy, HH:mm", { locale: idLocale })}</p>
+              <p>Dipublikasikan: {formatDateWIB(report.publishedAt, "dd MMMM yyyy, HH:mm")}</p>
             )}
           </div>
         )}

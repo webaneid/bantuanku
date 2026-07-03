@@ -214,7 +214,6 @@ const mitraSchema = z.object({
   regencyCode: z.string().optional(),
   districtCode: z.string().optional(),
   villageCode: z.string().optional(),
-  postalCode: z.string().optional().nullable(),
 
   ktpUrl: z.string().optional(),
   bankBookUrl: z.string().optional(),
@@ -275,13 +274,13 @@ app.get("/me", async (c) => {
 
     // Cari mitra berdasarkan userId dari JWT.
     let [record] = await baseSelect
-      .where(eq(mitra.userId, user.id))
+      .where(eq(mitra.userId, user!.id))
       .limit(1);
 
     // Fallback untuk data lama yang belum link userId.
-    if (!record && user.email) {
+    if (!record && user!.email) {
       [record] = await baseSelect
-        .where(eq(mitra.email, user.email))
+        .where(eq(mitra.email, user!.email))
         .limit(1);
     }
 
@@ -319,7 +318,7 @@ app.get("/me", async (c) => {
 
     const { zakatTypeList, qurbanPackageList, programs } = await buildMitraProgramData(
       db,
-      record.userId || user.id,
+      record.userId || user!.id,
       campaignList
     );
 
@@ -343,10 +342,15 @@ app.get("/me/programs", async (c) => {
     const db = c.get("db");
     const user = c.get("user")!;
 
-    // Cari mitra berdasarkan userId
-    const mitraRecord = await db.query.mitra.findFirst({
-      where: eq(mitra.userId, user.id),
+    // Cari mitra berdasarkan userId, fallback email untuk data lama yang belum ter-link
+    let mitraRecord = await db.query.mitra.findFirst({
+      where: eq(mitra.userId, user!.id),
     });
+    if (!mitraRecord && user!.email) {
+      mitraRecord = await db.query.mitra.findFirst({
+        where: eq(mitra.email, user!.email),
+      });
+    }
 
     if (!mitraRecord) {
       return error(c, "Data mitra tidak ditemukan", 404);
@@ -370,7 +374,7 @@ app.get("/me/programs", async (c) => {
 
     const { zakatTypeList, qurbanPackageList, programs } = await buildMitraProgramData(
       db,
-      mitraRecord.userId || user.id,
+      mitraRecord.userId || user!.id,
       campaignList
     );
 
@@ -575,7 +579,7 @@ app.post("/", requireRoles("super_admin"), async (c) => {
     const body = await c.req.json();
     const validated = mitraSchema.parse(body);
 
-    const { bankAccounts, postalCode, password, ...data } = validated;
+    const { bankAccounts, password, ...data } = validated;
 
     // Normalize kontak
     const normalized = normalizeContactData(data);
@@ -678,7 +682,7 @@ app.put("/:id", requireRoles("super_admin"), async (c) => {
     const body = await c.req.json();
     const validated = mitraSchema.parse(body);
 
-    const { bankAccounts, postalCode, ...data } = validated;
+    const { bankAccounts, ...data } = validated;
 
     const normalized = normalizeContactData(data);
 
@@ -755,6 +759,32 @@ app.delete("/:id", requireRoles("super_admin"), async (c) => {
       return error(c, "Tidak bisa menghapus mitra yang memiliki program aktif", 400);
     }
 
+    // Check zakat types & qurban packages linked via userId
+    const mitraRecord = await db.query.mitra.findFirst({
+      where: eq(mitra.id, id),
+      columns: { userId: true },
+    });
+
+    if (mitraRecord?.userId) {
+      const [zakatCount] = await db
+        .select({ total: sql<number>`count(*)` })
+        .from(zakatTypes)
+        .where(eq(zakatTypes.createdBy, mitraRecord.userId));
+
+      if (Number(zakatCount?.total || 0) > 0) {
+        return error(c, "Tidak bisa menghapus mitra yang memiliki program zakat", 400);
+      }
+
+      const [qurbanCount] = await db
+        .select({ total: sql<number>`count(*)` })
+        .from(qurbanPackages)
+        .where(eq(qurbanPackages.createdBy, mitraRecord.userId));
+
+      if (Number(qurbanCount?.total || 0) > 0) {
+        return error(c, "Tidak bisa menghapus mitra yang memiliki paket qurban", 400);
+      }
+    }
+
     // Delete bank accounts first
     await db
       .delete(entityBankAccounts)
@@ -797,7 +827,7 @@ app.post("/:id/verify", requireRoles("super_admin"), async (c) => {
       .update(mitra)
       .set({
         status: "verified",
-        verifiedBy: user.id,
+        verifiedBy: user!.id,
         verifiedAt: new Date(),
         rejectionReason: null,
         updatedAt: new Date(),

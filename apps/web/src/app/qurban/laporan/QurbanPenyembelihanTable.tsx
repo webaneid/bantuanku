@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatDate } from '@/lib/format';
 
 interface ExecutionRow {
   id: string;
@@ -85,7 +86,7 @@ export default function QurbanPenyembelihanTable({ rows }: { rows: ExecutionRow[
               <tr key={e.id}>
                 <td>{(currentPage - 1) * ITEMS_PER_PAGE + i + 1}</td>
                 <td>{e.executionNumber}</td>
-                <td>{new Date(e.executionDate).toLocaleDateString('id-ID')}</td>
+                <td>{formatDate(e.executionDate)}</td>
                 <td>{e.location}</td>
                 <td>{animalLabel(e.animalType)}</td>
                 <td>{e.animalWeight ?? '-'}</td>
@@ -110,7 +111,7 @@ export default function QurbanPenyembelihanTable({ rows }: { rows: ExecutionRow[
             <div className="table-card-header">
               <div className="table-card-header-left">
                 <div className="table-card-header-title">{e.executionNumber}</div>
-                <div className="table-card-header-subtitle">{new Date(e.executionDate).toLocaleDateString('id-ID')}</div>
+                <div className="table-card-header-subtitle">{formatDate(e.executionDate)}</div>
               </div>
               <span className="table-card-header-badge bg-warning-50 text-warning-700">
                 #{(currentPage - 1) * ITEMS_PER_PAGE + i + 1}

@@ -569,6 +569,7 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
   const newTxPaymentStatus = parsed.status === "success" ? "verified" : parsed.status === "expired" ? "rejected" : "pending";
 
   // Use transaction to ensure atomicity
+  let pendingEmailData: Parameters<ReturnType<typeof createEmailService>["sendPaymentSuccess"]>[0] | null = null;
   try {
     await db.transaction(async (tx) => {
       // 1. Update transaction payment status
@@ -610,16 +611,16 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
             })
             .where(eq(campaigns.id, campaign.id));
 
-          // 5. Send email (outside transaction - non-critical)
+          // 5. Queue email for sending after transaction (non-critical)
           if (txn.donorEmail && c.env.RESEND_API_KEY) {
-            c.set('emailToSend', {
+            pendingEmailData = {
               donorEmail: txn.donorEmail,
               donorName: txn.donorName,
               campaignTitle: campaign.title,
               amount: txn.subtotal,
               invoiceNumber: txn.transactionNumber,
               paymentMethod: payment.paymentMethod || "Unknown",
-            });
+            };
           }
         }
       }
@@ -639,11 +640,10 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
     }
 
     // Send email after transaction successfully committed
-    const emailData = c.get('emailToSend');
-    if (emailData && c.env.RESEND_API_KEY) {
+    if (pendingEmailData && c.env.RESEND_API_KEY) {
       try {
         const emailService = createEmailService(c.env.RESEND_API_KEY, c.env.FROM_EMAIL || "noreply@bantuanku.org");
-        await emailService.sendPaymentSuccess(emailData);
+        await emailService.sendPaymentSuccess(pendingEmailData);
       } catch (emailError) {
         // Log email error but don't fail the webhook
         console.error("Failed to send payment success email:", emailError);

@@ -1,16 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import toast from "@/lib/feedback-toast";
 import api from "@/lib/api";
 import { Header as Navbar, Footer, Breadcrumb } from "@/components/organisms";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:50245/v1";
+
 interface BankAccount {
   bankName: string;
   accountNumber: string;
   accountHolderName: string;
+}
+
+interface AddressOption {
+  code: string;
+  name: string;
+}
+
+interface DocumentUrls {
+  ktpUrl: string;
+  bankBookUrl: string;
+  npwpUrl: string;
 }
 
 export default function DaftarMitraPage() {
@@ -26,14 +39,73 @@ export default function DaftarMitraPage() {
     whatsappNumber: "",
     website: "",
     detailAddress: "",
-    ktpUrl: "",
-    bankBookUrl: "",
-    npwpUrl: "",
   });
+
+  // Address cascade state
+  const [provinces, setProvinces] = useState<AddressOption[]>([]);
+  const [regencies, setRegencies] = useState<AddressOption[]>([]);
+  const [districts, setDistricts] = useState<AddressOption[]>([]);
+  const [villages, setVillages] = useState<AddressOption[]>([]);
+  const [selectedProvinceCode, setSelectedProvinceCode] = useState("");
+  const [selectedRegencyCode, setSelectedRegencyCode] = useState("");
+  const [selectedDistrictCode, setSelectedDistrictCode] = useState("");
+  const [selectedVillageCode, setSelectedVillageCode] = useState("");
 
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([
     { bankName: "", accountNumber: "", accountHolderName: "" },
   ]);
+
+  // Document upload state
+  const [documentUrls, setDocumentUrls] = useState<DocumentUrls>({
+    ktpUrl: "",
+    bankBookUrl: "",
+    npwpUrl: "",
+  });
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+
+  // Load provinces on mount
+  useEffect(() => {
+    fetch(`${API_URL}/indonesia/provinces`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setProvinces(d.data); })
+      .catch(() => {});
+  }, []);
+
+  // Load regencies when province changes
+  useEffect(() => {
+    if (!selectedProvinceCode) { setRegencies([]); setSelectedRegencyCode(""); return; }
+    fetch(`${API_URL}/indonesia/regencies/${selectedProvinceCode}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setRegencies(d.data); })
+      .catch(() => {});
+    setSelectedRegencyCode("");
+    setSelectedDistrictCode("");
+    setSelectedVillageCode("");
+    setDistricts([]);
+    setVillages([]);
+  }, [selectedProvinceCode]);
+
+  // Load districts when regency changes
+  useEffect(() => {
+    if (!selectedRegencyCode) { setDistricts([]); setSelectedDistrictCode(""); return; }
+    fetch(`${API_URL}/indonesia/districts/${selectedRegencyCode}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setDistricts(d.data); })
+      .catch(() => {});
+    setSelectedDistrictCode("");
+    setSelectedVillageCode("");
+    setVillages([]);
+  }, [selectedRegencyCode]);
+
+  // Load villages when district changes
+  useEffect(() => {
+    if (!selectedDistrictCode) { setVillages([]); setSelectedVillageCode(""); return; }
+    fetch(`${API_URL}/indonesia/villages/${selectedDistrictCode}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) setVillages(d.data); })
+      .catch(() => {});
+    setSelectedVillageCode("");
+  }, [selectedDistrictCode]);
 
   const registerMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -69,6 +141,29 @@ export default function DaftarMitraPage() {
     setBankAccounts((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleDocumentUpload = useCallback(async (
+    field: keyof DocumentUrls,
+    file: File
+  ) => {
+    setUploadingDoc(field);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch(`${API_URL}/mitra/upload-document`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || "Upload gagal");
+      setDocumentUrls((prev) => ({ ...prev, [field]: data.data.url }));
+      toast.success("Dokumen berhasil diupload");
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengupload dokumen");
+    } finally {
+      setUploadingDoc(null);
+    }
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -101,18 +196,25 @@ export default function DaftarMitraPage() {
     if (formData.whatsappNumber) payload.whatsappNumber = formData.whatsappNumber;
     if (formData.website) payload.website = formData.website;
     if (formData.detailAddress) payload.detailAddress = formData.detailAddress;
-    if (formData.ktpUrl) payload.ktpUrl = formData.ktpUrl;
-    if (formData.bankBookUrl) payload.bankBookUrl = formData.bankBookUrl;
-    if (formData.npwpUrl) payload.npwpUrl = formData.npwpUrl;
+    if (selectedProvinceCode) payload.provinceCode = selectedProvinceCode;
+    if (selectedRegencyCode) payload.regencyCode = selectedRegencyCode;
+    if (selectedDistrictCode) payload.districtCode = selectedDistrictCode;
+    if (selectedVillageCode) payload.villageCode = selectedVillageCode;
+    if (documentUrls.ktpUrl) payload.ktpUrl = documentUrls.ktpUrl;
+    if (documentUrls.bankBookUrl) payload.bankBookUrl = documentUrls.bankBookUrl;
+    if (documentUrls.npwpUrl) payload.npwpUrl = documentUrls.npwpUrl;
     if (validBankAccounts.length > 0) payload.bankAccounts = validBankAccounts;
 
     registerMutation.mutate(payload);
   };
 
+  const selectClass = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white disabled:bg-gray-50 disabled:text-gray-400";
+  const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500";
+
   return (
     <>
       <Navbar />
-      <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Daftar Mitra' }]} />
+      <Breadcrumb items={[{ label: "Beranda", href: "/" }, { label: "Daftar Mitra" }]} />
       <main className="min-h-screen bg-gray-50 py-12">
         <div className="max-w-2xl mx-auto px-4">
           <div className="text-center mb-8">
@@ -126,34 +228,16 @@ export default function DaftarMitraPage() {
             {/* Identitas Lembaga */}
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Identitas Lembaga</h2>
-
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Nama Lembaga <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="name"
-                    required
-                    minLength={3}
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Nama lembaga"
-                  />
+                  <input type="text" name="name" required minLength={3} value={formData.name} onChange={handleChange} className={inputClass} placeholder="Nama lembaga" />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Deskripsi</label>
-                  <textarea
-                    name="description"
-                    rows={3}
-                    value={formData.description}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Deskripsi singkat tentang lembaga..."
-                  />
+                  <textarea name="description" rows={3} value={formData.description} onChange={handleChange} className={inputClass} placeholder="Deskripsi singkat tentang lembaga..." />
                 </div>
               </div>
             </div>
@@ -161,34 +245,16 @@ export default function DaftarMitraPage() {
             {/* Penanggung Jawab */}
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Penanggung Jawab</h2>
-
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Nama Penanggung Jawab <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="picName"
-                    required
-                    minLength={2}
-                    value={formData.picName}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Nama lengkap"
-                  />
+                  <input type="text" name="picName" required minLength={2} value={formData.picName} onChange={handleChange} className={inputClass} placeholder="Nama lengkap" />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Jabatan</label>
-                  <input
-                    type="text"
-                    name="picPosition"
-                    value={formData.picPosition}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Contoh: Ketua, Direktur"
-                  />
+                  <input type="text" name="picPosition" value={formData.picPosition} onChange={handleChange} className={inputClass} placeholder="Contoh: Ketua, Direktur" />
                 </div>
               </div>
             </div>
@@ -196,58 +262,26 @@ export default function DaftarMitraPage() {
             {/* Kontak */}
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Kontak</h2>
-
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="email"
-                    name="email"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="email@lembaga.org"
-                  />
+                  <input type="email" name="email" required value={formData.email} onChange={handleChange} className={inputClass} placeholder="email@lembaga.org" />
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Telepon</label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="08xxxxxxxxxx"
-                    />
+                    <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className={inputClass} placeholder="08xxxxxxxxxx" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
-                    <input
-                      type="tel"
-                      name="whatsappNumber"
-                      value={formData.whatsappNumber}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      placeholder="08xxxxxxxxxx"
-                    />
+                    <input type="tel" name="whatsappNumber" value={formData.whatsappNumber} onChange={handleChange} className={inputClass} placeholder="08xxxxxxxxxx" />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
-                  <input
-                    type="text"
-                    name="website"
-                    value={formData.website}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="https://www.lembaga.org"
-                  />
+                  <input type="text" name="website" value={formData.website} onChange={handleChange} className={inputClass} placeholder="https://www.lembaga.org" />
                 </div>
               </div>
             </div>
@@ -255,79 +289,71 @@ export default function DaftarMitraPage() {
             {/* Alamat */}
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Alamat</h2>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
-                <textarea
-                  name="detailAddress"
-                  rows={3}
-                  value={formData.detailAddress}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="Alamat lengkap lembaga..."
-                />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Detail Alamat</label>
+                  <textarea name="detailAddress" rows={2} value={formData.detailAddress} onChange={handleChange} className={inputClass} placeholder="Jalan, nomor, RT/RW, gedung..." />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Provinsi</label>
+                    <select value={selectedProvinceCode} onChange={(e) => setSelectedProvinceCode(e.target.value)} className={selectClass}>
+                      <option value="">Pilih Provinsi</option>
+                      {provinces.map((p) => <option key={p.code} value={p.code}>{p.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kabupaten / Kota</label>
+                    <select value={selectedRegencyCode} onChange={(e) => setSelectedRegencyCode(e.target.value)} disabled={!selectedProvinceCode} className={selectClass}>
+                      <option value="">Pilih Kabupaten/Kota</option>
+                      {regencies.map((r) => <option key={r.code} value={r.code}>{r.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Kecamatan</label>
+                    <select value={selectedDistrictCode} onChange={(e) => setSelectedDistrictCode(e.target.value)} disabled={!selectedRegencyCode} className={selectClass}>
+                      <option value="">Pilih Kecamatan</option>
+                      {districts.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Desa / Kelurahan</label>
+                    <select value={selectedVillageCode} onChange={(e) => setSelectedVillageCode(e.target.value)} disabled={!selectedDistrictCode} className={selectClass}>
+                      <option value="">Pilih Desa/Kelurahan</option>
+                      {villages.map((v) => <option key={v.code} value={v.code}>{v.name}</option>)}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Rekening Bank */}
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Rekening Bank</h2>
-
               <div className="space-y-4">
                 {bankAccounts.map((acc, index) => (
                   <div key={index} className="p-4 border border-gray-200 rounded-lg space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700">Rekening {index + 1}</span>
                       {bankAccounts.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeBankAccount(index)}
-                          className="text-sm text-red-600 hover:text-red-700"
-                        >
-                          Hapus
-                        </button>
+                        <button type="button" onClick={() => removeBankAccount(index)} className="text-sm text-red-600 hover:text-red-700">Hapus</button>
                       )}
                     </div>
-
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">Nama Bank</label>
-                      <input
-                        type="text"
-                        value={acc.bankName}
-                        onChange={(e) => handleBankChange(index, "bankName", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Contoh: BCA, Mandiri, BSI"
-                      />
+                      <input type="text" value={acc.bankName} onChange={(e) => handleBankChange(index, "bankName", e.target.value)} className={inputClass} placeholder="Contoh: BCA, Mandiri, BSI" />
                     </div>
-
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">Nomor Rekening</label>
-                      <input
-                        type="text"
-                        value={acc.accountNumber}
-                        onChange={(e) => handleBankChange(index, "accountNumber", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Nomor rekening"
-                      />
+                      <input type="text" value={acc.accountNumber} onChange={(e) => handleBankChange(index, "accountNumber", e.target.value)} className={inputClass} placeholder="Nomor rekening" />
                     </div>
-
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">Nama Pemilik Rekening</label>
-                      <input
-                        type="text"
-                        value={acc.accountHolderName}
-                        onChange={(e) => handleBankChange(index, "accountHolderName", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        placeholder="Nama sesuai buku rekening"
-                      />
+                      <input type="text" value={acc.accountHolderName} onChange={(e) => handleBankChange(index, "accountHolderName", e.target.value)} className={inputClass} placeholder="Nama sesuai buku rekening" />
                     </div>
                   </div>
                 ))}
-
-                <button
-                  type="button"
-                  onClick={addBankAccount}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-primary-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
-                >
+                <button type="button" onClick={addBankAccount} className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-primary-500 hover:text-primary-600 hover:bg-primary-50 transition-colors">
                   + Tambah Rekening
                 </button>
               </div>
@@ -336,57 +362,63 @@ export default function DaftarMitraPage() {
             {/* Dokumen Pendukung */}
             <div className="p-6 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Dokumen Pendukung</h2>
-              <p className="text-sm text-gray-500 mb-4">Unggah dokumen dalam bentuk URL gambar (opsional)</p>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">KTP Penanggung Jawab</label>
-                  <input
-                    type="text"
-                    name="ktpUrl"
-                    value={formData.ktpUrl}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="URL gambar KTP"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Buku Rekening</label>
-                  <input
-                    type="text"
-                    name="bankBookUrl"
-                    value={formData.bankBookUrl}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="URL gambar buku rekening"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">NPWP</label>
-                  <input
-                    type="text"
-                    name="npwpUrl"
-                    value={formData.npwpUrl}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="URL gambar NPWP"
-                  />
-                </div>
+              <p className="text-sm text-gray-500 mb-4">Upload dokumen dalam format gambar (JPG/PNG) atau PDF. Maks 5MB gambar, 10MB PDF.</p>
+              <div className="space-y-5">
+                {(["ktpUrl", "bankBookUrl", "npwpUrl"] as const).map((field) => {
+                  const labels: Record<string, string> = {
+                    ktpUrl: "KTP Penanggung Jawab",
+                    bankBookUrl: "Buku Rekening",
+                    npwpUrl: "NPWP",
+                  };
+                  const isUploading = uploadingDoc === field;
+                  const uploaded = !!documentUrls[field];
+                  return (
+                    <div key={field}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{labels[field]}</label>
+                      <div className="flex items-center gap-3">
+                        <label className={`flex-1 flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-colors ${uploaded ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-primary-400 hover:bg-primary-50"} ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}>
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*,application/pdf"
+                            disabled={isUploading}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleDocumentUpload(field, file);
+                              e.target.value = "";
+                            }}
+                          />
+                          <svg className={`w-4 h-4 flex-shrink-0 ${uploaded ? "text-green-500" : "text-gray-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {uploaded
+                              ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            }
+                          </svg>
+                          <span className={`text-sm ${uploaded ? "text-green-700 font-medium" : "text-gray-500"}`}>
+                            {isUploading ? "Mengupload..." : uploaded ? "Dokumen terupload ✓" : "Klik untuk upload file"}
+                          </span>
+                        </label>
+                        {uploaded && (
+                          <button
+                            type="button"
+                            onClick={() => setDocumentUrls((prev) => ({ ...prev, [field]: "" }))}
+                            className="text-xs text-red-600 hover:text-red-700 whitespace-nowrap"
+                          >
+                            Hapus
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             {/* Submit */}
             <div className="p-6">
-              <button
-                type="submit"
-                disabled={registerMutation.isPending}
-                className="w-full py-3 px-6 text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-              >
+              <button type="submit" disabled={registerMutation.isPending || uploadingDoc !== null} className="w-full py-3 px-6 text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors">
                 {registerMutation.isPending ? "Mengirim..." : "Daftar sebagai Mitra"}
               </button>
-
               <p className="text-xs text-gray-500 mt-3 text-center">
                 Pendaftaran akan diverifikasi oleh admin. Anda akan dihubungi melalui email setelah verifikasi selesai.
               </p>

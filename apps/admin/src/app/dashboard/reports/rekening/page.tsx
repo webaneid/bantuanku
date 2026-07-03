@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import api from "@/lib/api";
+import { formatDateWIB, todayWIBDateInput } from "@/lib/timezone";
 import { formatRupiah } from "@/lib/format";
 import ExportButton from "@/components/reports/ExportButton";
 import { exportToExcel } from "@/utils/export-excel";
@@ -95,7 +94,7 @@ export default function RekeningReportPage() {
         { header: "Total Masuk", key: "totalIn", width: 18, format: "currency" },
         { header: "Saldo", key: "balance", width: 18, format: "currency" },
       ],
-      filename: `Laporan-Per-Rekening-${new Date().toISOString().slice(0, 10)}`,
+      filename: `Laporan-Per-Rekening-${todayWIBDateInput()}`,
       title: "Laporan Per Rekening",
       summaryRow: { bank: "TOTAL", totalIn: accounts.reduce((s, a) => s + a.totalIn, 0), balance: totalBalance },
     });
@@ -105,7 +104,7 @@ export default function RekeningReportPage() {
     if (!detailData) return;
     exportToExcel({
       data: detailData.mutations.map((m) => ({
-        date: m.date ? format(new Date(m.date), "dd/MM/yyyy", { locale: idLocale }) : "-",
+        date: m.date ? formatDateWIB(m.date, "dd/MM/yyyy") : "-",
         description: m.description,
         masuk: m.kasIn > 0 ? m.kasIn : "",
         keluar: m.kasOut > 0 ? m.kasOut : "",
@@ -284,7 +283,7 @@ export default function RekeningReportPage() {
                     <tbody>
                       {detailData.mutations.map((m) => (
                         <tr key={m.id}>
-                          <td className="text-sm text-gray-600">{m.date ? format(new Date(m.date), "dd MMM yyyy", { locale: idLocale }) : "-"}</td>
+                          <td className="text-sm text-gray-600">{m.date ? formatDateWIB(m.date, "dd MMM yyyy") : "-"}</td>
                           <td className="text-sm">{m.description}</td>
                           <td className="text-right text-sm mono">
                             {m.kasIn > 0 ? <span className="text-success-600 font-medium">Rp {formatRupiah(m.kasIn)}</span> : <span className="text-gray-400">-</span>}
@@ -309,7 +308,7 @@ export default function RekeningReportPage() {
                       <div className="table-card-header">
                         <div className="table-card-header-left">
                           <div className="table-card-header-title text-xs">{m.description}</div>
-                          <div className="table-card-header-subtitle">{m.date ? format(new Date(m.date), "dd MMM yyyy", { locale: idLocale }) : "-"}</div>
+                          <div className="table-card-header-subtitle">{m.date ? formatDateWIB(m.date, "dd MMM yyyy") : "-"}</div>
                         </div>
                       </div>
                       {m.kasIn > 0 && (

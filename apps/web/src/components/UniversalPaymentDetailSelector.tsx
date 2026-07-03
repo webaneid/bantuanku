@@ -8,6 +8,7 @@ import { formatRupiahFull } from "@/lib/format";
 import toast from "@/lib/feedback-toast";
 import Image from "next/image";
 import api from "@/lib/api";
+import { todayWIBDateInput } from "@/lib/timezone";
 import { useI18n } from "@/lib/i18n/provider";
 
 interface PaymentMethod {
@@ -44,7 +45,7 @@ export default function UniversalPaymentDetailSelector({
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
   const [transferAmount, setTransferAmount] = useState<number>(0);
-  const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [paymentDate, setPaymentDate] = useState<string>(todayWIBDateInput());
   const [paymentTime, setPaymentTime] = useState<string>(
     new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   );
@@ -619,7 +620,7 @@ export default function UniversalPaymentDetailSelector({
                       id="payment-date"
                       value={paymentDate}
                       onChange={(e) => setPaymentDate(e.target.value)}
-                      max={new Date().toISOString().split('T')[0]}
+                      max={todayWIBDateInput()}
                       className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     <input

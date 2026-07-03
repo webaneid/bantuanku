@@ -20,6 +20,7 @@ import {
   Download,
 } from "lucide-react";
 import api from "@/lib/api";
+import { todayWIBDateInput } from "@/lib/timezone";
 
 const PIE_COLORS = ["#035a52", "#d2aa55", "#296585", "#e74c3c", "#8b5cf6", "#f59e0b", "#10b981", "#6366f1"];
 
@@ -89,7 +90,7 @@ export default function StatistikMustahiqPage() {
       link.href = url;
       const filename = startDate && endDate
         ? `mustahiq-${startDate}-to-${endDate}.csv`
-        : `mustahiq-all-${new Date().toISOString().split("T")[0]}.csv`;
+        : `mustahiq-all-${todayWIBDateInput()}.csv`;
       link.setAttribute("download", filename);
       document.body.appendChild(link);
       link.click();

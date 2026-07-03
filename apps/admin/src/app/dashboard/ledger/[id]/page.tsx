@@ -4,10 +4,9 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { formatDateWIB } from "@/lib/timezone";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { formatRupiah } from "@/lib/format";
 import {
   ArrowLeftIcon,
@@ -374,9 +373,7 @@ export default function DisbursementDetailPage() {
                               </p>
                               <div className="flex items-center gap-2 text-xs text-gray-500">
                                 <span>
-                                  {format(new Date(evidence.uploadedAt), "dd MMM yyyy HH:mm", {
-                                    locale: idLocale,
-                                  })}
+                                  {formatDateWIB(evidence.uploadedAt, "dd MMM yyyy HH:mm")}
                                 </span>
                                 {evidence.amount && (
                                   <>
@@ -499,9 +496,7 @@ export default function DisbursementDetailPage() {
               <div>
                 <p className="text-xs text-gray-500 uppercase">Created</p>
                 <p className="text-sm font-medium text-gray-900">
-                  {format(new Date(disbursement.createdAt), "dd MMM yyyy HH:mm", {
-                    locale: idLocale,
-                  })}
+                  {formatDateWIB(disbursement.createdAt, "dd MMM yyyy HH:mm")}
                 </p>
                 {disbursement.creator && (
                   <p className="text-xs text-gray-600">{disbursement.creator.name}</p>
@@ -512,9 +507,7 @@ export default function DisbursementDetailPage() {
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Submitted</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {format(new Date(disbursement.submittedAt), "dd MMM yyyy HH:mm", {
-                      locale: idLocale,
-                    })}
+                    {formatDateWIB(disbursement.submittedAt, "dd MMM yyyy HH:mm")}
                   </p>
                   {disbursement.submitter && (
                     <p className="text-xs text-gray-600">{disbursement.submitter.name}</p>
@@ -526,9 +519,7 @@ export default function DisbursementDetailPage() {
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Approved</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {format(new Date(disbursement.approvedAt), "dd MMM yyyy HH:mm", {
-                      locale: idLocale,
-                    })}
+                    {formatDateWIB(disbursement.approvedAt, "dd MMM yyyy HH:mm")}
                   </p>
                   {disbursement.approver && (
                     <p className="text-xs text-gray-600">{disbursement.approver.name}</p>
@@ -540,9 +531,7 @@ export default function DisbursementDetailPage() {
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Rejected</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {format(new Date(disbursement.rejectedAt), "dd MMM yyyy HH:mm", {
-                      locale: idLocale,
-                    })}
+                    {formatDateWIB(disbursement.rejectedAt, "dd MMM yyyy HH:mm")}
                   </p>
                   {disbursement.rejecter && (
                     <p className="text-xs text-gray-600">{disbursement.rejecter.name}</p>
@@ -554,9 +543,7 @@ export default function DisbursementDetailPage() {
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Paid</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {format(new Date(disbursement.paidAt), "dd MMM yyyy HH:mm", {
-                      locale: idLocale,
-                    })}
+                    {formatDateWIB(disbursement.paidAt, "dd MMM yyyy HH:mm")}
                   </p>
                   {disbursement.payer && (
                     <p className="text-xs text-gray-600">{disbursement.payer.name}</p>

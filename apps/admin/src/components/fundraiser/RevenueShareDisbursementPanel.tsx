@@ -2,11 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import api from "@/lib/api";
 import { formatRupiah } from "@/lib/format";
 import { toast } from "react-hot-toast";
+import { formatDateWIB } from "@/lib/timezone";
 
 interface RevenueShareDisbursementPanelProps {
   availabilityEndpoint: string;
@@ -72,8 +71,8 @@ function formatIDDate(date: string | null | undefined, style: "short" | "long" =
   const d = new Date(date);
   if (Number.isNaN(d.getTime())) return "-";
   return style === "long"
-    ? format(d, "dd MMMM yyyy", { locale: idLocale })
-    : format(d, "dd MMM yyyy", { locale: idLocale });
+    ? formatDateWIB(d, "dd MMMM yyyy")
+    : formatDateWIB(d, "dd MMM yyyy");
 }
 
 export default function RevenueShareDisbursementPanel({

@@ -4,8 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
-import { format, startOfMonth } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
+import { todayWIBDateInput, startOfMonthWIBInput, formatDateWIB } from "@/lib/timezone";
 import { formatRupiah } from "@/lib/format";
 
 type AuditRow = {
@@ -41,8 +40,8 @@ const PAGE_SIZE = 20;
 
 export default function CategoryAuditPage() {
   const params = useSearchParams();
-  const today = format(new Date(), "yyyy-MM-dd");
-  const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
+  const today = todayWIBDateInput();
+  const monthStart = startOfMonthWIBInput();
 
   const [startDate, setStartDate] = useState(params.get("startDate") || monthStart);
   const [endDate, setEndDate] = useState(params.get("endDate") || today);
@@ -198,7 +197,7 @@ export default function CategoryAuditPage() {
                   <tr key={`${row.source}-${row.id}`}>
                     <td className="text-sm text-gray-600">
                       {rowDate && !Number.isNaN(rowDate.getTime())
-                        ? format(rowDate, "dd MMM yyyy HH:mm", { locale: idLocale })
+                        ? formatDateWIB(rowDate, "dd MMM yyyy HH:mm")
                         : "-"}
                     </td>
                     <td>

@@ -7,9 +7,8 @@ import { useRouter } from "next/navigation";
 import Autocomplete from "@/components/Autocomplete";
 import Pagination from "@/components/Pagination";
 import api from "@/lib/api";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { formatRupiah } from "@/lib/format";
+import { formatDateWIB } from "@/lib/timezone";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -237,7 +236,7 @@ export default function FundraisersPage() {
                   <td className="mono text-sm">Rp {formatRupiah(f.totalDonationAmount || 0)}</td>
                   <td className="mono text-sm">Rp {formatRupiah(f.totalCommissionEarned || 0)}</td>
                   <td className="text-gray-600 text-sm">
-                    {format(new Date(f.createdAt), "dd MMM yyyy", { locale: idLocale })}
+                    {formatDateWIB(f.createdAt, "dd MMM yyyy")}
                   </td>
                   <td>
                     <div className="table-actions">

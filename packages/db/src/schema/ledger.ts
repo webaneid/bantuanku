@@ -89,5 +89,5 @@ export const ledgerRelations = relations(ledger, ({ one, many }) => ({
   evidences: many(evidences),
 }));
 
-export type Disbursement = typeof ledger.$inferSelect;
-export type NewDisbursement = typeof ledger.$inferInsert;
+export type LegacyLedger = typeof ledger.$inferSelect;
+export type NewLegacyLedger = typeof ledger.$inferInsert;

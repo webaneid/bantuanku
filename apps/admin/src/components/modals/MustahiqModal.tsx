@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { toWIBDateInput } from "@/lib/timezone";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import Autocomplete from "@/components/Autocomplete";
 import { AddressForm, type AddressValue } from "@/components/forms/AddressForm";
@@ -169,7 +170,7 @@ export default function MustahiqModal({
         name: mustahiq.name || "",
         asnafCategory: mustahiq.asnafCategory || "",
         nationalId: mustahiq.nationalId || "",
-        dateOfBirth: mustahiq.dateOfBirth ? new Date(mustahiq.dateOfBirth).toISOString().split("T")[0] : "",
+        dateOfBirth: toWIBDateInput(mustahiq.dateOfBirth),
         gender: mustahiq.gender || "",
         birthPlace: mustahiq.birthPlace || "",
         motherName: mustahiq.motherName || "",

@@ -3,8 +3,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
-import { format, startOfYear } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
+import { todayWIBDateInput, startOfYearWIBInput, formatDateWIB } from "@/lib/timezone";
 import { formatRupiah } from "@/lib/format";
 import ExportButton from "@/components/reports/ExportButton";
 import { exportToExcel } from "@/utils/export-excel";
@@ -34,8 +33,8 @@ const TYPE_LABELS: Record<string, string> = {
 const PAGE_SIZE = 50;
 
 export default function MutationReportPage() {
-  const today = format(new Date(), "yyyy-MM-dd");
-  const yearStart = format(startOfYear(new Date()), "yyyy-MM-dd");
+  const today = todayWIBDateInput();
+  const yearStart = startOfYearWIBInput();
 
   const [startDate, setStartDate] = useState(yearStart);
   const [endDate, setEndDate] = useState(today);
@@ -109,7 +108,7 @@ export default function MutationReportPage() {
   const handleExportExcel = () => {
     exportToExcel({
       data: rows.map((r) => ({
-        date: r.date ? format(r.date, "dd/MM/yyyy", { locale: idLocale }) : "-",
+        date: r.date ? formatDateWIB(r.date, "dd/MM/yyyy") : "-",
         description: r.description,
         category: r.category,
         debit: r.debit > 0 ? r.debit : "",
@@ -228,7 +227,7 @@ export default function MutationReportPage() {
               <tbody>
                 {rows.map((row, index) => (
                   <tr key={`${row.id}-${row.category}-${row.date ? row.date.getTime() : "no-date"}-${index}`}>
-                    <td className="text-sm text-gray-600">{row.date ? format(row.date, "dd MMM yyyy", { locale: idLocale }) : "-"}</td>
+                    <td className="text-sm text-gray-600">{row.date ? formatDateWIB(row.date, "dd MMM yyyy") : "-"}</td>
                     <td><div className="font-medium text-gray-900 text-sm">{row.description}</div></td>
                     <td><span className="text-sm text-gray-700">{row.category}</span></td>
                     <td className="text-right mono text-sm">

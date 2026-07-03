@@ -1,16 +1,11 @@
 import { Hono } from "hono";
 import { desc, like, or, eq, and } from "drizzle-orm";
-import { media as mediaTable, settings as settingsTable, type MediaVariant } from "@bantuanku/db";
+import { media as mediaTable, settings as settingsTable, type MediaVariant, createId } from "@bantuanku/db";
 import type { Env, Variables } from "../../types";
 import * as fs from "fs";
 import * as pathModule from "path";
 import { uploadToGCS, generateGCSPath, type GCSConfig } from "../../lib/gcs";
 import { processGeneralImage, processSingleWebp } from "../../lib/image-processor";
-
-// Simple ID generator
-const createId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-};
 
 const IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 const PDF_MAX_SIZE = 10 * 1024 * 1024;
@@ -249,7 +244,6 @@ media.get("/", async (c) => {
 media.post("/upload", async (c) => {
   try {
     const body = await c.req.parseBody();
-    console.log("Form data keys:", Object.keys(body));
     const file = body.file as File;
     const category = (body.category as string) || "general"; // Get category from form data
 

@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { formatDateWIB } from "@/lib/timezone";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { format } from "date-fns";
-import { id as idLocale } from "date-fns/locale";
 import { EyeIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Autocomplete from "@/components/Autocomplete";
 import Pagination from "@/components/Pagination";
@@ -251,9 +250,7 @@ export default function ZakatDistributionsPage() {
                     </span>
                   </td>
                   <td className="text-gray-600 text-sm">
-                    {format(new Date(distribution.createdAt), "EEEE, dd MMM yyyy", {
-                      locale: idLocale,
-                    })}
+                    {formatDateWIB(distribution.createdAt, "EEEE, dd MMM yyyy")}
                   </td>
                   <td>
                     <div className="table-actions">
@@ -333,9 +330,7 @@ export default function ZakatDistributionsPage() {
                 <div className="table-card-row">
                   <span className="table-card-row-label">Tanggal</span>
                   <span className="table-card-row-value">
-                    {format(new Date(distribution.createdAt), "dd MMM yyyy", {
-                      locale: idLocale,
-                    })}
+                    {formatDateWIB(distribution.createdAt, "dd MMM yyyy")}
                   </span>
                 </div>
 
