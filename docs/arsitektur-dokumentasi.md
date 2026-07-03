@@ -104,6 +104,7 @@
 | Kontak terpusat (email, phone, WhatsApp, website) | `arsitektur-kontak.md` | 🟢 Selesai | `00-helper-kontak.md` ✅ Dihapus |
 | Donatur modal helper admin | `arsitektur-donatur-modal.md` | 🟢 Selesai | `01-helper-donor-modal.md` ✅ Dihapus |
 | Media Library (upload, admin) | `arsitektur-media.md` | 🟢 Selesai | `00-helper-media-library.md`, `03-autocrop-image-blueprint.md` ✅ Dihapus |
+| Rich Text Editor (Tiptap, admin + render web) | `arsitektur-text-editor.md` | 🟢 Selesai | — |
 | SEO panel + meta tags | `arsitektur-seo.md` | 🟢 Selesai | `03-SEO-blueprint.md` ✅ Dihapus |
 | Cart (CartContext, checkout flow) | `arsitektur-cart.md` | 🟢 Selesai | — |
 | i18n (id/en locales, nested keys) | `arsitektur-i18n.md` | 🟢 Selesai | `03-Translate-Safe-Text-blueprint.md` ✅ Dihapus |
