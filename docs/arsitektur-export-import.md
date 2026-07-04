@@ -1,6 +1,8 @@
 # Arsitektur Export Import
 
-Dokumen ini adalah source of truth untuk mekanisme export/import Bantuanku. Berdasarkan implementasi kode saat ini, sistem memiliki beberapa jalur export, tetapi belum memiliki fitur import CSV/Excel operasional.
+Dokumen ini adalah source of truth untuk mekanisme export/import Bantuanku.
+
+> Terakhir di-sync: 2026-07-04
 
 ## Ringkasan
 
@@ -9,7 +11,13 @@ Export di Bantuanku terbagi menjadi dua pola:
 1. **CSV server-side**: API admin membuat CSV dan mengirim response `text/csv`.
 2. **Excel client-side**: halaman admin reports mengambil data JSON dari API reports, lalu membuat `.xlsx` di browser memakai package `xlsx`.
 
-Import data massal belum tersedia sebagai fitur produk. Upload yang ada saat ini adalah upload media/proof, bukan import tabular.
+Import massal tersedia untuk entitas:
+
+| Entitas | Status |
+|---------|--------|
+| Donatur | ✅ Tersedia (`/admin/donatur/import`) |
+| Mustahiq | ✅ Tersedia (`/admin/mustahiqs/import`) |
+| Lainnya | Belum diimplementasikan |
 
 ## Dokumen Terkait
 
@@ -41,6 +49,10 @@ Import data massal belum tersedia sebagai fitur produk. Upload yang ada saat ini
 | Filter laporan admin | `apps/admin/src/components/reports/ReportFilters.tsx` |
 | Halaman statistik donatur/mustahiq | `apps/admin/src/app/dashboard/statistics/**` |
 | Halaman laporan Excel | `apps/admin/src/app/dashboard/reports/**` |
+| **Import donatur (API)** | `apps/api/src/routes/admin/donatur-import.ts` |
+| **Import mustahiq (API)** | `apps/api/src/routes/admin/mustahiq-import.ts` |
+| **Import donatur (modal)** | `apps/admin/src/components/modals/ImportDonaturModal.tsx` |
+| **Import mustahiq (modal)** | `apps/admin/src/components/modals/ImportMustahiqModal.tsx` |
 
 Dependensi:
 
@@ -203,15 +215,121 @@ Tidak ada state permission atau audit logging di komponen ini.
 
 ## Import
 
-Tidak ditemukan route import CSV/Excel aktif seperti:
+### Pola Umum (3-step)
 
-- `POST /admin/*/import`
-- parser CSV/Excel untuk master data
-- validasi row-based import
-- preview before import
-- bulk insert dari spreadsheet
+Semua fitur import mengikuti pola yang sama:
 
-Upload multipart yang ditemukan di sistem terkait media/proof qurban/payment, bukan import data tabular. Karena itu, istilah "Import" pada arsitektur ini saat ini berarti **belum diimplementasikan**.
+```
+1. GET  /admin/{entity}/import/template   → Download template XLSX
+2. POST /admin/{entity}/import/preview    → Dry-run: parse, validasi, cek duplikat
+3. POST /admin/{entity}/import/commit     → Tulis ke DB (hanya row valid)
+```
+
+**Preview tidak menulis ke DB.** Commit hanya menulis row yang lolos validasi — row error di-skip (dicatat di response).
+
+Parser server-side menggunakan `xlsx` (SheetJS) via `XLSX.read()` + `sheet_to_json()`. File dikirim sebagai `multipart/form-data` dengan field `file`.
+
+---
+
+### Import Donatur
+
+**Endpoint**: `apps/api/src/routes/admin/donatur-import.ts`, dipasang di `/admin/donatur/import`
+
+**Role**: `super_admin`, `admin_finance`, `admin_campaign`
+
+| Endpoint | Fungsi |
+|----------|--------|
+| `GET /template` | Download template XLSX 10 kolom + 1 baris contoh |
+| `POST /preview` | Dry-run: parse XLSX, validasi, cek duplikat, return stats |
+| `POST /commit` | Tulis ke DB (mode: `skip` atau `update`) |
+
+**Kolom template** (10 kolom):
+
+| Kolom | Wajib | Keterangan |
+|-------|-------|------------|
+| Nama Lengkap | ✓ | |
+| WhatsApp | ✓ | Deduplikasi utama; `normalizePhone()` sebelum simpan |
+| Email | | Deduplikasi sekunder |
+| Telepon | | |
+| Jenis Kelamin | | `laki-laki` / `perempuan` |
+| Tanggal Lahir | | Format `YYYY-MM-DD` |
+| Kota | | |
+| Provinsi | | |
+| Pekerjaan | | |
+| Catatan | | |
+
+**Deduplication logic**:
+1. In-file: kombinasi WA+email unik (buang duplikat dalam file yang sama)
+2. DB by WA: jika WA sudah ada → skip atau update (tergantung mode)
+3. DB by email: jika email sudah ada → skip atau update (tergantung mode)
+
+**Mode `skip`** (default): baris duplikat dilewati.
+**Mode `update`**: baris duplikat di-update fieldnya.
+
+**Response preview**:
+```json
+{
+  "total": 100,
+  "valid": 85,
+  "skipped": 10,
+  "errors": 5,
+  "rows": [{ "row": 2, "status": "valid"|"skip"|"error", "reason": "..." }]
+}
+```
+
+**Admin UI**: `ImportDonaturModal` di halaman `/dashboard/donatur` — 3-step wizard (upload → preview → result).
+
+---
+
+### Import Mustahiq
+
+**Endpoint**: `apps/api/src/routes/admin/mustahiq-import.ts`, dipasang di `/admin/mustahiqs/import`
+
+**Role**: `super_admin`, `admin_campaign`
+
+| Endpoint | Fungsi |
+|----------|--------|
+| `GET /template` | Download template XLSX 18 kolom + 1 baris contoh |
+| `POST /preview` | Dry-run: parse XLSX, validasi, cek duplikat |
+| `POST /commit` | Tulis ke DB |
+
+**Kolom template** (18 kolom):
+
+| Kolom | Wajib | Keterangan |
+|-------|-------|------------|
+| Nama Lengkap | ✓ | |
+| Kategori Asnaf | ✓ | `fakir`/`miskin`/`amil`/`mualaf`/`riqab`/`gharim`/`fisabilillah`/`ibnus_sabil` |
+| ID Mustahiq | | Deduplikasi utama (unique constraint DB) |
+| Email | | |
+| Telepon | | |
+| WhatsApp | | |
+| NIK | | |
+| Tanggal Lahir | | Format `YYYY-MM-DD` |
+| Jenis Kelamin | | `laki-laki` / `perempuan` |
+| Status Pernikahan | | |
+| Jumlah Tanggungan | | Integer |
+| Alamat | | |
+| Bank | | |
+| No. Rekening | | |
+| Nama Pemilik Rekening | | |
+| Catatan | | |
+
+**Deduplication**: by `mustahiqId` (unique constraint di DB). Duplikat dalam file di-skip.
+
+**Admin UI**: `ImportMustahiqModal` di halaman `/dashboard/master/mustahiqs`.
+
+---
+
+### SOP Import Entitas Baru
+
+Saat menambah import untuk entitas baru, ikuti pola ini:
+
+1. Buat `apps/api/src/routes/admin/{entity}-import.ts` dengan 3 endpoint
+2. Pasang route di file utama entitas: `app.route("/import", importRoute)`
+3. Buat modal 3-step di `apps/admin/src/components/modals/Import{Entity}Modal.tsx`
+4. Tambahkan tombol Import di halaman list entitas
+5. Dokumentasikan di sini: kolom template, required fields, dedup logic, mode
+6. **Jangan commit tanpa preview step** — preview wajib ada untuk menghindari data rusak massal
 
 ## Keamanan dan Role
 
@@ -242,7 +360,7 @@ CSV escaping sudah menangani tanda kutip, tetapi belum secara eksplisit menangan
 | Gap | Dampak | Rekomendasi |
 |---|---|---|
 | `GET /admin/export/ledger` didefinisikan dua kali | Salah satu handler bisa tidak pernah dipakai; perilaku export ledger ambigu | Pisahkan path, misalnya `/ledger-legacy` dan `/ledger-entries`, atau hapus handler lama |
-| Import CSV/Excel belum ada | Nama arsitektur mencakup import, tetapi fitur belum tersedia | Jika import dibutuhkan, desain flow preview -> validate -> commit -> audit |
+| Import hanya tersedia untuk donatur & mustahiq | Entitas lain (mitra, karyawan, dll.) belum punya import | Tambahkan mengikuti pola 3-step yang sama |
 | Filename backend memakai `toISOString()` | Tanggal filename bisa UTC, bukan WIB | Gunakan helper dari `arsitektur-timezone.md` |
 | Filter `startDate/endDate` memakai `new Date("yyyy-MM-dd")` | Boundary bisa UTC dan tidak sesuai tanggal bisnis WIB | Parse sebagai date input WIB |
 | `formatDate` backend CSV tidak set `timeZone` | Tampilan tanggal bergantung timezone runtime | Format eksplisit `Asia/Jakarta` |
@@ -264,14 +382,12 @@ CSV escaping sudah menangani tanda kutip, tetapi belum secara eksplisit menangan
 3. Jika export berasal dari laporan keuangan, cek `docs/arsitektur-laporan.md` dan `docs/arsitektur-akuntansi.md`.
 4. Jika export membawa data personal seperti NIK, nomor rekening, telepon, atau email, wajib evaluasi role dan masking.
 5. Import tidak boleh dibuat langsung commit ke database tanpa tahap validasi row, preview error, dan audit trail.
+7. Setiap import baru wajib didokumentasikan di section Import dokumen ini sebelum merge.
 6. Jika ada helper export baru, hindari membuat formatter tanggal/mata uang baru yang berbeda dari helper existing tanpa alasan kuat.
 
-## Rekomendasi Arsitektur Berikutnya
+## Dependensi
 
-Jika fitur import akan dibuat, desain minimal yang direkomendasikan:
-
-1. Endpoint upload template: menerima CSV/XLSX, parse server-side.
-2. Endpoint preview: validasi per row, tidak menulis DB.
-3. Endpoint commit: hanya menerima token/batch preview yang valid.
-4. Audit trail: simpan siapa import, kapan, jumlah row sukses/gagal, dan file/template version.
-5. Rollback strategy: batch id untuk melacak data yang dibuat dari import.
+| Package | Lokasi | Fungsi |
+|---------|--------|--------|
+| `xlsx` (SheetJS) | `apps/api/package.json` | Parse XLSX server-side di import handler |
+| `xlsx` | `apps/admin/package.json` | Generate XLSX client-side di reports & export Excel |
