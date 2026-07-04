@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { eq, and, gte, lte, desc, sql, count } from "drizzle-orm";
-import { donatur, fundraisers, jobTitles, jobCategories, incomeRanges, indonesiaProvinces, mustahiqs } from "@bantuanku/db";
+import { eq, and, gte, lte, desc, sql, count, inArray } from "drizzle-orm";
+import { donatur, fundraisers, jobTitles, jobCategories, incomeRanges, indonesiaProvinces, indonesiaRegencies, indonesiaDistricts, indonesiaVillages, mustahiqs, entityBankAccounts } from "@bantuanku/db";
 import { requireRole } from "../../middleware/auth";
 import { success } from "../../lib/response";
 import { generateCSV, formatDate, formatCurrency } from "../../services/export";
@@ -318,11 +318,15 @@ statistics.get("/mustahiq/export", requireRole("super_admin", "admin_finance", "
       email: mustahiqs.email,
       phone: mustahiqs.phone,
       whatsappNumber: mustahiqs.whatsappNumber,
+      website: mustahiqs.website,
       provinceName: indonesiaProvinces.name,
+      regencyName: indonesiaRegencies.name,
+      districtName: indonesiaDistricts.name,
+      villageName: indonesiaVillages.name,
       detailAddress: mustahiqs.detailAddress,
-      bankName: mustahiqs.bankName,
-      bankAccount: mustahiqs.bankAccount,
-      bankAccountName: mustahiqs.bankAccountName,
+      legacyBankName: mustahiqs.bankName,
+      legacyBankAccount: mustahiqs.bankAccount,
+      legacyBankAccountName: mustahiqs.bankAccountName,
       notes: mustahiqs.notes,
       isActive: mustahiqs.isActive,
       createdAt: mustahiqs.createdAt,
@@ -332,8 +336,38 @@ statistics.get("/mustahiq/export", requireRole("super_admin", "admin_finance", "
     .leftJoin(jobCategories, eq(jobTitles.categoryId, jobCategories.id))
     .leftJoin(incomeRanges, eq(mustahiqs.incomeRangeId, incomeRanges.id))
     .leftJoin(indonesiaProvinces, eq(mustahiqs.provinceCode, indonesiaProvinces.code))
+    .leftJoin(indonesiaRegencies, eq(mustahiqs.regencyCode, indonesiaRegencies.code))
+    .leftJoin(indonesiaDistricts, eq(mustahiqs.districtCode, indonesiaDistricts.code))
+    .leftJoin(indonesiaVillages, eq(mustahiqs.villageCode, indonesiaVillages.code))
     .where(whereClause)
     .orderBy(desc(mustahiqs.createdAt));
+
+  // Ambil rekening bank dari entity_bank_accounts (data baru), fallback ke kolom legacy
+  const mustahiqIds = data.map((m) => m.id);
+  const entityBankData = mustahiqIds.length > 0
+    ? await db
+        .select()
+        .from(entityBankAccounts)
+        .where(and(
+          eq(entityBankAccounts.entityType, "mustahiq"),
+          inArray(entityBankAccounts.entityId, mustahiqIds)
+        ))
+    : [];
+
+  const entityBankMap = new Map<string, typeof entityBankData[0]>();
+  entityBankData.forEach((ba) => {
+    if (!entityBankMap.has(ba.entityId)) entityBankMap.set(ba.entityId, ba);
+  });
+
+  const enrichedData = data.map((m) => {
+    const eb = entityBankMap.get(m.id);
+    return {
+      ...m,
+      bankName: eb?.bankName || m.legacyBankName || "",
+      bankAccount: eb?.accountNumber || m.legacyBankAccount || "",
+      bankAccountName: eb?.accountHolderName || m.legacyBankAccountName || "",
+    };
+  });
 
   const maritalLabels: Record<string, string> = {
     menikah: "Menikah",
@@ -372,7 +406,11 @@ statistics.get("/mustahiq/export", requireRole("super_admin", "admin_finance", "
     { header: "Email", key: "email" },
     { header: "Telepon", key: "phone" },
     { header: "WhatsApp", key: "whatsappNumber" },
+    { header: "Website", key: "website" },
     { header: "Provinsi", key: "provinceName" },
+    { header: "Kabupaten/Kota", key: "regencyName" },
+    { header: "Kecamatan", key: "districtName" },
+    { header: "Kelurahan/Desa", key: "villageName" },
     { header: "Alamat Detail", key: "detailAddress" },
     { header: "Bank", key: "bankName" },
     { header: "No Rekening", key: "bankAccount" },
@@ -382,7 +420,7 @@ statistics.get("/mustahiq/export", requireRole("super_admin", "admin_finance", "
     { header: "Terdaftar", key: "createdAt", format: formatDate },
   ];
 
-  const csv = generateCSV(data, columns);
+  const csv = generateCSV(enrichedData, columns);
 
   const filename = startDate && endDate
     ? `mustahiq-${startDate}-to-${endDate}.csv`

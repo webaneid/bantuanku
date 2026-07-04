@@ -84,7 +84,9 @@ Role: `super_admin`, `admin_finance`, `admin_campaign`.
 | `GET` | `/admin/statistics/mustahiq` | KPI: `totalMustahiq`, `mustahiqBeneficiary`; breakdown: `asnafStats`, `provinceStats`, `genderStats` |
 | `GET` | `/admin/statistics/mustahiq/export` | Export CSV semua mustahiq, filter `startDate`/`endDate` |
 
-CSV export mencakup: id, mustahiqId, name, asnafCategory, nationalId, gender, birthPlace, dateOfBirth, motherName, maritalStatus, dependents, jobTitleName, jobCategoryName, incomeRangeLabel, email, phone, whatsappNumber, provinceName, detailAddress, bankName, bankAccount, bankAccountName, notes, isActive, createdAt.
+CSV export mencakup: mustahiqId, name, asnafCategory, nationalId, gender, birthPlace, dateOfBirth, motherName, maritalStatus, dependents, jobTitleName, jobCategoryName, incomeRangeLabel, email, phone, whatsappNumber, website, provinceName, **regencyName**, **districtName**, **villageName**, detailAddress, bankName, bankAccount, bankAccountName, notes, isActive, createdAt.
+
+Rekening bank di export: prioritas `entity_bank_accounts` (rekening pertama per mustahiq), fallback ke kolom legacy `bankName/bankAccount/bankAccountName` di tabel mustahiqs jika tidak ada data di entity_bank_accounts.
 
 ---
 
@@ -137,5 +139,7 @@ Saat eksekusi qurban, daftar penerima mustahiq disimpan di `qurbanExecutions.rec
 | ~~Tidak ada delete guard untuk mustahiq yang sudah punya distribusi~~ | Orphan data distribusi historis | P2 | ✅ Diperbaiki 2026-07-03 |
 | ~~FK constraint `mustahiqId` di `zakat_distributions` tidak ada~~ | Orphan jika mustahiq terhapus | P2 | ✅ Diperbaiki via migration 115 |
 | ~~Filter list menggunakan OR antar kondisi~~ | Query multi-filter tidak presisi | P3 | ✅ Diperbaiki 2026-07-03 |
+| ~~Export CSV hanya sertakan provinceName, bukan alamat lengkap~~ | Data alamat tidak lengkap di laporan | P2 | ✅ Diperbaiki 2026-07-04 |
+| ~~Export CSV tidak sertakan website dan rekening dari entity_bank_accounts~~ | Data rekening baru (non-legacy) tidak masuk export | P2 | ✅ Diperbaiki 2026-07-04 |
 | Kolom `address` legacy belum di-migrate/dihapus | Schema bloat | P3 | Open |
 | Qurban executions menyimpan mustahiq sebagai JSON bukan FK | Tidak bisa trace penerima qurban ke profil mustahiq | P3 | Open |
