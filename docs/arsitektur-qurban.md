@@ -1,7 +1,7 @@
 # Arsitektur Qurban
 
-> Terakhir di-sync: 2026-07-02  
-> Sumber: CLAUDE.md section + schema DB aktual
+> Terakhir di-sync: 2026-07-04  
+> Sumber: CLAUDE.md section + schema DB aktual + audit kode komprehensif
 
 ---
 
@@ -101,6 +101,63 @@ Shared (sapi patungan):
   1. Cari group dengan slotsFilled < maxSlots
   2. Jika semua penuh → buat group baru
 ```
+
+---
+
+## Admin Fee
+
+Admin fee dikalkulasi **server-side** dari settings DB saat order dibuat. Tidak boleh dikirim dari client.
+
+| `animalType` | Settings Key | Keterangan |
+|---|---|---|
+| `"cow"` | `amil_qurban_sapi_fee` | Administrasi Qurban Sapi (Rp) |
+| `"goat"`, `"sheep"` | `amil_qurban_perekor_fee` | Administrasi Qurban Kambing/Domba perekor (Rp) |
+
+Settings dikelola di `/dashboard/settings` > seksi Amil. Jika key tidak ada di DB, adminFee default ke 0.
+
+Revenue share qurban menggunakan `qurban_orders.adminFee` sebagai basis (bukan `totalAmount`). Lihat `arsitektur-revenue-share.md`.
+
+---
+
+## Payment Flow — Upload vs Verifikasi
+
+```
+User upload bukti bayar (POST /qurban/orders/:id/upload-proof)
+  → paymentStatus = "pending"
+  → paidAmount TIDAK berubah
+
+Admin verifikasi (POST /admin/qurban/payments/:id/verify)
+  → paidAmount += transferAmount (verified)
+  → paymentStatus = "paid" jika paidAmount >= totalAmount
+  → order.status = "confirmed" jika paid
+```
+
+**Penting**: jangan update `paidAmount` di upload-proof handler. Update hanya terjadi saat admin verify. Ini menghindari double-counting (bug yang pernah ada sebelum 2026-07-04).
+
+---
+
+## Access Control (Admin Endpoints)
+
+Semua GET endpoint admin qurban yang mengekspos data order/donatur memerlukan role eksplisit — **tidak cukup hanya `staffOnly` middleware**.
+
+| Endpoint Group | Required Roles |
+|---|---|
+| GET orders, payments, shared-groups, donaturs, periods summary, executions | `super_admin`, `admin_finance`, `admin_campaign`, `program_coordinator`, `employee` |
+| POST/PUT/DELETE periods, packages | `super_admin`, `admin_campaign` (+ `mitra` untuk packages) |
+| POST executions, verify payments | `super_admin`, `admin_campaign` |
+
+Mitra **tidak boleh** mengakses list order, donatur, atau payment orang lain. Batasi dengan `requireRole()` eksplisit.
+
+---
+
+## Delete Guards
+
+| Target Delete | Guard |
+|---|---|
+| `/periods/:id` | Cek `qurban_orders` (via `qurban_package_periods.periodId`) AND `qurban_savings` (via `targetPackagePeriodId`). Block jika ada. |
+| `/packages/:id` | Cek direct orders (`qurban_orders.packageId = id`) AND indirect orders (`qurban_orders.packagePeriodId` → `qurban_package_periods.packageId = id`). Block jika total > 0. |
+
+Note: `qurban_package_periods` cascade delete dari `packageId` dan `periodId`. Artinya menghapus paket atau periode akan cascade ke `qurban_package_periods`, yang bisa menyebabkan FK violation di `qurban_orders.packagePeriodId` jika tidak di-guard lebih dulu.
 
 ---
 
@@ -224,3 +281,14 @@ Revenue share qurban **berbeda** dari campaign/zakat karena basis kalkulasinya a
 3. **Balance calculation** — harus sum dua tabel (legacy + universal), sinkron via `syncSavingsBalance()`
 4. **Notification** — WhatsApp async, tidak ada retry jika gagal
 5. **Installment** — tidak ada auto-billing/reminder, semua manual
+
+---
+
+## Perbaikan
+
+| Tanggal | Area | Deskripsi |
+|---|---|---|
+| 2026-07-04 | Payment | Bug: `paidAmount` diincrement saat upload-proof (double-counting). Fix: hapus increment dari upload-proof, hanya di admin verify. |
+| 2026-07-04 | Access Control | Bug: 10 GET endpoint admin tanpa `requireRole` → mitra bisa lihat data order/donatur semua orang. Fix: tambah eksplisit `requireRole` ke semua GET endpoint sensitif. |
+| 2026-07-04 | Delete Guard | Bug: DELETE /periods/:id dan DELETE /packages/:id tidak punya guard → bisa hapus periode/paket yang punya order aktif, menyebabkan data orphan. Fix: tambah guard cek orders + savings. |
+| 2026-07-04 | Admin Fee | Bug: `adminFee` diterima dari body request (client-controlled). Fix: kalkulasi server-side dari settings DB (`amil_qurban_perekor_fee` / `amil_qurban_sapi_fee`). |

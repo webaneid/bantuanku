@@ -528,6 +528,7 @@ app.post("/orders", async (c) => {
       maxSlots: qurbanPackages.maxSlots,
       packageAvailable: qurbanPackages.isAvailable,
       packageName: qurbanPackages.name,
+      animalType: qurbanPackages.animalType,
     })
     .from(qurbanPackagePeriods)
     .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
@@ -640,9 +641,15 @@ app.post("/orders", async (c) => {
 
   const orderNumber = `QBN-${getCurrentYearWIB()}-${String(Number(orderCount[0].count) + 1).padStart(5, "0")}`;
 
-  // Calculate total amount (price * quantity + admin fee)
+  // Calculate total amount (price * quantity + admin fee from settings)
   const subtotal = pkgPeriod.price * (body.quantity || 1);
-  const adminFee = body.adminFee || 0;
+  const adminFeeSettingKey = pkgPeriod.animalType === "cow" ? "amil_qurban_sapi_fee" : "amil_qurban_perekor_fee";
+  const adminFeeSetting = await db
+    .select({ value: settings.value })
+    .from(settings)
+    .where(eq(settings.key, adminFeeSettingKey))
+    .limit(1);
+  const adminFee = adminFeeSetting.length > 0 ? Number(adminFeeSetting[0].value) || 0 : 0;
   const totalAmount = subtotal + adminFee;
 
   // Create order
@@ -1747,31 +1754,22 @@ app.post("/orders/:id/upload-proof", async (c) => {
     console.log("Payment data:", paymentData);
 
     await db.insert(qurbanPayments).values(paymentData);
-    console.log("Payment record created successfully");
 
-    // Update order: increment paidAmount with actual transfer amount
-    // paidAmount tracks total claimed payments (verified or not)
-    // paymentStatus only changes to "paid" when admin verifies the payment
-    const newPaidAmount = order.paidAmount + transferAmount;
-
+    // paidAmount hanya diupdate saat admin verifikasi (/admin/qurban/payments/:id/verify)
+    // Jangan increment di sini — mencegah double-counting
     await db
       .update(qurbanOrders)
       .set({
-        paidAmount: newPaidAmount,
-        paymentStatus: "pending", // Keep as pending until admin verifies
+        paymentStatus: "pending",
         updatedAt: new Date(),
       })
       .where(eq(qurbanOrders.id, orderId));
 
-    console.log(`Order updated: paidAmount=${newPaidAmount}, paymentStatus=pending (waiting verification)`);
-
-    console.log("Upload proof completed successfully");
     return success(c, {
       url: fileUrl,
       filename: finalFilename,
-      paidAmount: newPaidAmount,
       paymentStatus: "pending",
-    }, "Payment proof uploaded successfully");
+    }, "Bukti pembayaran berhasil diupload. Menunggu verifikasi admin.");
 
   } catch (err: any) {
     console.error("Error uploading payment proof:", err);

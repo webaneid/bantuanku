@@ -7,6 +7,7 @@ import {
   qurbanOrders,
   qurbanPayments,
   qurbanSharedGroups,
+  qurbanSavings,
   qurbanExecutions,
   revenueShares,
   transactions,
@@ -263,6 +264,32 @@ app.patch("/periods/:id", requireRole("super_admin", "admin_campaign"), async (c
 app.delete("/periods/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
+
+  // Guard: cek order yang terikat ke package-period milik periode ini
+  const [orderCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(qurbanOrders)
+    .innerJoin(qurbanPackagePeriods, eq(qurbanOrders.packagePeriodId, qurbanPackagePeriods.id))
+    .where(eq(qurbanPackagePeriods.periodId, id));
+
+  if (Number(orderCount.count) > 0) {
+    return c.json({
+      error: `Tidak dapat menghapus periode: ada ${orderCount.count} order terkait. Nonaktifkan periode daripada menghapus.`,
+    }, 400);
+  }
+
+  // Guard: cek tabungan qurban yang target ke package-period ini
+  const [savingsCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(qurbanSavings)
+    .innerJoin(qurbanPackagePeriods, eq(qurbanSavings.targetPackagePeriodId, qurbanPackagePeriods.id))
+    .where(eq(qurbanPackagePeriods.periodId, id));
+
+  if (Number(savingsCount.count) > 0) {
+    return c.json({
+      error: `Tidak dapat menghapus periode: ada ${savingsCount.count} tabungan qurban terkait.`,
+    }, 400);
+  }
 
   const deleted = await db
     .delete(qurbanPeriods)
@@ -812,6 +839,26 @@ app.delete("/packages/:id", requireRole("super_admin", "admin_campaign", "mitra"
     }
   }
 
+  // Guard: cegah hapus jika ada order yang mereferensi paket ini (langsung atau via package-period)
+  const [directOrderCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(qurbanOrders)
+    .where(eq(qurbanOrders.packageId, id));
+
+  const [indirectOrderCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(qurbanOrders)
+    .innerJoin(qurbanPackagePeriods, eq(qurbanOrders.packagePeriodId, qurbanPackagePeriods.id))
+    .where(eq(qurbanPackagePeriods.packageId, id));
+
+  const totalOrders = Number(directOrderCount.count) + Number(indirectOrderCount.count);
+  if (totalOrders > 0) {
+    return c.json(
+      { error: `Tidak dapat menghapus paket: ada ${totalOrders} order terkait. Nonaktifkan paket daripada menghapus.` },
+      400
+    );
+  }
+
   const deleted = await db
     .delete(qurbanPackages)
     .where(eq(qurbanPackages.id, id))
@@ -1137,7 +1184,7 @@ app.get("/periods/:periodId/packages", async (c) => {
 // ============================================================
 
 // Get all orders
-app.get("/orders", async (c) => {
+app.get("/orders", requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator", "employee"), async (c) => {
   const db = c.get("db");
   const periodId = c.req.query("period_id");
   const status = c.req.query("status");
@@ -1178,7 +1225,7 @@ app.get("/orders", async (c) => {
 });
 
 // Get single order detail
-app.get("/orders/:id", async (c) => {
+app.get("/orders/:id", requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator", "employee"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
 
@@ -1294,8 +1341,8 @@ app.get("/orders/:id", async (c) => {
   }
 });
 
-// Get order by order number (public endpoint for invoice)
-app.get("/orders/by-number/:orderNumber", async (c) => {
+// Get order by order number
+app.get("/orders/by-number/:orderNumber", requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator", "employee"), async (c) => {
   const db = c.get("db");
   const { orderNumber } = c.req.param();
 
@@ -1864,7 +1911,7 @@ app.post("/orders/:id/reject-payment", requireRole("super_admin", "admin_campaig
 // ============================================================
 
 // Get all payments
-app.get("/payments", async (c) => {
+app.get("/payments", requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator", "employee"), async (c) => {
   const db = c.get("db");
   const status = c.req.query("status");
 
@@ -2084,7 +2131,7 @@ app.put("/payments/:id", requireRole("super_admin", "admin_campaign"), async (c)
 // ============================================================
 
 // Get all shared groups with members
-app.get("/shared-groups", async (c) => {
+app.get("/shared-groups", requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator", "employee"), async (c) => {
   const db = c.get("db");
 
   // Read directly from the authoritative qurbanSharedGroups table
@@ -2113,7 +2160,7 @@ app.get("/shared-groups", async (c) => {
 });
 
 // Get shared group detail with members
-app.get("/shared-groups/:id", async (c) => {
+app.get("/shared-groups/:id", requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator", "employee"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
 
@@ -2182,7 +2229,7 @@ app.get("/shared-groups/:id", async (c) => {
 // ============================================================
 
 // Get all donaturs
-app.get("/donaturs", async (c) => {
+app.get("/donaturs", requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator", "employee"), async (c) => {
   const db = c.get("db");
   const search = c.req.query("search");
 
@@ -2242,7 +2289,7 @@ app.post("/donaturs", requireRole("super_admin", "admin_campaign"), async (c) =>
 });
 
 // Get qurban period summary (total sapi, kambing, funds)
-app.get("/periods/:id/summary", async (c) => {
+app.get("/periods/:id/summary", requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator", "employee"), async (c) => {
   const db = c.get("db");
   const user = c.get("user");
   const { id } = c.req.param();
@@ -2406,7 +2453,7 @@ app.get("/periods/:id/summary", async (c) => {
 // ============================================================
 
 // Get executions for a period
-app.get("/executions", async (c) => {
+app.get("/executions", requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator", "employee"), async (c) => {
   const db = c.get("db");
   const periodId = c.req.query("period_id");
 
@@ -2496,7 +2543,7 @@ app.get("/executions", async (c) => {
 });
 
 // Get single execution detail
-app.get("/executions/:id", async (c) => {
+app.get("/executions/:id", requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator", "employee"), async (c) => {
   const db = c.get("db");
   const { id } = c.req.param();
 
