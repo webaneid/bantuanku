@@ -1570,8 +1570,33 @@ app.post("/orders", requireRole("super_admin", "admin_campaign"), async (c) => {
     })
     .returning();
 
-  // Note: slots_filled will be incremented only after payment is verified
-  // This ensures only paid members count toward the group slots
+  // Increment stok/slot saat order dibuat (reservation model — konsisten dengan public flow)
+  if (pkgPeriod.packageType === "shared") {
+    await db
+      .update(qurbanSharedGroups)
+      .set({
+        slotsFilled: sql`${qurbanSharedGroups.slotsFilled} + 1`,
+        status: sql`CASE WHEN ${qurbanSharedGroups.slotsFilled} + 1 >= ${qurbanSharedGroups.maxSlots} THEN 'full' ELSE 'open' END`,
+        updatedAt: new Date(),
+      })
+      .where(eq(qurbanSharedGroups.id, assignedGroupId!));
+
+    await db
+      .update(qurbanPackagePeriods)
+      .set({
+        slotsFilled: sql`${qurbanPackagePeriods.slotsFilled} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(qurbanPackagePeriods.id, packagePeriodId));
+  } else {
+    await db
+      .update(qurbanPackagePeriods)
+      .set({
+        stockSold: sql`${qurbanPackagePeriods.stockSold} + ${newOrder[0].quantity}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(qurbanPackagePeriods.id, packagePeriodId));
+  }
 
   // If payment proof uploaded, create payment record (pending verification)
   if (body.paymentProofUrl) {
@@ -1634,16 +1659,36 @@ app.post("/orders/:id/cancel", requireRole("super_admin", "admin_campaign"), asy
     return c.json({ error: "Order not found" }, 404);
   }
 
-  // If shared group, release slot
+  // Rollback stok/slot (reservation dilepas saat cancel)
   if (order[0].sharedGroupId) {
+    // Shared: kurangi slotsFilled di group dan di package-period
     await db
       .update(qurbanSharedGroups)
       .set({
-        slotsFilled: sql`${qurbanSharedGroups.slotsFilled} - 1`,
+        slotsFilled: sql`GREATEST(${qurbanSharedGroups.slotsFilled} - 1, 0)`,
         status: "open",
         updatedAt: new Date(),
       })
       .where(eq(qurbanSharedGroups.id, order[0].sharedGroupId));
+
+    if (order[0].packagePeriodId) {
+      await db
+        .update(qurbanPackagePeriods)
+        .set({
+          slotsFilled: sql`GREATEST(${qurbanPackagePeriods.slotsFilled} - 1, 0)`,
+          updatedAt: new Date(),
+        })
+        .where(eq(qurbanPackagePeriods.id, order[0].packagePeriodId));
+    }
+  } else if (order[0].packagePeriodId) {
+    // Individual: kembalikan stockSold
+    await db
+      .update(qurbanPackagePeriods)
+      .set({
+        stockSold: sql`GREATEST(${qurbanPackagePeriods.stockSold} - ${order[0].quantity}, 0)`,
+        updatedAt: new Date(),
+      })
+      .where(eq(qurbanPackagePeriods.id, order[0].packagePeriodId));
   }
 
   // Update order status
@@ -2013,8 +2058,11 @@ app.post("/payments/:id/verify", requireRole("super_admin", "admin_campaign"), a
     .where(eq(qurbanOrders.id, payment[0].orderId))
     .limit(1);
 
-  const newPaidAmount = Number(order[0].paidAmount) + Number(payment[0].amount);
   const totalAmount = Number(order[0].totalAmount);
+  const newPaidAmount = Math.min(
+    Number(order[0].paidAmount) + Number(payment[0].amount),
+    totalAmount
+  );
 
   const newPaymentStatus = newPaidAmount >= totalAmount ? "paid" : "partial";
 
@@ -2027,32 +2075,8 @@ app.post("/payments/:id/verify", requireRole("super_admin", "admin_campaign"), a
     })
     .where(eq(qurbanOrders.id, payment[0].orderId));
 
-  // If order is in a shared group, payment verified, AND order becomes fully paid, increment slots_filled
-  // Only increment when order becomes "paid" (fully paid) for the first time
-  const wasPreviouslyPaid = order[0].paymentStatus === "paid";
-  const isNowPaid = newPaymentStatus === "paid";
-
-  if (order[0].sharedGroupId && isNowPaid && !wasPreviouslyPaid) {
-    const currentGroup = await db
-      .select()
-      .from(qurbanSharedGroups)
-      .where(eq(qurbanSharedGroups.id, order[0].sharedGroupId))
-      .limit(1);
-
-    if (currentGroup.length > 0) {
-      const newSlotsFilled = currentGroup[0].slotsFilled + 1;
-      const newStatus = newSlotsFilled >= currentGroup[0].maxSlots ? "full" : "open";
-
-      await db
-        .update(qurbanSharedGroups)
-        .set({
-          slotsFilled: newSlotsFilled,
-          status: newStatus,
-          updatedAt: new Date(),
-        })
-        .where(eq(qurbanSharedGroups.id, order[0].sharedGroupId));
-    }
-  }
+  // slotsFilled sudah di-increment saat order dibuat (reservation model)
+  // Tidak perlu increment lagi di sini
 
   return c.json({ message: "Payment verified successfully" });
 });
@@ -2122,6 +2146,28 @@ app.put("/payments/:id", requireRole("super_admin", "admin_campaign"), async (c)
     .set(updateData)
     .where(eq(qurbanPayments.id, id))
     .returning();
+
+  // Sync order.paidAmount jika payment status berubah ke "verified"
+  if (body.status === "verified" && updated.length > 0) {
+    const orderForUpdate = await db
+      .select({ paidAmount: qurbanOrders.paidAmount, totalAmount: qurbanOrders.totalAmount })
+      .from(qurbanOrders)
+      .where(eq(qurbanOrders.id, updated[0].orderId))
+      .limit(1);
+
+    if (orderForUpdate.length > 0) {
+      const newPaid = Math.min(
+        Number(orderForUpdate[0].paidAmount) + Number(updated[0].amount),
+        Number(orderForUpdate[0].totalAmount)
+      );
+      const newStatus = newPaid >= Number(orderForUpdate[0].totalAmount) ? "paid" : "partial";
+
+      await db
+        .update(qurbanOrders)
+        .set({ paidAmount: newPaid, paymentStatus: newStatus, updatedAt: new Date() })
+        .where(eq(qurbanOrders.id, updated[0].orderId));
+    }
+  }
 
   return c.json({ data: updated[0], message: "Payment updated successfully" });
 });

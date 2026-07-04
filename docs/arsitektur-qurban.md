@@ -102,6 +102,28 @@ Shared (sapi patungan):
   2. Jika semua penuh → buat group baru
 ```
 
+### Model Reservasi Stok (Reservation at Creation)
+
+Slot/stok di-decrement **saat order dibuat**, bukan saat payment diverifikasi. Ini berlaku untuk SEMUA jalur order (public dan admin).
+
+```
+POST /qurban/orders  (public)
+POST /admin/qurban/orders  (admin)
+  → increment qurbanPackagePeriods.slotsFilled / stockSold
+  → increment qurbanSharedGroups.slotsFilled (shared)
+
+POST /admin/qurban/orders/:id/cancel
+  → decrement kembali (GREATEST(..., 0) untuk mencegah negatif)
+  → qurbanPackagePeriods.slotsFilled atau stockSold
+  → qurbanSharedGroups.slotsFilled (jika shared)
+
+POST /admin/qurban/payments/:id/verify
+  → TIDAK increment slotsFilled (sudah dihitung saat order dibuat)
+  → Hanya update paidAmount (capped ke totalAmount) dan paymentStatus
+```
+
+**Penting**: Jangan tambahkan increment slotsFilled/stockSold di tempat lain. Filosofi "deferred to payment" sudah dihapus (menyebabkan double-counting).
+
 ---
 
 ## Admin Fee
@@ -123,18 +145,36 @@ Revenue share qurban menggunakan `qurban_orders.adminFee` sebagai basis (bukan `
 
 ```
 User upload bukti bayar (POST /qurban/orders/:id/upload-proof)
-  → paymentStatus = "pending"
+  → Blokir jika orderStatus = "cancelled" atau paymentStatus = "paid"
+  → Simpan file payment proof
+  → paymentStatus order = "pending"
   → paidAmount TIDAK berubah
 
 Admin verifikasi (POST /admin/qurban/payments/:id/verify)
-  → paidAmount += transferAmount (verified)
+  → paidAmount = min(paidAmount + payment.amount, totalAmount)  ← capped
   → paymentStatus = "paid" jika paidAmount >= totalAmount
   → order.status = "confirmed" jika paid
+
+Admin edit payment (PUT /admin/qurban/payments/:id)
+  → Jika status diubah ke "verified" → sync order.paidAmount (sama seperti verify endpoint)
 ```
 
-**Penting**: jangan update `paidAmount` di upload-proof handler. Update hanya terjadi saat admin verify. Ini menghindari double-counting (bug yang pernah ada sebelum 2026-07-04).
+**Aturan paidAmount:**
+- Hanya update via `POST /verify` atau `PUT /payments/:id` dengan status=verified
+- Selalu di-cap ke `totalAmount` (tidak boleh melebihi)
+- Upload-proof TIDAK mengubah paidAmount
+
+**Aturan upload-proof:**
+- Blokir jika `orderStatus = "cancelled"` atau `paymentStatus = "paid"` (sudah lunas)
 
 ---
+
+## Access Control (Public Endpoints)
+
+`GET /qurban/orders/:id` dan `GET /qurban/payments/order/:orderId`:
+- Jika order punya `userId` → hanya bisa diakses oleh user yang sama (token harus cocok)
+- Jika `userId = null` (guest order) → bisa diakses tanpa token (invoice lookup)
+- Guard: `if (orderData[0].userId && orderData[0].userId !== user?.id)` → 403
 
 ## Access Control (Admin Endpoints)
 
@@ -292,3 +332,9 @@ Revenue share qurban **berbeda** dari campaign/zakat karena basis kalkulasinya a
 | 2026-07-04 | Access Control | Bug: 10 GET endpoint admin tanpa `requireRole` → mitra bisa lihat data order/donatur semua orang. Fix: tambah eksplisit `requireRole` ke semua GET endpoint sensitif. |
 | 2026-07-04 | Delete Guard | Bug: DELETE /periods/:id dan DELETE /packages/:id tidak punya guard → bisa hapus periode/paket yang punya order aktif, menyebabkan data orphan. Fix: tambah guard cek orders + savings. |
 | 2026-07-04 | Admin Fee | Bug: `adminFee` diterima dari body request (client-controlled). Fix: kalkulasi server-side dari settings DB (`amil_qurban_perekor_fee` / `amil_qurban_sapi_fee`). |
+| 2026-07-04 | Stok Shared | Bug: double-counting `slotsFilled` — public order increment di create, admin verify increment lagi. Fix: filosofi reservasi seragam (increment di create, hapus dari verify). Admin order creation juga ikut increment saat dibuat. |
+| 2026-07-04 | Stok Cancel | Bug: cancel order tidak rollback `stockSold` (individual) dan `packagePeriods.slotsFilled` (shared). Fix: cancel handler kini decrement keduanya dengan `GREATEST(..., 0)`. |
+| 2026-07-04 | Data Leak Public | Bug: `GET /orders/:id` dan `GET /payments/order/:orderId` bisa diakses siapapun tanpa token (guest bisa akses order orang lain). Fix: guard `if (userId && userId !== user?.id) → 403`. |
+| 2026-07-04 | Upload Proof Guard | Bug: upload-proof tidak blokir order cancelled/paid. Fix: guard early-return jika `orderStatus=cancelled` atau `paymentStatus=paid`. |
+| 2026-07-04 | paidAmount Cap | Bug: verify payment tidak cap paidAmount ke totalAmount — bisa overflow jika admin verify 2 payment. Fix: `Math.min(paidAmount + amount, totalAmount)`. |
+| 2026-07-04 | PUT Payment Sync | Bug: `PUT /payments/:id` bisa set status=verified tanpa sync `order.paidAmount`. Fix: tambah sync paidAmount ketika status=verified, konsisten dengan POST /verify. |

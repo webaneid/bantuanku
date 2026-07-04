@@ -459,8 +459,8 @@ app.get("/orders/:id", async (c) => {
     return c.json({ error: "Order not found" }, 404);
   }
 
-  // Check authorization (user can only see their own orders, or guest orders)
-  if (user && orderData[0].userId && orderData[0].userId !== user.id) {
+  // Order milik user tertentu hanya bisa diakses oleh user itu (termasuk guest request)
+  if (orderData[0].userId && orderData[0].userId !== user?.id) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
@@ -691,7 +691,23 @@ app.post("/orders", async (c) => {
 // Get payments by order ID
 app.get("/payments/order/:orderId", async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const { orderId } = c.req.param();
+
+  // Verifikasi ownership sebelum ekspos bukti transfer
+  const orderCheck = await db
+    .select({ userId: qurbanOrders.userId })
+    .from(qurbanOrders)
+    .where(eq(qurbanOrders.id, orderId))
+    .limit(1);
+
+  if (orderCheck.length === 0) {
+    return c.json({ error: "Order not found" }, 404);
+  }
+
+  if (orderCheck[0].userId && orderCheck[0].userId !== user?.id) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
 
   const payments = await db
     .select()
@@ -1610,6 +1626,14 @@ app.post("/orders/:id/upload-proof", async (c) => {
 
     if (!order) {
       return error(c, "Qurban order not found", 404);
+    }
+
+    if (order.orderStatus === "cancelled") {
+      return error(c, "Order sudah dibatalkan, tidak bisa upload bukti bayar", 400);
+    }
+
+    if (order.paymentStatus === "paid") {
+      return error(c, "Order sudah lunas, tidak perlu upload bukti bayar lagi", 400);
     }
 
     // Parse multipart form data
