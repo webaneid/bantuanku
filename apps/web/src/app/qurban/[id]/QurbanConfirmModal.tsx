@@ -29,6 +29,8 @@ interface QurbanConfirmModalProps {
   };
   total: number;
   adminFee: number;
+  discountAmount?: number;
+  voucherCode?: string;
 }
 
 export default function QurbanConfirmModal({
@@ -38,6 +40,8 @@ export default function QurbanConfirmModal({
   orderData,
   total,
   adminFee,
+  discountAmount = 0,
+  voucherCode,
 }: QurbanConfirmModalProps) {
   const { t } = useI18n();
   const router = useRouter();
@@ -71,6 +75,8 @@ export default function QurbanConfirmModal({
         packageType: qurbanPackage.packageType,
         price: qurbanPackage.price,
         adminFee: adminFee,
+        discountAmount: discountAmount > 0 ? discountAmount : undefined,
+        voucherCode: voucherCode || undefined,
       },
     });
 

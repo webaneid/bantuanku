@@ -5,6 +5,7 @@ import { users } from "./user";
 import { qurbanPeriods } from "./qurban-periods";
 import { qurbanPackages } from "./qurban-packages";
 import { qurbanPackagePeriods } from "./qurban-package-periods";
+import { qurbanDiscounts } from "./qurban-discounts";
 
 export const qurbanSavings = pgTable("qurban_savings", {
   id: text("id").primaryKey().$defaultFn(() => createId()),
@@ -23,8 +24,10 @@ export const qurbanSavings = pgTable("qurban_savings", {
   targetPeriodId: text("target_period_id").references(() => qurbanPeriods.id),
   targetPackageId: text("target_package_id").references(() => qurbanPackages.id),
 
-  targetAmount: bigint("target_amount", { mode: "number" }).notNull(), // Target uang yang ingin ditabung
+  targetAmount: bigint("target_amount", { mode: "number" }).notNull(), // Target uang yang ingin ditabung (sudah include discount)
   currentAmount: bigint("current_amount", { mode: "number" }).default(0).notNull(), // Total yang sudah ditabung
+  discountId: text("discount_id").references(() => qurbanDiscounts.id, { onDelete: "set null" }),
+  discountAmount: bigint("discount_amount", { mode: "number" }).notNull().default(0),
 
   // Schedule
   installmentFrequency: text("installment_frequency").notNull(), // 'weekly', 'monthly', 'custom'
@@ -59,6 +62,10 @@ export const qurbanSavingsRelations = relations(qurbanSavings, ({ one, many }) =
   targetPackage: one(qurbanPackages, {
     fields: [qurbanSavings.targetPackageId],
     references: [qurbanPackages.id],
+  }),
+  discount: one(qurbanDiscounts, {
+    fields: [qurbanSavings.discountId],
+    references: [qurbanDiscounts.id],
   }),
   transactions: many(qurbanSavingsTransactions),
   conversions: many(qurbanSavingsConversions),

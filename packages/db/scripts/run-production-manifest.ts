@@ -199,6 +199,9 @@ const CORE_EXISTING: MigrationEntry[] = [
   {
     file: "packages/db/migrations/117_add_on_delete_set_null_donatur_user_id.sql",
   },
+  {
+    file: "packages/db/migrations/118_create_qurban_discounts.sql",
+  },
 ];
 
 const args = process.argv.slice(2);

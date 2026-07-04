@@ -72,6 +72,7 @@ const allMenuItems = [
       { label: "Orders", href: "/dashboard/qurban/orders", roles: ["super_admin", "admin_finance", "admin_campaign"] },
       { label: "Tabungan Qurban", href: "/dashboard/qurban/savings", roles: ["super_admin", "admin_finance", "admin_campaign", "mitra"] },
       { label: "Grup Patungan", href: "/dashboard/qurban/shared-groups", roles: ["super_admin", "admin_finance", "admin_campaign"] },
+      { label: "Diskon & Voucher", href: "/dashboard/qurban/discounts", roles: ["super_admin", "admin_campaign"] },
     ]
   },
   {

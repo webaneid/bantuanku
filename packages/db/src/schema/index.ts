@@ -34,6 +34,8 @@ export * from "./qurban-savings-conversions";
 export * from "./qurban-executions";
 export * from "./qurban-orders";
 export * from "./qurban-payments";
+export * from "./qurban-discounts";
+export * from "./qurban-discount-usages";
 export * from "./indonesia-provinces";
 export * from "./indonesia-regencies";
 export * from "./indonesia-districts";

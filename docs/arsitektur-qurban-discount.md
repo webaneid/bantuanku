@@ -1,6 +1,6 @@
 # Arsitektur Qurban Discount & Voucher
 
-> Status: DRAFT — belum diimplementasikan  
+> Status: IMPLEMENTED — 2026-07-04  
 > Dibuat: 2026-07-04  
 > Bergantung pada: `arsitektur-qurban.md`, `arsitektur-timezone.md`
 

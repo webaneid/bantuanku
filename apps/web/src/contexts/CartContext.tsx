@@ -24,6 +24,8 @@ export interface CartItem {
     packageType: string;
     price: number;
     adminFee: number;
+    discountAmount?: number;
+    voucherCode?: string;
   };
   // Zakat-specific fields
   zakatData?: {

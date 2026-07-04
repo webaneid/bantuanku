@@ -5,6 +5,7 @@ import { users } from "./user";
 import { qurbanPackages } from "./qurban-packages";
 import { qurbanPackagePeriods } from "./qurban-package-periods";
 import { qurbanSharedGroups } from "./qurban-shared-groups";
+import { qurbanDiscounts } from "./qurban-discounts";
 
 // Legacy table - will be removed after migration to universal transactions
 export const qurbanOrders = pgTable("qurban_orders", {
@@ -23,6 +24,8 @@ export const qurbanOrders = pgTable("qurban_orders", {
   quantity: bigint("quantity", { mode: "number" }).notNull().default(1),
   unitPrice: bigint("unit_price", { mode: "number" }).notNull(),
   adminFee: bigint("admin_fee", { mode: "number" }).default(0),
+  discountId: text("discount_id").references(() => qurbanDiscounts.id, { onDelete: "set null" }),
+  discountAmount: bigint("discount_amount", { mode: "number" }).notNull().default(0),
   totalAmount: bigint("total_amount", { mode: "number" }).notNull(),
 
   paymentMethod: text("payment_method").notNull(),
@@ -63,6 +66,10 @@ export const qurbanOrdersRelations = relations(qurbanOrders, ({ one }) => ({
   sharedGroup: one(qurbanSharedGroups, {
     fields: [qurbanOrders.sharedGroupId],
     references: [qurbanSharedGroups.id],
+  }),
+  discount: one(qurbanDiscounts, {
+    fields: [qurbanOrders.discountId],
+    references: [qurbanDiscounts.id],
   }),
 }));
 

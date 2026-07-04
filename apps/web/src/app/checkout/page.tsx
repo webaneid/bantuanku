@@ -456,7 +456,8 @@ export default function CheckoutPage() {
           // Admin fee is already calculated per slot/ekor
           const adminFee = item.qurbanData.adminFee || 0;
           const quantity = item.qurbanData.quantity;
-          const totalAmount = (unitPrice * quantity) + (adminFee * quantity);
+          const discountAmount = item.qurbanData.discountAmount || 0;
+          const totalAmount = (unitPrice * quantity) - discountAmount + (adminFee * quantity);
 
           const transactionData = {
             product_type: 'qurban',
@@ -482,6 +483,8 @@ export default function CheckoutPage() {
               onBehalfOf: formData.onBehalfOf.trim() || formData.name.trim(),
               animal_type: item.qurbanData.animalType,
               package_type: item.qurbanData.packageType,
+              voucher_code: item.qurbanData.voucherCode || undefined,
+              discount_amount: discountAmount > 0 ? discountAmount : undefined,
             },
           };
 

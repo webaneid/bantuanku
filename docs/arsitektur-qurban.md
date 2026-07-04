@@ -247,6 +247,7 @@ Balance savings = sum(legacy verified) + sum(universal verified) — sinkron via
 | `POST` | `/qurban/savings` | Buat tabungan |
 | `POST` | `/qurban/savings/:id/deposit` | Deposit ke tabungan |
 | `POST` | `/qurban/savings/:id/convert` | Konversi ke order |
+| `POST` | `/qurban/discounts/validate` | Validasi kode voucher (preview, tidak apply) |
 
 ### Admin (`/v1/admin/qurban`)
 
@@ -260,6 +261,7 @@ Balance savings = sum(legacy verified) + sum(universal verified) — sinkron via
 | GET `/admin/qurban/savings` | Manage tabungan |
 | GET `/admin/qurban/savings/pending-deposits` | Verifikasi setoran |
 | POST `/admin/qurban/executions` | Catat penyembelihan |
+| CRUD `/admin/qurban/discounts` | Kelola diskon & voucher (lihat `arsitektur-qurban-discount.md`) |
 
 ---
 
@@ -338,3 +340,4 @@ Revenue share qurban **berbeda** dari campaign/zakat karena basis kalkulasinya a
 | 2026-07-04 | Upload Proof Guard | Bug: upload-proof tidak blokir order cancelled/paid. Fix: guard early-return jika `orderStatus=cancelled` atau `paymentStatus=paid`. |
 | 2026-07-04 | paidAmount Cap | Bug: verify payment tidak cap paidAmount ke totalAmount — bisa overflow jika admin verify 2 payment. Fix: `Math.min(paidAmount + amount, totalAmount)`. |
 | 2026-07-04 | PUT Payment Sync | Bug: `PUT /payments/:id` bisa set status=verified tanpa sync `order.paidAmount`. Fix: tambah sync paidAmount ketika status=verified, konsisten dengan POST /verify. |
+| 2026-07-04 | Discount System | Fitur baru: `qurban_discounts` + `qurban_discount_usages`. `qurban_orders` dan `qurban_savings` kini punya `discountId` + `discountAmount`. Formula: `totalAmount = subtotal - discountAmount + adminFee`. Lihat `arsitektur-qurban-discount.md` untuk detail lengkap. |

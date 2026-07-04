@@ -486,6 +486,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
                   ownerName,
                   ownerLogoUrl,
                   ownerSlug,
+                  activeDiscount: qurbanPackage.activeDiscount || null,
                 }}
                 periods={periods}
                 adminFeeCow={adminFeeCow}

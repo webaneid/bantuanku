@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, desc, and, sql, gte, lte } from "drizzle-orm";
+import { eq, desc, and, or, sql, gte, lte } from "drizzle-orm";
 import {
   qurbanPeriods,
   qurbanPackages,
@@ -12,6 +12,8 @@ import {
   qurbanSavings,
   qurbanSavingsTransactions,
   qurbanSavingsConversions,
+  qurbanDiscounts,
+  qurbanDiscountUsages,
   transactions,
   transactionPayments,
   createId,
@@ -73,6 +75,103 @@ const generateSavingsConversionTxNumber = () => {
   return `TRX-SAV-CONV-${y}${m}${d}-${suffix}`;
 };
 
+// ============================================================
+// DISCOUNT HELPERS
+// ============================================================
+
+type DiscountRecord = {
+  id: string;
+  name: string;
+  type: string;
+  discountType: string;
+  discountValue: number;
+  maxDiscount: number | null;
+  scopeType: string;
+  scopeId: string | null;
+  maxUsage: number | null;
+  usageCount: number;
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+};
+
+function calculateDiscountAmount(discount: DiscountRecord, subtotal: number): number {
+  let amount = 0;
+  if (discount.discountType === "percentage") {
+    amount = Math.floor((subtotal * discount.discountValue) / 100);
+    if (discount.maxDiscount) {
+      amount = Math.min(amount, discount.maxDiscount);
+    }
+  } else {
+    amount = discount.discountValue;
+  }
+  return Math.min(amount, subtotal);
+}
+
+async function findActiveAutoDiscount(
+  db: any,
+  context: { packagePeriodId: string; packageId: string; animalType: string }
+): Promise<DiscountRecord | null> {
+  const now = new Date();
+  const discounts: DiscountRecord[] = await db
+    .select()
+    .from(qurbanDiscounts)
+    .where(
+      and(
+        eq(qurbanDiscounts.type, "automatic"),
+        eq(qurbanDiscounts.isActive, true),
+        lte(qurbanDiscounts.startDate, now),
+        gte(qurbanDiscounts.endDate, now)
+      )
+    );
+
+  const applicable = discounts.filter((d) => {
+    if (d.maxUsage !== null && d.usageCount >= d.maxUsage) return false;
+    switch (d.scopeType) {
+      case "all": return true;
+      case "package": return d.scopeId === context.packageId;
+      case "package_period": return d.scopeId === context.packagePeriodId;
+      case "animal_type": return d.scopeId === context.animalType;
+      default: return false;
+    }
+  });
+
+  if (applicable.length === 0) return null;
+
+  const priority: Record<string, number> = { package_period: 4, package: 3, animal_type: 2, all: 1 };
+  applicable.sort((a, b) => {
+    const pa = priority[a.scopeType] || 0;
+    const pb = priority[b.scopeType] || 0;
+    if (pa !== pb) return pb - pa;
+    return b.discountValue - a.discountValue;
+  });
+
+  return applicable[0];
+}
+
+async function checkDiscountDoubleUse(
+  db: any,
+  discountId: string,
+  userId: string | null,
+  donorPhone: string
+): Promise<boolean> {
+  const conditions = [];
+  if (userId) {
+    conditions.push(
+      and(eq(qurbanDiscountUsages.discountId, discountId), eq(qurbanDiscountUsages.userId, userId))
+    );
+  }
+  if (donorPhone) {
+    conditions.push(
+      and(eq(qurbanDiscountUsages.discountId, discountId), eq(qurbanDiscountUsages.donorPhone, donorPhone))
+    );
+  }
+  if (conditions.length === 0) return false;
+  const existing = await db.select({ id: qurbanDiscountUsages.id }).from(qurbanDiscountUsages)
+    .where(or(...conditions)).limit(1);
+  return existing.length > 0;
+}
+
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 // Set user context if token ada (tidak memblokir public routes)
@@ -93,6 +192,87 @@ app.get("/periods", async (c) => {
     .orderBy(desc(qurbanPeriods.gregorianYear));
 
   return c.json({ data: periods });
+});
+
+// Validate voucher code (preview only, does not apply)
+app.post("/discounts/validate", async (c) => {
+  const db = c.get("db");
+  const user = c.get("user");
+  const body = await c.req.json();
+  const { code, packagePeriodId, donorPhone } = body;
+
+  if (!code || !packagePeriodId) {
+    return error(c, "Kode voucher dan packagePeriodId wajib diisi", 400);
+  }
+
+  // Load package context
+  const pkgCtx = await db
+    .select({
+      packageId: qurbanPackagePeriods.packageId,
+      price: qurbanPackagePeriods.price,
+      animalType: qurbanPackages.animalType,
+    })
+    .from(qurbanPackagePeriods)
+    .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
+    .where(eq(qurbanPackagePeriods.id, packagePeriodId))
+    .limit(1);
+
+  if (pkgCtx.length === 0) return error(c, "Paket tidak ditemukan", 404);
+
+  const { packageId, price, animalType } = pkgCtx[0];
+
+  // Reject if auto discount is active for this package
+  const autoDiscount = await findActiveAutoDiscount(db, {
+    packagePeriodId,
+    packageId: packageId!,
+    animalType: animalType!,
+  });
+  if (autoDiscount) {
+    return error(c, "Paket ini sudah mendapat diskon otomatis, voucher tidak bisa digabung", 400);
+  }
+
+  // Find voucher (case-insensitive)
+  const [voucher] = await db
+    .select()
+    .from(qurbanDiscounts)
+    .where(sql`lower(${qurbanDiscounts.code}) = lower(${code})`)
+    .limit(1);
+
+  if (!voucher) return error(c, "Kode voucher tidak valid", 400);
+  if (!voucher.isActive) return error(c, "Voucher tidak aktif", 400);
+
+  const now = new Date();
+  if (now < voucher.startDate) return error(c, "Voucher belum berlaku", 400);
+  if (now > voucher.endDate) return error(c, "Voucher sudah kadaluarsa", 400);
+  if (voucher.maxUsage !== null && voucher.usageCount >= voucher.maxUsage) {
+    return error(c, "Voucher sudah habis", 400);
+  }
+
+  // Scope check
+  let scopeOk = false;
+  switch (voucher.scopeType) {
+    case "all": scopeOk = true; break;
+    case "package": scopeOk = voucher.scopeId === packageId; break;
+    case "package_period": scopeOk = voucher.scopeId === packagePeriodId; break;
+    case "animal_type": scopeOk = voucher.scopeId === animalType; break;
+  }
+  if (!scopeOk) return error(c, "Voucher tidak berlaku untuk paket ini", 400);
+
+  // Double-use check
+  const alreadyUsed = await checkDiscountDoubleUse(db, voucher.id, user?.id || null, donorPhone || "");
+  if (alreadyUsed) return error(c, "Kode voucher sudah pernah digunakan", 400);
+
+  const discountAmount = calculateDiscountAmount(voucher, price);
+  const finalPrice = price - discountAmount;
+
+  return success(c, {
+    discountId: voucher.id,
+    name: voucher.name,
+    discountType: voucher.discountType,
+    discountValue: voucher.discountValue,
+    discountAmount,
+    finalPrice,
+  });
 });
 
 // Get packages by period (with availability info)
@@ -250,6 +430,26 @@ app.get("/packages/:packagePeriodId", async (c) => {
     )
     .orderBy(desc(qurbanPeriods.gregorianYear));
 
+  // Find active auto discount for this package-period
+  const autoDiscount = await findActiveAutoDiscount(db, {
+    packagePeriodId,
+    packageId: pkg[0].id!,
+    animalType: pkg[0].animalType!,
+  });
+
+  let activeDiscount = null;
+  if (autoDiscount) {
+    const discountAmount = calculateDiscountAmount(autoDiscount, pkg[0].price);
+    activeDiscount = {
+      id: autoDiscount.id,
+      name: autoDiscount.name,
+      discountType: autoDiscount.discountType,
+      discountValue: autoDiscount.discountValue,
+      discountAmount,
+      finalPrice: pkg[0].price - discountAmount,
+    };
+  }
+
   // Add full image URL
   const enrichedPkg = {
     ...pkg[0],
@@ -258,7 +458,8 @@ app.get("/packages/:packagePeriodId", async (c) => {
         ? pkg[0].imageUrl
         : `${apiUrl}${pkg[0].imageUrl}`
       : null,
-    availablePeriods: allPeriods, // Add all available periods for this package
+    availablePeriods: allPeriods,
+    activeDiscount,
   };
 
   return c.json({ data: enrichedPkg });
@@ -650,7 +851,57 @@ app.post("/orders", async (c) => {
     .where(eq(settings.key, adminFeeSettingKey))
     .limit(1);
   const adminFee = adminFeeSetting.length > 0 ? Number(adminFeeSetting[0].value) || 0 : 0;
-  const totalAmount = subtotal + adminFee;
+
+  // Apply discount or voucher
+  let appliedDiscount: DiscountRecord | null = null;
+  let discountAmount = 0;
+
+  const autoDiscount = await findActiveAutoDiscount(db, {
+    packagePeriodId: body.packagePeriodId,
+    packageId: pkgPeriod.packageId!,
+    animalType: pkgPeriod.animalType!,
+  });
+
+  if (autoDiscount) {
+    appliedDiscount = autoDiscount;
+    discountAmount = calculateDiscountAmount(autoDiscount, subtotal);
+  } else if (body.voucherCode) {
+    const [voucher] = await db
+      .select()
+      .from(qurbanDiscounts)
+      .where(sql`lower(${qurbanDiscounts.code}) = lower(${body.voucherCode})`)
+      .limit(1);
+
+    if (!voucher || !voucher.isActive) {
+      return c.json({ error: "Kode voucher tidak valid" }, 400);
+    }
+    const now = new Date();
+    if (now < voucher.startDate || now > voucher.endDate) {
+      return c.json({ error: "Voucher tidak berlaku saat ini" }, 400);
+    }
+    if (voucher.maxUsage !== null && voucher.usageCount >= voucher.maxUsage) {
+      return c.json({ error: "Voucher sudah habis" }, 400);
+    }
+
+    let scopeOk = false;
+    switch (voucher.scopeType) {
+      case "all": scopeOk = true; break;
+      case "package": scopeOk = voucher.scopeId === pkgPeriod.packageId; break;
+      case "package_period": scopeOk = voucher.scopeId === body.packagePeriodId; break;
+      case "animal_type": scopeOk = voucher.scopeId === pkgPeriod.animalType; break;
+    }
+    if (!scopeOk) return c.json({ error: "Voucher tidak berlaku untuk paket ini" }, 400);
+
+    const alreadyUsed = await checkDiscountDoubleUse(
+      db, voucher.id, user?.id || null, body.donorPhone || ""
+    );
+    if (alreadyUsed) return c.json({ error: "Kode voucher sudah pernah digunakan" }, 400);
+
+    appliedDiscount = voucher;
+    discountAmount = calculateDiscountAmount(voucher, subtotal);
+  }
+
+  const totalAmount = subtotal - discountAmount + adminFee;
 
   // Create order
   const newOrder = await db
@@ -668,6 +919,8 @@ app.post("/orders", async (c) => {
       quantity: body.quantity || 1,
       unitPrice: pkgPeriod.price,
       adminFee: adminFee,
+      discountId: appliedDiscount?.id || null,
+      discountAmount: discountAmount,
       totalAmount: totalAmount,
       paymentMethod: body.paymentMethod,
       installmentFrequency: body.installmentFrequency,
@@ -677,6 +930,22 @@ app.post("/orders", async (c) => {
       notes: body.notes,
     })
     .returning();
+
+  // Record discount usage and increment usage_count
+  if (appliedDiscount) {
+    await db.insert(qurbanDiscountUsages).values({
+      id: createId(),
+      discountId: appliedDiscount.id,
+      orderId: newOrder[0].id,
+      userId: user?.id || null,
+      donorPhone: body.donorPhone || null,
+      discountAmount,
+    });
+    await db
+      .update(qurbanDiscounts)
+      .set({ usageCount: sql`${qurbanDiscounts.usageCount} + 1`, updatedAt: new Date() })
+      .where(eq(qurbanDiscounts.id, appliedDiscount.id));
+  }
 
   return c.json({
     data: newOrder[0],
@@ -1146,15 +1415,21 @@ app.post("/savings", async (c) => {
   let resolvedPackagePeriodId = body.targetPackagePeriodId as string | undefined;
   let resolvedTargetAmount: number = body.targetAmount;
 
+  let savingsPackageId: string | null = null;
+  let savingsAnimalType: string | null = null;
+
   if (resolvedPackagePeriodId) {
     const packagePeriod = await db.query.qurbanPackagePeriods.findFirst({
       where: eq(qurbanPackagePeriods.id, resolvedPackagePeriodId),
+      with: { package: { columns: { animalType: true } } },
     });
     if (!packagePeriod) {
       return c.json({ error: "Package period not found" }, 404);
     }
     resolvedPeriodId = resolvedPeriodId || packagePeriod.periodId;
     resolvedPackageId = resolvedPackageId || packagePeriod.packageId;
+    savingsPackageId = packagePeriod.packageId;
+    savingsAnimalType = (packagePeriod as any).package?.animalType || null;
     // targetAmount wajib dari harga paket — tidak boleh dari client
     resolvedTargetAmount = packagePeriod.price;
   }
@@ -1162,6 +1437,59 @@ app.post("/savings", async (c) => {
   if (!resolvedPeriodId) {
     return c.json({ error: "Target period is required" }, 400);
   }
+
+  // Apply discount or voucher (only when packagePeriodId is set)
+  let savingsDiscount: DiscountRecord | null = null;
+  let savingsDiscountAmount = 0;
+
+  if (resolvedPackagePeriodId && savingsPackageId && savingsAnimalType) {
+    const autoDiscount = await findActiveAutoDiscount(db, {
+      packagePeriodId: resolvedPackagePeriodId,
+      packageId: savingsPackageId,
+      animalType: savingsAnimalType,
+    });
+
+    if (autoDiscount) {
+      savingsDiscount = autoDiscount;
+      savingsDiscountAmount = calculateDiscountAmount(autoDiscount, resolvedTargetAmount);
+    } else if (body.voucherCode) {
+      const [voucher] = await db
+        .select()
+        .from(qurbanDiscounts)
+        .where(sql`lower(${qurbanDiscounts.code}) = lower(${body.voucherCode})`)
+        .limit(1);
+
+      if (!voucher || !voucher.isActive) return c.json({ error: "Kode voucher tidak valid" }, 400);
+      const now = new Date();
+      if (now < voucher.startDate || now > voucher.endDate) {
+        return c.json({ error: "Voucher tidak berlaku saat ini" }, 400);
+      }
+      if (voucher.maxUsage !== null && voucher.usageCount >= voucher.maxUsage) {
+        return c.json({ error: "Voucher sudah habis" }, 400);
+      }
+
+      let scopeOk = false;
+      switch (voucher.scopeType) {
+        case "all": scopeOk = true; break;
+        case "package": scopeOk = voucher.scopeId === savingsPackageId; break;
+        case "package_period": scopeOk = voucher.scopeId === resolvedPackagePeriodId; break;
+        case "animal_type": scopeOk = voucher.scopeId === savingsAnimalType; break;
+      }
+      if (!scopeOk) return c.json({ error: "Voucher tidak berlaku untuk paket ini" }, 400);
+
+      const alreadyUsed = await checkDiscountDoubleUse(db, voucher.id, user.id, body.donorPhone || "");
+      if (alreadyUsed) return c.json({ error: "Kode voucher sudah pernah digunakan" }, 400);
+
+      savingsDiscount = voucher;
+      savingsDiscountAmount = calculateDiscountAmount(voucher, resolvedTargetAmount);
+    }
+  }
+
+  // Harga final setelah discount (targetAmount = harga yang harus ditabung)
+  const finalTargetAmount = resolvedTargetAmount - savingsDiscountAmount;
+  // Recalculate installmentAmount server-side dari finalTargetAmount
+  const installmentCount = body.installmentCount || 1;
+  const resolvedInstallmentAmount = Math.ceil(finalTargetAmount / installmentCount);
 
   // Validate period
   const period = await db
@@ -1194,15 +1522,33 @@ app.post("/savings", async (c) => {
       targetPeriodId: resolvedPeriodId,
       targetPackagePeriodId: resolvedPackagePeriodId, // New field for package-period junction
       targetPackageId: resolvedPackageId, // Legacy field for backward compatibility
-      targetAmount: resolvedTargetAmount,
+      discountId: savingsDiscount?.id || null,
+      discountAmount: savingsDiscountAmount,
+      targetAmount: finalTargetAmount,
       installmentFrequency: body.installmentFrequency,
-      installmentCount: body.installmentCount,
-      installmentAmount: body.installmentAmount,
+      installmentCount: installmentCount,
+      installmentAmount: resolvedInstallmentAmount,
       installmentDay: body.installmentDay,
       startDate: new Date(body.startDate),
       notes: body.notes,
     })
     .returning();
+
+  // Record discount usage (voucher dianggap terpakai saat tabungan dibuat)
+  if (savingsDiscount) {
+    await db.insert(qurbanDiscountUsages).values({
+      id: createId(),
+      discountId: savingsDiscount.id,
+      savingsId: newSavings[0].id,
+      userId: user.id,
+      donorPhone: body.donorPhone || null,
+      discountAmount: savingsDiscountAmount,
+    });
+    await db
+      .update(qurbanDiscounts)
+      .set({ usageCount: sql`${qurbanDiscounts.usageCount} + 1`, updatedAt: new Date() })
+      .where(eq(qurbanDiscounts.id, savingsDiscount.id));
+  }
 
   return c.json({
     success: true,
@@ -1449,6 +1795,11 @@ app.post("/savings/:id/convert", async (c) => {
   }
 
   // Create order (already paid from savings)
+  // totalAmount dari savings.targetAmount (sudah include discount)
+  const convertedTotalAmount = Number(savings.targetAmount || 0);
+  const convertedDiscountId = savings.discountId || null;
+  const convertedDiscountAmount = Number(savings.discountAmount || 0);
+
   const newOrder = await db
     .insert(qurbanOrders)
     .values({
@@ -1462,10 +1813,12 @@ app.post("/savings/:id/convert", async (c) => {
       packagePeriodId: targetPackagePeriodId,
       sharedGroupId,
       quantity: 1,
-      unitPrice: packagePrice,
-      totalAmount: packagePrice,
+      unitPrice: packagePrice,              // harga asli (untuk audit)
+      discountId: convertedDiscountId,
+      discountAmount: convertedDiscountAmount,
+      totalAmount: convertedTotalAmount,    // sudah discounted
       paymentMethod: "savings_conversion",
-      paidAmount: packagePrice, // Covered by savings allocation
+      paidAmount: convertedTotalAmount,     // Covered by savings allocation
       paymentStatus: "paid",
       orderStatus: "confirmed",
       onBehalfOf: body.onBehalfOf || savings.donorName,
@@ -1473,6 +1826,18 @@ app.post("/savings/:id/convert", async (c) => {
       notes: body.notes || "Konversi tabungan (non-cash)",
     })
     .returning();
+
+  // Insert discount usage traceability untuk order (jika savings punya discount)
+  if (convertedDiscountId) {
+    await db.insert(qurbanDiscountUsages).values({
+      id: createId(),
+      discountId: convertedDiscountId,
+      orderId: newOrder[0].id,
+      userId: savings.userId,
+      donorPhone: savings.donorPhone || null,
+      discountAmount: convertedDiscountAmount,
+    });
+  }
 
   const [allocationTx] = await db
     .insert(transactions)
@@ -1504,7 +1869,7 @@ app.post("/savings/:id/convert", async (c) => {
         is_non_cash: true,
         savings_id: savings.id,
         savings_number: savings.savingsNumber,
-        converted_amount: packagePrice,
+        converted_amount: convertedTotalAmount,
         order_id: newOrder[0].id,
         order_number: newOrder[0].orderNumber,
       },

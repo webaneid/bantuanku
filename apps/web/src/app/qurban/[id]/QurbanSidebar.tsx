@@ -19,6 +19,15 @@ interface AvailablePeriod {
   price: number;
 }
 
+interface ActiveDiscount {
+  id: string;
+  name: string;
+  discountType: string;
+  discountValue: number;
+  discountAmount: number;
+  finalPrice: number;
+}
+
 interface QurbanSidebarProps {
   qurbanPackage: {
     packagePeriodId: string; // Unique ID for package-period combination
@@ -38,6 +47,7 @@ interface QurbanSidebarProps {
     ownerName?: string;
     ownerLogoUrl?: string | null;
     ownerSlug?: string | null;
+    activeDiscount?: ActiveDiscount | null;
   };
   periods: any[];
   adminFeeCow: number;
@@ -60,6 +70,12 @@ export default function QurbanSidebar({
   const [isMounted, setIsMounted] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+
+  // Voucher state (only shown when no auto discount)
+  const [voucherInput, setVoucherInput] = useState('');
+  const [appliedVoucher, setAppliedVoucher] = useState<ActiveDiscount | null>(null);
+  const [voucherError, setVoucherError] = useState('');
+  const [isValidatingVoucher, setIsValidatingVoucher] = useState(false);
 
   useEffect(() => { setIsMounted(true); }, []);
 
@@ -101,10 +117,51 @@ export default function QurbanSidebar({
 
   const adminFee = calculateAdminFee();
 
+  // Determine effective discount (auto > voucher)
+  const effectiveDiscount = qurbanPackage.activeDiscount || appliedVoucher;
+  const discountAmountPerUnit = effectiveDiscount ? effectiveDiscount.discountAmount : 0;
+  const totalDiscountAmount = discountAmountPerUnit * quantity;
+
   // Calculate total
   const subtotal = qurbanPackage.price * quantity;
   const totalAdminFee = adminFee * quantity;
-  const total = subtotal + totalAdminFee;
+  const total = subtotal - totalDiscountAmount + totalAdminFee;
+
+  const handleValidateVoucher = async () => {
+    if (!voucherInput.trim()) return;
+    setIsValidatingVoucher(true);
+    setVoucherError('');
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const resp = await fetch(`${apiUrl}/v1/qurban/discounts/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: voucherInput.trim().toUpperCase(),
+          packagePeriodId: qurbanPackage.packagePeriodId,
+        }),
+      });
+      const json = await resp.json();
+      if (!resp.ok || !json.success) {
+        setVoucherError(json.message || 'Kode voucher tidak valid');
+        setAppliedVoucher(null);
+      } else {
+        setAppliedVoucher({
+          id: json.data.discountId,
+          name: json.data.name,
+          discountType: json.data.discountType,
+          discountValue: json.data.discountValue,
+          discountAmount: json.data.discountAmount,
+          finalPrice: json.data.finalPrice,
+        });
+        setVoucherError('');
+      }
+    } catch {
+      setVoucherError('Gagal memvalidasi voucher');
+    } finally {
+      setIsValidatingVoucher(false);
+    }
+  };
 
   // Check availability
   const isAvailable = qurbanPackage.packageType === 'individual'
@@ -196,10 +253,80 @@ export default function QurbanSidebar({
                 : t('qurbanDetail.sidebar.unit.slot'),
             })}
           </div>
-          <div className="text-2xl font-bold text-primary-600 mono">
-            Rp {formatRupiah(qurbanPackage.price)}
-          </div>
+          {effectiveDiscount ? (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-base line-through text-gray-400 mono">
+                  Rp {formatRupiah(qurbanPackage.price)}
+                </span>
+                <span className="text-xs font-semibold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                  {effectiveDiscount.discountType === 'percentage'
+                    ? `Diskon ${effectiveDiscount.discountValue}%`
+                    : `Hemat Rp ${formatRupiah(effectiveDiscount.discountAmount)}`}
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-primary-600 mono">
+                Rp {formatRupiah(effectiveDiscount.finalPrice)}
+              </div>
+            </div>
+          ) : (
+            <div className="text-2xl font-bold text-primary-600 mono">
+              Rp {formatRupiah(qurbanPackage.price)}
+            </div>
+          )}
         </div>
+
+        {/* Discount / Voucher section */}
+        {qurbanPackage.activeDiscount ? (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-sm font-semibold text-green-800">
+              Diskon otomatis aktif: {qurbanPackage.activeDiscount.name}
+            </p>
+            <p className="text-xs text-green-700 mt-0.5">
+              Harga sudah termasuk diskon otomatis
+            </p>
+          </div>
+        ) : (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Punya Kode Voucher?</label>
+            {appliedVoucher ? (
+              <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg">
+                <div>
+                  <p className="text-sm font-semibold text-green-800">{appliedVoucher.name}</p>
+                  <p className="text-xs text-green-700">
+                    Hemat Rp {formatRupiah(appliedVoucher.discountAmount)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setAppliedVoucher(null); setVoucherInput(''); }}
+                  className="text-xs text-red-600 hover:text-red-800 underline"
+                >
+                  Hapus
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={voucherInput}
+                  onChange={(e) => setVoucherInput(e.target.value.toUpperCase())}
+                  placeholder="Masukkan kode voucher"
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <button
+                  onClick={handleValidateVoucher}
+                  disabled={isValidatingVoucher || !voucherInput.trim()}
+                  className="px-3 py-2 text-sm font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {isValidatingVoucher ? '...' : 'Terapkan'}
+                </button>
+              </div>
+            )}
+            {voucherError && (
+              <p className="text-xs text-red-600 mt-1">{voucherError}</p>
+            )}
+          </div>
+        )}
 
         {/* Stock/Slots Info */}
         <div className="mb-6 p-3 bg-gray-50 rounded-lg">
@@ -277,6 +404,12 @@ export default function QurbanSidebar({
                 <span className="text-gray-600">{t('qurbanDetail.sidebar.summary.subtotal')}</span>
                 <span className="font-medium mono">Rp {formatRupiah(subtotal)}</span>
               </div>
+              {totalDiscountAmount > 0 && (
+                <div className="flex justify-between text-sm text-green-700">
+                  <span>Diskon</span>
+                  <span className="font-medium mono">- Rp {formatRupiah(totalDiscountAmount)}</span>
+                </div>
+              )}
               <div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('qurbanDetail.sidebar.summary.adminFee', { quantity })}</span>
@@ -367,6 +500,12 @@ export default function QurbanSidebar({
               <span className="text-gray-600">{t('qurbanDetail.sidebar.summary.subtotal')}</span>
               <span className="font-medium mono">Rp {formatRupiah(subtotal)}</span>
             </div>
+            {totalDiscountAmount > 0 && (
+              <div className="flex justify-between text-sm text-green-700">
+                <span>Diskon</span>
+                <span className="font-medium mono">- Rp {formatRupiah(totalDiscountAmount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">{t('qurbanDetail.sidebar.summary.adminFee', { quantity })}</span>
               <span className="font-medium mono">Rp {formatRupiah(totalAdminFee)}</span>
@@ -501,6 +640,8 @@ export default function QurbanSidebar({
         }}
         total={total}
         adminFee={totalAdminFee}
+        discountAmount={totalDiscountAmount}
+        voucherCode={appliedVoucher ? voucherInput : undefined}
       />
 
       {/* Share Modal */}
