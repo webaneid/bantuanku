@@ -9,8 +9,10 @@ import {
   PencilIcon,
   TrashIcon,
   PlusIcon,
+  ArrowUpTrayIcon,
 } from "@heroicons/react/24/outline";
 import MustahiqModal from "@/components/modals/MustahiqModal";
+import ImportMustahiqModal from "@/components/modals/ImportMustahiqModal";
 import Autocomplete from "@/components/Autocomplete";
 import FeedbackDialog from "@/components/FeedbackDialog";
 
@@ -54,6 +56,7 @@ export default function MustahiqsPage() {
   const [asnafFilter, setAsnafFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedMustahiq, setSelectedMustahiq] = useState<Mustahiq | null>(null);
   const [isViewMode, setIsViewMode] = useState(false);
   const [mustahiqToDelete, setMustahiqToDelete] = useState<Mustahiq | null>(null);
@@ -176,14 +179,24 @@ export default function MustahiqsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Mustahiq Zakat</h1>
           <p className="text-gray-600 mt-1">Kelola data penerima zakat (mustahiq)</p>
         </div>
-        <button
-          type="button"
-          onClick={handleCreate}
-          className="btn btn-primary btn-md"
-        >
-          <PlusIcon className="w-5 h-5" />
-          Tambah Mustahiq
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="btn btn-ghost btn-md"
+            onClick={() => setIsImportModalOpen(true)}
+          >
+            <ArrowUpTrayIcon className="w-5 h-5" />
+            Import
+          </button>
+          <button
+            type="button"
+            onClick={handleCreate}
+            className="btn btn-primary btn-md"
+          >
+            <PlusIcon className="w-5 h-5" />
+            Tambah Mustahiq
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -412,6 +425,12 @@ export default function MustahiqsPage() {
           </div>
         </div>
       )}
+
+      <ImportMustahiqModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["mustahiqs"] })}
+      />
 
       <FeedbackDialog
         open={feedback.open}

@@ -441,4 +441,7 @@ app.delete("/:id", requireRole("super_admin", "admin_campaign"), async (c) => {
   }
 });
 
+import mustahiqImportRoute from "./mustahiq-import";
+app.route("/import", mustahiqImportRoute);
+
 export default app;
