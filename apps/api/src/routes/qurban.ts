@@ -1144,6 +1144,7 @@ app.post("/savings", async (c) => {
   let resolvedPeriodId = body.targetPeriodId as string | undefined;
   let resolvedPackageId = body.targetPackageId as string | undefined;
   let resolvedPackagePeriodId = body.targetPackagePeriodId as string | undefined;
+  let resolvedTargetAmount: number = body.targetAmount;
 
   if (resolvedPackagePeriodId) {
     const packagePeriod = await db.query.qurbanPackagePeriods.findFirst({
@@ -1154,6 +1155,8 @@ app.post("/savings", async (c) => {
     }
     resolvedPeriodId = resolvedPeriodId || packagePeriod.periodId;
     resolvedPackageId = resolvedPackageId || packagePeriod.packageId;
+    // targetAmount wajib dari harga paket — tidak boleh dari client
+    resolvedTargetAmount = packagePeriod.price;
   }
 
   if (!resolvedPeriodId) {
@@ -1191,7 +1194,7 @@ app.post("/savings", async (c) => {
       targetPeriodId: resolvedPeriodId,
       targetPackagePeriodId: resolvedPackagePeriodId, // New field for package-period junction
       targetPackageId: resolvedPackageId, // Legacy field for backward compatibility
-      targetAmount: body.targetAmount,
+      targetAmount: resolvedTargetAmount,
       installmentFrequency: body.installmentFrequency,
       installmentCount: body.installmentCount,
       installmentAmount: body.installmentAmount,

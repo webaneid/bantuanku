@@ -1870,28 +1870,8 @@ app.post("/orders/:id/approve-payment", requireRole("super_admin", "admin_campai
       .where(eq(qurbanPayments.id, payment.id));
   }
 
-  // If order is in a shared group, increment slots_filled
-  if (order[0].sharedGroupId && order[0].paymentStatus !== "paid") {
-    const currentGroup = await db
-      .select()
-      .from(qurbanSharedGroups)
-      .where(eq(qurbanSharedGroups.id, order[0].sharedGroupId))
-      .limit(1);
-
-    if (currentGroup.length > 0) {
-      const newSlotsFilled = currentGroup[0].slotsFilled + 1;
-      const newStatus = newSlotsFilled >= currentGroup[0].maxSlots ? "full" : "open";
-
-      await db
-        .update(qurbanSharedGroups)
-        .set({
-          slotsFilled: newSlotsFilled,
-          status: newStatus,
-          updatedAt: new Date(),
-        })
-        .where(eq(qurbanSharedGroups.id, order[0].sharedGroupId));
-    }
-  }
+  // slotsFilled sudah di-increment saat order dibuat (reservation model)
+  // Tidak perlu increment lagi di sini
 
   return c.json({ message: "Payment approved successfully" });
 });

@@ -626,9 +626,31 @@ app.post("/", requireRole("super_admin", "admin_campaign"), async (c) => {
       console.error("Validation failed: Missing targetPeriodId");
       return c.json({ error: "Periode target wajib dipilih" }, 400);
     }
-    if (!body.targetAmount || !body.installmentAmount) {
-      console.error("Validation failed: Missing amounts");
-      return c.json({ error: "Target amount dan installment amount wajib diisi" }, 400);
+    if (!body.installmentAmount) {
+      console.error("Validation failed: Missing installmentAmount");
+      return c.json({ error: "Installment amount wajib diisi" }, 400);
+    }
+
+    // Jika package dan periode dipilih, ambil harga dari DB — tidak dari client
+    let resolvedTargetAmount: number = body.targetAmount;
+    if (body.targetPackageId && body.targetPeriodId) {
+      const pkgPeriod = await db
+        .select({ price: qurbanPackagePeriods.price })
+        .from(qurbanPackagePeriods)
+        .where(
+          and(
+            eq(qurbanPackagePeriods.packageId, body.targetPackageId),
+            eq(qurbanPackagePeriods.periodId, body.targetPeriodId)
+          )
+        )
+        .limit(1);
+      if (pkgPeriod.length > 0) {
+        resolvedTargetAmount = pkgPeriod[0].price;
+      }
+    }
+
+    if (!resolvedTargetAmount) {
+      return c.json({ error: "Target amount wajib diisi (atau pilih paket & periode)" }, 400);
     }
 
     // Generate savings number
@@ -647,7 +669,7 @@ app.post("/", requireRole("super_admin", "admin_campaign"), async (c) => {
         donorPhone: body.donorPhone,
         targetPeriodId: body.targetPeriodId,
         targetPackageId: body.targetPackageId || null,
-        targetAmount: body.targetAmount,
+        targetAmount: resolvedTargetAmount,
         currentAmount: 0,
         installmentFrequency: body.installmentFrequency,
         installmentCount: body.installmentCount || 6,
