@@ -175,8 +175,8 @@ export default function ImportDonaturModal({ isOpen, onClose, onSuccess }: Props
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-container max-w-3xl">
+    <div className="modal-backdrop" onClick={handleClose}>
+      <div className="modal-content max-w-3xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <h2 className="modal-title">Import Donatur</h2>
