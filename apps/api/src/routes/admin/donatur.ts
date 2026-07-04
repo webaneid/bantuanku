@@ -248,7 +248,6 @@ donaturAdmin.post(
   requireRole("super_admin", "admin_campaign"),
   zValidator("json", createDonaturSchema, (result, c) => {
     if (!result.success) {
-      console.log("Validation error:", JSON.stringify(result.error.flatten(), null, 2));
       const fieldErrors = result.error.flatten().fieldErrors;
       const errorMessages = Object.entries(fieldErrors).map(([field, errors]) =>
         `${field}: ${errors?.join(", ")}`
@@ -265,7 +264,6 @@ donaturAdmin.post(
   }),
   async (c) => {
     const body = c.req.valid("json");
-    console.log("Create donatur body:", JSON.stringify(body, null, 2));
     const db = c.get("db");
 
     // Normalize contact data

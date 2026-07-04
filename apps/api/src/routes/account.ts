@@ -3,26 +3,12 @@ import { eq, desc, sql, or, and } from "drizzle-orm";
 import { zakatCalculationLogs, notifications, users, transactions, donatur } from "@bantuanku/db";
 import { success, error, paginated } from "../lib/response";
 import { authMiddleware } from "../middleware/auth";
+import { normalizePhone } from "../lib/contact-helpers";
 import type { Env, Variables } from "../types";
 
 const account = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 account.use("*", authMiddleware);
-
-// Helper: Normalize phone number
-const normalizePhone = (input: string | null | undefined): string | null => {
-  if (!input) return null;
-  let cleaned = input.replace(/[^\d+]/g, "");
-  if (cleaned.startsWith("+62")) {
-    cleaned = "0" + cleaned.substring(3);
-  } else if (cleaned.startsWith("62") && cleaned.length > 10) {
-    cleaned = "0" + cleaned.substring(2);
-  }
-  if (cleaned && !cleaned.startsWith("0")) {
-    cleaned = "0" + cleaned;
-  }
-  return cleaned;
-};
 
 // Get all transactions for current user
 account.get("/donations", async (c) => {

@@ -295,8 +295,8 @@ export default function MustahiqModal({
   };
 
   const genderOptions = [
-    { value: "male", label: "Laki-laki" },
-    { value: "female", label: "Perempuan" },
+    { value: "laki-laki", label: "Laki-laki" },
+    { value: "perempuan", label: "Perempuan" },
   ];
 
   const closeFeedback = () => {

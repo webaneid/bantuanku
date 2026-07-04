@@ -27,7 +27,7 @@ export const donatur = pgTable("donatur", {
   districtCode: text("district_code").references(() => indonesiaDistricts.code),
   villageCode: text("village_code").references(() => indonesiaVillages.code),
 
-  userId: text("user_id").references(() => users.id),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
   jobTitleId: integer("job_title_id").references(() => jobTitles.id, { onDelete: "set null" }),
   incomeRangeId: integer("income_range_id").references(() => incomeRanges.id, { onDelete: "set null" }),
 

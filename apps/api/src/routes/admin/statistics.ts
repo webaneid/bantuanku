@@ -169,21 +169,35 @@ statistics.get("/donatur/export", requireRole("super_admin", "admin_finance", "a
       name: donatur.name,
       email: donatur.email,
       phone: donatur.phone,
+      whatsappNumber: donatur.whatsappNumber,
       nik: donatur.nik,
+      npwp: donatur.npwp,
       gender: donatur.gender,
       birthPlace: donatur.birthPlace,
       birthDate: donatur.birthDate,
       jobTitleName: jobTitles.name,
       jobCategoryName: jobCategories.name,
       incomeRangeLabel: incomeRanges.label,
+      provinceName: indonesiaProvinces.name,
+      regencyName: indonesiaRegencies.name,
+      districtName: indonesiaDistricts.name,
+      villageName: indonesiaVillages.name,
+      detailAddress: donatur.detailAddress,
       totalDonations: donatur.totalDonations,
       totalAmount: donatur.totalAmount,
+      isActive: donatur.isActive,
+      lastLoginAt: donatur.lastLoginAt,
+      hasAccount: sql<boolean>`(${donatur.userId} IS NOT NULL)`,
       createdAt: donatur.createdAt,
     })
     .from(donatur)
     .leftJoin(jobTitles, eq(donatur.jobTitleId, jobTitles.id))
     .leftJoin(jobCategories, eq(jobTitles.categoryId, jobCategories.id))
     .leftJoin(incomeRanges, eq(donatur.incomeRangeId, incomeRanges.id))
+    .leftJoin(indonesiaProvinces, eq(donatur.provinceCode, indonesiaProvinces.code))
+    .leftJoin(indonesiaRegencies, eq(donatur.regencyCode, indonesiaRegencies.code))
+    .leftJoin(indonesiaDistricts, eq(donatur.districtCode, indonesiaDistricts.code))
+    .leftJoin(indonesiaVillages, eq(donatur.villageCode, indonesiaVillages.code))
     .where(whereClause)
     .orderBy(desc(donatur.createdAt));
 
@@ -191,15 +205,25 @@ statistics.get("/donatur/export", requireRole("super_admin", "admin_finance", "a
     { header: "Nama", key: "name" },
     { header: "Email", key: "email" },
     { header: "Telepon", key: "phone" },
+    { header: "WhatsApp", key: "whatsappNumber" },
     { header: "NIK", key: "nik" },
-    { header: "Jenis Kelamin", key: "gender", format: (v: unknown) => v === "male" ? "Laki-laki" : v === "female" ? "Perempuan" : String(v ?? "") },
+    { header: "NPWP", key: "npwp" },
+    { header: "Jenis Kelamin", key: "gender", format: (v: unknown) => v === "laki-laki" ? "Laki-laki" : v === "perempuan" ? "Perempuan" : String(v ?? "") },
     { header: "Tempat Lahir", key: "birthPlace" },
-    { header: "Tanggal Lahir", key: "birthDate" },
+    { header: "Tanggal Lahir", key: "birthDate", format: formatDate },
     { header: "Pekerjaan", key: "jobTitleName" },
     { header: "Kategori Pekerjaan", key: "jobCategoryName" },
     { header: "Penghasilan", key: "incomeRangeLabel" },
+    { header: "Provinsi", key: "provinceName" },
+    { header: "Kabupaten/Kota", key: "regencyName" },
+    { header: "Kecamatan", key: "districtName" },
+    { header: "Kelurahan/Desa", key: "villageName" },
+    { header: "Alamat Detail", key: "detailAddress" },
     { header: "Total Donasi", key: "totalDonations" },
     { header: "Total Nominal", key: "totalAmount", format: formatCurrency },
+    { header: "Status", key: "isActive", format: (v: unknown) => v ? "Aktif" : "Nonaktif" },
+    { header: "Punya Akun Login", key: "hasAccount", format: (v: unknown) => v ? "Ya" : "Tidak" },
+    { header: "Login Terakhir", key: "lastLoginAt", format: formatDate },
     { header: "Terdaftar", key: "createdAt", format: formatDate },
   ];
 
@@ -394,7 +418,7 @@ statistics.get("/mustahiq/export", requireRole("super_admin", "admin_finance", "
     { header: "Nama", key: "name" },
     { header: "Kategori Asnaf", key: "asnafCategory", format: (v: unknown) => asnafLabels[String(v ?? "")] || String(v ?? "") },
     { header: "NIK", key: "nationalId" },
-    { header: "Jenis Kelamin", key: "gender", format: (v: unknown) => v === "male" ? "Laki-laki" : v === "female" ? "Perempuan" : String(v ?? "") },
+    { header: "Jenis Kelamin", key: "gender", format: (v: unknown) => v === "laki-laki" ? "Laki-laki" : v === "perempuan" ? "Perempuan" : String(v ?? "") },
     { header: "Tempat Lahir", key: "birthPlace" },
     { header: "Tanggal Lahir", key: "dateOfBirth", format: formatDate },
     { header: "Nama Ibu Kandung", key: "motherName" },

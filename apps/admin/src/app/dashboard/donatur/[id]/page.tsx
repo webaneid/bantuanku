@@ -44,11 +44,11 @@ export default function ViewDonaturPage() {
     },
   });
 
-  // Fetch transactions history (universal)
+  // Fetch transactions history via dedicated donatur endpoint (accessible semua role staff)
   const { data: transactionsData } = useQuery({
     queryKey: ["transactions-by-donatur", donaturId],
     queryFn: async () => {
-      const response = await api.get(`/transactions?donatur_id=${donaturId}&status=paid&limit=1000`);
+      const response = await api.get(`/admin/donatur/${donaturId}/donations?limit=1000`);
       return response.data.data || [];
     },
     enabled: !!donaturId,

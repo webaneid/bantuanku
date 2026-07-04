@@ -7,6 +7,7 @@ import { users, userRoles, roles, createId, authOtpCodes, donatur as donaturTabl
 import { hashPassword, verifyPassword } from "../lib/password";
 import { signToken, signRefreshToken, verifyRefreshToken } from "../lib/jwt";
 import { success, error } from "../lib/response";
+import { normalizePhone } from "../lib/contact-helpers";
 import { authMiddleware } from "../middleware/auth";
 import { authRateLimit } from "../middleware/ratelimit";
 import { WhatsAppService } from "../services/whatsapp";
@@ -40,19 +41,6 @@ const forgotPasswordResetSchema = z.object({
 const FORGOT_PASSWORD_PURPOSE = "forgot_password";
 const OTP_TTL_MINUTES = 5;
 const OTP_MAX_ATTEMPTS = 5;
-
-function normalizePhone(input: string): string {
-  let cleaned = input.replace(/[^\d+]/g, "");
-  if (cleaned.startsWith("+62")) {
-    cleaned = "0" + cleaned.substring(3);
-  } else if (cleaned.startsWith("62") && cleaned.length > 10) {
-    cleaned = "0" + cleaned.substring(2);
-  }
-  if (cleaned && !cleaned.startsWith("0")) {
-    cleaned = "0" + cleaned;
-  }
-  return cleaned;
-}
 
 function toPhoneVariants(input: string): string[] {
   const normalized = normalizePhone(input);
@@ -191,7 +179,6 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
           customer_phone: phone || whatsappNumber,
         },
       });
-      console.log("[WA] welcome notification result:", waResult);
     } catch (err) {
       console.error("[WA] welcome notification error:", err);
     }
@@ -562,13 +549,6 @@ auth.get("/me", authMiddleware, async (c) => {
 
   const dbRoles = userRolesList.map((ur) => (ur as any).role?.slug).filter(Boolean);
 
-  console.log("=== /auth/me Debug ===");
-  console.log("User ID:", currentUser!.id);
-  console.log("User data from DB:", user);
-  console.log("Donatur profile:", donaturProfile);
-  console.log("Roles from JWT:", currentUser!.roles);
-  console.log("Roles from DB:", dbRoles);
-
   const responseData = {
     ...user,
     // Include donatur profile fields
@@ -593,10 +573,7 @@ auth.get("/me", authMiddleware, async (c) => {
     bankAccounts,
     roles: currentUser!.roles,
     isDeveloper: Boolean(user.isDeveloper),
-    dbRoles: dbRoles, // Add this for debugging
   };
-
-  console.log("Response data:", responseData);
 
   return success(c, responseData);
 });
@@ -1203,20 +1180,6 @@ auth.get("/check-registration", async (c) => {
   if (!email && !phone) {
     return error(c, "Email or phone required", 400);
   }
-
-  // Normalize phone
-  const normalizePhone = (input: string): string => {
-    let cleaned = input.replace(/[^\d+]/g, "");
-    if (cleaned.startsWith("+62")) {
-      cleaned = "0" + cleaned.substring(3);
-    } else if (cleaned.startsWith("62") && cleaned.length > 10) {
-      cleaned = "0" + cleaned.substring(2);
-    }
-    if (cleaned && !cleaned.startsWith("0")) {
-      cleaned = "0" + cleaned;
-    }
-    return cleaned;
-  };
 
   const normalizedPhone = phone ? normalizePhone(phone) : undefined;
 

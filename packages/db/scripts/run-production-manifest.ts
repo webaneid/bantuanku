@@ -193,6 +193,12 @@ const CORE_EXISTING: MigrationEntry[] = [
   {
     file: "packages/db/migrations/115_add_fk_mustahiq_to_zakat_distributions.sql",
   },
+  {
+    file: "packages/db/migrations/116_normalize_mustahiq_gender_to_indonesian.sql",
+  },
+  {
+    file: "packages/db/migrations/117_add_on_delete_set_null_donatur_user_id.sql",
+  },
 ];
 
 const args = process.argv.slice(2);
