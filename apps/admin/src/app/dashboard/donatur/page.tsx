@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PlusIcon, PencilIcon, EyeIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, PencilIcon, EyeIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 import DonorModal from "@/components/modals/DonorModal";
+import ImportDonaturModal from "@/components/modals/ImportDonaturModal";
 import FeedbackDialog from "@/components/FeedbackDialog";
 
 interface Donatur {
@@ -28,6 +29,7 @@ export default function DonaturPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingDonatur, setEditingDonatur] = useState<Donatur | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [feedback, setFeedback] = useState({
@@ -99,14 +101,24 @@ export default function DonaturPage() {
           <h1 className="text-2xl font-bold text-gray-900">Donatur</h1>
           <p className="text-gray-600 mt-1">Kelola data donatur dan riwayat donasi</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary btn-md"
-          onClick={openCreateModal}
-        >
-          <PlusIcon className="w-5 h-5" />
-          Tambah Donatur
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="btn btn-ghost btn-md"
+            onClick={() => setIsImportModalOpen(true)}
+          >
+            <ArrowUpTrayIcon className="w-5 h-5" />
+            Import
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary btn-md"
+            onClick={openCreateModal}
+          >
+            <PlusIcon className="w-5 h-5" />
+            Tambah Donatur
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -275,6 +287,12 @@ export default function DonaturPage() {
               userId: editingDonatur.userId ?? undefined,
             }
           : null}
+      />
+
+      <ImportDonaturModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["donatur"] })}
       />
 
       <FeedbackDialog

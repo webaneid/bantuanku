@@ -138,25 +138,12 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
   // Link existing transactions to new user account
   const { or } = await import("drizzle-orm");
 
-  const normalizeTransactionPhone = (input: string): string => {
-    let cleaned = input.replace(/[^\d+]/g, "");
-    if (cleaned.startsWith("+62")) {
-      cleaned = "0" + cleaned.substring(3);
-    } else if (cleaned.startsWith("62") && cleaned.length > 10) {
-      cleaned = "0" + cleaned.substring(2);
-    }
-    if (cleaned && !cleaned.startsWith("0")) {
-      cleaned = "0" + cleaned;
-    }
-    return cleaned;
-  };
-
   const conditions = [eq(transactions.donorEmail, email.toLowerCase().trim())];
   if (phone) {
-    conditions.push(eq(transactions.donorPhone, normalizeTransactionPhone(phone)));
+    conditions.push(eq(transactions.donorPhone, normalizePhone(phone)));
   }
   if (whatsappNumber) {
-    conditions.push(eq(transactions.donorPhone, normalizeTransactionPhone(whatsappNumber)));
+    conditions.push(eq(transactions.donorPhone, normalizePhone(whatsappNumber)));
   }
 
   if (conditions.length > 0) {

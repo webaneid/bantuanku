@@ -759,4 +759,7 @@ donaturAdmin.post("/:id/activate-user", requireRole("super_admin"), async (c) =>
   }
 });
 
+import donaturImportRoute from "./donatur-import";
+donaturAdmin.route("/import", donaturImportRoute);
+
 export default donaturAdmin;

@@ -17,6 +17,7 @@ import {
   type NewTransaction,
   type Transaction,
 } from "@bantuanku/db";
+import { normalizePhone } from "../lib/contact-helpers";
 
 interface CreateTransactionDTO {
   product_type: "campaign" | "zakat" | "qurban";
@@ -60,19 +61,6 @@ export class TransactionService {
     return `TRX-${year}${month}${day}-${timestamp}`;
   }
 
-  private normalizePhone(input: string): string {
-    let cleaned = input.replace(/[^\d+]/g, "");
-    if (cleaned.startsWith("+62")) {
-      cleaned = "0" + cleaned.substring(3);
-    } else if (cleaned.startsWith("62") && cleaned.length > 10) {
-      cleaned = "0" + cleaned.substring(2);
-    }
-    if (cleaned && !cleaned.startsWith("0")) {
-      cleaned = "0" + cleaned;
-    }
-    return cleaned;
-  }
-
   private normalizeEmail(input?: string): string | undefined {
     return input?.toLowerCase().trim();
   }
@@ -83,7 +71,7 @@ export class TransactionService {
     phone?: string;
   }): Promise<string> {
     const normalizedEmail = data.email?.toLowerCase().trim();
-    const normalizedPhone = data.phone ? this.normalizePhone(data.phone) : undefined;
+    const normalizedPhone = data.phone ? normalizePhone(data.phone) : undefined;
 
     // Try to find existing donatur by email or phone
     const conditions = [];
@@ -376,12 +364,12 @@ export class TransactionService {
 
           if (fundraiserDonatur) {
             const donorEmail = this.normalizeEmail(data.donor_email);
-            const donorPhone = data.donor_phone ? this.normalizePhone(data.donor_phone) : undefined;
+            const donorPhone = data.donor_phone ? normalizePhone(data.donor_phone) : undefined;
 
             const ownerEmail = this.normalizeEmail(fundraiserDonatur.email);
-            const ownerPhone = fundraiserDonatur.phone ? this.normalizePhone(fundraiserDonatur.phone) : undefined;
+            const ownerPhone = fundraiserDonatur.phone ? normalizePhone(fundraiserDonatur.phone) : undefined;
             const ownerWhatsapp = fundraiserDonatur.whatsappNumber
-              ? this.normalizePhone(fundraiserDonatur.whatsappNumber)
+              ? normalizePhone(fundraiserDonatur.whatsappNumber)
               : undefined;
 
             const sameEmail = Boolean(donorEmail && ownerEmail && donorEmail === ownerEmail);
