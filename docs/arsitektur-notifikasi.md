@@ -230,6 +230,33 @@ Cron endpoint: `GET /cron/wa-birthday?secret=JWT_SECRET` — direkomendasikan ja
 0 1 * * * curl -s "https://api.bantuanku.org/cron/wa-birthday?secret=JWT_SECRET_VALUE"
 ```
 
+## Re-engagement Reminder Cron
+
+File: `apps/api/src/services/reengagement-reminder.ts`
+
+Cron endpoint: `GET /cron/wa-reengagement?secret=JWT_SECRET` — direkomendasikan jalan jam 10:00 WIB (03:00 UTC).
+
+| Setting | Nilai |
+|---------|-------|
+| Query audience | `donatur` aktif, `wa_opt_out=false`, `total_donations > 0`, punya phone, last paid transaction < 62 hari lalu |
+| Anti-spam | Cek `wa_broadcast_logs` — skip jika sudah terima `wa_tpl_reengagement` dalam 62 hari terakhir |
+| Log | Buat `wa_broadcast_jobs` (type=reengagement) per run + `wa_broadcast_logs` per penerima |
+| Delay | 2s antar kirim pesan |
+| Template | `wa_tpl_reengagement` |
+
+Filter "last paid transaction" menggunakan correlated subquery:
+```sql
+(SELECT MAX(paid_at) FROM transactions
+ WHERE donatur_id = donatur.id AND payment_status = 'paid') < NOW() - INTERVAL '62 days'
+```
+Donatur yang belum pernah donasi otomatis ter-exclude karena `MAX(NULL) < date` = FALSE di PostgreSQL.
+
+**Crontab VPS:**
+```cron
+# Re-engagement: jam 10:00 WIB = 03:00 UTC
+0 3 * * * curl -s --get --data-urlencode "secret=JWT_SECRET_VALUE" https://api.bantuanku.org/cron/wa-reengagement >> /var/log/cron-reengagement.log 2>&1
+```
+
 ## Webhook WhatsApp Inbound
 
 Webhook publik berada di `POST /v1/whatsapp/webhook`.

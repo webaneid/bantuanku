@@ -116,6 +116,19 @@ app.get("/cron/wa-birthday", async (c) => {
   return c.json({ success: true, data: result });
 });
 
+// Cron endpoint: re-engagement reminders — daily 10:00 WIB (03:00 UTC)
+// Usage: curl "https://api.bantuanku.org/cron/wa-reengagement?secret=YOUR_SECRET"
+app.get("/cron/wa-reengagement", async (c) => {
+  const secret = c.req.query("secret");
+  if (!secret || secret !== c.env.JWT_SECRET) {
+    return c.json({ success: false, message: "Unauthorized" }, 401);
+  }
+  const db = c.get("db");
+  const { runReengagementReminders } = await import("./services/reengagement-reminder");
+  const result = await runReengagementReminders(db, c.env.FRONTEND_URL);
+  return c.json({ success: true, data: result });
+});
+
 // Serve uploaded files
 app.get("/uploads/:filename", async (c) => {
   try {

@@ -31,7 +31,7 @@ Berbeda dari `arsitektur-notifikasi.md` yang scope-nya event-driven per transaks
 | **1a. Campaign baru** | Admin centang saat publish campaign | Semua donatur aktif + punya WA + opt-in | Belum (Fase 6) |
 | **1b. Broadcast manual konten lama** | Admin pilih campaign/laporan lama | Semua / per-program / pilihan | Belum (Fase 7) |
 | **1c. Broadcast manual pesan bebas** | Admin tulis pesan langsung | Semua / per-program / pilihan | Belum (Fase 7) |
-| **2. Re-engagement** | Cron harian | Donatur yang 62+ hari tidak donasi | Belum (Fase 4) |
+| **2. Re-engagement** | Cron harian | Donatur yang 62+ hari tidak donasi | ✅ Selesai (Fase 4) |
 | **3. Ulang Tahun** | Cron harian | Donatur dengan `birthDate` = hari ini | ✅ Selesai (Fase 3) |
 
 > **Infrastruktur** (Fase 1 & 2 — selesai 2026-07-05):
@@ -290,6 +290,15 @@ WHERE d.is_active = true
   )
 ```
 
+**Implementasi:** `apps/api/src/services/reengagement-reminder.ts` + `GET /cron/wa-reengagement` di `apps/api/src/index.ts`
+
+**Catatan implementasi:**
+- Filter `donatur.totalDonations > 0` memastikan hanya donatur yang pernah donasi yang dikirim
+- Correlated subquery via Drizzle `sql` template: `MAX(transactions.paid_at) < 62 hari lalu` — filter di DB, tidak in-memory
+- Anti-spam 62 hari: batch query ke `wa_broadcast_logs` (1 query untuk semua kandidat)
+- Synthetic job entry per run cron (sama dengan Fase 3 — lesson learned: `wa_broadcast_logs.job_id NOT NULL`)
+- Delay 2s antar pesan
+
 **Perbedaan dari broadcast biasa:** Re-engagement tidak dibatch via job table — volume diharapkan lebih kecil dan targeted, dikirim langsung oleh cron (masih dengan delay 2s antar pesan). Tapi tetap log ke `wa_broadcast_logs` untuk anti-spam.
 
 **Template baru: `wa_tpl_reengagement`** (bisa diedit admin)
@@ -476,7 +485,7 @@ Semua template punya pasangan `{key}_enabled` toggle. Default: `enabled = true`.
 | **Fase 1** | Migration 119 (opt-out + broadcast tables + campaign field) | — | ✅ Selesai 2026-07-05 |
 | **Fase 2** | Opt-out: API (unsubscribe endpoint, patch me), UI profil web, UI admin donatur | Fase 1 | ✅ Selesai 2026-07-05 |
 | **Fase 3** | Birthday cron + template | Fase 1 | ✅ Selesai 2026-07-05 |
-| **Fase 4** | Re-engagement cron + template + anti-spam log | Fase 1, 3 | Belum |
+| **Fase 4** | Re-engagement cron + template + anti-spam log | Fase 1, 3 | ✅ Selesai 2026-07-05 |
 | **Fase 5** | Broadcast job service (batch processor cron) + halaman admin | Fase 1 | Belum |
 | **Fase 6** | Campaign broadcast toggle di form + auto-job saat publish | Fase 5 | Belum |
 | **Fase 7** | Manual broadcast UI (1b & 1c) + audience selection | Fase 5 | Belum |
