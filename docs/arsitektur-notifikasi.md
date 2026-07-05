@@ -120,6 +120,25 @@ Template berikut ada di migration/UI, tetapi tidak ditemukan sebagai trigger akt
 | `wa_tpl_payment_expired` | Ada setting/template, belum ada trigger pengiriman saat transaksi expired/cancelled |
 | `wa_tpl_savings_converted` | ~~Belum ada trigger~~ → **Sudah diimplementasikan 2026-07-05** di `POST /qurban/savings/:id/convert` (qurban.ts), fire-and-forget setelah savings status diset "converted" |
 
+## Endpoint Opt-Out / Preferensi WA (Publik & Donatur)
+
+Endpoint ini adalah bagian dari fitur Community Care (lihat `arsitektur-wa-community-care.md`).
+
+| Endpoint | Auth | Fungsi |
+|----------|------|--------|
+| `GET /v1/wa/unsubscribe?t=TOKEN` | Publik, no auth | Validasi JWT token 30 hari → set `waOptOut = true`. Response membedakan `alreadyOptedOut` vs baru opt-out |
+| `POST /v1/wa/opt-in` | Login (donatur) | Set `waOptOut = false, waOptOutAt = null` untuk donatur yang login |
+
+Token `t` adalah JWT HS256 dengan payload `{ sub: donaturId, purpose: "wa-unsubscribe" }`, expiry 30 hari, signed dengan `JWT_SECRET`.  
+Helper: `signUnsubscribeToken(donaturId, secret)` dan `verifyUnsubscribeToken(token, secret)` di `apps/api/src/lib/jwt.ts`.
+
+Field `waOptOut` juga ter-expose via:
+- `GET /v1/auth/me` → field `waOptOut: boolean` di response
+- `PATCH /v1/auth/me` → menerima `waOptOut: boolean`
+- `PUT /v1/admin/donatur/:id` → menerima `waOptOut: boolean`
+
+Halaman unsubscribe: `apps/web/src/app/berhenti/page.tsx` — menggunakan `useSearchParams()` dalam `<Suspense>` boundary (wajib untuk Next.js App Router).
+
 ## Endpoint Admin WhatsApp
 
 Semua endpoint admin berada di `/v1/admin/whatsapp` dan melewati guard staff/admin.

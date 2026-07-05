@@ -1,7 +1,7 @@
 # Arsitektur WhatsApp Community Care
 
-> Status: PERENCANAAN — belum diimplementasikan  
-> Dibuat: 2026-07-05  
+> Status: SEBAGIAN DIIMPLEMENTASIKAN — Fase 1 & 2 selesai, Fase 3–7 dalam antrian  
+> Dibuat: 2026-07-05 | Diperbarui: 2026-07-05  
 > Bergantung pada: `arsitektur-notifikasi.md`, `arsitektur-donatur.md`, `arsitektur-donasi.md`, `arsitektur-activity-reports.md`
 
 ---
@@ -28,11 +28,16 @@ Berbeda dari `arsitektur-notifikasi.md` yang scope-nya event-driven per transaks
 
 | Fitur | Trigger | Audience | Status |
 |-------|---------|----------|--------|
-| **1a. Campaign baru** | Admin centang saat publish campaign | Semua donatur aktif + punya WA + opt-in | Belum |
-| **1b. Broadcast manual konten lama** | Admin pilih campaign/laporan lama | Semua / per-program / pilihan | Belum |
-| **1c. Broadcast manual pesan bebas** | Admin tulis pesan langsung | Semua / per-program / pilihan | Belum |
-| **2. Re-engagement** | Cron harian | Donatur yang 62+ hari tidak donasi | Belum |
-| **3. Ulang Tahun** | Cron harian | Donatur dengan `birthDate` = hari ini | Belum |
+| **1a. Campaign baru** | Admin centang saat publish campaign | Semua donatur aktif + punya WA + opt-in | Belum (Fase 6) |
+| **1b. Broadcast manual konten lama** | Admin pilih campaign/laporan lama | Semua / per-program / pilihan | Belum (Fase 7) |
+| **1c. Broadcast manual pesan bebas** | Admin tulis pesan langsung | Semua / per-program / pilihan | Belum (Fase 7) |
+| **2. Re-engagement** | Cron harian | Donatur yang 62+ hari tidak donasi | Belum (Fase 4) |
+| **3. Ulang Tahun** | Cron harian | Donatur dengan `birthDate` = hari ini | Belum (Fase 3) |
+
+> **Infrastruktur** (Fase 1 & 2 — selesai 2026-07-05):
+> - Migration 119: tabel `wa_broadcast_jobs`, `wa_broadcast_logs`, kolom `donatur.waOptOut`, `campaigns.broadcastWa`
+> - Opt-out mechanism: `GET /v1/wa/unsubscribe`, `POST /v1/wa/opt-in`, toggle di profil web & admin donatur
+> - Halaman `/berhenti` (unsubscribe landing page)
 
 ---
 
@@ -380,13 +385,14 @@ Pesan WA broadcast → "Berhenti: {unsubscribe_url}"
 
 ### Opt-In Kembali
 
-- Via profil web: toggle "Terima info & program via WhatsApp" di `/account/profile`
-- Via admin panel: toggle di detail donatur
+- Via link unsubscribe: tombol "Berlangganan kembali" di halaman `/berhenti` → `POST /v1/wa/opt-in` (redirect ke login jika belum login)
+- Via profil web: toggle "Notifikasi WhatsApp" di `/account/profile` (auto-save saat toggle)
+- Via admin panel: toggle status WA di detail donatur (`/dashboard/donatur/[id]`)
 
 ### Field Baru di Profil
 
-`PATCH /v1/auth/me` terima field baru: `waOptOut: boolean`
-`PUT /v1/admin/donatur/:id` juga expose field ini.
+`PATCH /v1/auth/me` terima field baru: `waOptOut: boolean` — juga muncul di response `GET /v1/auth/me`  
+`PUT /v1/admin/donatur/:id` juga menerima dan menyimpan field ini.
 
 ---
 
@@ -416,7 +422,7 @@ Pola auth: sama dengan `/cron/savings-reminder` — secret = `JWT_SECRET`.
 
 ```
 GET  /v1/wa/unsubscribe?t=TOKEN           — publik, no auth
-POST /v1/account/wa/opt-in                — login required (donatur opt-in kembali)
+POST /v1/wa/opt-in                        — login required (donatur opt-in kembali)
 ```
 
 ---
@@ -456,17 +462,15 @@ Semua template punya pasangan `{key}_enabled` toggle. Default: `enabled = true`.
 
 ## Urutan Implementasi
 
-| Fase | Scope | Dependensi | Estimasi |
-|------|-------|------------|----------|
-| **Fase 1** | Migration 119 (opt-out + broadcast tables + campaign field) | — | 1 hari |
-| **Fase 2** | Opt-out: API (unsubscribe endpoint, patch me), UI profil web, UI admin donatur | Fase 1 | 1 hari |
-| **Fase 3** | Birthday cron + template | Fase 1 | 0,5 hari |
-| **Fase 4** | Re-engagement cron + template + anti-spam log | Fase 1, 3 | 1 hari |
-| **Fase 5** | Broadcast job service (batch processor cron) + halaman admin | Fase 1 | 2 hari |
-| **Fase 6** | Campaign broadcast toggle di form + auto-job saat publish | Fase 5 | 0,5 hari |
-| **Fase 7** | Manual broadcast UI (1b & 1c) + audience selection | Fase 5 | 1 hari |
-
-**Total estimasi: ~7 hari kerja.**
+| Fase | Scope | Dependensi | Status |
+|------|-------|------------|--------|
+| **Fase 1** | Migration 119 (opt-out + broadcast tables + campaign field) | — | ✅ Selesai 2026-07-05 |
+| **Fase 2** | Opt-out: API (unsubscribe endpoint, patch me), UI profil web, UI admin donatur | Fase 1 | ✅ Selesai 2026-07-05 |
+| **Fase 3** | Birthday cron + template | Fase 1 | Belum |
+| **Fase 4** | Re-engagement cron + template + anti-spam log | Fase 1, 3 | Belum |
+| **Fase 5** | Broadcast job service (batch processor cron) + halaman admin | Fase 1 | Belum |
+| **Fase 6** | Campaign broadcast toggle di form + auto-job saat publish | Fase 5 | Belum |
+| **Fase 7** | Manual broadcast UI (1b & 1c) + audience selection | Fase 5 | Belum |
 
 Urutan dipilih supaya hal paling kritikal (opt-out) jalan duluan, dan kompleksitas naik bertahap. Fase 3 dan 4 bisa dikerjakan paralel dengan Fase 5.
 
