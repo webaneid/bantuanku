@@ -129,6 +129,19 @@ app.get("/cron/wa-reengagement", async (c) => {
   return c.json({ success: true, data: result });
 });
 
+// Cron endpoint: broadcast batch processor — every 30 min
+// Usage: curl "https://api.bantuanku.org/cron/wa-broadcast?secret=YOUR_SECRET"
+app.get("/cron/wa-broadcast", async (c) => {
+  const secret = c.req.query("secret");
+  if (!secret || secret !== c.env.JWT_SECRET) {
+    return c.json({ success: false, message: "Unauthorized" }, 401);
+  }
+  const db = c.get("db");
+  const { processBroadcastBatch } = await import("./services/broadcast-processor");
+  const result = await processBroadcastBatch(db, c.env.FRONTEND_URL);
+  return c.json({ success: true, data: result });
+});
+
 // Serve uploaded files
 app.get("/uploads/:filename", async (c) => {
   try {

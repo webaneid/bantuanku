@@ -1,7 +1,7 @@
 # Arsitektur WhatsApp Community Care
 
-> Status: SEBAGIAN DIIMPLEMENTASIKAN — Fase 1–4 selesai, Fase 5–7 dalam antrian  
-> Dibuat: 2026-07-05 | Diperbarui: 2026-07-05 (Fase 4 selesai)  
+> Status: SEBAGIAN DIIMPLEMENTASIKAN — Fase 1–5 selesai, Fase 6–7 dalam antrian  
+> Dibuat: 2026-07-05 | Diperbarui: 2026-07-05 (Fase 5 selesai)  
 > Bergantung pada: `arsitektur-notifikasi.md`, `arsitektur-donatur.md`, `arsitektur-donasi.md`, `arsitektur-activity-reports.md`
 
 ---
@@ -39,6 +39,9 @@ Berbeda dari `arsitektur-notifikasi.md` yang scope-nya event-driven per transaks
 > - **Fase 2** — Opt-out: `GET /v1/wa/unsubscribe`, `POST /v1/wa/opt-in`, toggle profil web & admin, halaman `/berhenti`
 > - **Fase 3** — Birthday cron: `GET /cron/wa-birthday` (08:00 WIB), `services/birthday-reminder.ts`
 > - **Fase 4** — Re-engagement cron: `GET /cron/wa-reengagement` (10:00 WIB), `services/reengagement-reminder.ts`
+> 
+> **Selesai, siap deploy:**
+> - **Fase 5** — Broadcast processor: `GET /cron/wa-broadcast` (setiap 30 menit), `services/broadcast-processor.ts`, CRUD `/admin/whatsapp/broadcasts`, halaman admin `/dashboard/whatsapp/broadcasts`
 
 ---
 
@@ -487,7 +490,7 @@ Semua template punya pasangan `{key}_enabled` toggle. Default: `enabled = true`.
 | **Fase 2** | Opt-out: API (unsubscribe endpoint, patch me), UI profil web, UI admin donatur | Fase 1 | ✅ Selesai 2026-07-05 |
 | **Fase 3** | Birthday cron + template | Fase 1 | ✅ Selesai 2026-07-05 |
 | **Fase 4** | Re-engagement cron + template + anti-spam log | Fase 1, 3 | ✅ Selesai 2026-07-05 |
-| **Fase 5** | Broadcast job service (batch processor cron) + halaman admin | Fase 1 | Belum |
+| **Fase 5** | Broadcast job service (batch processor cron) + halaman admin | Fase 1 | ✅ Selesai 2026-07-05 |
 | **Fase 6** | Campaign broadcast toggle di form + auto-job saat publish | Fase 5 | Belum |
 | **Fase 7** | Manual broadcast UI (1b & 1c) + audience selection | Fase 5 | Belum |
 

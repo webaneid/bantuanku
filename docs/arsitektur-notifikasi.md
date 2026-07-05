@@ -257,6 +257,41 @@ Donatur yang belum pernah donasi otomatis ter-exclude karena `MAX(NULL) < date` 
 0 3 * * * curl -s --get --data-urlencode "secret=JWT_SECRET_VALUE" https://api.bantuanku.org/cron/wa-reengagement >> /var/log/cron-reengagement.log 2>&1
 ```
 
+## Broadcast Batch Processor Cron (Fase 5)
+
+Cron endpoint: `GET /cron/wa-broadcast?secret=JWT_SECRET` — berjalan setiap 30 menit untuk memproses satu batch dari job broadcast yang sedang antri atau berjalan.
+
+**Logika per run:**
+1. Query satu `wa_broadcast_jobs` dengan `status IN ('pending','processing')` dan `next_batch_at <= NOW()`
+2. Ambil batch audience (OFFSET `currentOffset` LIMIT `batchSize`) berdasarkan `audienceScope`:
+   - `all` — semua donatur aktif + opt-in + punya WA
+   - `campaign_donors` — donatur yang punya transaksi paid ke campaign (`productId = referenceId`, `productType = 'campaign'`)
+   - `inactive_62d` — correlated subquery MAX(paid_at) < 62 hari lalu
+3. Kirim per penerima via `WhatsAppService` (template atau free text), delay 2s antar kirim
+4. Insert `wa_broadcast_logs` per penerima
+5. Update job stats + `currentOffset`
+6. Jika batch terakhir: `status = 'completed'`; jika ada sisa: `status = 'processing'`, `next_batch_at = NOW() + batchIntervalMinutes`
+
+**Implementasi:** `apps/api/src/services/broadcast-processor.ts`
+
+**Admin API:**
+- `POST /admin/whatsapp/broadcasts` — buat & antri job
+- `GET /admin/whatsapp/broadcasts` — list jobs (paginated)
+- `GET /admin/whatsapp/broadcasts/:id` — detail job
+- `GET /admin/whatsapp/broadcasts/:id/logs` — log per penerima (paginated)
+- `POST /admin/whatsapp/broadcasts/:id/cancel` — batalkan job pending/processing
+
+**Admin UI:**
+- Sidebar: menu "WhatsApp" → "Broadcast"
+- `/dashboard/whatsapp/broadcasts` — list + tombol buat
+- `/dashboard/whatsapp/broadcasts/[id]` — detail + progress bar + log table
+
+**Crontab VPS (perlu ditambahkan):**
+```cron
+# Broadcast processor: setiap 30 menit
+*/30 * * * * curl -s --get --data-urlencode "secret=JWT_SECRET_VALUE" https://api.bantuanku.org/cron/wa-broadcast >> /var/log/cron-broadcast.log 2>&1
+```
+
 ## Webhook WhatsApp Inbound
 
 Webhook publik berada di `POST /v1/whatsapp/webhook`.

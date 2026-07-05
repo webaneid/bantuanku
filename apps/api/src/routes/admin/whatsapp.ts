@@ -1,10 +1,15 @@
 import { Hono } from "hono";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, desc, count } from "drizzle-orm";
 import {
   transactions,
   settings,
+  waBroadcastJobs,
+  waBroadcastLogs,
+  createId,
 } from "@bantuanku/db";
-import { success, error } from "../../lib/response";
+import { z } from "zod";
+import { zValidator } from "@hono/zod-validator";
+import { success, error, paginated } from "../../lib/response";
 import { requireDeveloper, requireRole } from "../../middleware/auth";
 import { WhatsAppService } from "../../services/whatsapp";
 import { GOWAClient } from "../../services/whatsapp-gowa";
@@ -227,6 +232,160 @@ whatsappAdmin.get(
     } catch {
       return success(c, []);
     }
+  }
+);
+
+// ─── Broadcast Jobs CRUD ─────────────────────────────────────────────────────
+
+const createBroadcastSchema = z.object({
+  name: z.string().min(1),
+  type: z.enum(["campaign_new", "manual_content", "manual_free", "reengagement"]),
+  templateKey: z.string().optional(),
+  contentOverride: z.string().optional(),
+  referenceId: z.string().optional(),
+  referenceName: z.string().optional(),
+  audienceScope: z.enum(["all", "campaign_donors", "inactive_62d"]).default("all"),
+  batchSize: z.number().int().min(1).max(500).default(50),
+  batchIntervalMinutes: z.number().int().min(1).max(1440).default(60),
+  scheduledAt: z.string().datetime().optional(),
+});
+
+// GET /admin/whatsapp/broadcasts — list broadcast jobs
+whatsappAdmin.get(
+  "/broadcasts",
+  requireRole("super_admin", "admin_finance"),
+  async (c) => {
+    const db = c.get("db");
+    const page = parseInt(c.req.query("page") || "1");
+    const limit = parseInt(c.req.query("limit") || "20");
+    const offset = (page - 1) * limit;
+
+    const [jobs, total] = await Promise.all([
+      db.query.waBroadcastJobs.findMany({
+        orderBy: [desc(waBroadcastJobs.createdAt)],
+        limit,
+        offset,
+      }),
+      db.select({ value: count() }).from(waBroadcastJobs),
+    ]);
+
+    return paginated(c, jobs, { page, limit, total: total[0]?.value ?? 0 });
+  }
+);
+
+// POST /admin/whatsapp/broadcasts — create & queue a broadcast job
+whatsappAdmin.post(
+  "/broadcasts",
+  requireRole("super_admin", "admin_finance"),
+  zValidator("json", createBroadcastSchema),
+  async (c) => {
+    const db = c.get("db");
+    const user = c.get("user");
+    const body = c.req.valid("json");
+
+    if (body.type !== "manual_free" && !body.templateKey) {
+      return error(c, "templateKey wajib untuk tipe bukan manual_free", 400);
+    }
+    if (body.type === "manual_free" && !body.contentOverride) {
+      return error(c, "contentOverride wajib untuk tipe manual_free", 400);
+    }
+    if (body.audienceScope === "campaign_donors" && !body.referenceId) {
+      return error(c, "referenceId (campaign ID) wajib untuk audienceScope campaign_donors", 400);
+    }
+
+    const now = new Date();
+    const nextBatchAt = body.scheduledAt ? new Date(body.scheduledAt) : now;
+
+    const job = await db
+      .insert(waBroadcastJobs)
+      .values({
+        id: createId(),
+        name: body.name,
+        type: body.type,
+        templateKey: body.templateKey ?? null,
+        contentOverride: body.contentOverride ?? null,
+        referenceId: body.referenceId ?? null,
+        referenceName: body.referenceName ?? null,
+        audienceScope: body.audienceScope,
+        batchSize: body.batchSize,
+        batchIntervalMinutes: body.batchIntervalMinutes,
+        nextBatchAt,
+        status: "pending",
+        createdBy: user!.id,
+        createdAt: now,
+      })
+      .returning();
+
+    return success(c, job[0], "Broadcast berhasil dibuat", 201);
+  }
+);
+
+// GET /admin/whatsapp/broadcasts/:id — detail job
+whatsappAdmin.get(
+  "/broadcasts/:id",
+  requireRole("super_admin", "admin_finance"),
+  async (c) => {
+    const db = c.get("db");
+    const id = c.req.param("id");
+
+    const job = await db.query.waBroadcastJobs.findFirst({
+      where: eq(waBroadcastJobs.id, id),
+    });
+
+    if (!job) return error(c, "Broadcast job tidak ditemukan", 404);
+    return success(c, job);
+  }
+);
+
+// GET /admin/whatsapp/broadcasts/:id/logs — log pengiriman per penerima
+whatsappAdmin.get(
+  "/broadcasts/:id/logs",
+  requireRole("super_admin", "admin_finance"),
+  async (c) => {
+    const db = c.get("db");
+    const id = c.req.param("id");
+    const page = parseInt(c.req.query("page") || "1");
+    const limit = parseInt(c.req.query("limit") || "50");
+    const offset = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      db.query.waBroadcastLogs.findMany({
+        where: eq(waBroadcastLogs.jobId, id),
+        with: { donaturRef: { columns: { id: true, name: true } } },
+        orderBy: [desc(waBroadcastLogs.sentAt)],
+        limit,
+        offset,
+      }),
+      db.select({ value: count() }).from(waBroadcastLogs).where(eq(waBroadcastLogs.jobId, id)),
+    ]);
+
+    return paginated(c, logs, { page, limit, total: total[0]?.value ?? 0 });
+  }
+);
+
+// POST /admin/whatsapp/broadcasts/:id/cancel — batalkan job yang masih pending/processing
+whatsappAdmin.post(
+  "/broadcasts/:id/cancel",
+  requireRole("super_admin", "admin_finance"),
+  async (c) => {
+    const db = c.get("db");
+    const id = c.req.param("id");
+
+    const job = await db.query.waBroadcastJobs.findFirst({
+      where: eq(waBroadcastJobs.id, id),
+    });
+
+    if (!job) return error(c, "Broadcast job tidak ditemukan", 404);
+    if (!["pending", "processing"].includes(job.status)) {
+      return error(c, `Job tidak bisa dibatalkan (status: ${job.status})`, 400);
+    }
+
+    await db
+      .update(waBroadcastJobs)
+      .set({ status: "cancelled", completedAt: new Date() })
+      .where(eq(waBroadcastJobs.id, id));
+
+    return success(c, { cancelled: true });
   }
 );
 

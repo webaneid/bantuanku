@@ -22,6 +22,7 @@ import {
   User,
   Megaphone,
   Building2,
+  MessageSquare,
 } from "lucide-react";
 import { X, Menu } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -169,6 +170,15 @@ const allMenuItems = [
     label: "Influencer Saya",
     href: "/dashboard/my-fundraiser",
     roles: ["employee", "program_coordinator"],
+  },
+  {
+    icon: MessageSquare,
+    label: "WhatsApp",
+    href: "/dashboard/whatsapp/broadcasts",
+    roles: ["super_admin", "admin_finance"],
+    submenu: [
+      { label: "Broadcast", href: "/dashboard/whatsapp/broadcasts", roles: ["super_admin", "admin_finance"] },
+    ],
   },
   {
     icon: Settings,
