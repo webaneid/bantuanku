@@ -32,7 +32,7 @@ Berbeda dari `arsitektur-notifikasi.md` yang scope-nya event-driven per transaks
 | **1b. Broadcast manual konten lama** | Admin pilih campaign/laporan lama | Semua / per-program / pilihan | Belum (Fase 7) |
 | **1c. Broadcast manual pesan bebas** | Admin tulis pesan langsung | Semua / per-program / pilihan | Belum (Fase 7) |
 | **2. Re-engagement** | Cron harian | Donatur yang 62+ hari tidak donasi | Belum (Fase 4) |
-| **3. Ulang Tahun** | Cron harian | Donatur dengan `birthDate` = hari ini | Belum (Fase 3) |
+| **3. Ulang Tahun** | Cron harian | Donatur dengan `birthDate` = hari ini | ✅ Selesai (Fase 3) |
 
 > **Infrastruktur** (Fase 1 & 2 — selesai 2026-07-05):
 > - Migration 119: tabel `wa_broadcast_jobs`, `wa_broadcast_logs`, kolom `donatur.waOptOut`, `campaigns.broadcastWa`
@@ -338,6 +338,15 @@ WHERE d.is_active = true
 
 **Field `birthDate` sudah ada di schema `donatur` (migration lama) — tidak perlu migration baru untuk query.**
 
+**Implementasi:** `apps/api/src/services/birthday-reminder.ts` + `GET /cron/wa-birthday` di `apps/api/src/index.ts`
+
+**Catatan implementasi:**
+- Query DB langsung filter via `EXTRACT(MONTH/DAY FROM birth_date::date)` dalam WIB — tidak perlu in-memory filter
+- Anti-spam check via satu query batch ke `wa_broadcast_logs` (1 query untuk semua kandidat, bukan N+1)
+- Arsitektur awal tidak menyebut `wa_broadcast_jobs` untuk birthday, tapi karena `wa_broadcast_logs.job_id NOT NULL` (schema DB), maka dibuat **synthetic job entry** per run cron. Ini lebih baik: memberikan audit trail run harian yang bisa dilihat admin di masa depan.
+- Status log: `sent`, `failed`, `skipped_no_phone`, `skipped_recently_sent`
+- Delay 2s antar kirim pesan (sama dengan pattern sendBulk)
+
 **Template baru: `wa_tpl_birthday`** (bisa diedit admin)
 ```
 Assalamu'alaikum {customer_name} 🌟
@@ -466,7 +475,7 @@ Semua template punya pasangan `{key}_enabled` toggle. Default: `enabled = true`.
 |------|-------|------------|--------|
 | **Fase 1** | Migration 119 (opt-out + broadcast tables + campaign field) | — | ✅ Selesai 2026-07-05 |
 | **Fase 2** | Opt-out: API (unsubscribe endpoint, patch me), UI profil web, UI admin donatur | Fase 1 | ✅ Selesai 2026-07-05 |
-| **Fase 3** | Birthday cron + template | Fase 1 | Belum |
+| **Fase 3** | Birthday cron + template | Fase 1 | ✅ Selesai 2026-07-05 |
 | **Fase 4** | Re-engagement cron + template + anti-spam log | Fase 1, 3 | Belum |
 | **Fase 5** | Broadcast job service (batch processor cron) + halaman admin | Fase 1 | Belum |
 | **Fase 6** | Campaign broadcast toggle di form + auto-job saat publish | Fase 5 | Belum |

@@ -208,6 +208,28 @@ installment_frequency, installment_count, installment_paid, installment_remainin
 | Manual admin | `POST /v1/admin/whatsapp/send-savings-reminder` |
 | Scheduler | `startSavingsReminderScheduler(db, frontendUrl, runAtHour=8)` — setiap hari jam 08:00 WIB |
 
+## Birthday Reminder Cron
+
+File: `apps/api/src/services/birthday-reminder.ts`
+
+Cron endpoint: `GET /cron/wa-birthday?secret=JWT_SECRET` — direkomendasikan jalan jam 08:00 WIB (01:00 UTC).
+
+| Setting | Nilai |
+|---------|-------|
+| Query audience | `donatur` dengan `is_active=true`, `wa_opt_out=false`, punya phone, `birthDate` bulan+hari = hari ini WIB |
+| Anti-spam | Cek `wa_broadcast_logs` — skip jika sudah terima `wa_tpl_birthday` dalam 23 jam terakhir |
+| Log | Buat `wa_broadcast_jobs` (type=birthday) per run + `wa_broadcast_logs` per penerima |
+| Delay | 2s antar kirim pesan |
+| Template | `wa_tpl_birthday` |
+
+**Catatan penting:** `wa_broadcast_logs.job_id` adalah NOT NULL, sehingga setiap run cron membuat satu **synthetic job entry** di `wa_broadcast_jobs`. Ini memberikan audit trail run harian.
+
+**Crontab VPS:**
+```cron
+# Birthday: jam 08:00 WIB = 01:00 UTC
+0 1 * * * curl -s "https://api.bantuanku.org/cron/wa-birthday?secret=JWT_SECRET_VALUE"
+```
+
 ## Webhook WhatsApp Inbound
 
 Webhook publik berada di `POST /v1/whatsapp/webhook`.

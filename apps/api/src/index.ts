@@ -93,13 +93,26 @@ app.get("/health", (c) => {
 // Usage: curl "https://api.example.com/cron/savings-reminder?secret=YOUR_SECRET"
 app.get("/cron/savings-reminder", async (c) => {
   const secret = c.req.query("secret");
-  const expectedSecret = c.env.JWT_SECRET; // Reuse JWT_SECRET as cron auth
+  const expectedSecret = c.env.JWT_SECRET;
   if (!secret || secret !== expectedSecret) {
     return c.json({ success: false, message: "Unauthorized" }, 401);
   }
   const db = c.get("db");
   const { runSavingsReminders } = await import("./services/savings-reminder");
   const result = await runSavingsReminders(db, c.env.FRONTEND_URL);
+  return c.json({ success: true, data: result });
+});
+
+// Cron endpoint: birthday reminders — daily 08:00 WIB (01:00 UTC)
+// Usage: curl "https://api.bantuanku.org/cron/wa-birthday?secret=YOUR_SECRET"
+app.get("/cron/wa-birthday", async (c) => {
+  const secret = c.req.query("secret");
+  if (!secret || secret !== c.env.JWT_SECRET) {
+    return c.json({ success: false, message: "Unauthorized" }, 401);
+  }
+  const db = c.get("db");
+  const { runBirthdayReminders } = await import("./services/birthday-reminder");
+  const result = await runBirthdayReminders(db, c.env.FRONTEND_URL);
   return c.json({ success: true, data: result });
 });
 
