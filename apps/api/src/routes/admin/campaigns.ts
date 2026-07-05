@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { eq, desc, and, like, sql } from "drizzle-orm";
-import { campaigns, campaignUpdates, users, categories, employees, mitra, generateSlug, createId, ledger } from "@bantuanku/db";
+import { campaigns, campaignUpdates, users, categories, employees, mitra, generateSlug, createId, ledger, waBroadcastJobs } from "@bantuanku/db";
 import { success, error, paginated } from "../../lib/response";
 import { requireRole } from "../../middleware/auth";
 import { coordinatorFilter } from "../../middleware/coordinator-filter";
@@ -41,6 +41,7 @@ const baseCampaignSchema = z.object({
   ogDescription: z.string().trim().max(200).optional().nullable(),
   ogImageUrl: z.string().trim().optional().nullable(),
   seoScore: z.number().int().min(0).max(100).optional(),
+  broadcastWa: z.boolean().optional(),
 });
 
 // Create schema with validation
@@ -456,6 +457,10 @@ const updateCampaign = async (c: any) => {
     const canChangeStatus = user?.roles?.includes("super_admin") || user?.roles?.includes("admin_campaign");
     if (canChangeStatus) {
       updateData.status = body.status;
+      // Set publishedAt on first publish (status active + never published before)
+      if (body.status === "active" && !campaign.publishedAt) {
+        updateData.publishedAt = new Date();
+      }
     }
   }
   if (body.isFeatured !== undefined) updateData.isFeatured = body.isFeatured;
@@ -478,6 +483,27 @@ const updateCampaign = async (c: any) => {
     .update(campaigns)
     .set(updateData)
     .where(eq(campaigns.id, id));
+
+  // Auto-create broadcast job jika: pertama kali publish + broadcastWa = true
+  const isFirstPublish = body.status === "active" && !campaign.publishedAt;
+  if (isFirstPublish && body.broadcastWa === true) {
+    const user = c.get("user");
+    await db.insert(waBroadcastJobs).values({
+      id: createId(),
+      name: `Campaign Baru: ${campaign.title}`,
+      type: "campaign_new",
+      templateKey: "wa_tpl_campaign_new",
+      referenceId: campaign.id,
+      referenceName: campaign.title,
+      audienceScope: "all",
+      batchSize: 50,
+      batchIntervalMinutes: 60,
+      nextBatchAt: new Date(),
+      status: "pending",
+      createdBy: user!.id,
+      createdAt: new Date(),
+    });
+  }
 
   return success(c, null, "Campaign updated");
 };

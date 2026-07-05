@@ -119,6 +119,7 @@ export default function EditCampaignPage() {
       endDate: data.endDate || undefined,
       isFeatured: data.isFeatured || false,
       isUrgent: data.isUrgent || false,
+      broadcastWa: data.broadcastWa || false,
       // SEO fields
       metaTitle: data.metaTitle || null,
       metaDescription: data.metaDescription || null,
@@ -184,6 +185,7 @@ export default function EditCampaignPage() {
           onSubmit={handleSubmit}
           initialData={campaign}
           isLoading={updateMutation.isPending}
+          isAlreadyPublished={!!campaignData?.publishedAt}
         />
 
         {/* Form Actions */}

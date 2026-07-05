@@ -32,6 +32,7 @@ export interface CampaignFormData {
   status?: string;
   isFeatured?: boolean;
   isUrgent?: boolean;
+  broadcastWa?: boolean;
   // SEO fields
   metaTitle?: string;
   metaDescription?: string;
@@ -49,9 +50,10 @@ interface CampaignFormProps {
   onSubmit: (data: CampaignFormData) => void;
   initialData?: Partial<CampaignFormData>;
   isLoading?: boolean;
+  isAlreadyPublished?: boolean;
 }
 
-export default function CampaignForm({ onSubmit, initialData, isLoading }: CampaignFormProps) {
+export default function CampaignForm({ onSubmit, initialData, isLoading, isAlreadyPublished }: CampaignFormProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isMitra = user?.roles?.includes("mitra") && user.roles.length === 1;
@@ -67,6 +69,7 @@ export default function CampaignForm({ onSubmit, initialData, isLoading }: Campa
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || "");
   const [images, setImages] = useState<string[]>(initialData?.images || []);
   const [status, setStatus] = useState(initialData?.status || "draft");
+  const [broadcastWa, setBroadcastWa] = useState(false);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isGalleryLibraryOpen, setIsGalleryLibraryOpen] = useState(false);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
@@ -246,8 +249,8 @@ export default function CampaignForm({ onSubmit, initialData, isLoading }: Campa
   const handleFormSubmit = (data: CampaignFormData) => {
     console.log('Form submitted with data:', data);
     console.log('Form errors:', errors);
-    // Merge SEO fields into data
-    const merged = { ...data, ...seoValues };
+    // Merge SEO fields and broadcastWa state into data
+    const merged = { ...data, ...seoValues, broadcastWa };
     onSubmit(merged);
   };
 
@@ -631,6 +634,32 @@ export default function CampaignForm({ onSubmit, initialData, isLoading }: Campa
                     {...register("isUrgent")}
                   />
                   <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Broadcast WA — hanya muncul saat status = active dan belum pernah dipublish */}
+          {!isMitra && status === "active" && !isAlreadyPublished && (
+            <div className="form-field">
+              <div className="flex items-center justify-between py-2 px-4 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                  <label htmlFor="broadcastWa" className="form-label mb-0 cursor-pointer text-green-800">
+                    Sebarkan ke donatur via WhatsApp
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Kirim notifikasi program baru ini ke semua donatur aktif secara bertahap
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    id="broadcastWa"
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={broadcastWa}
+                    onChange={(e) => setBroadcastWa(e.target.checked)}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
                 </label>
               </div>
             </div>

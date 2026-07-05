@@ -1,7 +1,7 @@
 # Arsitektur WhatsApp Community Care
 
-> Status: SEBAGIAN DIIMPLEMENTASIKAN — Fase 1–5 selesai, Fase 6–7 dalam antrian  
-> Dibuat: 2026-07-05 | Diperbarui: 2026-07-05 (Fase 5 selesai)  
+> Status: SEBAGIAN DIIMPLEMENTASIKAN — Fase 1–6 selesai, Fase 7 dalam antrian  
+> Dibuat: 2026-07-05 | Diperbarui: 2026-07-05 (Fase 6 selesai)  
 > Bergantung pada: `arsitektur-notifikasi.md`, `arsitektur-donatur.md`, `arsitektur-donasi.md`, `arsitektur-activity-reports.md`
 
 ---
@@ -42,6 +42,7 @@ Berbeda dari `arsitektur-notifikasi.md` yang scope-nya event-driven per transaks
 > 
 > **Selesai, siap deploy:**
 > - **Fase 5** — Broadcast processor: `GET /cron/wa-broadcast` (setiap 30 menit), `services/broadcast-processor.ts`, CRUD `/admin/whatsapp/broadcasts`, halaman admin `/dashboard/whatsapp/broadcasts`
+> - **Fase 6** — Campaign form: toggle "Sebarkan ke donatur via WA" di edit campaign, auto-create broadcast job saat pertama publish; `publishedAt` juga di-set dari PUT endpoint
 
 ---
 
@@ -491,7 +492,7 @@ Semua template punya pasangan `{key}_enabled` toggle. Default: `enabled = true`.
 | **Fase 3** | Birthday cron + template | Fase 1 | ✅ Selesai 2026-07-05 |
 | **Fase 4** | Re-engagement cron + template + anti-spam log | Fase 1, 3 | ✅ Selesai 2026-07-05 |
 | **Fase 5** | Broadcast job service (batch processor cron) + halaman admin | Fase 1 | ✅ Selesai 2026-07-05 |
-| **Fase 6** | Campaign broadcast toggle di form + auto-job saat publish | Fase 5 | Belum |
+| **Fase 6** | Campaign broadcast toggle di form + auto-job saat publish | Fase 5 | ✅ Selesai 2026-07-05 |
 | **Fase 7** | Manual broadcast UI (1b & 1c) + audience selection | Fase 5 | Belum |
 
 Urutan dipilih supaya hal paling kritikal (opt-out) jalan duluan, dan kompleksitas naik bertahap. Fase 3 dan 4 bisa dikerjakan paralel dengan Fase 5.
