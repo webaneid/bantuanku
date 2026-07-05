@@ -328,15 +328,65 @@ app.get("/periods/:periodId/packages", async (c) => {
     )
     .orderBy(qurbanPackages.isFeatured, qurbanPackagePeriods.price);
 
-  // Add full image URLs
-  const enrichedPackages = packages.map((pkg: any) => ({
-    ...pkg,
-    imageUrl: pkg.imageUrl
+  // Fetch all active automatic discounts once for bulk resolution
+  const now = new Date();
+  const allAutoDiscounts: DiscountRecord[] = await db
+    .select()
+    .from(qurbanDiscounts)
+    .where(
+      and(
+        eq(qurbanDiscounts.type, "automatic"),
+        eq(qurbanDiscounts.isActive, true),
+        lte(qurbanDiscounts.startDate, now),
+        gte(qurbanDiscounts.endDate, now)
+      )
+    );
+
+  const priority: Record<string, number> = { package_period: 4, package: 3, animal_type: 2, all: 1 };
+
+  const enrichedPackages = packages.map((pkg: any) => {
+    const imageUrl = pkg.imageUrl
       ? (pkg.imageUrl.startsWith('http://') || pkg.imageUrl.startsWith('https://'))
         ? pkg.imageUrl
         : `${apiUrl}${pkg.imageUrl}`
-      : null,
-  }));
+      : null;
+
+    const applicable = allAutoDiscounts.filter((d) => {
+      if (d.maxUsage !== null && d.usageCount >= d.maxUsage) return false;
+      switch (d.scopeType) {
+        case "all": return true;
+        case "package": return d.scopeId === pkg.id;
+        case "package_period": return d.scopeId === pkg.packagePeriodId;
+        case "animal_type": return d.scopeId === pkg.animalType;
+        default: return false;
+      }
+    });
+
+    applicable.sort((a, b) => {
+      const pa = priority[a.scopeType] || 0;
+      const pb = priority[b.scopeType] || 0;
+      if (pa !== pb) return pb - pa;
+      return b.discountValue - a.discountValue;
+    });
+
+    const bestDiscount = applicable[0] || null;
+    const discountAmount = bestDiscount ? calculateDiscountAmount(bestDiscount, pkg.price) : 0;
+
+    return {
+      ...pkg,
+      imageUrl,
+      activeDiscount: bestDiscount
+        ? {
+            id: bestDiscount.id,
+            name: bestDiscount.name,
+            discountType: bestDiscount.discountType,
+            discountValue: bestDiscount.discountValue,
+            maxDiscount: bestDiscount.maxDiscount,
+            discountAmount,
+          }
+        : null,
+    };
+  });
 
   return c.json({ data: enrichedPackages });
 });

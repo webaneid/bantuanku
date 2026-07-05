@@ -198,10 +198,11 @@ function mapQurbanPackageToCardProps(pkg: any) {
     id: pkg.packagePeriodId,
     slug: pkg.packagePeriodId,
     name: pkg.name,
-    category: pkg.animalType === 'cow' ? ('sapi' as const) : ('kambing' as const),
+    category: pkg.animalType === 'cow' ? ('sapi' as const) : pkg.animalType === 'sheep' ? ('domba' as const) : ('kambing' as const),
     price: pkg.price,
     image: getQurbanImageUrlByVariant(pkg.imageUrl, ['medium', 'thumbnail', 'large']),
     badge: pkg.isFeatured ? 'Unggulan' : undefined,
+    activeDiscount: pkg.activeDiscount || null,
   };
 }
 

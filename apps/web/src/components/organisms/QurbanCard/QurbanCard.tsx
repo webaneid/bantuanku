@@ -18,6 +18,11 @@ export interface QurbanCardProps {
   image: string;
   description?: string;
   badge?: string;
+  activeDiscount?: {
+    discountType: "percentage" | "nominal";
+    discountValue: number;
+    discountAmount: number;
+  } | null;
   onAddToCart?: () => void;
 }
 
@@ -31,9 +36,16 @@ export const QurbanCard: React.FC<QurbanCardProps> = ({
   image,
   description,
   badge,
+  activeDiscount,
   onAddToCart,
 }) => {
   const { t } = useI18n();
+  const discountedPrice = activeDiscount ? price - activeDiscount.discountAmount : null;
+  const discountLabel = activeDiscount
+    ? activeDiscount.discountType === "percentage"
+      ? `Diskon ${activeDiscount.discountValue}%`
+      : `Diskon Rp ${formatRupiah(activeDiscount.discountAmount)}`
+    : null;
   return (
     <div className="qurban-card">
       <Link href={`/qurban/${slug}`} className="qurban-card__link">
@@ -94,8 +106,14 @@ export const QurbanCard: React.FC<QurbanCardProps> = ({
           <div className="qurban-card__footer">
             <div className="qurban-card__price">
               <span className="qurban-card__price-label">{t('qurbanCard.priceLabel')}</span>
+              {discountedPrice !== null && (
+                <div className="qurban-card__price-original">
+                  <span className="qurban-card__price-strike mono">Rp {formatRupiah(price)}</span>
+                  <span className="qurban-card__discount-badge">{discountLabel}</span>
+                </div>
+              )}
               <span className="qurban-card__price-value mono">
-                Rp {formatRupiah(price)}
+                Rp {formatRupiah(discountedPrice !== null ? discountedPrice : price)}
               </span>
             </div>
 

@@ -39,6 +39,14 @@ export interface QurbanPackage {
   stockSold: number;
   isFeatured: boolean;
   availableSlots: number;
+  activeDiscount?: {
+    id: string;
+    name: string;
+    discountType: "percentage" | "nominal";
+    discountValue: number;
+    maxDiscount: number | null;
+    discountAmount: number;
+  } | null;
   ownerType?: "organization" | "mitra";
   ownerName?: string | null;
   ownerSlug?: string | null;

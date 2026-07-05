@@ -85,6 +85,18 @@
   @apply text-xs text-gray-500 mb-1;
 }
 
+.qurban-card__price-original {
+  @apply flex items-center gap-1.5 mb-0.5 flex-wrap;
+}
+
+.qurban-card__price-strike {
+  @apply text-xs text-gray-400 line-through;
+}
+
+.qurban-card__discount-badge {
+  @apply text-[10px] md:text-xs font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded;
+}
+
 .qurban-card__price-value {
   @apply text-sm md:text-base font-bold text-primary-600;
 }

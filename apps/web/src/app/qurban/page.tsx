@@ -49,6 +49,7 @@ function mapQurbanPackageToCardProps(
     image: getQurbanImageUrlByVariant(pkg.imageUrl, ['medium', 'thumbnail', 'large']),
     badge: pkg.isFeatured ? popularBadgeLabel : undefined,
     ownerName,
+    activeDiscount: pkg.activeDiscount || null,
   };
 }
 
