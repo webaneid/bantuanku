@@ -1,6 +1,6 @@
 # Arsitektur Qurban
 
-> Terakhir di-sync: 2026-07-04  
+> Terakhir di-sync: 2026-07-05  
 > Sumber: CLAUDE.md section + schema DB aktual + audit kode komprehensif
 
 ---
@@ -25,6 +25,8 @@ Modul qurban mencakup: periode qurban, paket hewan, order, tabungan qurban, dan 
 | `qurban_savings_transactions` | Setoran tabungan **(legacy)** |
 | `qurban_savings_conversions` | Log konversi savings → order |
 | `qurban_executions` | Laporan penyembelihan (foto/video) |
+| `qurban_discounts` | Program diskon/voucher qurban (migration 118) |
+| `qurban_discount_usages` | Riwayat pemakaian per order/savings (migration 118) |
 
 ---
 
@@ -67,23 +69,31 @@ status: "open" | "full" | "confirmed" | "executed"  -- bukan "cancelled"
 ```
 packageId           FK qurban_packages.id          -- kolom: package_id
 packagePeriodId     FK qurban_package_periods.id   -- kolom: package_period_id
+discountId          FK qurban_discounts.id ON DELETE SET NULL  -- null jika tanpa diskon
+discountAmount      bigint NOT NULL DEFAULT 0       -- nominal yang dipotong
 status: "pending" → "confirmed" → "executed" → "cancelled"
 paymentMethod: "bank_transfer" | "savings_conversion" | dll.
 paymentStatus: "draft" → "processing" → "paid"
 confirmedAt, executedAt   timestamptz
 
 -- Order "confirmed" saat paidAmount >= totalAmount (verified payments)
+-- totalAmount = unitPrice × quantity - discountAmount + adminFee
+-- unitPrice tetap harga asli (sebelum diskon) untuk keperluan audit
 ```
 
 ### `qurban_savings`
 ```
-targetAmount            bigint          -- harga paket
+targetAmount            bigint          -- harga paket SETELAH diskon (harga final yang ditabung)
 currentAmount           bigint          -- saldo terkini (sinkron via syncSavingsBalance)
+discountId              FK qurban_discounts.id ON DELETE SET NULL  -- null jika tanpa diskon
+discountAmount          bigint NOT NULL DEFAULT 0       -- nominal yang dipotong
 targetPackagePeriodId   FK qurban_package_periods.id  -- paket target
 status: "active" | "paused" | "completed" | "converted" | "cancelled"
 -- "completed" saat currentAmount >= targetAmount
 -- "converted" setelah dikonversi ke order
 -- "paused" jika ditunda
+-- Diskon diterapkan saat CREATE savings, bukan saat konversi
+-- installmentAmount dihitung dari targetAmount yang sudah discounted
 ```
 
 ---
@@ -300,6 +310,10 @@ Disimpan sebagai `text()` di DB — tidak ada enum. Tambah jenis hewan baru cuku
 | `/dashboard/qurban/shared-groups` | Manage grup patungan |
 | `/dashboard/qurban/savings` | Manage tabungan |
 | `/dashboard/qurban/savings/pending-deposits` | Verifikasi setoran |
+| `/dashboard/qurban/discounts` | List diskon & voucher |
+| `/dashboard/qurban/discounts/new` | Buat diskon/voucher baru |
+| `/dashboard/qurban/discounts/[id]` | Detail + riwayat penggunaan |
+| `/dashboard/qurban/discounts/[id]/edit` | Edit diskon (field krusial dikunci jika sudah dipakai) |
 
 ---
 
@@ -323,6 +337,7 @@ Revenue share qurban **berbeda** dari campaign/zakat karena basis kalkulasinya a
 3. **Balance calculation** — harus sum dua tabel (legacy + universal), sinkron via `syncSavingsBalance()`
 4. **Notification** — WhatsApp async, tidak ada retry jika gagal
 5. **Installment** — tidak ada auto-billing/reminder, semua manual
+6. **Diskon tidak tersimpan di universal flow** — `TransactionService.create()` tidak membaca `discount_amount` dari request; totalAmount dihitung ulang `subtotal + adminFee` tanpa potongan. Diskon di web checkout hanya tersimpan di `typeSpecificData` (JSON), tidak di `transactions.totalAmount`. Akibatnya: `qurban_discount_usages` tidak terbuat, `usage_count` tidak terupdate, double-use guard tidak bekerja untuk flow web checkout. Flow yang sudah benar: `POST /qurban/orders` (legacy), `POST /qurban/savings`, `POST /qurban/savings/:id/convert`. Lihat `arsitektur-qurban-discount.md` untuk detail.
 
 ---
 

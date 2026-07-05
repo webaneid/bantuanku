@@ -1,6 +1,6 @@
 # Arsitektur Qurban Discount & Voucher
 
-> Status: IMPLEMENTED — 2026-07-04  
+> Status: IMPLEMENTED — 2026-07-04 (listing UI: 2026-07-05)
 > Dibuat: 2026-07-04  
 > Bergantung pada: `arsitektur-qurban.md`, `arsitektur-timezone.md`
 
@@ -29,12 +29,12 @@ Fitur discount qurban memungkinkan LAZ memberikan potongan harga pada pembelian 
 
 5. **Formula totalAmount:**
    ```
-   subtotal      = unitPrice × quantity
+   subtotal       = unitPrice × quantity
    discountAmount = min(calculated_discount, subtotal)  -- tidak boleh > harga hewan
    totalAmount    = subtotal - discountAmount + adminFee
    ```
 
-6. **Tabungan qurban:** Discount diterapkan saat **buat tabungan** — bukan saat konversi. `targetAmount` yang disimpan adalah **harga setelah discount**, sehingga cicilan dihitung dari harga final. Voucher dianggap sudah terpakai (usage dicatat) saat tabungan dibuat. Saat konversi ke order, `totalAmount` order mengikuti `savings.targetAmount` (sudah discounted).
+6. **Tabungan qurban:** Discount diterapkan saat **buat tabungan** — bukan saat konversi. `targetAmount` yang disimpan adalah **harga setelah discount**. `installmentAmount` dihitung dari `targetAmount` yang sudah discounted (server-side recalculate). Voucher dianggap sudah terpakai (usage dicatat) saat tabungan dibuat. Saat konversi ke order, `totalAmount` order mengikuti `savings.targetAmount` (sudah discounted).
 
 7. **Masa berlaku:** `startDate` s/d `endDate` dalam WIB (UTC+7). Start = 00:00:00 WIB, End = 23:59:59 WIB. Simpan sebagai `timestamptz`.
 
@@ -44,13 +44,13 @@ Fitur discount qurban memungkinkan LAZ memberikan potongan harga pada pembelian 
    - `animal_type` → jenis hewan (`cow` / `goat` / `sheep`)
    - `all` → semua paket qurban
 
-   Jika ada lebih dari satu automatic discount yang match, pakai yang **paling spesifik** (urutan di atas). Jika sama level, pakai yang **nilai discount-nya lebih besar**.
+   Jika ada lebih dari satu automatic discount yang match, pakai yang **paling spesifik**. Jika sama level, pakai yang **nilai discount-nya lebih besar**.
 
 ---
 
 ## Database
 
-### Tabel Baru: `qurban_discounts`
+### Tabel Baru: `qurban_discounts` (migration 118)
 
 ```sql
 CREATE TABLE qurban_discounts (
@@ -73,10 +73,6 @@ CREATE TABLE qurban_discounts (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
-CREATE INDEX ON qurban_discounts (type, is_active);
-CREATE INDEX ON qurban_discounts (scope_type, scope_id);
-CREATE INDEX ON qurban_discounts (code) WHERE code IS NOT NULL;
 ```
 
 **Constraint validasi (aplikasi, bukan DB):**
@@ -88,7 +84,7 @@ CREATE INDEX ON qurban_discounts (code) WHERE code IS NOT NULL;
 
 ---
 
-### Tabel Baru: `qurban_discount_usages`
+### Tabel Baru: `qurban_discount_usages` (migration 118)
 
 ```sql
 CREATE TABLE qurban_discount_usages (
@@ -101,29 +97,19 @@ CREATE TABLE qurban_discount_usages (
   discount_amount  BIGINT NOT NULL,       -- nominal yang benar-benar dipotong
   applied_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-  -- Tepat salah satu dari order_id atau savings_id harus terisi (CHECK di aplikasi)
   UNIQUE (order_id)    -- 1 order hanya bisa dapat 1 discount
   -- savings_id tidak perlu UNIQUE di DB karena sudah di-guard aplikasi
 );
-
-CREATE INDEX ON qurban_discount_usages (discount_id);
-CREATE INDEX ON qurban_discount_usages (user_id);
-CREATE INDEX ON qurban_discount_usages (donor_phone);
-CREATE INDEX ON qurban_discount_usages (savings_id);
 ```
-
-**Catatan:** Guard double-use (1 user / 1 HP per discount) dilakukan di **application level** sebelum insert — karena `user_id` bisa null untuk guest dan kolom berbeda (`userId` vs `donorPhone`).
 
 **Alur savings + discount:**
 - Buat tabungan + discount → insert `qurban_discount_usages` dengan `savings_id` (order_id null)
-- Konversi savings → order → insert `qurban_discount_usages` baru dengan `order_id`, ATAU update baris savings dengan menambah `order_id`
-- Guard double-use cek kedua tabel (usages via order DAN via savings)
+- Konversi savings → order → insert `qurban_discount_usages` baru dengan `order_id` (untuk traceability)
+- Guard double-use cek: existing usage by `userId` OR `donorPhone` untuk discount yang sama
 
 ---
 
-### Modifikasi Tabel: `qurban_orders`
-
-Tambah 2 kolom:
+### Modifikasi Tabel: `qurban_orders` (migration 118)
 
 ```sql
 ALTER TABLE qurban_orders
@@ -131,11 +117,9 @@ ALTER TABLE qurban_orders
   ADD COLUMN discount_amount BIGINT NOT NULL DEFAULT 0;
 ```
 
-`totalAmount` di DB tetap menyimpan nilai final setelah discount. Formula kalkulasi ada di aplikasi.
+`totalAmount` menyimpan nilai final setelah discount. `unitPrice` tetap harga asli (audit trail).
 
-### Modifikasi Tabel: `qurban_savings`
-
-Tambah 2 kolom:
+### Modifikasi Tabel: `qurban_savings` (migration 118)
 
 ```sql
 ALTER TABLE qurban_savings
@@ -143,132 +127,66 @@ ALTER TABLE qurban_savings
   ADD COLUMN discount_amount BIGINT NOT NULL DEFAULT 0;
 ```
 
-`targetAmount` menyimpan harga **setelah discount** (harga final yang harus ditabung). `installmentAmount` dihitung dari `targetAmount` yang sudah discounted.
-
----
-
-### Drizzle Schema (TypeScript)
-
-**File baru:** `packages/db/src/schema/qurban-discounts.ts`
-**File baru:** `packages/db/src/schema/qurban-discount-usages.ts`
-**File modifikasi:** `packages/db/src/schema/qurban-orders.ts` (tambah `discountId`, `discountAmount` + relasi)
-**File modifikasi:** `packages/db/src/schema/qurban-savings.ts` (tambah `discountId`, `discountAmount` + relasi)
-
-Export baru wajib didaftarkan di `packages/db/src/index.ts`.
-
----
-
-## Migration
-
-**File:** `packages/db/migrations/118_create_qurban_discounts.sql`  
-**Urutan:** Setelah `117_add_on_delete_set_null_donatur_user_id.sql`
-
-Isi migration:
-1. CREATE TABLE `qurban_discounts`
-2. CREATE TABLE `qurban_discount_usages`
-3. ALTER TABLE `qurban_orders` ADD COLUMN `discount_id`, `discount_amount`
-4. ALTER TABLE `qurban_savings` ADD COLUMN `discount_id`, `discount_amount`
+`targetAmount` menyimpan harga **setelah discount**. `installmentAmount` = `ceil(targetAmount / installmentCount)`.
 
 ---
 
 ## Logika Kalkulasi Discount
 
 ```typescript
-function calculateDiscount(
-  discount: QurbanDiscount,
-  subtotal: number  // unitPrice × quantity
-): number {
+// apps/api/src/routes/qurban.ts — fungsi calculateDiscountAmount()
+function calculateDiscountAmount(discount: DiscountRecord, subtotal: number): number {
   let amount = 0;
-
   if (discount.discountType === "percentage") {
     amount = Math.floor(subtotal * discount.discountValue / 100);
-    if (discount.maxDiscount) {
-      amount = Math.min(amount, discount.maxDiscount);
-    }
+    if (discount.maxDiscount) amount = Math.min(amount, discount.maxDiscount);
   } else {
-    // nominal
     amount = discount.discountValue;
   }
-
-  // Tidak boleh melebihi subtotal (harga hewan)
-  return Math.min(amount, subtotal);
+  return Math.min(amount, subtotal); // tidak boleh melebihi harga hewan
 }
 ```
 
 ---
 
-## Logika Validasi Discount
+## Logika Scope Matching & Prioritas
 
-### Untuk `automatic` discount (saat load halaman paket / saat order dibuat):
-
-```
-1. Query qurban_discounts WHERE:
-   - type = 'automatic'
-   - is_active = true
-   - NOW() BETWEEN start_date AND end_date
-   - usage_count < max_usage (jika max_usage tidak null)
-   - scope match dengan packagePeriodId yang diminta
-     (urutan cek: package_period > package > animal_type > all)
-2. Jika ditemukan → terapkan, simpan discountId ke order
-3. Jika tidak → order tanpa discount
-```
-
-### Untuk `voucher` (saat user submit kode):
-
-```
-1. Cari discount WHERE code = inputCode (case-insensitive)
-2. Validasi:
-   a. Exists? → jika tidak: "Kode voucher tidak valid"
-   b. is_active = true? → jika tidak: "Voucher tidak aktif"
-   c. NOW() >= start_date? → jika tidak: "Voucher belum berlaku"
-   d. NOW() <= end_date? → jika tidak: "Voucher sudah kadaluarsa"
-   e. usage_count < max_usage (jika ada)? → jika tidak: "Voucher sudah habis"
-   f. Scope match packagePeriodId? → jika tidak: "Voucher tidak berlaku untuk paket ini"
-   g. Cek double-use:
-      - Jika user login: SELECT FROM qurban_discount_usages WHERE discount_id = X AND user_id = userId
-      - Jika guest: SELECT FROM qurban_discount_usages WHERE discount_id = X AND donor_phone = phone
-      → jika ditemukan: "Kode voucher sudah pernah digunakan"
-   h. Cek apakah paket sudah punya automatic discount aktif?
-      → jika ya: "Paket ini sudah mendapat discount otomatis, voucher tidak bisa digabung"
-3. Jika semua valid → return discount info ke frontend (untuk preview harga)
-4. Voucher baru benar-benar "terpakai" saat POST /orders berhasil (insert usage)
-```
-
-### Scope matching logic:
+Diimplementasikan di fungsi `findActiveAutoDiscount()` dan bulk query di list endpoint:
 
 ```typescript
-function isDiscountApplicable(discount: QurbanDiscount, context: {
-  packagePeriodId: string,
-  packageId: string,
-  animalType: string,
-}): boolean {
-  switch (discount.scopeType) {
-    case "all":          return true;
-    case "package":      return discount.scopeId === context.packageId;
-    case "package_period": return discount.scopeId === context.packagePeriodId;
-    case "animal_type":  return discount.scopeId === context.animalType;
-  }
-}
+const priority: Record<string, number> = { package_period: 4, package: 3, animal_type: 2, all: 1 };
+
+applicable.sort((a, b) => {
+  const pa = priority[a.scopeType] || 0;
+  const pb = priority[b.scopeType] || 0;
+  if (pa !== pb) return pb - pa;
+  return b.discountValue - a.discountValue; // nilai lebih besar menang jika sama level
+});
+
+const bestDiscount = applicable[0]; // null jika tidak ada
 ```
 
 ---
 
-## API Endpoints
+## API Endpoints — Aktual
 
 ### Public (`/v1/qurban`)
 
-| Method | Path | Fungsi |
-|--------|------|--------|
-| `POST` | `/discounts/validate` | Validasi kode voucher (tidak apply, hanya preview) |
-| `GET` | `/packages/:packagePeriodId` | Sudah ada — **tambahkan** field `activeDiscount` di response |
+| Method | Path | Status | Fungsi |
+|--------|------|--------|--------|
+| `POST` | `/discounts/validate` | ✅ | Validasi kode voucher (tidak apply, hanya preview) |
+| `GET` | `/packages/:packagePeriodId` | ✅ | Detail paket + field `activeDiscount` di response |
+| `GET` | `/periods/:periodId/packages` | ✅ | List paket + field `activeDiscount` per paket (bulk query, bukan N+1) |
+| `POST` | `/orders` | ✅ | Buat order — discount diterapkan dan usage dicatat |
+| `POST` | `/savings` | ✅ | Buat tabungan — discount diterapkan saat create |
+| `POST` | `/savings/:id/convert` | ✅ | Konversi — carry `discountId`/`discountAmount` dari savings |
 
 **`POST /discounts/validate`** — body:
 ```json
 {
   "code": "QURBAN10",
   "packagePeriodId": "abc123",
-  "userId": "xyz",          // optional
-  "donorPhone": "0812..."   // untuk guest
+  "donorPhone": "0812..."
 }
 ```
 
@@ -281,13 +199,13 @@ Response sukses:
     "name": "Promo Idul Adha",
     "discountType": "percentage",
     "discountValue": 10,
-    "discountAmount": 300000,   // nominal yang akan dipotong
+    "discountAmount": 300000,
     "finalPrice": 2700000
   }
 }
 ```
 
-**`GET /packages/:packagePeriodId`** — tambahan di response:
+**`GET /packages/:packagePeriodId` dan `GET /periods/:id/packages`** — tambahan di response per paket:
 ```json
 {
   "activeDiscount": {
@@ -295,22 +213,11 @@ Response sukses:
     "name": "Promo Idul Adha",
     "discountType": "percentage",
     "discountValue": 10,
-    "discountAmount": 300000,
-    "finalPrice": 2700000
-  } // null jika tidak ada
+    "discountAmount": 300000
+  }
 }
 ```
-
-**`POST /orders`** — tambahan di body:
-```json
-{
-  "packagePeriodId": "...",
-  "voucherCode": "QURBAN10",  // optional, hanya jika tidak ada auto discount
-  ...
-}
-```
-
-Server **re-validasi** voucher/discount saat order dibuat (jangan hanya percaya frontend).
+`activeDiscount: null` jika tidak ada discount aktif.
 
 ---
 
@@ -318,107 +225,61 @@ Server **re-validasi** voucher/discount saat order dibuat (jangan hanya percaya 
 
 | Method | Path | Role | Fungsi |
 |--------|------|------|--------|
-| `GET` | `/` | staff | List semua discount + filter |
+| `GET` | `/` | staff | List semua discount + filter (type, status, scopeType, search) |
 | `POST` | `/` | `super_admin`, `admin_campaign` | Buat discount/voucher baru |
 | `GET` | `/:id` | staff | Detail discount |
-| `PUT` | `/:id` | `super_admin`, `admin_campaign` | Edit (hanya jika usage_count = 0 untuk field krusial) |
-| `DELETE` | `/:id` | `super_admin` | Hapus (blokir jika ada usage) |
-| `GET` | `/:id/usages` | staff | Riwayat penggunaan |
+| `PUT` | `/:id` | `super_admin`, `admin_campaign` | Edit — field krusial dikunci jika `usageCount > 0` |
+| `DELETE` | `/:id` | `super_admin` | Hapus — diblokir jika ada usage |
+| `GET` | `/:id/usages` | staff | Riwayat penggunaan (join orders + savings) |
 | `POST` | `/:id/deactivate` | `super_admin`, `admin_campaign` | Nonaktifkan tanpa hapus |
 
-**Filter list:**
-- `type` (automatic/voucher)
-- `status` (active/expired/inactive/exhausted)
-- `scopeType`
-- `search` (name, code)
+**Field yang dikunci jika sudah dipakai (`usageCount > 0`):** `type`, `discountType`, `discountValue`, `code`.
 
 ---
 
-## Frontend
+## Frontend — Aktual
 
-### Web — Halaman Order (`/qurban/[id]`)
+### Listing Paket (Home + `/qurban`)
+
+**Komponen:** `QurbanCard` (`apps/web/src/components/organisms/QurbanCard/`)
+
+- Jika `activeDiscount` ada: harga asli tampil **di-strikethrough**, badge merah "Diskon X%" atau "Diskon Rp Y" muncul di samping, harga utama menampilkan harga setelah diskon
+- `GET /periods/:id/packages` sekarang include `activeDiscount` per paket — satu batch query, bukan per-item
+- Voucher **tidak ditampilkan** di listing — hanya muncul saat checkout detail
+
+### Halaman Order (`/qurban/[id]` — `QurbanSidebar`)
 
 **Kondisi A — Auto discount aktif:**
-- Tampil badge "Diskon 10%" di samping nama paket
-- Harga coret: ~~Rp 3.000.000~~ → **Rp 2.700.000**
-- Field input voucher **disembunyikan**
-- Keterangan: "Harga sudah termasuk diskon otomatis"
+- Badge "Diskon X%" di sidebar
+- Harga coret + harga baru
+- Section input voucher **disembunyikan**
+- Banner: "Diskon otomatis aktif: [nama]"
 
 **Kondisi B — Tidak ada auto discount:**
-- Tampil section "Punya Kode Voucher?"
-- Input + tombol "Terapkan"
-- Setelah apply: preview harga baru (via `POST /discounts/validate`)
-- Tombol "Hapus" untuk membatalkan voucher
+- Section "Punya Kode Voucher?" tampil
+- Input + tombol "Terapkan" → panggil `POST /discounts/validate`
+- Setelah apply: preview harga baru + tombol "Hapus"
 
 **Kondisi C — Tidak ada discount sama sekali:**
-- Tampil harga normal
+- Harga normal, tidak ada input voucher
 
-### Admin — Menu Baru
+Saat konfirmasi order, `discountAmount` dan `voucherCode` masuk ke `CartContext` → diteruskan ke checkout page.
 
-Tambah item di sidebar Qurban: **"Diskon & Voucher"**  
-Route: `/dashboard/qurban/discounts`
+### Checkout Page (`/checkout`)
 
-Sub-halaman:
+- Membaca `item.qurbanData.discountAmount` dari CartContext
+- Menghitung `totalAmount = (unitPrice × quantity) - discountAmount + (adminFee × quantity)` untuk **display**
+- Mengirim `type_specific_data.discount_amount` dan `type_specific_data.voucher_code` ke `POST /transactions`
+
+> ⚠️ **Gap**: Lihat bagian "Gap Implementasi" di bawah.
+
+### Admin — Menu Diskon & Voucher
+
+Di sidebar Admin → submenu Qurban → **"Diskon & Voucher"** (role: `super_admin`, `admin_campaign`):
 - `/dashboard/qurban/discounts` — list dengan badge status
 - `/dashboard/qurban/discounts/new` — form buat baru
 - `/dashboard/qurban/discounts/[id]` — detail + usage history
 - `/dashboard/qurban/discounts/[id]/edit` — edit
-
-**Form create/edit:**
-- Nama program
-- Tipe: Automatic / Voucher (toggle — jika voucher, tampil field kode)
-- Tipe discount: Persentase / Nominal (toggle)
-- Nilai + Max Discount (jika persentase)
-- Scope: dropdown All / Paket / Package-Period / Jenis Hewan
-  - Jika Paket → autocomplete pilih paket
-  - Jika Package-Period → autocomplete pilih kombinasi paket+periode
-  - Jika Jenis Hewan → dropdown Sapi/Kambing/Domba
-- Tanggal Mulai & Berakhir (date picker, timezone WIB)
-- Maksimal penggunaan (optional)
-- Deskripsi internal
-
----
-
-## Perubahan di Flow yang Sudah Ada
-
-### `POST /qurban/orders` (public)
-
-Tambahkan setelah fetch `pkgPeriod`:
-1. Cek automatic discount aktif → simpan ke `activeDiscount`
-2. Jika tidak ada auto discount dan ada `body.voucherCode` → validasi voucher
-3. Hitung `discountAmount`
-4. Hitung ulang `totalAmount = subtotal - discountAmount + adminFee`
-5. Insert order dengan `discountId`, `discountAmount`
-6. Insert ke `qurban_discount_usages`
-7. Increment `qurban_discounts.usage_count`
-
-### `POST /admin/qurban/orders` (admin)
-
-Logika yang sama. Admin bisa juga memilih discount/voucher saat buat order manual.
-
-### `POST /qurban/savings` (buat tabungan)
-
-1. Cek automatic discount aktif untuk `packagePeriodId`
-2. Jika ada `body.voucherCode` dan tidak ada auto discount → validasi voucher
-3. Hitung `discountAmount`, hitung `targetAmount = packagePrice - discountAmount`
-4. Hitung `installmentAmount` dari `targetAmount` yang sudah discounted
-5. Insert savings dengan `discountId`, `discountAmount`, `targetAmount` (final)
-6. Insert `qurban_discount_usages` dengan `savings_id` (voucher dianggap terpakai)
-7. Increment `qurban_discounts.usage_count`
-
-### `POST /qurban/savings/:id/convert` (konversi tabungan)
-
-Discount sudah diterapkan saat savings dibuat:
-1. `order.totalAmount = savings.targetAmount` (sudah discounted)
-2. `order.discountId = savings.discountId`
-3. `order.discountAmount = savings.discountAmount`
-4. `order.unitPrice` tetap harga asli (dari packagePeriod.price) untuk audit
-5. `paidAmount = totalAmount` (langsung lunas dari savings)
-6. Insert `qurban_discount_usages` baru dengan `order_id` (untuk traceability di order)
-
-### `GET /qurban/packages/:packagePeriodId`
-
-Tambah query untuk cek automatic discount aktif, sertakan di response.
 
 ---
 
@@ -426,31 +287,57 @@ Tambah query untuk cek automatic discount aktif, sertakan di response.
 
 - `adminFee` tidak dipotong — tetap dari settings `amil_qurban_perekor_fee` / `amil_qurban_sapi_fee`
 - `unitPrice` di `qurban_orders` tetap menyimpan harga **sebelum** discount (untuk audit)
-- `discountAmount` menyimpan nilai potongan yang aktual diterapkan
 - Revenue share qurban tetap berbasis `adminFee` (tidak terpengaruh discount)
 
 ---
 
-## Urutan Implementasi (Rencana Eksekusi)
+## Gap Implementasi
 
-| Fase | Area | File |
-|------|------|------|
-| 1 | Schema DB + Migration | `packages/db/src/schema/qurban-discounts.ts`, `qurban-discount-usages.ts`, modifikasi `qurban-orders.ts`, modifikasi `qurban-savings.ts`, migration `118_...` |
-| 2 | API public: validate voucher + apply di POST /orders | `apps/api/src/routes/qurban.ts` |
-| 3 | API admin CRUD discount | `apps/api/src/routes/admin/qurban.ts` (tambah sub-router) atau file baru |
-| 4 | Web UI: order page (conditional voucher/auto-discount) | `apps/web/src/app/qurban/[id]/page.tsx` atau komponen terkait |
-| 5 | Admin UI: halaman CRUD Diskon & Voucher | `apps/admin/src/app/dashboard/qurban/discounts/` |
-| 6 | TS check 0 error, update arsitektur-qurban.md |  |
-| 7 | Commit + deploy |  |
+### 1. Universal Checkout (`POST /transactions`) tidak terapkan discount
+
+**Status:** BELUM DIFIX
+
+`TransactionService.create()` di `apps/api/src/services/transaction.ts` tidak punya `discount_amount` di `CreateTransactionDTO`. Kalkulasi:
+```typescript
+const totalAmount = subtotal + adminFee; // tidak membaca discount!
+```
+
+Akibatnya untuk flow web checkout (via keranjang → checkout page → `POST /transactions`):
+- `transactions.totalAmount` di DB = harga penuh (tanpa potongan)
+- `qurban_discount_usages` tidak terbuat
+- `qurban_discounts.usage_count` tidak terupdate
+- Double-use guard tidak bekerja
+
+`discount_amount` dan `voucher_code` hanya tersimpan di `transactions.typeSpecificData` (JSON), tidak di kolom terstruktur.
+
+**Fix yang diperlukan:**
+1. Tambah `discount_amount?: number` dan `voucher_code?: string` ke `CreateTransactionDTO`
+2. Di `TransactionService.create()`: `const totalAmount = subtotal - discountAmount + adminFee`
+3. Panggil `findActiveAutoDiscount` atau re-validasi voucher server-side
+4. Insert ke `qurban_discount_usages` dan increment `usage_count`
+
+### 2. Admin order creation (`POST /admin/qurban/orders`) tidak terapkan discount
+
+**Status:** BELUM DIFIX
+
+Route admin qurban tidak menangani discount saat admin buat order manual.
+
+### 3. Savings new page (`/qurban/savings/new`) tidak ada voucher UI
+
+**Status:** BELUM DIIMPLEMENTASI
+
+Halaman `apps/web/src/app/qurban/savings/new/page.tsx` tidak punya input voucher. User yang membuat tabungan via web tidak bisa menerapkan voucher. Auto discount tetap diterapkan server-side saat `POST /qurban/savings` dipanggil, tapi user tidak tahu sebelum submit.
 
 ---
 
 ## Gap & Rencana Masa Depan
 
-| Item | Keterangan |
-|------|------------|
-| Bulk generate voucher | Generate N kode sekaligus — belum diperlukan saat ini |
-| Notifikasi WhatsApp discount | Kirim info discount ke donatur saat voucher sukses diterapkan |
-| Stacking discount | Saat ini tidak diizinkan (1 discount per order) — desain sudah prevent ini |
-| Audit log discount changes | Siapa yang edit/hapus discount |
-| Export usage report | Laporan berapa total discount yang diberikan per periode |
+| Item | Status | Keterangan |
+|------|--------|------------|
+| Fix TransactionService discount | ⚠️ Gap aktif | Paling krusial — semua web checkout tidak rekam discount dengan benar |
+| Discount UI di savings new page | ⚠️ Gap UI | User tidak bisa lihat/apply voucher saat buat tabungan |
+| Admin order creation + discount | ⚠️ Gap minor | Admin buat order manual, discount tidak diterapkan |
+| Bulk generate voucher | Belum diperlukan | Generate N kode sekaligus |
+| Notifikasi WhatsApp discount | Belum diperlukan | Kirim info discount ke donatur saat voucher sukses |
+| Stacking discount | Tidak diizinkan | 1 discount per order — desain sudah prevent ini |
+| Export usage report | Belum diperlukan | Laporan total discount per periode |
