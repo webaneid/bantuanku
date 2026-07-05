@@ -497,9 +497,78 @@ Semua template punya pasangan `{key}_enabled` toggle. Default: `enabled = true`.
 
 Urutan dipilih supaya hal paling kritikal (opt-out) jalan duluan, dan kompleksitas naik bertahap. Fase 3 dan 4 bisa dikerjakan paralel dengan Fase 5.
 
+### Rencana Eksekusi Fase 7
+
+**API (2 endpoint baru di `admin/whatsapp.ts`):**
+
+```
+GET /admin/whatsapp/templates/:key
+  → Ambil isi template dari settings (untuk preview di form)
+  → Return: { key, content, enabled }
+
+GET /admin/whatsapp/broadcasts/estimate?audienceScope=X&referenceId=Y
+  → Hitung jumlah calon penerima berdasarkan scope
+  → Return: { count, estimatedHours } — estimatedHours = ceil(count / batchSize) * batchInterval / 60
+```
+
+**Frontend — enhance modal buat broadcast di `broadcasts/page.tsx`:**
+
+1. **`manual_content` type** — campaign autocomplete:
+   - Gunakan `GET /v1/autocomplete/campaigns` (sudah ada)
+   - Pilih campaign → auto-fill: `referenceId`, `referenceName`, `templateKey = "wa_tpl_campaign_new"`
+   - Auto-set `audienceScope = "campaign_donors"` (bisa diubah manual)
+
+2. **Preview pesan** — setelah template dipilih/isi konten:
+   - Fetch `GET /admin/whatsapp/templates/:key`
+   - Render dengan sample vars: `{customer_name}` → "Budi Santoso", `{store_name}` → nama org
+   - Tampilkan preview di panel kanan modal
+
+3. **Estimasi penerima** — debounced saat `audienceScope` atau `referenceId` berubah:
+   - Fetch `GET /admin/whatsapp/broadcasts/estimate?...`
+   - Tampilkan: "~N penerima · selesai ±X jam dengan batch 50/jam"
+
 ---
 
-## Gap & Hal yang Disengaja Tidak Dimasukkan
+## Gap Implementasi (Ditemukan saat Eksekusi Fase 1–6)
+
+Gap berikut ditemukan antara arsitektur dan implementasi aktual. Masing-masing sudah dikategorikan:
+- ✅ **Sudah difix** — tidak perlu tindakan lanjut
+- ⚠️ **Belum difix** — perlu dikerjakan
+- 🗒️ **Disengaja** — keputusan desain yang tidak akan diimplementasikan
+
+### Gap yang Sudah Difix
+
+| # | Item | Fix |
+|---|------|-----|
+| 1 | Arsitektur menyebut `POST /v1/account/wa/opt-in` tapi implementasi pakai `/v1/wa/opt-in` | Arsitektur diupdate mengikuti kode aktual (Fase 2) |
+| 2 | `publishedAt` hanya di-set dari `PATCH /:id/status`, tidak dari `PUT /:id` | Fixed di Fase 6 — PUT sekarang juga set `publishedAt` saat pertama kali aktif |
+| 3 | Arsitektur birthday/re-engagement tidak menyebut `wa_broadcast_jobs` entry, tapi schema DB: `job_id NOT NULL` | Dibuat **synthetic job entry** per run cron sebagai audit trail (Fase 3 & 4) |
+
+### Gap yang Belum Difix
+
+| # | Item | Prioritas | Fase Target |
+|---|------|-----------|-------------|
+| 1 | **Fase 7 — UX form buat broadcast masih kasar**: referenceId diketik manual (bukan autocomplete), tidak ada preview pesan, tidak ada estimasi penerima + waktu selesai | Tinggi | Fase 7 |
+| 2 | **PATCH `/admin/campaigns/:id/status` tidak trigger broadcast job** — jika admin pakai endpoint status terpisah (bukan form edit), `broadcastWa` tidak bisa di-pass. Selama UI admin menggunakan form edit (PUT), ini tidak masalah. | Rendah | Post-Fase 7 |
+| 3 | **Broadcast untuk laporan kegiatan (activity reports)** — template `wa_tpl_report_published` disebut di arsitektur tapi belum dibuat di settings dan belum ada trigger dari halaman laporan | Sedang | Post-Fase 7 |
+| 4 | **Crontab `*/30 * * * *` untuk `/cron/wa-broadcast`** — sudah di-deploy kodenya, tapi crontab di VPS belum dikonfirmasi ditambahkan oleh user | Kritis | Segera (manual VPS) |
+| 5 | **Prompt "isi tanggal lahir" di profil web** — arsitektur merekomendasikan prompt lembut di `/account/profile` jika `birthDate` kosong, agar birthday reminder bisa jalan | Rendah | Post-Fase 7 |
+| 6 | **Unsubscribe via balas "BERHENTI" ke bot WA** — link unsubscribe sudah ada, tapi keyword bot belum dihandle | Rendah | Post-Fase 7 |
+
+### Hal yang Disengaja Tidak Dimasukkan
+
+| Item | Keputusan |
+|------|-----------|
+| Audience segmentasi lanjut (filter provinsi, gender, income range) | **Tidak dimasukkan** — terlalu kompleks untuk MVP. Cukup: semua / per-program / inaktif. |
+| A/B testing template | **Tidak dimasukkan** — bisa dipertimbangkan setelah sistem stabil. |
+| Email broadcast sebagai channel paralel | **Tidak dimasukkan** — email service belum production-ready. |
+| Scheduling broadcast (kirim di jam tertentu) | **Tidak dimasukkan Fase awal** — `next_batch_at` sudah support ini secara teknis, UI scheduler bisa ditambahkan nanti. |
+
+---
+
+## Gap & Hal yang Disengaja Tidak Dimasukkan (Arsitektur Awal)
+
+> Catatan: section ini adalah keputusan desain dari arsitektur awal. Gap yang ditemukan saat implementasi ada di section "Gap Implementasi" di atas.
 
 | Item | Keputusan |
 |------|-----------|
