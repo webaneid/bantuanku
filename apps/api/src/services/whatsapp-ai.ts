@@ -3,6 +3,7 @@ import { campaigns, zakatTypes, zakatPeriods, transactions, transactionPayments,
 import type { Database } from "@bantuanku/db";
 import { WhatsAppService } from "./whatsapp";
 import { TransactionService } from "./transaction";
+import { decrypt } from "../lib/encryption";
 import { handleFlowStep, generateFirstFlowMessage, createZakatFlowState, createDonationFlowState, createFidyahFlowState, createQurbanFlowState, createQurbanSavingsFlowState, createQurbanSavingsDepositFlowState, type FlowState, type FlowContext } from "./whatsapp-flow";
 
 // ---------------------------------------------------------------------------
@@ -1632,7 +1633,7 @@ async function getAIConfig(db: Database): Promise<{
 
   return {
     provider: map["whatsapp_bot_ai_provider"] || "gemini",
-    apiKey: map["whatsapp_bot_ai_api_key"] || "",
+    apiKey: decrypt(map["whatsapp_bot_ai_api_key"] || ""),
     model: map["whatsapp_bot_ai_model"] || "gemini-2.0-flash",
     systemPrompt: map["whatsapp_bot_system_prompt"] || "",
   };
