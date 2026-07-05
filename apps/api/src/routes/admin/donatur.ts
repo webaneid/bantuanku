@@ -101,6 +101,7 @@ const updateDonaturSchema = z.object({
 
   password: z.string().min(8).optional(),
   isActive: z.boolean().optional(),
+  waOptOut: z.boolean().optional(),
 });
 
 // GET all donatur
@@ -505,6 +506,10 @@ donaturAdmin.put(
     if (donaturData.gender !== undefined) updateData.gender = donaturData.gender;
 
     if (donaturData.isActive !== undefined) updateData.isActive = donaturData.isActive;
+    if (donaturData.waOptOut !== undefined) {
+      updateData.waOptOut = donaturData.waOptOut;
+      updateData.waOptOutAt = donaturData.waOptOut ? new Date() : null;
+    }
 
     if (donaturData.password) {
       updateData.passwordHash = await hashPassword(donaturData.password);

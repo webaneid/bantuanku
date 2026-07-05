@@ -79,6 +79,22 @@ export default function ViewDonaturPage() {
       }),
   });
 
+  const waOptOutMutation = useMutation({
+    mutationFn: (waOptOut: boolean) =>
+      api.put(`/admin/donatur/${donaturId}`, { waOptOut }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["donatur", donaturId] });
+      refetch();
+    },
+    onError: (err: any) =>
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Gagal",
+        message: err.response?.data?.message || "Gagal memperbarui preferensi WA",
+      }),
+  });
+
   const handleActivateUser = () => {
     if (!activatePassword || activatePassword.length < 8) {
       setFeedback({
@@ -415,6 +431,23 @@ export default function ViewDonaturPage() {
                   <span>Email terverifikasi</span>
                 </div>
               )}
+
+              <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-2">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>Notif WA</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${donaturData.waOptOut ? "bg-gray-100 text-gray-500" : "bg-green-100 text-green-700"}`}>
+                    {donaturData.waOptOut ? "Nonaktif" : "Aktif"}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => waOptOutMutation.mutate(!donaturData.waOptOut)}
+                  disabled={waOptOutMutation.isPending}
+                  className="text-xs text-primary-600 hover:text-primary-700 disabled:opacity-50"
+                >
+                  {waOptOutMutation.isPending ? "..." : donaturData.waOptOut ? "Aktifkan" : "Nonaktifkan"}
+                </button>
+              </div>
             </div>
           </div>
 

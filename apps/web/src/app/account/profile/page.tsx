@@ -76,6 +76,8 @@ export default function ProfilePage() {
     confirmPassword: "",
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [waOptOut, setWaOptOut] = useState(false);
+  const [isTogglingWa, setIsTogglingWa] = useState(false);
 
   // Fetch profile data
   useEffect(() => {
@@ -119,6 +121,7 @@ export default function ProfilePage() {
             accountHolderName: ba.accountHolderName,
           })) || [],
         });
+        setWaOptOut(data.waOptOut ?? false);
 
         // Load regencies if province selected
         if (data.provinceCode) {
@@ -729,6 +732,47 @@ export default function ProfilePage() {
           </Button>
         </div>
       </form>
+
+      {/* WhatsApp Preferences Card */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-1">Notifikasi WhatsApp</h2>
+        <p className="text-sm text-gray-500 mb-5">
+          Atur apakah Anda ingin menerima informasi program, kampanye, dan pesan kebaikan dari kami via WhatsApp.
+        </p>
+        <label className="flex items-center gap-4 cursor-pointer select-none">
+          <div className="relative">
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={!waOptOut}
+              disabled={isTogglingWa}
+              onChange={async (e) => {
+                const newOptOut = !e.target.checked;
+                setIsTogglingWa(true);
+                try {
+                  await api.patch("/auth/me", { waOptOut: newOptOut });
+                  setWaOptOut(newOptOut);
+                  toast.success(newOptOut ? "Notifikasi WhatsApp dinonaktifkan" : "Notifikasi WhatsApp diaktifkan");
+                } catch {
+                  toast.error("Gagal memperbarui preferensi");
+                } finally {
+                  setIsTogglingWa(false);
+                }
+              }}
+            />
+            <div className={`w-11 h-6 rounded-full transition-colors ${!waOptOut ? "bg-primary-500" : "bg-gray-300"} ${isTogglingWa ? "opacity-50" : ""}`} />
+            <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${!waOptOut ? "translate-x-5" : "translate-x-0"}`} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-900">{!waOptOut ? "Aktif" : "Nonaktif"}</p>
+            <p className="text-xs text-gray-500">
+              {!waOptOut
+                ? "Anda akan menerima pesan info program & kebaikan dari kami"
+                : "Anda tidak akan menerima pesan WhatsApp dari kami"}
+            </p>
+          </div>
+        </label>
+      </div>
 
       {/* Change Password Card */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">

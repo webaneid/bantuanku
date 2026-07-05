@@ -71,3 +71,29 @@ export async function verifyRefreshToken(
     return null;
   }
 }
+
+export async function signUnsubscribeToken(
+  donaturId: string,
+  secret: string
+): Promise<string> {
+  const secretKey = new TextEncoder().encode(secret);
+  return new jose.SignJWT({ sub: donaturId, purpose: "wa-unsubscribe" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("30d")
+    .sign(secretKey);
+}
+
+export async function verifyUnsubscribeToken(
+  token: string,
+  secret: string
+): Promise<string | null> {
+  try {
+    const secretKey = new TextEncoder().encode(secret);
+    const { payload } = await jose.jwtVerify(token, secretKey);
+    if (payload.purpose !== "wa-unsubscribe") return null;
+    return payload.sub as string;
+  } catch {
+    return null;
+  }
+}

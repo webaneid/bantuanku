@@ -557,6 +557,7 @@ auth.get("/me", authMiddleware, async (c) => {
     district: donaturProfile?.district,
     village: donaturProfile?.village,
     donaturId: donaturProfile?.id,
+    waOptOut: donaturProfile?.waOptOut ?? false,
     bankAccounts,
     roles: currentUser!.roles,
     isDeveloper: Boolean(user.isDeveloper),
@@ -588,6 +589,7 @@ auth.patch("/me", authMiddleware, async (c) => {
     birthDate,
     gender,
     bankAccounts,
+    waOptOut,
   } = body;
 
   // Get current user
@@ -637,6 +639,8 @@ auth.patch("/me", authMiddleware, async (c) => {
         birthPlace: birthPlace !== undefined ? (birthPlace || null) : undefined,
         birthDate: birthDate !== undefined ? (birthDate || null) : undefined,
         gender: gender !== undefined ? (gender || null) : undefined,
+        waOptOut: waOptOut !== undefined ? Boolean(waOptOut) : undefined,
+        waOptOutAt: waOptOut === true ? new Date() : waOptOut === false ? null : undefined,
         updatedAt: new Date(),
       })
       .where(eq(donatur.id, donaturProfile.id));

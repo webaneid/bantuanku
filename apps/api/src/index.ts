@@ -41,6 +41,7 @@ import whatsappWebhookRoutes from "./routes/whatsapp";
 import testimonialsRoutes from "./routes/testimonials";
 import jobsRoutes from "./routes/jobs";
 import incomeRangesRoutes from "./routes/income-ranges";
+import waRoutes from "./routes/wa";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -177,6 +178,7 @@ app.route("/v1/transactions", transactionsRoutes);
 app.route("/v1/zakat", zakatRoutes);
 app.route("/v1/fundraisers", fundraisersRoutes);
 app.route("/v1/mitra", mitraPublicRoutes);
+app.route("/v1/wa", waRoutes);
 app.route("/v1/whatsapp", whatsappWebhookRoutes);
 app.route("/v1/testimonials", testimonialsRoutes);
 app.route("/v1/jobs", jobsRoutes);
