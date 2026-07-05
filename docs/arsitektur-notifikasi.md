@@ -118,7 +118,7 @@ Template berikut ada di migration/UI, tetapi tidak ditemukan sebagai trigger akt
 | Template | Catatan |
 |----------|---------|
 | `wa_tpl_payment_expired` | Ada setting/template, belum ada trigger pengiriman saat transaksi expired/cancelled |
-| `wa_tpl_savings_converted` | Ada setting/template, belum ada trigger pengiriman konversi tabungan ke pesanan qurban |
+| `wa_tpl_savings_converted` | ~~Belum ada trigger~~ → **Sudah diimplementasikan 2026-07-05** di `POST /qurban/savings/:id/convert` (qurban.ts), fire-and-forget setelah savings status diset "converted" |
 
 ## Endpoint Admin WhatsApp
 
@@ -178,7 +178,7 @@ installment_frequency, installment_count, installment_paid, installment_remainin
 
 ### Catatan Penting
 
-- Cek "already paid" **masih membaca `qurban_savings_transactions`** (legacy table), bukan universal `transactions`. Ini karena deposit bisa dari kedua jalur (legacy + universal). **Gap**: universal deposits tidak terdeteksi sebagai "already paid" jika tidak ada entry di legacy table.
+- Cek "already paid" kini membaca **dua jalur**: (1) `qurban_savings_transactions` (legacy), dan (2) universal `transactions` via `typeSpecificData->>'savings_id'` dan `payment_status = 'paid'` dan `paid_at` dalam batas period. **Fix diimplementasikan 2026-07-05**.
 - Scheduler `startSavingsReminderScheduler()` tersedia di kode tapi **status pemasangan di `index.ts` perlu dicek** — pemicu aktual via cron HTTP atau manual admin.
 
 ### Pemicu
@@ -259,7 +259,7 @@ Endpoint account:
 | `PATCH /v1/account/notifications/:id/read` | Tandai satu notifikasi sebagai read |
 | `POST /v1/account/notifications/read-all` | Tandai semua notifikasi user sebagai read |
 
-Gap implementasi: `unreadCount` di `GET /v1/account/notifications` saat ini menghitung semua notifikasi user, belum memfilter `is_read=false`.
+~~Gap implementasi~~: `unreadCount` di `GET /v1/account/notifications` kini sudah memfilter `is_read=false` dengan benar. **Fix diimplementasikan 2026-07-05** (`apps/api/src/routes/account.ts`).
 
 ## OTP WhatsApp
 
@@ -306,16 +306,99 @@ Email service ada di kode tapi **penggunaan aktif sangat terbatas** — hanya di
 
 ## Gap dan Rekomendasi
 
-1. **Webhook signature wajib diimplementasikan.** Saat ini `whatsapp_webhook_secret` ada di settings tetapi tidak diverifikasi. Tambahkan HMAC validation sebelum memproses payload.
-2. **Tambahkan outbox/delivery log untuk WhatsApp.** Struktur minimal: `templateKey`, `recipient`, `payload`, `status`, `attemptCount`, `lastError`, `sentAt`, `createdAt`.
-3. **Pindahkan bot conversation state ke storage persisten.** Redis atau table khusus diperlukan jika API berjalan multi-instance atau harus tahan restart.
-4. **Savings-reminder: cek "already paid" belum cover universal transactions.** `runSavingsReminders()` query ke `qurban_savings_transactions` (legacy), sehingga deposit via universal `transactions` tidak terdeteksi. Fix: tambah join ke `transactions` dengan `category = "qurban_savings"` dan `paymentStatus = "paid"`.
-5. **Email service belum production-ready.** `EmailService` ada dan fungsional, tapi belum terintegrasi ke approve-payment flow. WhatsApp jadi primary, email jadi secondary yang belum aktif.
-4. **Perbaiki `unreadCount`.** Query harus memfilter `notifications.isRead=false`.
-5. **Pisahkan template configured vs triggered di UI.** `wa_tpl_payment_expired` dan `wa_tpl_savings_converted` sebaiknya diberi status belum aktif atau ditambahkan trigger implementasinya.
-6. **Tambahkan rate limit khusus webhook dan admin test-send.** Rate limit global ada, tetapi webhook publik dan direct send lebih baik punya guard spesifik.
-7. **Tambahkan observability.** Minimal log structured untuk provider response, template key, recipient masked, dan correlation id transaksi.
-8. **Dokumentasikan SOP nomor pengirim.** Gunakan nomor khusus, warm-up, delay, dan batas bulk agar risiko ban GOWA lebih terkendali.
+### Sudah Diperbaiki
+
+| Item | Status | Tanggal |
+|------|--------|---------|
+| `unreadCount` menghitung semua notifikasi, bukan hanya yang belum dibaca | ✅ Fixed | 2026-07-05 |
+| Savings-reminder tidak mendeteksi deposit via universal `transactions` | ✅ Fixed | 2026-07-05 |
+| `wa_tpl_savings_converted` tidak ada trigger | ✅ Fixed | 2026-07-05 |
+
+### Gap Aktif
+
+1. **Webhook signature wajib diimplementasikan.** `whatsapp_webhook_secret` ada di settings tetapi tidak diverifikasi. Tambahkan HMAC validation (`X-Hub-Signature-256`) sebelum memproses payload — saat ini semua request ke `/whatsapp/webhook` diterima tanpa verifikasi asal.
+2. **`wa_tpl_payment_expired` tidak ada trigger.** Template ada di DB tapi tidak pernah dikirim. Perlu trigger di background job atau scheduler saat transaksi melewati `expired_at`.
+3. **Email service belum production-ready.** `EmailService` ada tapi belum terintegrasi ke approve-payment flow. WhatsApp jadi primary, email jadi secondary yang belum aktif.
+4. **Rate limit khusus webhook dan admin test-send.** Rate limit global ada, tapi webhook publik dan direct send lebih baik punya guard spesifik agar tidak dimanfaatkan sebagai relay spam.
+
+---
+
+## Rencana Upgrade Masa Depan
+
+Bagian ini mendokumentasikan ide peningkatan yang sudah dievaluasi dan layak dipertimbangkan jika sistem berkembang. Belum diimplementasikan dan belum tentu diprioritaskan.
+
+### A. Outbox / Retry Mechanism
+
+**Masalah yang diselesaikan:** Saat ini pengiriman WA adalah best-effort — gagal kirim tidak diulang dan tidak ada rekaman. Jika API/GOWA mati sesaat, notifikasi hilang tanpa jejak.
+
+**Desain minimal:**
+```sql
+CREATE TABLE whatsapp_outbox (
+  id           TEXT PRIMARY KEY,
+  template_key TEXT NOT NULL,
+  recipient    TEXT NOT NULL,   -- nomor WA
+  payload      JSONB,           -- variables yang dirender
+  status       TEXT NOT NULL DEFAULT 'pending', -- pending | sent | failed | cancelled
+  attempt_count INTEGER DEFAULT 0,
+  last_error   TEXT,
+  scheduled_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  sent_at      TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+**Alur baru:** Route trigger → insert ke `whatsapp_outbox` (status=pending) → background worker poll setiap N detik → kirim via GOWA → update status. Retry sampai `attempt_count = 3`, lalu `failed`.
+
+**Dampak:** Notifikasi tahan terhadap restart API dan downtime GOWA singkat. Delivery log juga jadi audit trail.
+
+### B. Webhook Signature Validation
+
+**Masalah yang diselesaikan:** Siapapun bisa POST ke `/v1/whatsapp/webhook` dan bot akan memprosesnya. Risiko: replay attack, injeksi pesan palsu.
+
+**Implementasi:**
+```typescript
+// Di route webhook
+const secret = await getWebhookSecret(db); // baca dari settings
+const signature = c.req.header("X-Hub-Signature-256");
+const body = await c.req.text();
+const expected = "sha256=" + createHmac("sha256", secret).update(body).digest("hex");
+if (!timingSafeEqual(Buffer.from(signature ?? ""), Buffer.from(expected))) {
+  return c.json({ error: "Invalid signature" }, 401);
+}
+```
+
+**Catatan:** GOWA perlu dikonfigurasi untuk mengirim header signature. Tidak semua deployment GOWA mendukung ini — verifikasi kompatibilitas provider sebelum enable.
+
+### C. Bot Enhancements
+
+**Masalah yang diselesaikan:** State percakapan in-memory hilang saat restart; multi-instance API memecah sesi donatur.
+
+**Upgrade 1 — Persistent conversation state:** Simpan `Map<phone, ConversationContext>` ke Redis atau tabel DB `whatsapp_sessions`. TTL tetap 30 menit. Keuntungan: tahan restart, scalable multi-instance.
+
+**Upgrade 2 — AI tool use:** Ganti prompt-only AI dengan tool-use API. Bot bisa query status donasi, cek saldo tabungan, atau lookup jadwal qurban langsung via tool, bukan hanya dari context injected di prompt.
+
+**Upgrade 3 — Handover ke agen manusia:** Tambahkan command `/agen` atau keyword untuk keluar dari bot mode dan meneruskan percakapan ke admin melalui notifikasi WA admin (`sendToAdmins()`).
+
+**Upgrade 4 — Audit trail percakapan:** Insert setiap pesan inbound + outbound ke tabel `whatsapp_conversation_logs`. Berguna untuk QA, dispute handling, dan training AI.
+
+### D. Notifikasi Baru yang Belum Ada Template
+
+| Skenario | Template Key Usulan | Variables |
+|----------|---------------------|-----------|
+| Donatur berhasil daftar mitra | `wa_tpl_mitra_registered` | `customer_name`, `mitra_name`, `review_period` |
+| Qurban order terkonfirmasi admin | `wa_tpl_qurban_order_confirmed` | `customer_name`, `order_number`, `package_name`, `period` |
+| Wakaf order terkonfirmasi | `wa_tpl_wakaf_confirmed` | `customer_name`, `order_number`, `amount` |
+| Password berhasil diubah | `wa_tpl_password_changed` | `customer_name`, `current_time`, `current_date` |
+| Voucher discount dipakai | `wa_tpl_voucher_applied` | `customer_name`, `voucher_code`, `discount_amount`, `order_number` |
+
+### E. Observability WhatsApp
+
+**Tambahkan ke setiap pengiriman:**
+- Log structured: `{ level, timestamp, templateKey, recipientMasked, correlationId, durationMs, success, errorCode }`
+- Masked recipient: tampilkan 4 digit terakhir saja (`****1234`)
+- Correlation ID: link ke transaction/order ID yang memicu pengiriman
+
+Ini memungkinkan debug "kenapa notifikasi tidak diterima" tanpa harus grep log mentah.
 
 ## Mapping Dokumen Lama
 

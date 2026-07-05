@@ -29,6 +29,7 @@ import * as pathModule from "path";
 import { optionalAuthMiddleware } from "../middleware/auth";
 import { success, error } from "../lib/response";
 import { TransactionService } from "../services/transaction";
+import { WhatsAppService } from "../services/whatsapp";
 import type { Env, Variables } from "../types";
 
 
@@ -1750,6 +1751,7 @@ app.post("/savings/:id/convert", async (c) => {
     where: eq(qurbanPackagePeriods.id, targetPackagePeriodId),
     with: {
       package: true,
+      period: true,
     },
   });
 
@@ -1955,6 +1957,22 @@ app.post("/savings/:id/convert", async (c) => {
       updatedAt: now,
     })
     .where(eq(qurbanSavings.id, id));
+
+  // Fire-and-forget WA notification for conversion
+  if (savings.donorPhone) {
+    const waService = new WhatsAppService(c.get("db"));
+    waService.send({
+      phone: savings.donorPhone,
+      templateKey: "wa_tpl_savings_converted",
+      variables: {
+        customer_name: savings.donorName || "Donatur",
+        savings_number: savings.savingsNumber || savings.id,
+        qurban_package: pkgPeriod.package?.name || "",
+        qurban_period: pkgPeriod.period?.name || "",
+        savings_current: `Rp ${Number(savings.currentAmount || 0).toLocaleString("id-ID")}`,
+      },
+    }).catch((err: Error) => console.error("[WA] savings_converted failed:", err.message));
+  }
 
   return c.json({
     data: {

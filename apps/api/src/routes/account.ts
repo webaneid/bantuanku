@@ -250,7 +250,7 @@ account.get("/notifications", async (c) => {
     db
       .select({ count: sql<number>`count(*)` })
       .from(notifications)
-      .where(eq(notifications.userId, user!.id)),
+      .where(and(eq(notifications.userId, user!.id), eq(notifications.isRead, false))),
   ]);
 
   return c.json({

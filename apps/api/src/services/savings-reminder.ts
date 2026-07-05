@@ -11,10 +11,11 @@
  * 4. Send WA reminder using wa_tpl_savings_reminder template
  */
 
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 import {
   qurbanSavings,
   qurbanSavingsTransactions,
+  transactions,
 } from "@bantuanku/db";
 import type { Database } from "@bantuanku/db";
 import { WhatsAppService } from "./whatsapp";
@@ -196,6 +197,24 @@ export async function runSavingsReminders(
       );
 
     if (depositsThisPeriod.length > 0) {
+      result.alreadyPaid++;
+      continue;
+    }
+
+    // Also check universal transactions table (web checkout flow)
+    const universalDepositsThisPeriod = await db
+      .select({ id: transactions.id })
+      .from(transactions)
+      .where(
+        and(
+          sql`${transactions.typeSpecificData}->>'savings_id' = ${saving.id}`,
+          eq(transactions.paymentStatus, "paid"),
+          gte(transactions.paidAt, bounds.start),
+          lte(transactions.paidAt, bounds.end)
+        )
+      );
+
+    if (universalDepositsThisPeriod.length > 0) {
       result.alreadyPaid++;
       continue;
     }
