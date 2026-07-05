@@ -1,7 +1,7 @@
 # Arsitektur WhatsApp Community Care
 
-> Status: SEBAGIAN DIIMPLEMENTASIKAN — Fase 1 & 2 selesai, Fase 3–7 dalam antrian  
-> Dibuat: 2026-07-05 | Diperbarui: 2026-07-05  
+> Status: SEBAGIAN DIIMPLEMENTASIKAN — Fase 1–4 selesai, Fase 5–7 dalam antrian  
+> Dibuat: 2026-07-05 | Diperbarui: 2026-07-05 (Fase 4 selesai)  
 > Bergantung pada: `arsitektur-notifikasi.md`, `arsitektur-donatur.md`, `arsitektur-donasi.md`, `arsitektur-activity-reports.md`
 
 ---
@@ -34,10 +34,11 @@ Berbeda dari `arsitektur-notifikasi.md` yang scope-nya event-driven per transaks
 | **2. Re-engagement** | Cron harian | Donatur yang 62+ hari tidak donasi | ✅ Selesai (Fase 4) |
 | **3. Ulang Tahun** | Cron harian | Donatur dengan `birthDate` = hari ini | ✅ Selesai (Fase 3) |
 
-> **Infrastruktur** (Fase 1 & 2 — selesai 2026-07-05):
-> - Migration 119: tabel `wa_broadcast_jobs`, `wa_broadcast_logs`, kolom `donatur.waOptOut`, `campaigns.broadcastWa`
-> - Opt-out mechanism: `GET /v1/wa/unsubscribe`, `POST /v1/wa/opt-in`, toggle di profil web & admin donatur
-> - Halaman `/berhenti` (unsubscribe landing page)
+> **Sudah live di VPS (deploy 2026-07-05):**
+> - **Fase 1** — Migration 119: `wa_broadcast_jobs`, `wa_broadcast_logs`, `donatur.waOptOut`, `campaigns.broadcastWa`
+> - **Fase 2** — Opt-out: `GET /v1/wa/unsubscribe`, `POST /v1/wa/opt-in`, toggle profil web & admin, halaman `/berhenti`
+> - **Fase 3** — Birthday cron: `GET /cron/wa-birthday` (08:00 WIB), `services/birthday-reminder.ts`
+> - **Fase 4** — Re-engagement cron: `GET /cron/wa-reengagement` (10:00 WIB), `services/reengagement-reminder.ts`
 
 ---
 
