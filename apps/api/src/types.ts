@@ -4,6 +4,7 @@ export interface Env {
   DATABASE_URL: string;
   JWT_SECRET: string;
   JWT_EXPIRES_IN?: string;
+  CRON_SECRET?: string;
   ENVIRONMENT: string;
   API_URL?: string;
   FRONTEND_URL?: string;

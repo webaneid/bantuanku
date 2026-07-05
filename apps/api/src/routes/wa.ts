@@ -16,15 +16,16 @@ wa.get("/unsubscribe", async (c) => {
     return error(c, "Token tidak valid", 400);
   }
 
-  const donaturId = await verifyUnsubscribeToken(token, c.env.JWT_SECRET);
-  if (!donaturId) {
+  const result = await verifyUnsubscribeToken(token, c.env.JWT_SECRET);
+  if (!result) {
     return error(c, "Link tidak valid atau sudah kedaluwarsa", 400);
   }
+  const { donaturId, issuedAt } = result;
 
   const db = c.get("db");
   const existing = await db.query.donatur.findFirst({
     where: eq(donatur.id, donaturId),
-    columns: { id: true, waOptOut: true },
+    columns: { id: true, waOptOut: true, waOptOutAt: true },
   });
 
   if (!existing) {
@@ -33,6 +34,12 @@ wa.get("/unsubscribe", async (c) => {
 
   if (existing.waOptOut) {
     return success(c, { alreadyOptedOut: true }, "Anda sudah berhenti berlangganan sebelumnya");
+  }
+
+  // Replay protection: if token was issued before the last opt-out event,
+  // this is a stale link replayed after a subsequent opt-in
+  if (existing.waOptOutAt && issuedAt * 1000 < existing.waOptOutAt.getTime()) {
+    return error(c, "Link ini sudah tidak berlaku. Silakan gunakan link terbaru dari pesan WhatsApp kami.", 400);
   }
 
   await db
@@ -59,8 +66,10 @@ wa.post("/opt-in", authMiddleware, async (c) => {
 
   await db
     .update(donatur)
-    .set({ waOptOut: false, waOptOutAt: null, updatedAt: new Date() })
+    .set({ waOptOut: false, updatedAt: new Date() })
     .where(eq(donatur.id, donaturProfile.id));
+  // waOptOutAt is intentionally kept (not nulled) so that old unsubscribe tokens
+  // issued before the last opt-out can be detected as stale and rejected
 
   return success(c, { optedIn: true }, "Berhasil berlangganan kembali pesan WhatsApp");
 });

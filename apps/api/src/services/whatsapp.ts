@@ -22,12 +22,16 @@ interface SendParams {
 
 export class WhatsAppService {
   private envFrontendUrl?: string;
+  private _config?: WhatsAppConfig;
+  private _templates = new Map<string, string | null>();
+  private _globalVars?: Record<string, string>;
 
   constructor(private db: Database, envFrontendUrl?: string) {
     this.envFrontendUrl = envFrontendUrl;
   }
 
   async getConfig(): Promise<WhatsAppConfig> {
+    if (this._config) return this._config;
     const rows = await this.db.query.settings.findMany({
       where: eq(settings.category, "whatsapp"),
     });
@@ -37,7 +41,7 @@ export class WhatsAppService {
       map[row.key] = row.value;
     }
 
-    return {
+    this._config = {
       enabled: map["whatsapp_enabled"] === "true",
       apiUrl: map["whatsapp_api_url"] || "",
       username: map["whatsapp_username"] || "",
@@ -53,14 +57,18 @@ export class WhatsAppService {
       })(),
       messageDelay: parseInt(map["whatsapp_message_delay"] || "2000", 10),
     };
+    return this._config;
   }
 
   async getTemplate(key: string): Promise<string | null> {
+    if (this._templates.has(key)) return this._templates.get(key)!;
+
     const enabledSetting = await this.db.query.settings.findFirst({
       where: eq(settings.key, `${key}_enabled`),
     });
 
     if (enabledSetting?.value !== "true") {
+      this._templates.set(key, null);
       return null;
     }
 
@@ -68,10 +76,14 @@ export class WhatsAppService {
       where: eq(settings.key, key),
     });
 
-    return templateSetting?.value || null;
+    const value = templateSetting?.value || null;
+    this._templates.set(key, value);
+    return value;
   }
 
   async getGlobalVariables(): Promise<Record<string, string>> {
+    if (this._globalVars) return this._globalVars;
+
     const { inArray } = await import("drizzle-orm");
     const rows = await this.db.query.settings.findMany({
       where: inArray(settings.category, ["general", "organization"]),
@@ -89,7 +101,7 @@ export class WhatsAppService {
       ? this.envFrontendUrl.replace(/\/+$/, "")
       : storeWebsite.replace(/\/+$/, "");
 
-    return {
+    this._globalVars = {
       store_name: map["organization_name"] || map["site_name"] || "",
       store_phone: map["organization_phone"] || map["contact_phone"] || "",
       store_whatsapp: map["organization_whatsapp"] || map["organization_phone"] || map["contact_phone"] || "",
@@ -104,6 +116,7 @@ export class WhatsAppService {
         timeZone: "Asia/Jakarta",
       }) + " WIB",
     };
+    return this._globalVars;
   }
 
   renderTemplate(

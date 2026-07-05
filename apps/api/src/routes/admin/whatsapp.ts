@@ -239,12 +239,17 @@ whatsappAdmin.get(
 // ─── Template Preview ─────────────────────────────────────────────────────────
 
 // GET /admin/whatsapp/templates/:key — ambil isi template dari settings (untuk preview)
+// Key must match wa_tpl_* prefix — prevents exposing non-template settings like passwords
 whatsappAdmin.get(
   "/templates/:key",
   requireRole("super_admin", "admin_finance"),
   async (c) => {
     const db = c.get("db");
     const key = c.req.param("key");
+
+    if (!/^wa_tpl_[a-z0-9_]+$/.test(key)) {
+      return error(c, "Template key tidak valid", 400);
+    }
 
     const [enabledRow, contentRow] = await Promise.all([
       db.query.settings.findFirst({ where: eq(settings.key, `${key}_enabled`) }),

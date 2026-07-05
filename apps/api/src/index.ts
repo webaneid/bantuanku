@@ -4,6 +4,7 @@ import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
 import * as fs from "fs";
 import * as pathModule from "path";
+import { timingSafeEqual } from "node:crypto";
 
 import { dbMiddleware } from "./middleware/db";
 import { securityHeaders, validateContentType } from "./middleware/security";
@@ -89,12 +90,28 @@ app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// Validate cron secret using timing-safe compare.
+// Accepts Authorization: Bearer <secret> (preferred — not logged by proxies)
+// OR ?secret=<secret> query param (legacy, update crontab to use header instead).
+function verifyCronSecret(secret: string | null, expected: string): boolean {
+  if (!secret || secret.length !== expected.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(secret), Buffer.from(expected));
+  } catch {
+    return false;
+  }
+}
+
+function extractCronSecret(c: { req: { header: (k: string) => string | undefined; query: (k: string) => string | undefined } }): string | null {
+  const auth = c.req.header("Authorization");
+  if (auth?.startsWith("Bearer ")) return auth.slice(7);
+  return c.req.query("secret") ?? null;
+}
+
 // Cron endpoint: savings reminder (protected by secret, callable by external cron)
-// Usage: curl "https://api.example.com/cron/savings-reminder?secret=YOUR_SECRET"
+// Usage: curl -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/savings-reminder
 app.get("/cron/savings-reminder", async (c) => {
-  const secret = c.req.query("secret");
-  const expectedSecret = c.env.JWT_SECRET;
-  if (!secret || secret !== expectedSecret) {
+  if (!verifyCronSecret(extractCronSecret(c), c.env.CRON_SECRET ?? c.env.JWT_SECRET)) {
     return c.json({ success: false, message: "Unauthorized" }, 401);
   }
   const db = c.get("db");
@@ -104,10 +121,9 @@ app.get("/cron/savings-reminder", async (c) => {
 });
 
 // Cron endpoint: birthday reminders — daily 08:00 WIB (01:00 UTC)
-// Usage: curl "https://api.bantuanku.org/cron/wa-birthday?secret=YOUR_SECRET"
+// Usage: curl -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-birthday
 app.get("/cron/wa-birthday", async (c) => {
-  const secret = c.req.query("secret");
-  if (!secret || secret !== c.env.JWT_SECRET) {
+  if (!verifyCronSecret(extractCronSecret(c), c.env.CRON_SECRET ?? c.env.JWT_SECRET)) {
     return c.json({ success: false, message: "Unauthorized" }, 401);
   }
   const db = c.get("db");
@@ -117,10 +133,9 @@ app.get("/cron/wa-birthday", async (c) => {
 });
 
 // Cron endpoint: re-engagement reminders — daily 10:00 WIB (03:00 UTC)
-// Usage: curl "https://api.bantuanku.org/cron/wa-reengagement?secret=YOUR_SECRET"
+// Usage: curl -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-reengagement
 app.get("/cron/wa-reengagement", async (c) => {
-  const secret = c.req.query("secret");
-  if (!secret || secret !== c.env.JWT_SECRET) {
+  if (!verifyCronSecret(extractCronSecret(c), c.env.CRON_SECRET ?? c.env.JWT_SECRET)) {
     return c.json({ success: false, message: "Unauthorized" }, 401);
   }
   const db = c.get("db");
@@ -130,10 +145,9 @@ app.get("/cron/wa-reengagement", async (c) => {
 });
 
 // Cron endpoint: broadcast batch processor — every 30 min
-// Usage: curl "https://api.bantuanku.org/cron/wa-broadcast?secret=YOUR_SECRET"
+// Usage: curl -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-broadcast
 app.get("/cron/wa-broadcast", async (c) => {
-  const secret = c.req.query("secret");
-  if (!secret || secret !== c.env.JWT_SECRET) {
+  if (!verifyCronSecret(extractCronSecret(c), c.env.CRON_SECRET ?? c.env.JWT_SECRET)) {
     return c.json({ success: false, message: "Unauthorized" }, 401);
   }
   const db = c.get("db");

@@ -1,4 +1,4 @@
-import { and, eq, gte, isNotNull, lte, or, sql } from "drizzle-orm";
+import { and, eq, isNotNull, lte, notInArray, or, sql } from "drizzle-orm";
 import {
   campaigns,
   donatur,
@@ -19,45 +19,81 @@ interface BatchResult {
   status: "batch_done" | "completed" | "no_job";
 }
 
-// Query audience batch based on audienceScope with OFFSET/LIMIT
+// Subquery: exclude donatur already logged for this job (any status)
+function alreadySentExclusion(jobId: string) {
+  return sql`NOT EXISTS (
+    SELECT 1 FROM wa_broadcast_logs
+    WHERE wa_broadcast_logs.donatur_id = ${donatur.id}
+      AND wa_broadcast_logs.job_id = ${jobId}
+  )`;
+}
+
+// COUNT total unique eligible recipients for a job (no row materialisation)
+async function countAudience(
+  db: Database,
+  audienceScope: string,
+  referenceId: string | null | undefined,
+  jobId: string
+): Promise<number> {
+  const notSent = alreadySentExclusion(jobId);
+
+  if (audienceScope === "all") {
+    const rows = await db
+      .select({ n: sql<number>`count(*)` })
+      .from(donatur)
+      .where(and(eq(donatur.isActive, true), eq(donatur.waOptOut, false), or(isNotNull(donatur.whatsappNumber), isNotNull(donatur.phone)), notSent));
+    return Number(rows[0]?.n ?? 0);
+  }
+
+  if (audienceScope === "campaign_donors" && referenceId) {
+    const rows = await db
+      .select({ n: sql<number>`count(distinct ${donatur.id})` })
+      .from(donatur)
+      .innerJoin(transactions, eq(transactions.donaturId, donatur.id))
+      .where(and(eq(donatur.isActive, true), eq(donatur.waOptOut, false), or(isNotNull(donatur.whatsappNumber), isNotNull(donatur.phone)), eq(transactions.productId, referenceId), eq(transactions.productType, "campaign"), eq(transactions.paymentStatus, "paid"), notSent));
+    return Number(rows[0]?.n ?? 0);
+  }
+
+  if (audienceScope === "inactive_62d") {
+    const sixtyTwoDaysAgo = new Date(Date.now() - 62 * 24 * 60 * 60 * 1000);
+    const rows = await db
+      .select({ n: sql<number>`count(*)` })
+      .from(donatur)
+      .where(and(eq(donatur.isActive, true), eq(donatur.waOptOut, false), or(isNotNull(donatur.whatsappNumber), isNotNull(donatur.phone)), sql`(SELECT MAX(${transactions.paidAt}) FROM transactions WHERE ${transactions.donaturId} = ${donatur.id} AND ${transactions.paymentStatus} = 'paid') < ${sixtyTwoDaysAgo}`, notSent));
+    return Number(rows[0]?.n ?? 0);
+  }
+
+  return 0;
+}
+
+// Query a page of eligible recipients, excluding already-logged donatur at DB level
 async function queryAudienceBatch(
   db: Database,
   audienceScope: string,
   referenceId: string | null | undefined,
   offset: number,
   limit: number,
-  alreadySentIds: Set<string>
+  jobId: string
 ): Promise<Array<{ id: string; name: string | null; phone: string | null; whatsappNumber: string | null }>> {
+  const notSent = alreadySentExclusion(jobId);
+
   if (audienceScope === "all") {
     return db
       .select({ id: donatur.id, name: donatur.name, phone: donatur.phone, whatsappNumber: donatur.whatsappNumber })
       .from(donatur)
-      .where(
-        and(
-          eq(donatur.isActive, true),
-          eq(donatur.waOptOut, false),
-          or(isNotNull(donatur.whatsappNumber), isNotNull(donatur.phone))
-        )
-      )
+      .where(and(eq(donatur.isActive, true), eq(donatur.waOptOut, false), or(isNotNull(donatur.whatsappNumber), isNotNull(donatur.phone)), notSent))
       .limit(limit)
       .offset(offset);
   }
 
   if (audienceScope === "campaign_donors" && referenceId) {
+    // groupBy deduplicates donatur with multiple transactions for the same campaign
     return db
       .select({ id: donatur.id, name: donatur.name, phone: donatur.phone, whatsappNumber: donatur.whatsappNumber })
       .from(donatur)
       .innerJoin(transactions, eq(transactions.donaturId, donatur.id))
-      .where(
-        and(
-          eq(donatur.isActive, true),
-          eq(donatur.waOptOut, false),
-          or(isNotNull(donatur.whatsappNumber), isNotNull(donatur.phone)),
-          eq(transactions.productId, referenceId),
-          eq(transactions.productType, "campaign"),
-          eq(transactions.paymentStatus, "paid")
-        )
-      )
+      .where(and(eq(donatur.isActive, true), eq(donatur.waOptOut, false), or(isNotNull(donatur.whatsappNumber), isNotNull(donatur.phone)), eq(transactions.productId, referenceId), eq(transactions.productType, "campaign"), eq(transactions.paymentStatus, "paid"), notSent))
+      .groupBy(donatur.id, donatur.name, donatur.phone, donatur.whatsappNumber)
       .limit(limit)
       .offset(offset);
   }
@@ -67,14 +103,7 @@ async function queryAudienceBatch(
     return db
       .select({ id: donatur.id, name: donatur.name, phone: donatur.phone, whatsappNumber: donatur.whatsappNumber })
       .from(donatur)
-      .where(
-        and(
-          eq(donatur.isActive, true),
-          eq(donatur.waOptOut, false),
-          or(isNotNull(donatur.whatsappNumber), isNotNull(donatur.phone)),
-          sql`(SELECT MAX(${transactions.paidAt}) FROM transactions WHERE ${transactions.donaturId} = ${donatur.id} AND ${transactions.paymentStatus} = 'paid') < ${sixtyTwoDaysAgo}`
-        )
-      )
+      .where(and(eq(donatur.isActive, true), eq(donatur.waOptOut, false), or(isNotNull(donatur.whatsappNumber), isNotNull(donatur.phone)), sql`(SELECT MAX(${transactions.paidAt}) FROM transactions WHERE ${transactions.donaturId} = ${donatur.id} AND ${transactions.paymentStatus} = 'paid') < ${sixtyTwoDaysAgo}`, notSent))
       .limit(limit)
       .offset(offset);
   }
@@ -114,11 +143,13 @@ export async function processBroadcastBatch(
 ): Promise<BatchResult> {
   const now = new Date();
 
-  // Pick one job that is pending/processing and ready for next batch
+  // Pick one job that is pending/processing and ready for next batch.
+  // Exclude synthetic jobs managed by their own cron (birthday, reengagement).
   const job = await db.query.waBroadcastJobs.findFirst({
     where: and(
       or(eq(waBroadcastJobs.status, "pending"), eq(waBroadcastJobs.status, "processing")),
-      lte(waBroadcastJobs.nextBatchAt, now)
+      lte(waBroadcastJobs.nextBatchAt, now),
+      notInArray(waBroadcastJobs.type, ["birthday", "reengagement"])
     ),
   });
 
@@ -136,32 +167,23 @@ export async function processBroadcastBatch(
       .where(eq(waBroadcastJobs.id, job.id));
   }
 
-  // Build anti-spam set: who already received this job
-  const existingLogs = await db
-    .select({ donaturId: waBroadcastLogs.donaturId })
-    .from(waBroadcastLogs)
-    .where(eq(waBroadcastLogs.jobId, job.id));
-
-  const alreadySentIds = new Set(
-    existingLogs.map((l) => l.donaturId).filter((id): id is string => id !== null)
-  );
-
-  // Count total recipients on first run
+  // Count total recipients on first run using COUNT(*) — no full table fetch
   if (job.totalRecipients === 0 && job.currentOffset === 0) {
-    const countResult = await queryAudienceBatch(db, job.audienceScope, job.referenceId, 0, 999999, alreadySentIds);
+    const total = await countAudience(db, job.audienceScope, job.referenceId, job.id);
     await db
       .update(waBroadcastJobs)
-      .set({ totalRecipients: countResult.length })
+      .set({ totalRecipients: total })
       .where(eq(waBroadcastJobs.id, job.id));
   }
 
+  // Audience query already excludes already-sent donatur via NOT EXISTS at DB level
   const batch = await queryAudienceBatch(
     db,
     job.audienceScope,
     job.referenceId,
     job.currentOffset,
     job.batchSize,
-    alreadySentIds
+    job.id
   );
 
   const sharedVars = await buildSharedVars(db, job);
@@ -172,11 +194,6 @@ export async function processBroadcastBatch(
   let batchSkipped = 0;
 
   for (const d of batch) {
-    if (alreadySentIds.has(d.id)) {
-      batchSkipped++;
-      continue;
-    }
-
     const phone = d.whatsappNumber || d.phone;
     if (!phone) {
       batchSkipped++;
@@ -201,15 +218,13 @@ export async function processBroadcastBatch(
     let errorMessage: string | undefined;
 
     if (job.type === "manual_free" && job.contentOverride) {
-      // Free-text: render {var} substitution then send raw
       let message = job.contentOverride;
       for (const [key, val] of Object.entries(variables)) {
         message = message.replaceAll(`{${key}}`, val);
       }
       sent = await wa.sendMessage(phone, message);
     } else if (job.templateKey) {
-      const result = await wa.send({ phone, templateKey: job.templateKey, variables });
-      sent = result;
+      sent = await wa.send({ phone, templateKey: job.templateKey, variables });
     } else {
       errorMessage = "No template or content";
     }
@@ -220,7 +235,7 @@ export async function processBroadcastBatch(
       donaturId: d.id,
       templateKey: job.templateKey,
       phone,
-      status: sent ? "sent" : errorMessage ? "failed" : "failed",
+      status: sent ? "sent" : "failed",
       errorMessage,
       sentAt: new Date(),
     });
@@ -231,6 +246,8 @@ export async function processBroadcastBatch(
     await new Promise((r) => setTimeout(r, 2000));
   }
 
+  // Offset advances by actual batch size fetched (already-sent excluded at DB level,
+  // so OFFSET correctly tracks only un-sent rows)
   const newOffset = job.currentOffset + batch.length;
   const isLastBatch = batch.length < job.batchSize;
 
@@ -255,7 +272,6 @@ export async function processBroadcastBatch(
     console.log(`[Broadcast] Job ${job.id} completed. sent=${totalSent} failed=${totalFailed}`);
     return { jobId: job.id, jobName: job.name, batchSent, batchFailed, batchSkipped, status: "completed" };
   } else {
-    // Schedule next batch
     const nextBatchAt = new Date(now.getTime() + job.batchIntervalMinutes * 60 * 1000);
     await db
       .update(waBroadcastJobs)

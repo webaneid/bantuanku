@@ -87,12 +87,15 @@ export async function signUnsubscribeToken(
 export async function verifyUnsubscribeToken(
   token: string,
   secret: string
-): Promise<string | null> {
+): Promise<{ donaturId: string; issuedAt: number } | null> {
   try {
     const secretKey = new TextEncoder().encode(secret);
     const { payload } = await jose.jwtVerify(token, secretKey);
     if (payload.purpose !== "wa-unsubscribe") return null;
-    return payload.sub as string;
+    return {
+      donaturId: payload.sub as string,
+      issuedAt: (payload.iat as number) ?? 0,
+    };
   } catch {
     return null;
   }
