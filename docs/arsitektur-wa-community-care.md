@@ -1,7 +1,7 @@
 # Arsitektur WhatsApp Community Care
 
-> Status: SEBAGIAN DIIMPLEMENTASIKAN — Fase 1–6 selesai, Fase 7 dalam antrian  
-> Dibuat: 2026-07-05 | Diperbarui: 2026-07-05 (Fase 6 selesai)  
+> Status: SELESAI — Fase 1–7 selesai  
+> Dibuat: 2026-07-05 | Diperbarui: 2026-07-05 (Fase 7 selesai)  
 > Bergantung pada: `arsitektur-notifikasi.md`, `arsitektur-donatur.md`, `arsitektur-donasi.md`, `arsitektur-activity-reports.md`
 
 ---
@@ -43,6 +43,7 @@ Berbeda dari `arsitektur-notifikasi.md` yang scope-nya event-driven per transaks
 > **Selesai, siap deploy:**
 > - **Fase 5** — Broadcast processor: `GET /cron/wa-broadcast` (setiap 30 menit), `services/broadcast-processor.ts`, CRUD `/admin/whatsapp/broadcasts`, halaman admin `/dashboard/whatsapp/broadcasts`
 > - **Fase 6** — Campaign form: toggle "Sebarkan ke donatur via WA" di edit campaign, auto-create broadcast job saat pertama publish; `publishedAt` juga di-set dari PUT endpoint
+> - **Fase 7** — Modal buat broadcast: campaign autocomplete, preview pesan real-time, estimasi penerima + waktu selesai. API: `GET /admin/whatsapp/templates/:key` + `GET /admin/whatsapp/broadcasts/estimate`
 
 ---
 
@@ -493,7 +494,7 @@ Semua template punya pasangan `{key}_enabled` toggle. Default: `enabled = true`.
 | **Fase 4** | Re-engagement cron + template + anti-spam log | Fase 1, 3 | ✅ Selesai 2026-07-05 |
 | **Fase 5** | Broadcast job service (batch processor cron) + halaman admin | Fase 1 | ✅ Selesai 2026-07-05 |
 | **Fase 6** | Campaign broadcast toggle di form + auto-job saat publish | Fase 5 | ✅ Selesai 2026-07-05 |
-| **Fase 7** | Manual broadcast UI (1b & 1c) + audience selection | Fase 5 | Belum |
+| **Fase 7** | Manual broadcast UI (1b & 1c) + audience selection | Fase 5 | ✅ Selesai 2026-07-05 |
 
 Urutan dipilih supaya hal paling kritikal (opt-out) jalan duluan, dan kompleksitas naik bertahap. Fase 3 dan 4 bisa dikerjakan paralel dengan Fase 5.
 
@@ -548,7 +549,7 @@ Gap berikut ditemukan antara arsitektur dan implementasi aktual. Masing-masing s
 
 | # | Item | Prioritas | Fase Target |
 |---|------|-----------|-------------|
-| 1 | **Fase 7 — UX form buat broadcast masih kasar**: referenceId diketik manual (bukan autocomplete), tidak ada preview pesan, tidak ada estimasi penerima + waktu selesai | Tinggi | Fase 7 |
+| 1 | **Fase 7 — UX form buat broadcast masih kasar**: referenceId diketik manual (bukan autocomplete), tidak ada preview pesan, tidak ada estimasi penerima + waktu selesai | Tinggi | ✅ Selesai Fase 7 |
 | 2 | **PATCH `/admin/campaigns/:id/status` tidak trigger broadcast job** — jika admin pakai endpoint status terpisah (bukan form edit), `broadcastWa` tidak bisa di-pass. Selama UI admin menggunakan form edit (PUT), ini tidak masalah. | Rendah | Post-Fase 7 |
 | 3 | **Broadcast untuk laporan kegiatan (activity reports)** — template `wa_tpl_report_published` disebut di arsitektur tapi belum dibuat di settings dan belum ada trigger dari halaman laporan | Sedang | Post-Fase 7 |
 | 4 | **Crontab `*/30 * * * *` untuk `/cron/wa-broadcast`** — sudah di-deploy kodenya, tapi crontab di VPS belum dikonfirmasi ditambahkan oleh user | Kritis | Segera (manual VPS) |

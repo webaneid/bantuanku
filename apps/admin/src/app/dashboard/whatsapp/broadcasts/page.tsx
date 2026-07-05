@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { Plus, Eye, XCircle, RefreshCw } from "lucide-react";
+import { Plus, Eye, XCircle } from "lucide-react";
 import api from "@/lib/api";
 
 type BroadcastJob = {
@@ -32,6 +32,10 @@ type CreateForm = {
   batchIntervalMinutes: number;
 };
 
+type CampaignOption = { value: string; label: string };
+
+type Estimate = { count: number; batches: number; estimatedHours: number } | null;
+
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   pending: { label: "Menunggu", className: "bg-yellow-100 text-yellow-800" },
   processing: { label: "Berjalan", className: "bg-blue-100 text-blue-800" },
@@ -49,9 +53,21 @@ const TYPE_LABELS: Record<string, string> = {
 
 const AUDIENCE_LABELS: Record<string, string> = {
   all: "Semua donatur aktif",
-  campaign_donors: "Donatur campaign",
+  campaign_donors: "Donatur campaign tertentu",
   inactive_62d: "Tidak aktif 62+ hari",
 };
+
+// Render template preview: replace {var} with sample values
+function renderPreview(template: string, campaignTitle?: string): string {
+  return template
+    .replace(/\{customer_name\}/g, "Budi Santoso")
+    .replace(/\{store_name\}/g, "Laziswaf Darunnajah")
+    .replace(/\{campaign_title\}/g, campaignTitle || "Nama Program")
+    .replace(/\{campaign_name\}/g, campaignTitle || "Nama Program")
+    .replace(/\{campaign_slug\}/g, "nama-program")
+    .replace(/\{frontend_url\}/g, "https://bantuanku.org")
+    .replace(/\{[^}]+\}/g, "[...]");
+}
 
 export default function BroadcastsPage() {
   const queryClient = useQueryClient();
@@ -69,6 +85,22 @@ export default function BroadcastsPage() {
     batchIntervalMinutes: 60,
   });
   const [formError, setFormError] = useState("");
+  const [templatePreview, setTemplatePreview] = useState<string | null>(null);
+  const [estimate, setEstimate] = useState<Estimate>(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+
+  // Fetch active campaigns for autocomplete
+  const { data: campaignsData } = useQuery({
+    queryKey: ["autocomplete-campaigns"],
+    queryFn: () => api.get("/autocomplete/campaigns?q=").then((r) => r.data.data as Array<{ id: string; title: string }>),
+    enabled: showCreate,
+    staleTime: 60000,
+  });
+
+  const campaignOptions: CampaignOption[] = (campaignsData || []).map((c) => ({
+    value: c.id,
+    label: c.title,
+  }));
 
   const { data, isLoading } = useQuery({
     queryKey: ["broadcasts", page],
@@ -76,7 +108,7 @@ export default function BroadcastsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (payload: Partial<CreateForm>) =>
+    mutationFn: (payload: Record<string, unknown>) =>
       api.post("/admin/whatsapp/broadcasts", payload).then((r) => r.data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["broadcasts"] });
@@ -96,12 +128,70 @@ export default function BroadcastsPage() {
   function resetForm() {
     setForm({ name: "", type: "manual_content", templateKey: "", contentOverride: "", referenceId: "", referenceName: "", audienceScope: "all", batchSize: 50, batchIntervalMinutes: 60 });
     setFormError("");
+    setTemplatePreview(null);
+    setEstimate(null);
+  }
+
+  // Fetch template preview when templateKey changes
+  useEffect(() => {
+    if (!form.templateKey || form.type === "manual_free") {
+      setTemplatePreview(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get(`/admin/whatsapp/templates/${form.templateKey}`);
+        const { content } = res.data.data;
+        setTemplatePreview(content ? renderPreview(content, form.referenceName) : null);
+      } catch {
+        setTemplatePreview(null);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [form.templateKey, form.referenceName]);
+
+  // Fetch estimate when audienceScope / referenceId / batchSize changes
+  const fetchEstimate = useCallback(async (f: CreateForm) => {
+    setEstimateLoading(true);
+    try {
+      const params = new URLSearchParams({
+        audienceScope: f.audienceScope,
+        batchSize: String(f.batchSize),
+        batchIntervalMinutes: String(f.batchIntervalMinutes),
+      });
+      if (f.referenceId) params.set("referenceId", f.referenceId);
+      const res = await api.get(`/admin/whatsapp/broadcasts/estimate?${params}`);
+      setEstimate(res.data.data);
+    } catch {
+      setEstimate(null);
+    } finally {
+      setEstimateLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showCreate) return;
+    const timer = setTimeout(() => fetchEstimate(form), 500);
+    return () => clearTimeout(timer);
+  }, [form.audienceScope, form.referenceId, form.batchSize, form.batchIntervalMinutes, showCreate, fetchEstimate]);
+
+  function handleCampaignSelect(e: React.ChangeEvent<HTMLSelectElement>) {
+    const selected = campaignOptions.find((c) => c.value === e.target.value);
+    if (!selected) return;
+    setForm((f) => ({
+      ...f,
+      referenceId: selected.value,
+      referenceName: selected.label,
+      templateKey: "wa_tpl_campaign_new",
+      audienceScope: "campaign_donors",
+      name: f.name || `Broadcast: ${selected.label}`,
+    }));
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
-    const payload: Record<string, any> = {
+    const payload: Record<string, unknown> = {
       name: form.name,
       type: form.type,
       audienceScope: form.audienceScope,
@@ -110,13 +200,16 @@ export default function BroadcastsPage() {
     };
     if (form.type !== "manual_free") payload.templateKey = form.templateKey;
     if (form.type === "manual_free") payload.contentOverride = form.contentOverride;
-    if (form.referenceId) payload.referenceId = form.referenceId;
-    if (form.referenceName) payload.referenceName = form.referenceName;
+    if (form.referenceId) { payload.referenceId = form.referenceId; payload.referenceName = form.referenceName; }
     createMutation.mutate(payload);
   }
 
   const jobs: BroadcastJob[] = data?.items || [];
   const pagination = data?.pagination;
+
+  const previewContent = form.type === "manual_free"
+    ? (form.contentOverride ? renderPreview(form.contentOverride) : null)
+    : templatePreview;
 
   return (
     <div className="p-6">
@@ -169,19 +262,11 @@ export default function BroadcastsPage() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        <Link
-                          href={`/dashboard/whatsapp/broadcasts/${job.id}`}
-                          className="text-blue-600 hover:text-blue-800"
-                          title="Detail"
-                        >
+                        <Link href={`/dashboard/whatsapp/broadcasts/${job.id}`} className="text-blue-600 hover:text-blue-800" title="Detail">
                           <Eye size={16} />
                         </Link>
                         {["pending", "processing"].includes(job.status) && (
-                          <button
-                            onClick={() => cancelMutation.mutate(job.id)}
-                            className="text-red-500 hover:text-red-700"
-                            title="Batalkan"
-                          >
+                          <button onClick={() => cancelMutation.mutate(job.id)} className="text-red-500 hover:text-red-700" title="Batalkan">
                             <XCircle size={16} />
                           </button>
                         )}
@@ -200,20 +285,8 @@ export default function BroadcastsPage() {
         <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
           <span>Total: {pagination.total} broadcast</span>
           <div className="flex gap-2">
-            <button
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-              className="px-3 py-1 border rounded disabled:opacity-40"
-            >
-              Prev
-            </button>
-            <button
-              disabled={page >= pagination.totalPages}
-              onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-1 border rounded disabled:opacity-40"
-            >
-              Next
-            </button>
+            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="px-3 py-1 border rounded disabled:opacity-40">Prev</button>
+            <button disabled={page >= pagination.totalPages} onClick={() => setPage((p) => p + 1)} className="px-3 py-1 border rounded disabled:opacity-40">Next</button>
           </div>
         </div>
       )}
@@ -221,27 +294,22 @@ export default function BroadcastsPage() {
       {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Buat Broadcast Baru</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Broadcast</label>
-                <input
-                  type="text"
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="cth: Broadcast Program Ramadhan 2026"
-                />
-              </div>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-5">Buat Broadcast Baru</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* Left — Form */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Tipe */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipe</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipe Broadcast</label>
                   <select
                     value={form.type}
-                    onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as CreateForm["type"] }))}
+                    onChange={(e) => {
+                      const t = e.target.value as CreateForm["type"];
+                      setForm((f) => ({ ...f, type: t, templateKey: "", contentOverride: "", referenceId: "", referenceName: "" }));
+                      setTemplatePreview(null);
+                    }}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="manual_content">Template Manual</option>
@@ -250,6 +318,79 @@ export default function BroadcastsPage() {
                     <option value="reengagement">Re-engagement</option>
                   </select>
                 </div>
+
+                {/* Campaign picker — untuk manual_content dan campaign_new */}
+                {(form.type === "manual_content" || form.type === "campaign_new") && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Campaign</label>
+                    <select
+                      value={form.referenceId}
+                      onChange={handleCampaignSelect}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">-- Pilih campaign aktif --</option>
+                      {campaignOptions.map((opt) => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                    {form.referenceName && (
+                      <p className="text-xs text-green-700 mt-1">✓ {form.referenceName}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Template key — untuk non-manual_free + non-campaign-picker */}
+                {form.type !== "manual_free" && form.type !== "manual_content" && form.type !== "campaign_new" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Template Key</label>
+                    <input
+                      type="text"
+                      value={form.templateKey}
+                      onChange={(e) => setForm((f) => ({ ...f, templateKey: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="cth: wa_tpl_reengagement"
+                    />
+                  </div>
+                )}
+
+                {/* Template key readonly display untuk manual_content/campaign_new */}
+                {(form.type === "manual_content" || form.type === "campaign_new") && form.templateKey && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Template Key</label>
+                    <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-500">
+                      {form.templateKey}
+                    </div>
+                  </div>
+                )}
+
+                {/* Free text content */}
+                {form.type === "manual_free" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Isi Pesan</label>
+                    <textarea
+                      rows={5}
+                      value={form.contentOverride}
+                      onChange={(e) => setForm((f) => ({ ...f, contentOverride: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="Gunakan {customer_name} untuk nama donatur, {store_name} untuk nama lembaga"
+                    />
+                  </div>
+                )}
+
+                {/* Nama Broadcast */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nama Broadcast</label>
+                  <input
+                    type="text"
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="cth: Broadcast Program Ramadhan 2026"
+                  />
+                </div>
+
+                {/* Audience */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
                   <select
@@ -262,91 +403,66 @@ export default function BroadcastsPage() {
                     <option value="inactive_62d">Tidak aktif 62+ hari</option>
                   </select>
                 </div>
+
+                {/* Estimasi */}
+                <div className={`rounded-lg px-3 py-2 text-sm border ${estimateLoading ? "bg-gray-50 border-gray-200 text-gray-400" : estimate ? "bg-blue-50 border-blue-200 text-blue-800" : "bg-gray-50 border-gray-200 text-gray-400"}`}>
+                  {estimateLoading ? "Menghitung estimasi..." : estimate
+                    ? `~${estimate.count.toLocaleString("id-ID")} penerima · ${estimate.batches} batch · selesai ±${estimate.estimatedHours} jam`
+                    : "Pilih audience untuk melihat estimasi"}
+                </div>
+
+                {/* Batch config */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Ukuran Batch</label>
+                    <input
+                      type="number" min={1} max={500}
+                      value={form.batchSize}
+                      onChange={(e) => setForm((f) => ({ ...f, batchSize: parseInt(e.target.value) || 50 }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Jeda (menit)</label>
+                    <input
+                      type="number" min={1} max={1440}
+                      value={form.batchIntervalMinutes}
+                      onChange={(e) => setForm((f) => ({ ...f, batchIntervalMinutes: parseInt(e.target.value) || 60 }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    />
+                  </div>
+                </div>
+
+                {formError && <p className="text-sm text-red-600">{formError}</p>}
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button type="button" onClick={() => { setShowCreate(false); resetForm(); }} className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Batal
+                  </button>
+                  <button type="submit" disabled={createMutation.isPending} className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+                    {createMutation.isPending ? "Menyimpan..." : "Buat & Antri"}
+                  </button>
+                </div>
+              </form>
+
+              {/* Right — Preview */}
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Preview Pesan</p>
+                {previewContent ? (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-gray-800 whitespace-pre-wrap font-mono leading-relaxed">
+                    {previewContent}
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-400 text-sm">
+                    {form.type === "manual_free"
+                      ? "Tulis pesan untuk melihat preview"
+                      : "Pilih template untuk melihat preview"}
+                  </div>
+                )}
+                <p className="text-xs text-gray-400 mt-2">* Preview menggunakan data contoh</p>
               </div>
 
-              {form.type !== "manual_free" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Template Key</label>
-                  <input
-                    type="text"
-                    value={form.templateKey}
-                    onChange={(e) => setForm((f) => ({ ...f, templateKey: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="cth: wa_tpl_campaign_new"
-                  />
-                </div>
-              )}
-
-              {form.type === "manual_free" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Isi Pesan</label>
-                  <textarea
-                    rows={4}
-                    value={form.contentOverride}
-                    onChange={(e) => setForm((f) => ({ ...f, contentOverride: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Gunakan {customer_name} untuk nama donatur"
-                  />
-                </div>
-              )}
-
-              {form.audienceScope === "campaign_donors" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">ID Campaign</label>
-                  <input
-                    type="text"
-                    value={form.referenceId}
-                    onChange={(e) => setForm((f) => ({ ...f, referenceId: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="ID campaign dari database"
-                  />
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ukuran Batch</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={500}
-                    value={form.batchSize}
-                    onChange={(e) => setForm((f) => ({ ...f, batchSize: parseInt(e.target.value) || 50 }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Jeda Antar Batch (menit)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={1440}
-                    value={form.batchIntervalMinutes}
-                    onChange={(e) => setForm((f) => ({ ...f, batchIntervalMinutes: parseInt(e.target.value) || 60 }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
-                </div>
-              </div>
-
-              {formError && <p className="text-sm text-red-600">{formError}</p>}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => { setShowCreate(false); resetForm(); }}
-                  className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                >
-                  {createMutation.isPending ? "Menyimpan..." : "Buat & Antri"}
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

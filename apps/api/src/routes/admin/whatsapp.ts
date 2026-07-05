@@ -1,10 +1,11 @@
 import { Hono } from "hono";
-import { eq, and, inArray, desc, count } from "drizzle-orm";
+import { eq, and, inArray, desc, count, sql } from "drizzle-orm";
 import {
   transactions,
   settings,
   waBroadcastJobs,
   waBroadcastLogs,
+  donatur,
   createId,
 } from "@bantuanku/db";
 import { z } from "zod";
@@ -232,6 +233,95 @@ whatsappAdmin.get(
     } catch {
       return success(c, []);
     }
+  }
+);
+
+// ─── Template Preview ─────────────────────────────────────────────────────────
+
+// GET /admin/whatsapp/templates/:key — ambil isi template dari settings (untuk preview)
+whatsappAdmin.get(
+  "/templates/:key",
+  requireRole("super_admin", "admin_finance"),
+  async (c) => {
+    const db = c.get("db");
+    const key = c.req.param("key");
+
+    const [enabledRow, contentRow] = await Promise.all([
+      db.query.settings.findFirst({ where: eq(settings.key, `${key}_enabled`) }),
+      db.query.settings.findFirst({ where: eq(settings.key, key) }),
+    ]);
+
+    return success(c, {
+      key,
+      content: contentRow?.value || null,
+      enabled: enabledRow?.value === "true",
+    });
+  }
+);
+
+// GET /admin/whatsapp/broadcasts/estimate — hitung estimasi penerima
+// Query: ?audienceScope=all|campaign_donors|inactive_62d&referenceId=...&batchSize=50&batchIntervalMinutes=60
+whatsappAdmin.get(
+  "/broadcasts/estimate",
+  requireRole("super_admin", "admin_finance"),
+  async (c) => {
+    const db = c.get("db");
+    const audienceScope = c.req.query("audienceScope") || "all";
+    const referenceId = c.req.query("referenceId") || null;
+    const batchSize = parseInt(c.req.query("batchSize") || "50");
+    const batchIntervalMinutes = parseInt(c.req.query("batchIntervalMinutes") || "60");
+
+    let recipientCount = 0;
+
+    if (audienceScope === "all") {
+      const result = await db
+        .select({ value: count() })
+        .from(donatur)
+        .where(
+          and(
+            eq(donatur.isActive, true),
+            eq(donatur.waOptOut, false),
+            sql`COALESCE(${donatur.whatsappNumber}, ${donatur.phone}) IS NOT NULL`
+          )
+        );
+      recipientCount = result[0]?.value ?? 0;
+    } else if (audienceScope === "campaign_donors" && referenceId) {
+      const result = await db
+        .select({ value: count() })
+        .from(donatur)
+        .innerJoin(transactions, eq(transactions.donaturId, donatur.id))
+        .where(
+          and(
+            eq(donatur.isActive, true),
+            eq(donatur.waOptOut, false),
+            sql`COALESCE(${donatur.whatsappNumber}, ${donatur.phone}) IS NOT NULL`,
+            eq(transactions.productId, referenceId),
+            eq(transactions.productType, "campaign"),
+            eq(transactions.paymentStatus, "paid")
+          )
+        );
+      recipientCount = result[0]?.value ?? 0;
+    } else if (audienceScope === "inactive_62d") {
+      const sixtyTwoDaysAgo = new Date(Date.now() - 62 * 24 * 60 * 60 * 1000);
+      const result = await db
+        .select({ value: count() })
+        .from(donatur)
+        .where(
+          and(
+            eq(donatur.isActive, true),
+            eq(donatur.waOptOut, false),
+            sql`COALESCE(${donatur.whatsappNumber}, ${donatur.phone}) IS NOT NULL`,
+            sql`(SELECT MAX(${transactions.paidAt}) FROM transactions WHERE ${transactions.donaturId} = ${donatur.id} AND ${transactions.paymentStatus} = 'paid') < ${sixtyTwoDaysAgo}`
+          )
+        );
+      recipientCount = result[0]?.value ?? 0;
+    }
+
+    const batches = batchSize > 0 ? Math.ceil(recipientCount / batchSize) : 0;
+    const estimatedMinutes = batches * batchIntervalMinutes;
+    const estimatedHours = Math.round(estimatedMinutes / 60 * 10) / 10;
+
+    return success(c, { count: recipientCount, batches, estimatedHours });
   }
 );
 

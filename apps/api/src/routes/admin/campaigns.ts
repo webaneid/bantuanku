@@ -228,6 +228,9 @@ campaignsAdmin.post(
       ? 0
       : body.goal;
 
+    const finalStatus = (isMitra || user?.roles?.includes("program_coordinator")) ? "draft" : (body.status || "draft");
+    const isPublishedOnCreate = finalStatus === "active";
+
     await db.insert(campaigns).values({
       id: campaignId,
       title: body.title,
@@ -248,7 +251,8 @@ campaignsAdmin.post(
       isFeatured: body.isFeatured,
       isUrgent: body.isUrgent,
       createdBy: user!.id,
-      status: (isMitra || user?.roles?.includes("program_coordinator")) ? "draft" : (body.status || "draft"),
+      status: finalStatus,
+      publishedAt: isPublishedOnCreate ? new Date() : undefined,
       // SEO fields
       metaTitle: body.metaTitle || null,
       metaDescription: body.metaDescription || null,
@@ -261,6 +265,25 @@ campaignsAdmin.post(
       ogImageUrl: body.ogImageUrl || null,
       seoScore: body.seoScore ?? 0,
     });
+
+    // Auto-create broadcast job jika langsung publish + broadcastWa = true
+    if (isPublishedOnCreate && body.broadcastWa === true) {
+      await db.insert(waBroadcastJobs).values({
+        id: createId(),
+        name: `Campaign Baru: ${body.title}`,
+        type: "campaign_new",
+        templateKey: "wa_tpl_campaign_new",
+        referenceId: campaignId,
+        referenceName: body.title,
+        audienceScope: "all",
+        batchSize: 50,
+        batchIntervalMinutes: 60,
+        nextBatchAt: new Date(),
+        status: "pending",
+        createdBy: user!.id,
+        createdAt: new Date(),
+      });
+    }
 
     return success(c, { id: campaignId, slug: finalSlug }, "Campaign created", 201);
   }
