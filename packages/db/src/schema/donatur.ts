@@ -52,6 +52,10 @@ export const donatur = pgTable("donatur", {
   isActive: boolean("is_active").default(true).notNull(),
   isAnonymous: boolean("is_anonymous").default(false).notNull(),
 
+  // WhatsApp community opt-out
+  waOptOut: boolean("wa_opt_out").default(false).notNull(),
+  waOptOutAt: timestamp("wa_opt_out_at", { precision: 3, mode: "date", withTimezone: true }),
+
   // Timestamps
   lastLoginAt: timestamp("last_login_at", { precision: 3, mode: "date", withTimezone: true }),
   createdAt: timestamp("created_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),

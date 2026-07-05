@@ -202,6 +202,9 @@ const CORE_EXISTING: MigrationEntry[] = [
   {
     file: "packages/db/migrations/118_create_qurban_discounts.sql",
   },
+  {
+    file: "packages/db/migrations/119_wa_community_care_schema.sql",
+  },
 ];
 
 const args = process.argv.slice(2);

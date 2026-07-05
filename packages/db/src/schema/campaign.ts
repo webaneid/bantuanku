@@ -25,6 +25,7 @@ export const campaigns = pgTable("campaigns", {
   endDate: timestamp("end_date", { precision: 3, mode: "date", withTimezone: true }),
   isFeatured: boolean("is_featured").default(false).notNull(),
   isUrgent: boolean("is_urgent").default(false).notNull(),
+  broadcastWa: boolean("broadcast_wa").default(false).notNull(),
 
   // SEO fields
   metaTitle: varchar("meta_title", { length: 70 }),
