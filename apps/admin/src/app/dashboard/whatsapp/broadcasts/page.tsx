@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { Plus, Eye, XCircle } from "lucide-react";
+import { Plus, Eye, XCircle, CheckCircle2 } from "lucide-react";
 import api from "@/lib/api";
+import { formatRupiah } from "@/lib/format";
 
 type BroadcastJob = {
   id: string;
@@ -36,6 +37,14 @@ type CampaignOption = { value: string; label: string };
 
 type Estimate = { count: number; batches: number; estimatedHours: number } | null;
 
+type CampaignDetail = {
+  id: string;
+  title: string;
+  description: string | null;
+  targetAmount: number | null;
+  slug: string;
+};
+
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   pending: { label: "Menunggu", className: "bg-yellow-100 text-yellow-800" },
   processing: { label: "Berjalan", className: "bg-blue-100 text-blue-800" },
@@ -57,15 +66,40 @@ const AUDIENCE_LABELS: Record<string, string> = {
   inactive_62d: "Tidak aktif 62+ hari",
 };
 
-// Render template preview: replace {var} with sample values
-function renderPreview(template: string, campaignTitle?: string): string {
+// Template key yang dipakai otomatis per tipe
+const AUTO_TEMPLATE_KEYS: Partial<Record<CreateForm["type"], string>> = {
+  campaign_new: "wa_tpl_campaign_new",
+  reengagement: "wa_tpl_reengagement",
+};
+
+// Variabel tersedia untuk pesan bebas
+const FREE_VARIABLES = [
+  { key: "{customer_name}", label: "Nama donatur" },
+  { key: "{store_name}", label: "Nama lembaga" },
+  { key: "{frontend_url}", label: "URL website" },
+];
+
+function formatTarget(amount: number | null): string {
+  if (!amount) return "—";
+  return formatRupiah(amount);
+}
+
+// Render template preview: replace {var} with sample/real values
+function renderPreview(template: string, detail?: CampaignDetail | null): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.org";
+  const campaignUrl = detail?.slug ? `${appUrl}/program/${detail.slug}` : `${appUrl}/program/nama-program`;
   return template
     .replace(/\{customer_name\}/g, "Budi Santoso")
     .replace(/\{store_name\}/g, "Laziswaf Darunnajah")
-    .replace(/\{campaign_title\}/g, campaignTitle || "Nama Program")
-    .replace(/\{campaign_name\}/g, campaignTitle || "Nama Program")
-    .replace(/\{campaign_slug\}/g, "nama-program")
-    .replace(/\{frontend_url\}/g, "https://bantuanku.org")
+    .replace(/\{campaign_title\}/g, detail?.title || "Nama Program")
+    .replace(/\{campaign_name\}/g, detail?.title || "Nama Program")
+    .replace(/\{campaign_description\}/g, detail?.description
+      ? detail.description.slice(0, 100) + (detail.description.length > 100 ? "..." : "")
+      : "Deskripsi program kebaikan ini.")
+    .replace(/\{campaign_target\}/g, formatTarget(detail?.targetAmount ?? null))
+    .replace(/\{campaign_url\}/g, campaignUrl)
+    .replace(/\{campaign_slug\}/g, detail?.slug || "nama-program")
+    .replace(/\{frontend_url\}/g, appUrl)
     .replace(/\{[^}]+\}/g, "[...]");
 }
 
@@ -75,8 +109,8 @@ export default function BroadcastsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<CreateForm>({
     name: "",
-    type: "manual_content",
-    templateKey: "",
+    type: "campaign_new",
+    templateKey: AUTO_TEMPLATE_KEYS["campaign_new"] || "",
     contentOverride: "",
     referenceId: "",
     referenceName: "",
@@ -85,9 +119,11 @@ export default function BroadcastsPage() {
     batchIntervalMinutes: 60,
   });
   const [formError, setFormError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [templatePreview, setTemplatePreview] = useState<string | null>(null);
   const [estimate, setEstimate] = useState<Estimate>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
+  const [campaignDetail, setCampaignDetail] = useState<CampaignDetail | null>(null);
 
   // Fetch active campaigns for autocomplete
   const { data: campaignsData } = useQuery({
@@ -114,9 +150,11 @@ export default function BroadcastsPage() {
       queryClient.invalidateQueries({ queryKey: ["broadcasts"] });
       setShowCreate(false);
       resetForm();
+      setSuccessMessage("Broadcast berhasil dibuat dan masuk ke antrian pengiriman.");
+      setTimeout(() => setSuccessMessage(""), 5000);
     },
     onError: (err: any) => {
-      setFormError(err.response?.data?.message || "Gagal membuat broadcast");
+      setFormError(err.response?.data?.message || "Gagal membuat broadcast. Periksa semua field.");
     },
   });
 
@@ -126,13 +164,38 @@ export default function BroadcastsPage() {
   });
 
   function resetForm() {
-    setForm({ name: "", type: "manual_content", templateKey: "", contentOverride: "", referenceId: "", referenceName: "", audienceScope: "all", batchSize: 50, batchIntervalMinutes: 60 });
+    setForm({
+      name: "",
+      type: "campaign_new",
+      templateKey: AUTO_TEMPLATE_KEYS["campaign_new"] || "",
+      contentOverride: "",
+      referenceId: "",
+      referenceName: "",
+      audienceScope: "all",
+      batchSize: 50,
+      batchIntervalMinutes: 60,
+    });
     setFormError("");
     setTemplatePreview(null);
     setEstimate(null);
+    setCampaignDetail(null);
   }
 
-  // Fetch template preview when templateKey changes
+  // Fetch campaign detail when referenceId changes
+  useEffect(() => {
+    if (!form.referenceId) {
+      setCampaignDetail(null);
+      return;
+    }
+    api.get(`/admin/campaigns/${form.referenceId}`)
+      .then((r) => {
+        const d = r.data.data;
+        setCampaignDetail({ id: d.id, title: d.title, description: d.description, targetAmount: d.targetAmount, slug: d.slug });
+      })
+      .catch(() => setCampaignDetail(null));
+  }, [form.referenceId]);
+
+  // Fetch template preview when templateKey or campaignDetail changes
   useEffect(() => {
     if (!form.templateKey || form.type === "manual_free") {
       setTemplatePreview(null);
@@ -142,13 +205,13 @@ export default function BroadcastsPage() {
       try {
         const res = await api.get(`/admin/whatsapp/templates/${form.templateKey}`);
         const { content } = res.data.data;
-        setTemplatePreview(content ? renderPreview(content, form.referenceName) : null);
+        setTemplatePreview(content ? renderPreview(content, campaignDetail) : null);
       } catch {
         setTemplatePreview(null);
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, [form.templateKey, form.referenceName]);
+  }, [form.templateKey, campaignDetail, form.type]);
 
   // Fetch estimate when audienceScope / referenceId / batchSize changes
   const fetchEstimate = useCallback(async (f: CreateForm) => {
@@ -177,20 +240,54 @@ export default function BroadcastsPage() {
 
   function handleCampaignSelect(e: React.ChangeEvent<HTMLSelectElement>) {
     const selected = campaignOptions.find((c) => c.value === e.target.value);
-    if (!selected) return;
+    if (!selected) {
+      setForm((f) => ({ ...f, referenceId: "", referenceName: "" }));
+      setCampaignDetail(null);
+      return;
+    }
+    const autoKey = AUTO_TEMPLATE_KEYS[form.type] || "wa_tpl_campaign_new";
     setForm((f) => ({
       ...f,
       referenceId: selected.value,
       referenceName: selected.label,
-      templateKey: "wa_tpl_campaign_new",
+      templateKey: autoKey,
       audienceScope: "campaign_donors",
       name: f.name || `Broadcast: ${selected.label}`,
     }));
   }
 
+  function handleTypeChange(t: CreateForm["type"]) {
+    const autoKey = AUTO_TEMPLATE_KEYS[t] || "";
+    setForm((f) => ({
+      ...f,
+      type: t,
+      templateKey: autoKey,
+      contentOverride: "",
+      referenceId: "",
+      referenceName: "",
+      // auto-set audience for reengagement
+      audienceScope: t === "reengagement" ? "inactive_62d" : "all",
+    }));
+    setTemplatePreview(null);
+    setCampaignDetail(null);
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
+
+    // Client-side validation
+    if (!form.name.trim()) { setFormError("Nama broadcast wajib diisi."); return; }
+    if (form.type !== "manual_free" && !form.templateKey) {
+      setFormError("Template key wajib. Pilih campaign atau masukkan template key."); return;
+    }
+    if (form.type === "manual_free" && !form.contentOverride.trim()) {
+      setFormError("Isi pesan wajib diisi untuk tipe Pesan Bebas."); return;
+    }
+    if (form.audienceScope === "campaign_donors" && !form.referenceId) {
+      setFormError("Pilih campaign untuk audience 'Donatur campaign tertentu'."); return;
+    }
+
     const payload: Record<string, unknown> = {
       name: form.name,
       type: form.type,
@@ -211,6 +308,8 @@ export default function BroadcastsPage() {
     ? (form.contentOverride ? renderPreview(form.contentOverride) : null)
     : templatePreview;
 
+  const needsCampaign = form.type === "manual_content" || form.type === "campaign_new";
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -225,6 +324,14 @@ export default function BroadcastsPage() {
           <Plus size={16} /> Buat Broadcast
         </button>
       </div>
+
+      {/* Success banner */}
+      {successMessage && (
+        <div className="mb-4 flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm">
+          <CheckCircle2 size={16} className="shrink-0" />
+          {successMessage}
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -305,24 +412,25 @@ export default function BroadcastsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tipe Broadcast</label>
                   <select
                     value={form.type}
-                    onChange={(e) => {
-                      const t = e.target.value as CreateForm["type"];
-                      setForm((f) => ({ ...f, type: t, templateKey: "", contentOverride: "", referenceId: "", referenceName: "" }));
-                      setTemplatePreview(null);
-                    }}
+                    onChange={(e) => handleTypeChange(e.target.value as CreateForm["type"])}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    <option value="manual_content">Template Manual</option>
-                    <option value="manual_free">Pesan Bebas</option>
-                    <option value="campaign_new">Program Baru</option>
-                    <option value="reengagement">Re-engagement</option>
+                    <option value="campaign_new">Program Baru — broadcast saat campaign baru publish</option>
+                    <option value="reengagement">Re-engagement — donatur tidak aktif 62+ hari</option>
+                    <option value="manual_content">Template Manual — gunakan template WA yang ada</option>
+                    <option value="manual_free">Pesan Bebas — tulis pesan sendiri</option>
                   </select>
+                  {form.type === "reengagement" && (
+                    <p className="text-xs text-gray-500 mt-1">Pesan re-engagement dikirim ke donatur yang sudah 62+ hari tidak berdonasi. Template: <code className="bg-gray-100 px-1 rounded">wa_tpl_reengagement</code></p>
+                  )}
                 </div>
 
-                {/* Campaign picker — untuk manual_content dan campaign_new */}
-                {(form.type === "manual_content" || form.type === "campaign_new") && (
+                {/* Campaign picker */}
+                {needsCampaign && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Pilih Campaign</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Pilih Campaign {form.type === "campaign_new" && <span className="text-red-500">*</span>}
+                    </label>
                     <select
                       value={form.referenceId}
                       onChange={handleCampaignSelect}
@@ -333,33 +441,33 @@ export default function BroadcastsPage() {
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
                       ))}
                     </select>
-                    {form.referenceName && (
-                      <p className="text-xs text-green-700 mt-1">✓ {form.referenceName}</p>
+                    {campaignDetail && (
+                      <div className="mt-1 text-xs text-green-700 space-y-0.5">
+                        <p>✓ {campaignDetail.title}</p>
+                        {campaignDetail.targetAmount && <p className="text-gray-500">Target: {formatTarget(campaignDetail.targetAmount)}</p>}
+                      </div>
                     )}
                   </div>
                 )}
 
-                {/* Template key — untuk non-manual_free + non-campaign-picker */}
-                {form.type !== "manual_free" && form.type !== "manual_content" && form.type !== "campaign_new" && (
+                {/* Template key — readonly untuk tipe dengan auto key */}
+                {form.type !== "manual_free" && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Template Key</label>
-                    <input
-                      type="text"
-                      value={form.templateKey}
-                      onChange={(e) => setForm((f) => ({ ...f, templateKey: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="cth: wa_tpl_reengagement"
-                    />
-                  </div>
-                )}
-
-                {/* Template key readonly display untuk manual_content/campaign_new */}
-                {(form.type === "manual_content" || form.type === "campaign_new") && form.templateKey && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Template Key</label>
-                    <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-500">
-                      {form.templateKey}
-                    </div>
+                    {AUTO_TEMPLATE_KEYS[form.type] ? (
+                      <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-500 font-mono">
+                        {form.templateKey || AUTO_TEMPLATE_KEYS[form.type]}
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={form.templateKey}
+                        onChange={(e) => setForm((f) => ({ ...f, templateKey: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500"
+                        placeholder="cth: wa_tpl_campaign_new"
+                      />
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">Template dikelola di <strong>Pengaturan → WhatsApp</strong></p>
                   </div>
                 )}
 
@@ -368,21 +476,37 @@ export default function BroadcastsPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Isi Pesan</label>
                     <textarea
-                      rows={5}
+                      rows={6}
                       value={form.contentOverride}
                       onChange={(e) => setForm((f) => ({ ...f, contentOverride: e.target.value }))}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                      placeholder="Gunakan {customer_name} untuk nama donatur, {store_name} untuk nama lembaga"
+                      placeholder={"Assalamu'alaikum {customer_name},\n\n{store_name} mengucapkan terima kasih atas kepercayaan Anda..."}
                     />
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-500 font-medium mb-1">Variabel yang tersedia:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {FREE_VARIABLES.map((v) => (
+                          <button
+                            key={v.key}
+                            type="button"
+                            title={v.label}
+                            onClick={() => setForm((f) => ({ ...f, contentOverride: f.contentOverride + v.key }))}
+                            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-0.5 rounded font-mono cursor-pointer"
+                          >
+                            {v.key}
+                            <span className="font-sans text-gray-400 ml-1">— {v.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
 
                 {/* Nama Broadcast */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nama Broadcast</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nama Broadcast <span className="text-red-500">*</span></label>
                   <input
                     type="text"
-                    required
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -433,7 +557,11 @@ export default function BroadcastsPage() {
                   </div>
                 </div>
 
-                {formError && <p className="text-sm text-red-600">{formError}</p>}
+                {formError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
+                    {formError}
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-3 pt-2">
                   <button type="button" onClick={() => { setShowCreate(false); resetForm(); }} className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
@@ -456,10 +584,16 @@ export default function BroadcastsPage() {
                   <div className="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-400 text-sm">
                     {form.type === "manual_free"
                       ? "Tulis pesan untuk melihat preview"
-                      : "Pilih template untuk melihat preview"}
+                      : needsCampaign
+                      ? "Pilih campaign untuk melihat preview"
+                      : "Pilih tipe dan template untuk melihat preview"}
                   </div>
                 )}
-                <p className="text-xs text-gray-400 mt-2">* Preview menggunakan data contoh</p>
+                {previewContent && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    * Preview menggunakan {campaignDetail ? "data campaign sebenarnya" : "data contoh"}
+                  </p>
+                )}
               </div>
 
             </div>
