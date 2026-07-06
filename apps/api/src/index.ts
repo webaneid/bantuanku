@@ -151,9 +151,15 @@ app.get("/cron/wa-broadcast", async (c) => {
     return c.json({ success: false, message: "Unauthorized" }, 401);
   }
   const db = c.get("db");
-  const { processBroadcastBatch } = await import("./services/broadcast-processor");
-  const result = await processBroadcastBatch(db, c.env.FRONTEND_URL);
-  return c.json({ success: true, data: result });
+  const frontendUrl = c.env.FRONTEND_URL;
+  // Respond immediately — batch processing (~100s) would exceed Cloudflare timeout
+  setImmediate(async () => {
+    const { processBroadcastBatch } = await import("./services/broadcast-processor");
+    processBroadcastBatch(db, frontendUrl).catch((err) =>
+      console.error("[cron/wa-broadcast] background error:", err)
+    );
+  });
+  return c.json({ success: true, message: "Batch processing started" }, 202);
 });
 
 // Serve uploaded files

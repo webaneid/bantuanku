@@ -116,7 +116,7 @@ async function buildSharedVars(db: Database, job: {
   type: string;
   referenceId: string | null | undefined;
   referenceName: string | null | undefined;
-}): Promise<Record<string, string>> {
+}, frontendUrl?: string): Promise<Record<string, string>> {
   const vars: Record<string, string> = {};
 
   if (job.type === "campaign_new" && job.referenceId) {
@@ -124,9 +124,17 @@ async function buildSharedVars(db: Database, job: {
       where: eq(campaigns.id, job.referenceId),
     });
     if (campaign) {
+      const base = (frontendUrl || "").replace(/\/+$/, "");
       vars.campaign_title = campaign.title;
       vars.campaign_name = campaign.title;
       vars.campaign_slug = campaign.slug;
+      vars.campaign_url = `${base}/program/${campaign.slug}`;
+      vars.campaign_description = campaign.description
+        ? (campaign.description.length > 150 ? campaign.description.slice(0, 150) + "..." : campaign.description)
+        : "";
+      vars.campaign_target = campaign.goal
+        ? "Rp " + campaign.goal.toLocaleString("id-ID")
+        : "Tidak ada target";
     }
   }
 
@@ -186,7 +194,7 @@ export async function processBroadcastBatch(
     job.id
   );
 
-  const sharedVars = await buildSharedVars(db, job);
+  const sharedVars = await buildSharedVars(db, job, frontendUrl);
   const wa = new WhatsAppService(db, frontendUrl);
 
   let batchSent = 0;
