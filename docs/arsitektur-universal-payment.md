@@ -682,7 +682,7 @@ Validasi frontend:
 | Field | Rule |
 |-------|------|
 | proof file | wajib |
-| file type | `image/jpeg`, `image/jpg`, `image/png`, `application/pdf` |
+| file type | `image/jpeg`, `image/jpg`, `image/png`, `image/webp`, `application/pdf` |
 | file size | max 5 MB |
 
 Validasi/behavior API:
@@ -915,9 +915,19 @@ Keputusan:
 | Program detection diduplikasi | Risiko QRIS/rekening salah fallback | Buat helper canonical program resolver |
 | QRIS dynamic belum punya expiry | QR per transaksi tidak punya batas waktu eksplisit | Tambah expiry display dan policy |
 | Validasi EMV/CRC admin belum menjadi kontrak kuat | QRIS dynamic bisa gagal jika payload invalid | Pakai `validateCrc()` saat save settings |
-| Upload proof error kurang operasional | User tidak tahu jika storage/CDN off | Tampilkan pesan API dari `error.response.data.message` |
+| ~~Upload proof error kurang operasional~~ | ~~User tidak tahu jika storage/CDN off~~ | ✅ Fixed 2026-07-06 — catch block kini baca `error.response?.data?.message` |
 | Hardcoded warna payment masih ada | Theme payment tidak konsisten | Rujuk `arsitektur-color.md` |
 | Legacy checkout masih ada | Dua flow payment bisa membingungkan | Audit entry point lalu migrasi/hapus bertahap |
+
+---
+
+## Perbaikan yang Sudah Dilakukan
+
+| Tanggal | Fix | File |
+|---------|-----|------|
+| 2026-07-06 | Tambah `image/webp` ke accepted file types upload proof | `apps/api/src/routes/transactions.ts:567`, `apps/web/src/components/UniversalPaymentDetailSelector.tsx` |
+| 2026-07-06 | Fix error message: baca `error.response?.data?.message` bukan `error.message` generik | `apps/web/src/components/UniversalPaymentDetailSelector.tsx:313` |
+| 2026-07-06 | Tambah hint iPhone di hint text & error toast upload proof | `apps/web/src/lib/i18n/locales/id.ts`, `en.ts` |
 
 ---
 

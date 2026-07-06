@@ -217,6 +217,7 @@ export default function UniversalPaymentDetailSelector({
       "image/jpeg",
       "image/jpg",
       "image/png",
+      "image/webp",
       "application/pdf",
     ];
     if (!allowedTypes.includes(file.type)) {
@@ -310,7 +311,7 @@ export default function UniversalPaymentDetailSelector({
       router.push(`/invoice/${transactionId}`);
     } catch (error: any) {
       console.error("Error confirming payment:", error);
-      toast.error(error.message || t("payment.confirmFailed"));
+      toast.error(error.response?.data?.message || error.message || t("payment.confirmFailed"));
     } finally {
       setIsConfirming(false);
     }
@@ -645,7 +646,7 @@ export default function UniversalPaymentDetailSelector({
                     <input
                       type="file"
                       id="payment-proof"
-                      accept="image/jpeg,image/jpg,image/png,application/pdf"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
                       onChange={handleFileChange}
                       className="hidden"
                     />

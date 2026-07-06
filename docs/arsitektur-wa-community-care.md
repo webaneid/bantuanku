@@ -177,20 +177,25 @@ Cron berjalan setiap 30 menit: GET /cron/wa-broadcast (dengan Authorization head
 
 ### Crontab VPS (tambahan)
 
+> **Prasyarat:** Buat folder log dulu — user `bantuanku` tidak punya write access ke `/var/log/`:
+> ```bash
+> mkdir -p ~/logs
+> ```
+
 ```cron
-CRON_SECRET=<isi_dengan_JWT_SECRET_dari_.env>
+CRON_SECRET=<isi_dengan_nilai_CRON_SECRET_dari_.env>
 
 # Birthday: setiap hari jam 08:00 WIB (01:00 UTC)
-0 1 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-birthday >> /var/log/cron-wa-birthday.log 2>&1
+0 1 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-birthday >> ~/logs/cron-wa-birthday.log 2>&1
 
 # Re-engagement: setiap hari jam 10:00 WIB (03:00 UTC)
-0 3 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-reengagement >> /var/log/cron-wa-reengagement.log 2>&1
+0 3 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-reengagement >> ~/logs/cron-wa-reengagement.log 2>&1
 
 # Broadcast processor: setiap 30 menit — endpoint respond 202 langsung, proses di background
-*/30 * * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-broadcast >> /var/log/cron-wa-broadcast.log 2>&1
+*/30 * * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-broadcast >> ~/logs/cron-wa-broadcast.log 2>&1
 
-# Savings reminder: setiap hari jam 07:00 WIB (00:00 UTC)
-0 0 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/savings-reminder >> /var/log/cron-savings-reminder.log 2>&1
+# Savings reminder
+0 7 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/savings-reminder >> ~/logs/cron-savings-reminder.log 2>&1
 ```
 
 > **Catatan auth cron:** Secret dikirim via `Authorization: Bearer` header (bukan query param `?secret=` — query param muncul di access log server). Env var `CRON_SECRET` (atau fallback ke `JWT_SECRET` jika `CRON_SECRET` belum di-set di `.env` VPS).
@@ -567,7 +572,7 @@ Gap berikut ditemukan antara arsitektur dan implementasi aktual. Masing-masing s
 | 1 | **Fase 7 — UX form buat broadcast masih kasar**: referenceId diketik manual (bukan autocomplete), tidak ada preview pesan, tidak ada estimasi penerima + waktu selesai | Tinggi | ✅ Selesai Fase 7 |
 | 2 | **PATCH `/admin/campaigns/:id/status` tidak trigger broadcast job** — jika admin pakai endpoint status terpisah (bukan form edit), `broadcastWa` tidak bisa di-pass. Selama UI admin menggunakan form edit (PUT), ini tidak masalah. | Rendah | Post-Fase 7 |
 | 3 | **Broadcast untuk laporan kegiatan (activity reports)** — template `wa_tpl_report_published` disebut di arsitektur tapi belum dibuat di settings dan belum ada trigger dari halaman laporan | Sedang | Post-Fase 7 |
-| 4 | **Crontab di VPS** — keempat cron jobs sudah terdaftar tapi secret lama (`MPlGIjxiUXNxOx5le5...`). Perlu update ke JWT_SECRET aktual dari `.env`. Lihat template crontab di section "Crontab VPS" di atas. | Kritis | Manual VPS — `crontab -e` |
+| 4 | ~~**Crontab di VPS**~~ | ~~Kritis~~ | ✅ Resolved 2026-07-06 — secret diupdate, path log dipindah ke `~/logs/` (user tidak punya write access ke `/var/log/`) |
 | 5 | **Prompt "isi tanggal lahir" di profil web** — arsitektur merekomendasikan prompt lembut di `/account/profile` jika `birthDate` kosong, agar birthday reminder bisa jalan | Rendah | Post-Fase 7 |
 | 6 | **Unsubscribe via balas "BERHENTI" ke bot WA** — link unsubscribe sudah ada, tapi keyword bot belum dihandle | Rendah | Post-Fase 7 |
 

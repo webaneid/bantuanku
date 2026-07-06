@@ -429,6 +429,7 @@ Qurban payment/order upload punya flow upload sendiri di `apps/api/src/routes/qu
 | `apps/api/drizzle/0003_create_media_table.sql` adalah schema lama SQLite | Tidak sesuai schema Drizzle/Postgres aktif di `packages/db/src/schema/media.ts` |
 | Variants di response ada, tetapi `MediaLibrary` type tidak mendeklarasikannya | Frontend tidak memanfaatkan variant map |
 | GCS ACL public bisa gagal tanpa menggagalkan upload | URL bisa tidak publik jika bucket/ACL tidak mendukung public object ACL |
+| `generateGCSPath` selalu pakai default slug `'bantuanku'` di semua 4 pemanggil | Saat multi-client aktif, semua upload dari server klien berbeda tetap masuk ke prefix `bantuanku/` — file tercampur, offboarding klien tidak bisa bersih. Fix: teruskan `ORGANIZATION_SLUG` env var ke semua pemanggil. Detail di `arsitektur-theme-system.md` section CDN. |
 
 ## Perbaikan yang Sudah Dilakukan
 

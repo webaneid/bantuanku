@@ -807,7 +807,7 @@ export const idMessages: Messages = {
     paymentDateHint: "Tanggal saat Anda melakukan transfer",
     proofTransfer: "Bukti Transfer",
     uploadHint: "Klik untuk upload bukti pembayaran",
-    uploadFormat: "JPG, PNG, atau PDF (Maks. 5MB)",
+    uploadFormat: "JPG, PNG, WebP, atau PDF (Maks. 5MB). Pengguna iPhone: gunakan screenshot, bukan foto langsung.",
     remove: "Hapus",
     changeMethod: "Ganti Metode",
     sending: "Mengirim...",
@@ -820,7 +820,7 @@ export const idMessages: Messages = {
     proofUploaded:
       "Bukti pembayaran berhasil dikirim! Menunggu verifikasi admin.",
     confirmFailed: "Gagal mengkonfirmasi pembayaran",
-    allowedFiles: "Hanya file gambar (JPG, PNG) atau PDF yang diperbolehkan",
+    allowedFiles: "Format tidak didukung. Gunakan JPG, PNG, WebP, atau PDF. Pengguna iPhone: gunakan screenshot, bukan foto langsung.",
     maxFileSize: "Ukuran file maksimal 5MB",
   },
   checkout: {
@@ -1019,7 +1019,7 @@ export const idMessages: Messages = {
       instructionQris4: "Upload screenshot bukti pembayaran di bawah ini",
       uploadTitle: "Upload Bukti Pembayaran",
       uploadClick: "Klik untuk upload bukti pembayaran",
-      uploadFormat: "JPG, PNG, atau PDF (Maks. 5MB)",
+      uploadFormat: "JPG, PNG, WebP, atau PDF (Maks. 5MB). Pengguna iPhone: gunakan screenshot, bukan foto langsung.",
       fileReady:
         "File siap diupload. Klik \"Konfirmasi Pembayaran\" untuk mengirim.",
       remove: "Hapus",

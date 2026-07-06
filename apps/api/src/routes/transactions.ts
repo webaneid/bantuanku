@@ -564,12 +564,12 @@ app.post("/:id/upload-proof", async (c) => {
   }
 
   // Security: Validate file type
-  const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+  const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf"];
   if (!allowedTypes.includes(file.type)) {
     return c.json(
       {
         success: false,
-        message: "File type not allowed. Only JPEG, PNG, and PDF are allowed.",
+        message: "Format file tidak didukung. Gunakan JPG, PNG, WebP, atau PDF. Jika dari iPhone, gunakan screenshot (bukan foto langsung).",
       },
       400
     );
