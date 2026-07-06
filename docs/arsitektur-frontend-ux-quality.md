@@ -1,6 +1,6 @@
 # Arsitektur Frontend UX Quality
 
-> Terakhir di-sync: 2026-07-02
+> Terakhir di-sync: 2026-07-06
 
 ---
 
@@ -241,7 +241,9 @@ Gap:
 | Browser native dialog web | Sudah dibersihkan (2026-07-05) — lihat tabel perbaikan di bawah |
 | Browser native dialog admin | Masih ada di beberapa halaman — lihat daftar tersisa di bawah |
 
-### Perbaikan Native Dialog (2026-07-05)
+### Perbaikan Native Dialog
+
+**Fase 1 (2026-07-05):**
 
 | Jenis | File | Sebelum | Sesudah |
 |-------|------|---------|---------|
@@ -252,21 +254,32 @@ Gap:
 | `confirm()` admin | `mitra/[id]/page.tsx` | `window.confirm(...)` | Inline modal state pattern |
 | `prompt()` admin | `mitra/[id]/page.tsx` | `window.prompt(...)` | Inline textarea modal pattern |
 
+**Fase 2 (2026-07-06):**
+
+| Jenis | File | Sebelum | Sesudah |
+|-------|------|---------|---------|
+| `confirm()` admin | `qurban/discounts/page.tsx` | 2× `confirm()` (nonaktifkan + hapus) | `confirmDialog` state + inline modal |
+| `confirm()` admin | `qurban/discounts/[id]/page.tsx` | `confirm()` (nonaktifkan) | `confirmOpen` state + inline modal |
+
+Catatan: `qurban/discounts/` tidak tercatat di audit Fase 1 — ditemukan saat audit ulang 2026-07-06.
+
 ### Native Dialog yang Masih Tersisa (Admin)
 
-Hasil audit setelah perbaikan Fase 1:
+Diverifikasi langsung dari kode pada 2026-07-06:
 
 | Jenis | Lokasi |
 |-------|--------|
-| `confirm()` admin | `qurban/periods/[id]/page.tsx`, `zakat/distributions/[id]/page.tsx`, `donations/page.tsx`, `donations/[id]/edit/page.tsx`, `qurban/savings/pending-deposits/page.tsx`, `ledger/create/page.tsx`, `ledger/[id]/page.tsx` |
-| `prompt()` admin | `ledger/[id]/page.tsx` |
+| `confirm()` | `qurban/periods/[id]/page.tsx`, `zakat/distributions/[id]/page.tsx`, `donations/page.tsx`, `donations/[id]/edit/page.tsx`, `qurban/savings/pending-deposits/page.tsx`, `ledger/create/page.tsx`, `ledger/[id]/page.tsx` |
+| `prompt()` | `ledger/[id]/page.tsx` |
 
-Catatan koreksi terhadap `dokumentasi-front-end.md` lama:
+Total tersisa: 7 file admin dengan `confirm()`, 1 file dengan `prompt()`.
+
+Catatan koreksi:
 
 1. Klaim lama tentang `CampaignForm.tsx` memakai `alert()` sudah tidak sesuai audit; `CampaignForm` sekarang memakai `FeedbackDialog`.
-2. Seluruh `alert()` di web sudah diganti ke `feedbackToast` (Fase 1, 2026-07-05).
-3. `window.confirm()` dan `window.prompt()` di `mitra/[id]/page.tsx` sudah diganti ke inline modal (Fase 1, 2026-07-05).
-4. Sisa `confirm()` admin tersebar di 7 file lain — dikerjakan di Fase berikutnya.
+2. Seluruh `alert()` di web sudah diganti ke `feedbackToast` (Fase 1, 2026-07-05) — diverifikasi ulang 2026-07-06.
+3. `mitra/[id]/page.tsx` sudah bersih (Fase 1).
+4. `qurban/discounts/` sudah bersih (Fase 2, 2026-07-06).
 
 Rekomendasi:
 

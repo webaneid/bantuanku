@@ -168,8 +168,10 @@ Native dialog yang masih ditemukan di admin non-backup:
 
 | Native API | Lokasi |
 |------------|--------|
-| `confirm()` | `dashboard/ledger/create`, `dashboard/donations`, `dashboard/donations/[id]/edit`, `dashboard/ledger/[id]`, `dashboard/qurban/savings/pending-deposits`, `dashboard/qurban/periods/[id]`, `dashboard/zakat/distributions/[id]`, `dashboard/mitra/[id]` |
-| `prompt()` | `dashboard/ledger/[id]`, `dashboard/mitra/[id]` |
+| `confirm()` | `dashboard/ledger/create`, `dashboard/donations`, `dashboard/donations/[id]/edit`, `dashboard/ledger/[id]`, `dashboard/qurban/savings/pending-deposits`, `dashboard/qurban/periods/[id]`, `dashboard/zakat/distributions/[id]` |
+| `prompt()` | `dashboard/ledger/[id]` |
+
+> Sudah difixing: `dashboard/mitra/[id]` (Fase 1, 2026-07-05), `dashboard/qurban/discounts/` (Fase 2, 2026-07-06). Diverifikasi ulang 2026-07-06.
 
 ## Forms
 
