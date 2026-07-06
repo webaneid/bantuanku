@@ -140,7 +140,10 @@ export default function BroadcastsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["broadcasts", page],
-    queryFn: () => api.get(`/admin/whatsapp/broadcasts?page=${page}&limit=20`).then((r) => r.data.data),
+    queryFn: () => api.get(`/admin/whatsapp/broadcasts?page=${page}&limit=20`).then((r) => ({
+      items: r.data.data as BroadcastJob[],
+      pagination: r.data.pagination,
+    })),
   });
 
   const createMutation = useMutation({
