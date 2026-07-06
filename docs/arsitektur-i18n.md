@@ -296,7 +296,7 @@ Ringkasan area legacy audit yang tetap menjadi gap:
 | Header/search/user menu label | Sebagian sudah memakai i18n/settings, tetapi fallback dan beberapa label masih perlu migrasi dictionary. |
 | Footer/menu/section settings | `frontend_footer_menu` dan `frontend_service_categories` sudah menjadi sumber dinamis utama; fallback tetap ada. |
 | Homepage marketing sections | Banyak section sudah settings-driven (`frontend_hero_slides`, `frontend_featured_section`, `frontend_programs_section`, `frontend_funfact_section`, `frontend_why_choose_us_section`, `frontend_cta_section`), tetapi fallback dan label UI masih ada. |
-| Zakat/Qurban/Wakaf/Program page copy | Page title/description utama sebagian settings-driven; label filter, empty state, pagination, dan status masih perlu dictionary. |
+| Zakat/Qurban/Wakaf/Program page copy | Page title/description utama sebagian settings-driven; label filter, empty state, pagination, dan status masih perlu dictionary. Contoh spesifik yang sudah diverifikasi hardcoded: `ZakatCard.tsx` ("Terkumpul", "Hitung & Bayar Zakat"), `ProgramListTemplate.tsx` (label filter "Semua Program"), `qurban/laporan/QurbanReportFilters.tsx` (label filter "Mitra / Program", "Semua Program"), `daftar-mitra/page.tsx` (judul dan copy form). |
 | Checkout/invoice/account labels | Masih menjadi prioritas migrasi i18n karena muncul di flow kritikal donatur. |
 | Sensitive/dummy public text | Tidak boleh ada dummy kontak/alamat di runtime public; nilai harus berasal dari settings organisasi atau default aman. |
 

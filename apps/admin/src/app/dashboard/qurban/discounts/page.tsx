@@ -36,11 +36,14 @@ function getStatusBadge(discount: Discount) {
   return { label: "Aktif", color: "bg-green-100 text-green-700" };
 }
 
+const EMPTY_CONFIRM = { open: false, title: "", message: "", action: null as null | { type: "deactivate" | "delete"; id: string } };
+
 export default function QurbanDiscountsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [confirmDialog, setConfirmDialog] = useState(EMPTY_CONFIRM);
 
   const { data, isLoading } = useQuery({
     queryKey: ["qurban-discounts", search, typeFilter, statusFilter],
@@ -67,6 +70,16 @@ export default function QurbanDiscountsPage() {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["qurban-discounts"] }),
   });
+
+  function handleConfirmAction() {
+    if (!confirmDialog.action) return;
+    if (confirmDialog.action.type === "deactivate") {
+      deactivateMutation.mutate(confirmDialog.action.id);
+    } else {
+      deleteMutation.mutate(confirmDialog.action.id);
+    }
+    setConfirmDialog(EMPTY_CONFIRM);
+  }
 
   const discounts: Discount[] = data?.data || [];
 
@@ -185,11 +198,14 @@ export default function QurbanDiscountsPage() {
                         </Link>
                         {d.isActive && (
                           <button
-                            onClick={() => {
-                              if (confirm("Nonaktifkan diskon ini?")) {
-                                deactivateMutation.mutate(d.id);
-                              }
-                            }}
+                            onClick={() =>
+                              setConfirmDialog({
+                                open: true,
+                                title: "Nonaktifkan Diskon",
+                                message: `Nonaktifkan diskon "${d.name}"? Diskon tidak bisa digunakan setelah dinonaktifkan.`,
+                                action: { type: "deactivate", id: d.id },
+                              })
+                            }
                             className="p-1 hover:text-yellow-600 text-gray-400"
                             title="Nonaktifkan"
                           >
@@ -198,11 +214,14 @@ export default function QurbanDiscountsPage() {
                         )}
                         {d.usageCount === 0 && (
                           <button
-                            onClick={() => {
-                              if (confirm("Hapus diskon ini? Tindakan tidak dapat dibatalkan.")) {
-                                deleteMutation.mutate(d.id);
-                              }
-                            }}
+                            onClick={() =>
+                              setConfirmDialog({
+                                open: true,
+                                title: "Hapus Diskon",
+                                message: `Hapus diskon "${d.name}"? Tindakan ini tidak dapat dibatalkan.`,
+                                action: { type: "delete", id: d.id },
+                              })
+                            }
                             className="p-1 hover:text-red-600 text-gray-400"
                             title="Hapus"
                           >
@@ -216,6 +235,39 @@ export default function QurbanDiscountsPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {confirmDialog.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="px-6 py-4 border-b">
+              <h2 className="text-lg font-semibold">{confirmDialog.title}</h2>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-sm text-gray-700">{confirmDialog.message}</p>
+            </div>
+            <div className="flex gap-3 justify-end px-6 py-4 border-t bg-gray-50">
+              <button
+                type="button"
+                onClick={() => setConfirmDialog(EMPTY_CONFIRM)}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50 bg-white text-sm"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAction}
+                className={`px-4 py-2 text-white rounded-lg text-sm ${
+                  confirmDialog.action?.type === "delete"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-yellow-600 hover:bg-yellow-700"
+                }`}
+              >
+                {confirmDialog.action?.type === "delete" ? "Hapus" : "Nonaktifkan"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

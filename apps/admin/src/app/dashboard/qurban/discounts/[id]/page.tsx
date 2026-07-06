@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tag, ArrowLeft, Edit2, Power } from "lucide-react";
 import Link from "next/link";
@@ -10,6 +11,7 @@ export default function DiscountDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { data: discountData, isLoading } = useQuery({
     queryKey: ["qurban-discount", id],
@@ -58,9 +60,7 @@ export default function DiscountDetailPage() {
           </Link>
           {d.isActive && (
             <button
-              onClick={() => {
-                if (confirm("Nonaktifkan diskon ini?")) deactivateMutation.mutate();
-              }}
+              onClick={() => setConfirmOpen(true)}
               className="flex items-center gap-1 px-3 py-1.5 border border-yellow-300 text-yellow-700 rounded-lg text-sm hover:bg-yellow-50"
             >
               <Power className="w-4 h-4" />
@@ -158,6 +158,40 @@ export default function DiscountDetailPage() {
           </table>
         )}
       </div>
+
+      {confirmOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="px-6 py-4 border-b">
+              <h2 className="text-lg font-semibold">Nonaktifkan Diskon</h2>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-sm text-gray-700">
+                Nonaktifkan diskon <strong>{d.name}</strong>? Diskon tidak bisa digunakan setelah dinonaktifkan.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end px-6 py-4 border-t bg-gray-50">
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50 bg-white text-sm"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deactivateMutation.mutate();
+                  setConfirmOpen(false);
+                }}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 text-sm"
+              >
+                Nonaktifkan
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
