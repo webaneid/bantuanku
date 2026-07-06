@@ -262,43 +262,70 @@ Implikasi: label UI bisa berubah bahasa, tetapi formatting angka/tanggal belum k
 | Missing key fallback ke key mentah | Key internal bisa tampil ke user |
 | Tidak ada audit otomatis hardcode | Regression hardcoded string mudah masuk kembali |
 
-## Hardcoded String yang Masih Terlihat
+## Coverage Map — Audit 2026-07-06
 
-Bagian ini menyerap dan mengompresi audit root legacy:
+Audit dilakukan dengan membandingkan seluruh file `.tsx` di `apps/web/src/app/` dan `apps/web/src/components/` terhadap penggunaan `useI18n()` / `translate()`.
 
-- `hardcode-front-end.md`;
-- `hardcode-audit-frontend.md`;
-- `hardcode-status-checklist.md`.
+### Area yang Sudah Pakai Dictionary
 
-Tiga file itu adalah laporan/checklist lama, bukan source of truth. Sebagian item di dalamnya sudah berubah: contoh kritikal dummy address di `UniversalInvoice` tidak lagi ditemukan di komponen runtime saat audit ulang; invoice sekarang membaca `organization_email` dan `organization_phone` dari settings bila tersedia. Yang masih relevan adalah kesimpulan arsitekturalnya: hardcoded UI text masih banyak, settings frontend sudah menangani sebagian konten marketing/page, dan i18n belum mencakup seluruh public web.
+| Area | File | Pola |
+|------|------|------|
+| Auth (login, register, forgot password) | `login/page.tsx`, `register/page.tsx`, `forgot-password/page.tsx` | `useI18n()` |
+| Checkout & payment flow | `checkout/**`, `UniversalPaymentMethodSelector.tsx`, `UniversalPaymentDetailSelector.tsx` | `useI18n()` |
+| Invoice | `UniversalInvoice.tsx` (56 pemanggilan `t()`) | `useI18n()` — invoice page delegate ke komponen ini |
+| Account area | `account/**` (semua file) | `useI18n()` |
+| Program detail | `program/[slug]/**` | campuran server `translate()` + client `useI18n()` |
+| Qurban detail & tabungan | `qurban/[id]/**`, `qurban/savings/**` | `useI18n()` |
+| Zakat halaman & kalkulator | `zakat/**` (semua page) | `useI18n()` |
+| Homepage | `page.tsx` | server `translate()` |
+| Header / Footer | `Header.tsx`, `Footer.tsx` | `useI18n()` |
+| Cart | `keranjang-bantuan/page.tsx` | `useI18n()` |
+| Testimonial | `TestimonialSection.tsx` | `useI18n()` |
+| Qurban card | `QurbanCard.tsx` | `useI18n()` |
 
-**Perbaikan (2026-07-06):**
+### Hardcoded yang Valid — Tidak Perlu Dictionary
+
+| File | Alasan valid |
+|------|-------------|
+| `page/[slug]/page.tsx` | Konten dari CMS/API, bukan UI text statis |
+| `documentation/` (semua file) | Konten artikel dari database, UI chrome minimal |
+| `invoice/[id]/page.tsx` dan sub-pages | Hanya shell; UI text sepenuhnya ada di `UniversalInvoice.tsx` yang sudah i18n |
+| `berhenti/page.tsx` | Halaman opt-out WA, fitur spesifik Indonesia, tidak ada konteks EN |
+| `mitra/[slug]/page.tsx` | Hampir seluruhnya data-driven; satu-satunya hardcoded adalah "WhatsApp" (nama brand) |
+| `program/kategori/[slug]/page.tsx` | Tidak ada hardcoded UI text yang ditemukan saat audit |
+| `program/pilar/[slug]/page.tsx` | Tidak ada hardcoded UI text yang ditemukan saat audit |
+
+### Hardcoded yang Perlu Dictionary (Gap Aktual)
+
+Ditemukan dan diverifikasi langsung dari kode saat audit 2026-07-06:
+
+| File | Teks hardcoded yang ditemukan |
+|------|-------------------------------|
+| `program/page.tsx` | `"Semua Program"`, `"Pilih program yang ingin Anda dukung dan berbagi kebaikan untuk sesama"` (dipakai sebagai default state sebelum settings dimuat) |
+| `wakaf/page.tsx` | `"Program Wakaf"`, `"Salurkan wakaf Anda untuk aset produktif yang memberikan manfaat berkelanjutan"` |
+| `laporan/page.tsx` | `"Arsip Laporan Kegiatan"` |
+| `qurban/laporan/page.tsx` | `"Laporan Qurban Publik"`, `"Pilih Periode Terlebih Dahulu"`, label statistik ("Total Kambing", "Total Sapi") |
+| `qurban/laporan/QurbanPenyembelihanTable.tsx` | Table headers: "Tanggal", "Lokasi", "Hewan", "Kondisi", "Distribusi", "Penerima" |
+| `qurban/laporan/QurbanReportFilters.tsx` | Label filter "Mitra / Program", "Semua Program" |
+| `zakat/laporan/` (belum spot-check penuh) | Pola serupa dengan qurban/laporan — table headers dan filter labels |
+| `daftar-mitra/page.tsx` | Judul form dan copy pendaftaran mitra |
+| `ZakatCard.tsx` | `"Terkumpul"`, `"Hitung & Bayar Zakat"` |
+| `ProgramListTemplate.tsx` | Label filter "Semua Program" |
+
+**Catatan prioritas:** Area laporan publik (qurban, zakat, kegiatan) dan halaman daftar program adalah yang paling terekspos ke pengguna berbahasa Inggris. Area daftar-mitra lebih rendah prioritasnya karena audiensnya spesifik lembaga Indonesia.
+
+### Perbaikan yang Sudah Dilakukan (2026-07-06)
 
 | File | Yang Diperbaiki |
 |------|-----------------|
 | `Header.tsx` | Fallback menu `Laporan` → `t('common.menuLaporan')` |
 | `keranjang-bantuan/page.tsx` | Semua label UI: title, empty state, CTA, summary, item detail → namespace `keranjang.*` |
-| `TestimonialSection.tsx` | Heading, subheading, defaultReview, reviewedPrefix → namespace `testimonial.*` (hapus semua ternary locale) |
+| `TestimonialSection.tsx` | Heading, subheading, defaultReview, reviewedPrefix → namespace `testimonial.*` |
 
 Namespace baru yang ditambahkan ke `id.ts` dan `en.ts`:
-- `common.menuLaporan` — label menu Laporan/Reports
-- `testimonial.*` — heading, description, defaultReview, reviewedPrefix
-- `keranjang.*` — title, itemCount, clearCart, empty.*, item.*, summary.*
-
-Contoh yang masih tersisa sebagai gap:
-
-Daftar ini bukan audit lengkap semua hardcoded string. Ini adalah bukti bahwa implementasi i18n belum menyapu seluruh UI.
-
-Ringkasan area legacy audit yang tetap menjadi gap:
-
-| Area | Status arsitektur saat ini |
-|------|----------------------------|
-| Header/search/user menu label | Sebagian sudah memakai i18n/settings, tetapi fallback dan beberapa label masih perlu migrasi dictionary. |
-| Footer/menu/section settings | `frontend_footer_menu` dan `frontend_service_categories` sudah menjadi sumber dinamis utama; fallback tetap ada. |
-| Homepage marketing sections | Banyak section sudah settings-driven (`frontend_hero_slides`, `frontend_featured_section`, `frontend_programs_section`, `frontend_funfact_section`, `frontend_why_choose_us_section`, `frontend_cta_section`), tetapi fallback dan label UI masih ada. |
-| Zakat/Qurban/Wakaf/Program page copy | Page title/description utama sebagian settings-driven; label filter, empty state, pagination, dan status masih perlu dictionary. Contoh spesifik yang sudah diverifikasi hardcoded: `ZakatCard.tsx` ("Terkumpul", "Hitung & Bayar Zakat"), `ProgramListTemplate.tsx` (label filter "Semua Program"), `qurban/laporan/QurbanReportFilters.tsx` (label filter "Mitra / Program", "Semua Program"), `daftar-mitra/page.tsx` (judul dan copy form). |
-| Checkout/invoice/account labels | Masih menjadi prioritas migrasi i18n karena muncul di flow kritikal donatur. |
-| Sensitive/dummy public text | Tidak boleh ada dummy kontak/alamat di runtime public; nilai harus berasal dari settings organisasi atau default aman. |
+- `common.menuLaporan`
+- `testimonial.*`
+- `keranjang.*`
 
 ## Perbedaan dari Blueprint Lama
 
