@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tag, Plus, Edit2, Trash2, Power, Clock } from "lucide-react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 interface Discount {
   id: string;
@@ -238,38 +239,15 @@ export default function QurbanDiscountsPage() {
         </div>
       )}
 
-      {confirmDialog.open && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="px-6 py-4 border-b">
-              <h2 className="text-lg font-semibold">{confirmDialog.title}</h2>
-            </div>
-            <div className="px-6 py-4">
-              <p className="text-sm text-gray-700">{confirmDialog.message}</p>
-            </div>
-            <div className="flex gap-3 justify-end px-6 py-4 border-t bg-gray-50">
-              <button
-                type="button"
-                onClick={() => setConfirmDialog(EMPTY_CONFIRM)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50 bg-white text-sm"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmAction}
-                className={`px-4 py-2 text-white rounded-lg text-sm ${
-                  confirmDialog.action?.type === "delete"
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-yellow-600 hover:bg-yellow-700"
-                }`}
-              >
-                {confirmDialog.action?.type === "delete" ? "Hapus" : "Nonaktifkan"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel={confirmDialog.action?.type === "delete" ? "Hapus" : "Nonaktifkan"}
+        variant={confirmDialog.action?.type === "delete" ? "danger" : "warning"}
+        onConfirm={handleConfirmAction}
+        onClose={() => setConfirmDialog(EMPTY_CONFIRM)}
+      />
     </div>
   );
 }

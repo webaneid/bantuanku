@@ -10,6 +10,7 @@ import api from "@/lib/api";
 import Autocomplete from "@/components/Autocomplete";
 import MediaLibrary from "@/components/MediaLibrary";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAuth } from "@/lib/auth";
 
 interface Savings {
@@ -719,41 +720,13 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      {confirmDialog.open && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="px-6 py-4 border-b">
-              <h2 className="text-lg font-semibold">{confirmDialog.title}</h2>
-            </div>
-            <div className="px-6 py-4">
-              <p className="text-sm text-gray-700">{confirmDialog.message}</p>
-            </div>
-            <div className="flex gap-3 justify-end px-6 py-4 border-t bg-gray-50">
-              <button
-                type="button"
-                onClick={() =>
-                  setConfirmDialog({
-                    open: false,
-                    title: "",
-                    message: "",
-                    action: null,
-                  })
-                }
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50 bg-white"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmAction}
-                className="px-4 py-2 bg-danger-600 text-white rounded-lg hover:bg-danger-700"
-              >
-                Lanjutkan
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={handleConfirmAction}
+        onClose={() => setConfirmDialog({ open: false, title: "", message: "", action: null })}
+      />
 
       <FeedbackDialog
         open={feedback.open}

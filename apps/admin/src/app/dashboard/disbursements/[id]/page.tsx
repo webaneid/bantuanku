@@ -9,6 +9,7 @@ import { getCategoryLabel } from "@/lib/category-utils";
 import MediaLibrary from "@/components/MediaLibrary";
 import AdminPaymentMethodList from "@/components/AdminPaymentMethodList";
 import FeedbackDialog from "@/components/FeedbackDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAuth } from "@/lib/auth";
 import { todayWIBDateInput } from "@/lib/timezone";
 
@@ -813,32 +814,16 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
         </div>
       )}
 
-      {showPaymentConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold mb-4">Konfirmasi Pembayaran</h3>
-            <p className="text-sm text-gray-600 mb-6">Konfirmasi pembayaran pencairan ini?</p>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                className="btn btn-secondary btn-md"
-                onClick={() => setShowPaymentConfirmModal(false)}
-                disabled={markAsPaidMutation.isPending}
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                className="btn btn-success btn-md"
-                onClick={() => markAsPaidMutation.mutate(paymentData)}
-                disabled={markAsPaidMutation.isPending}
-              >
-                {markAsPaidMutation.isPending ? "Memproses..." : "Konfirmasi"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={showPaymentConfirmModal}
+        title="Konfirmasi Pembayaran"
+        message="Konfirmasi pembayaran pencairan ini?"
+        confirmLabel="Konfirmasi"
+        variant="primary"
+        loading={markAsPaidMutation.isPending}
+        onConfirm={() => markAsPaidMutation.mutate(paymentData)}
+        onClose={() => setShowPaymentConfirmModal(false)}
+      />
 
       <FeedbackDialog
         open={feedback.open}
