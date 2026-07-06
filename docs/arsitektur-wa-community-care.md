@@ -1,7 +1,7 @@
 # Arsitektur WhatsApp Community Care
 
-> Status: SELESAI — Fase 1–7 selesai  
-> Dibuat: 2026-07-05 | Diperbarui: 2026-07-05 (Fase 7 selesai)  
+> Status: SELESAI — Fase 1–7 selesai, live di VPS  
+> Dibuat: 2026-07-05 | Diperbarui: 2026-07-06 (async cron, variable substitution fix)  
 > Bergantung pada: `arsitektur-notifikasi.md`, `arsitektur-donatur.md`, `arsitektur-donasi.md`, `arsitektur-activity-reports.md`
 
 ---
@@ -34,14 +34,12 @@ Berbeda dari `arsitektur-notifikasi.md` yang scope-nya event-driven per transaks
 | **2. Re-engagement** | Cron harian | Donatur yang 62+ hari tidak donasi | ✅ Selesai (Fase 4) |
 | **3. Ulang Tahun** | Cron harian | Donatur dengan `birthDate` = hari ini | ✅ Selesai (Fase 3) |
 
-> **Sudah live di VPS (deploy 2026-07-05):**
+> **Sudah live di VPS (deploy 2026-07-05 s/d 2026-07-06):**
 > - **Fase 1** — Migration 119: `wa_broadcast_jobs`, `wa_broadcast_logs`, `donatur.waOptOut`, `campaigns.broadcastWa`
 > - **Fase 2** — Opt-out: `GET /v1/wa/unsubscribe`, `POST /v1/wa/opt-in`, toggle profil web & admin, halaman `/berhenti`
 > - **Fase 3** — Birthday cron: `GET /cron/wa-birthday` (08:00 WIB), `services/birthday-reminder.ts`
 > - **Fase 4** — Re-engagement cron: `GET /cron/wa-reengagement` (10:00 WIB), `services/reengagement-reminder.ts`
-> 
-> **Selesai, siap deploy:**
-> - **Fase 5** — Broadcast processor: `GET /cron/wa-broadcast` (setiap 30 menit), `services/broadcast-processor.ts`, CRUD `/admin/whatsapp/broadcasts`, halaman admin `/dashboard/whatsapp/broadcasts`
+> - **Fase 5** — Broadcast processor: `GET /cron/wa-broadcast` (setiap 30 menit, async response), `services/broadcast-processor.ts`, CRUD `/admin/whatsapp/broadcasts`, halaman admin `/dashboard/whatsapp/broadcasts`
 > - **Fase 6** — Campaign form: toggle "Sebarkan ke donatur via WA" di edit campaign, auto-create broadcast job saat pertama publish; `publishedAt` juga di-set dari PUT endpoint
 > - **Fase 7** — Modal buat broadcast: campaign autocomplete, preview pesan real-time, estimasi penerima + waktu selesai. API: `GET /admin/whatsapp/templates/:key` + `GET /admin/whatsapp/broadcasts/estimate`
 
@@ -154,37 +152,50 @@ Admin buat job (POST /admin/whatsapp/broadcasts)
   → INSERT wa_broadcast_jobs (status=pending, next_batch_at=NOW())
   → return 201 Created
 
-Cron berjalan setiap 30 menit: GET /cron/wa-broadcast?secret=...
-  → Query: SELECT * FROM wa_broadcast_jobs
-      WHERE status IN ('pending', 'processing')
-        AND next_batch_at <= NOW()
-      LIMIT 1  -- satu job per run, serialized
+Cron berjalan setiap 30 menit: GET /cron/wa-broadcast (dengan Authorization header)
+  → Validasi cron secret
+  → Return 202 Accepted LANGSUNG (async — tidak menunggu batch selesai)
+  → Background (setImmediate):
+      → Query: SELECT * FROM wa_broadcast_jobs
+          WHERE status IN ('pending', 'processing')
+            AND next_batch_at <= NOW()
+            AND type NOT IN ('birthday', 'reengagement')  -- synthetic jobs dikecualikan
+          LIMIT 1  -- satu job per run, serialized
 
-  → Ambil recipients batch berikutnya (OFFSET current_offset LIMIT batch_size)
-  → Kirim satu per satu via sendBulk (dengan delay 2s)
-  → INSERT ke wa_broadcast_logs (status per penerima)
-  → UPDATE wa_broadcast_jobs:
-      sent_count += batch.sent
-      failed_count += batch.failed
-      current_offset += batch.size
-      next_batch_at = NOW() + batch_interval_minutes
-      status = current_offset >= total_recipients ? 'completed' : 'processing'
+      → Ambil recipients batch berikutnya
+          (OFFSET current_offset LIMIT batch_size)
+          (NOT EXISTS check di SQL untuk skip yang sudah terkirim)
+      → Kirim satu per satu via sendBulk (dengan delay 2s)
+      → INSERT ke wa_broadcast_logs (status per penerima)
+      → UPDATE wa_broadcast_jobs:
+          sent_count += batch.sent
+          failed_count += batch.failed
+          current_offset += batch.size
+          next_batch_at = NOW() + batch_interval_minutes
+          status = current_offset >= total_recipients ? 'completed' : 'processing'
 ```
 
 ### Crontab VPS (tambahan)
 
 ```cron
-# Broadcast processor: setiap 30 menit
-*/30 * * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-broadcast
-
-# Re-engagement: setiap hari jam 10:00 WIB (03:00 UTC)
-0 3 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-reengagement
+CRON_SECRET=<isi_dengan_JWT_SECRET_dari_.env>
 
 # Birthday: setiap hari jam 08:00 WIB (01:00 UTC)
-0 1 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-birthday
+0 1 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-birthday >> /var/log/cron-wa-birthday.log 2>&1
+
+# Re-engagement: setiap hari jam 10:00 WIB (03:00 UTC)
+0 3 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-reengagement >> /var/log/cron-wa-reengagement.log 2>&1
+
+# Broadcast processor: setiap 30 menit — endpoint respond 202 langsung, proses di background
+*/30 * * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-broadcast >> /var/log/cron-wa-broadcast.log 2>&1
+
+# Savings reminder: setiap hari jam 07:00 WIB (00:00 UTC)
+0 0 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/savings-reminder >> /var/log/cron-savings-reminder.log 2>&1
 ```
 
 > **Catatan auth cron:** Secret dikirim via `Authorization: Bearer` header (bukan query param `?secret=` — query param muncul di access log server). Env var `CRON_SECRET` (atau fallback ke `JWT_SECRET` jika `CRON_SECRET` belum di-set di `.env` VPS).
+
+> **Catatan async:** `/cron/wa-broadcast` **tidak memblokir HTTP response**. Endpoint langsung return `202 Accepted` dan memproses batch di background via `setImmediate`. Ini wajib karena satu batch (50 pesan × 2s delay) ≈ 100 detik — melebihi timeout Cloudflare. Endpoint lain (birthday, reengagement) juga berpotensi timeout jika base donatur besar; pertimbangkan pola yang sama jika mulai lambat.
 
 ---
 
@@ -241,6 +252,8 @@ Balas *BERHENTI* untuk berhenti menerima info ini.
 ```
 
 Variables: `customer_name`, `campaign_title`, `campaign_description`, `campaign_target`, `campaign_url`, + global vars.
+
+> **Catatan implementasi:** Variable `campaign_description`, `campaign_target`, `campaign_url` di-populate di `buildSharedVars()` (`broadcast-processor.ts`) saat `type === "campaign_new"`. Field di schema DB: `campaign.description`, `campaign.goal` (bukan `targetAmount`), `campaign.slug`. `campaign_url` di-build: `${frontendUrl}/program/${campaign.slug}`.
 
 **Catatan untuk UI Admin Campaign:**
 - Tambahkan toggle "Sebarkan ke donatur via WhatsApp" di form campaign (tersembunyi di draft, muncul saat status di-set ke active)
@@ -554,7 +567,7 @@ Gap berikut ditemukan antara arsitektur dan implementasi aktual. Masing-masing s
 | 1 | **Fase 7 — UX form buat broadcast masih kasar**: referenceId diketik manual (bukan autocomplete), tidak ada preview pesan, tidak ada estimasi penerima + waktu selesai | Tinggi | ✅ Selesai Fase 7 |
 | 2 | **PATCH `/admin/campaigns/:id/status` tidak trigger broadcast job** — jika admin pakai endpoint status terpisah (bukan form edit), `broadcastWa` tidak bisa di-pass. Selama UI admin menggunakan form edit (PUT), ini tidak masalah. | Rendah | Post-Fase 7 |
 | 3 | **Broadcast untuk laporan kegiatan (activity reports)** — template `wa_tpl_report_published` disebut di arsitektur tapi belum dibuat di settings dan belum ada trigger dari halaman laporan | Sedang | Post-Fase 7 |
-| 4 | **Crontab `*/30 * * * *` untuk `/cron/wa-broadcast`** — sudah di-deploy kodenya, tapi crontab di VPS belum dikonfirmasi ditambahkan oleh user | Kritis | Segera (manual VPS) |
+| 4 | **Crontab di VPS** — keempat cron jobs sudah terdaftar tapi secret lama (`MPlGIjxiUXNxOx5le5...`). Perlu update ke JWT_SECRET aktual dari `.env`. Lihat template crontab di section "Crontab VPS" di atas. | Kritis | Manual VPS — `crontab -e` |
 | 5 | **Prompt "isi tanggal lahir" di profil web** — arsitektur merekomendasikan prompt lembut di `/account/profile` jika `birthDate` kosong, agar birthday reminder bisa jalan | Rendah | Post-Fase 7 |
 | 6 | **Unsubscribe via balas "BERHENTI" ke bot WA** — link unsubscribe sudah ada, tapi keyword bot belum dihandle | Rendah | Post-Fase 7 |
 
