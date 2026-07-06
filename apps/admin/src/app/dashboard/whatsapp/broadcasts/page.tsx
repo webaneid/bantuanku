@@ -162,7 +162,7 @@ export default function BroadcastsPage() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: (id: string) => api.post(`/admin/whatsapp/broadcasts/${id}/cancel`).then((r) => r.data),
+    mutationFn: (id: string) => api.post(`/admin/whatsapp/broadcasts/${id}/cancel`, {}).then((r) => r.data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["broadcasts"] }),
   });
 
