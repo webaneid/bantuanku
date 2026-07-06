@@ -91,13 +91,6 @@ export default function ProfilePage() {
         const response = await api.get("/auth/me");
         const data = response.data.data;
 
-        console.log("=== Profile Page Debug ===");
-        console.log("API Response:", response.data);
-        console.log("Data:", data);
-        console.log("Name:", data.name);
-        console.log("Phone:", data.phone);
-        console.log("WhatsApp:", data.whatsappNumber);
-
         setProfileData({
           name: data.name || "",
           phone: data.phone || "",

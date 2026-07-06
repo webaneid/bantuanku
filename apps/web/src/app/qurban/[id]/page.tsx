@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: QurbanPageProps): Promise<Met
     const ogImageUrl = resolveOgImageUrl(
       appUrl,
       [pkg.ogImageUrl, pkg.imageUrl ? getQurbanImageUrl(pkg.imageUrl) : null, settings.og_image],
-      '/og-image.jpg'
+      '/og'
     );
 
     // OG Title & Description

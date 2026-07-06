@@ -15,7 +15,7 @@ export function toAbsoluteUrl(appUrl: string, url?: string | null): string | und
 export function resolveOgImageUrl(
   appUrl: string,
   candidates: Array<string | null | undefined>,
-  fallback: string = "/og-image.jpg"
+  fallback: string = "/og"
 ): string | undefined {
   for (const candidate of candidates) {
     const normalized = toAbsoluteUrl(appUrl, candidate);
@@ -63,7 +63,7 @@ export async function fetchSeoSettings(): Promise<Record<string, any>> {
       site_tagline: 'Platform Donasi Terpercaya',
       site_description: 'Platform donasi online terpercaya untuk zakat, infaq, sedekah, qurban, dan wakaf.',
       site_keywords: 'donasi, zakat, infaq, sedekah, qurban, wakaf, donasi online',
-      og_image: '/og-image.jpg',
+      og_image: '/og',
       organization_favicon: '/logo.svg',
       twitter_handle: '@bantuanku',
     };
@@ -77,7 +77,7 @@ export async function generateSiteMetadata(overrides?: Partial<Metadata>): Promi
   const title = overrides?.title || `${settings.site_name} - ${settings.site_tagline}`;
   const description = overrides?.description || settings.site_description;
   const keywords = settings.site_keywords ? settings.site_keywords.split(',').map((k: string) => k.trim()) : [];
-  const fullOgImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], "/og-image.jpg") || `${appUrl}/og-image.jpg`;
+  const fullOgImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], "/og") || `${appUrl}/og`;
   const favicon =
     settings.organization_favicon || settings.organization_logo || '/logo.svg';
   const fullFaviconUrl = toAbsoluteUrl(appUrl, favicon) || `${appUrl}/logo.svg`;

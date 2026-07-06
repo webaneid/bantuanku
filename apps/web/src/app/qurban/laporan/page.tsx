@@ -28,7 +28,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     searchParams?.program
   );
   const description = 'Laporan publik qurban Bantuanku untuk melihat penerimaan, penyaluran, penyembelihan, dan kegiatan secara transparan.';
-  const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og-image.jpg');
+  const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og');
 
   return {
     title: `Laporan Qurban Publik | ${siteName}`,

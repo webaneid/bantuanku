@@ -10,6 +10,7 @@ import { getImageUrl } from '@/lib/image';
 import { useI18n } from '@/lib/i18n/provider';
 import * as fbPixel from '@/lib/fbPixel';
 import QurbanConfirmModal from './QurbanConfirmModal';
+import feedbackToast from '@/lib/feedback-toast';
 
 interface AvailablePeriod {
   periodId: string;
@@ -170,7 +171,7 @@ export default function QurbanSidebar({
 
   const handleOrderClick = () => {
     if (!isAvailable) {
-      alert(t('qurbanDetail.sidebar.validation.unavailable'));
+      feedbackToast.error(t('qurbanDetail.sidebar.validation.unavailable'));
       return;
     }
 

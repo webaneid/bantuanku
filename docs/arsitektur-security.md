@@ -376,6 +376,8 @@ Security gap penting:
 8. Root dump database lama pernah ada di workspace (`laznas_be_2026-01-17_09-39-35_pgsql_data.sql`) dan sudah dihapus. Dump semacam ini tidak boleh berada di repository karena dapat memuat admin, transaksi, settings, dan data operasional.
 9. File DB lokal/SQLite (`bantuanku.db`, `packages/db/sqlite.db`, `apps/api/bantuanku.db`) juga sudah dihapus agar repo tidak menyimpan artefak database bayangan.
 
+**Perbaikan (2026-07-06):** Debug log di `apps/web/src/app/account/profile/page.tsx` yang mencetak `phone` dan `whatsappNumber` user sudah dihapus.
+
 Rujukan detail: `arsitektur-observability-logging.md`.
 
 ---
@@ -390,12 +392,32 @@ Rujukan detail: `arsitektur-observability-logging.md`.
 | Admin Next headers | Belum ada security headers custom. |
 | Web Next headers | `X-DNS-Prefetch-Control`, `X-Frame-Options: SAMEORIGIN`. |
 | Image remote patterns | Mengizinkan beberapa domain eksternal dan local uploads. |
+| SVG injection dari DB | `CategoryGrid` dan admin settings preview memakai `sanitizeSvg()` sebelum `dangerouslySetInnerHTML`. |
 
 Konsekuensi:
 
 1. Risiko utama frontend adalah XSS yang mengambil token dari `localStorage`.
 2. Karena auth tidak berbasis cookie, CSRF terhadap endpoint authenticated lebih rendah, tetapi `withCredentials: true` dan CORS permissive tetap perlu dibersihkan.
 3. Admin app perlu header security setara web/API.
+
+### `dangerouslySetInnerHTML` — Trust Boundary Audit
+
+Semua penggunaan `dangerouslySetInnerHTML` di web/admin dikategorikan:
+
+| Kategori | File | Sumber Data | Risk | Status |
+|----------|------|-------------|------|--------|
+| JSON-LD script | `seo.tsx`, layout, page files | `JSON.stringify(controlled object)` | Safe | OK |
+| SVG icon dari DB | `CategoryGrid.tsx`, `settings/frontend/page.tsx` | Admin-entered SVG | Medium | Sanitized via `sanitizeSvg()` (2026-07-06) |
+| Rich HTML laporan | `QurbanActivityTable.tsx`, `ZakatActivityTable.tsx` | Admin WYSIWYG, public-facing | Medium | Admin trust boundary |
+| Rich HTML zakat | `zakat/calculator/*.tsx`, `ZakatPageHeader.tsx` | Admin WYSIWYG, public-facing | Medium | Admin trust boundary |
+| Invoice footer HTML | `UniversalInvoice.tsx` | Admin settings | Low-Medium | Admin trust boundary |
+| Campaign content | `admin/campaigns/[id]/page.tsx` | Admin WYSIWYG, admin-only page | Low | Admin trust boundary |
+
+Catatan trust boundary admin: semua HTML yang masuk melalui admin panel diasumsikan dipercaya (admin-to-user flow). Risiko adalah insider threat. Untuk perlindungan tambahan, pertimbangkan `sanitize-html` library di masa depan jika ada jalur user-submitted content.
+
+`sanitizeSvg()` helper tersedia di:
+- `apps/web/src/lib/sanitize-svg.ts`
+- `apps/admin/src/lib/sanitize-svg.ts`
 
 ---
 

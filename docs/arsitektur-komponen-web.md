@@ -323,11 +323,11 @@ Route berikut masih ada di app:
 /test-organisms
 ```
 
-Isi route tersebut berfungsi sebagai demo komponen, bukan dokumentasi resmi. Karena berada di `apps/web/src/app`, route ini berpotensi ikut tersedia di build production kecuali dibatasi oleh routing/deploy config.
+Isi route tersebut berfungsi sebagai demo komponen, bukan dokumentasi resmi. **Sejak 2026-07-06**, masing-masing route punya server `layout.tsx` yang memanggil `notFound()` jika `NODE_ENV !== 'development'`. Route ini tidak dapat diakses di production — browser mendapat 404.
 
 ## Gap dan Rekomendasi
 
-1. **Ganti ID random render-time dengan `useId()`.** `FormField`, `Checkbox`, dan `Radio` memakai `Math.random()` untuk fallback id. Ini berisiko hydration mismatch jika dirender server-side dan membuat snapshot/test tidak stabil.
+1. ~~**Ganti ID random render-time dengan `useId()`.**~~ **Selesai (2026-07-05).** `FormField`, `Checkbox`, dan `Radio` sudah dimigrasikan ke `useId()` (React 18). Pattern: `const generatedId = useId(); const fieldId = id || generatedId;` — id eksplisit dari prop tetap diutamakan, fallback ke id SSR-safe dari React.
 2. **Tentukan status route demo.** `/test-components`, `/test-molecules`, dan `/test-organisms` perlu diputuskan: hapus, pindahkan ke internal-only, atau guard hanya development.
 3. **Konsolidasikan shared domain components.** `UniversalPayment*`, `UniversalInvoice`, dan `Autocomplete` berada langsung di `components/`, bukan struktur domain atau atomic. Ini membuat batas ownership kurang jelas.
 4. **Kurangi komponen duplikat lintas domain.** Qurban savings punya `DepositForm`, `ProgressBar`, dan `TransactionList` di dua lokasi: `account/qurban-savings/[id]` dan `qurban/savings/[id]`.

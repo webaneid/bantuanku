@@ -107,7 +107,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const ogImageUrl = resolveOgImageUrl(
     appUrl,
     [report.ogImageUrl, report.gallery?.[0] ? getImageUrl(report.gallery[0]) : null, settings.og_image],
-    '/og-image.jpg'
+    '/og'
   );
 
   const ogTitle = report.ogTitle || seoTitle;

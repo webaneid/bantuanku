@@ -8,7 +8,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const canonical = `${appUrl}/daftar-mitra`;
   const title = `Daftar Mitra | ${siteName}`;
   const description = 'Daftarkan lembaga atau mitra Anda untuk bekerja sama dengan Bantuanku dalam program donasi, zakat, qurban, dan wakaf.';
-  const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og-image.jpg');
+  const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og');
 
   return {
     title,

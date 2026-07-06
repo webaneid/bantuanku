@@ -48,6 +48,9 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
   const [programsPage, setProgramsPage] = useState(1);
   const [showActivateModal, setShowActivateModal] = useState(false);
   const [activatePassword, setActivatePassword] = useState("");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
 
   // Fetch mitra detail
   const { data, isLoading, isError, refetch } = useQuery({
@@ -149,14 +152,25 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
   };
 
   const handleReject = () => {
-    const reason = window.prompt("Alasan penolakan:");
-    if (!reason) return;
-    rejectMutation.mutate(reason);
+    setRejectReason("");
+    setShowRejectModal(true);
+  };
+
+  const handleRejectConfirm = () => {
+    if (!rejectReason.trim()) return;
+    rejectMutation.mutate(rejectReason.trim(), {
+      onSuccess: () => setShowRejectModal(false),
+    });
   };
 
   const handleDelete = () => {
-    if (!window.confirm("Yakin ingin menghapus mitra ini?")) return;
-    deleteMutation.mutate();
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    deleteMutation.mutate(undefined, {
+      onSuccess: () => setShowDeleteModal(false),
+    });
   };
 
   // Loading state
@@ -723,6 +737,72 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
           </table>
         </div>
       </div>
+
+      {/* Modal: Konfirmasi Hapus Mitra */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hapus Mitra</h3>
+            <p className="text-gray-600 mb-6">
+              Yakin ingin menghapus mitra ini? Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="btn btn-secondary"
+                disabled={deleteMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                className="btn btn-danger"
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? "Menghapus..." : "Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Alasan Penolakan Mitra */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Tolak Mitra</h3>
+            <p className="text-sm text-gray-600 mb-3">Masukkan alasan penolakan:</p>
+            <textarea
+              className="form-input w-full mb-4"
+              rows={3}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Contoh: Dokumen tidak lengkap"
+              autoFocus
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowRejectModal(false)}
+                className="btn btn-secondary"
+                disabled={rejectMutation.isPending}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleRejectConfirm}
+                className="btn btn-danger"
+                disabled={!rejectReason.trim() || rejectMutation.isPending}
+              >
+                {rejectMutation.isPending ? "Menolak..." : "Tolak Mitra"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { cn } from '@/lib/cn';
 import { Label, Input, Textarea, Select } from '@/components/atoms';
 import type { InputProps, TextareaProps, SelectProps } from '@/components/atoms';
@@ -21,7 +21,8 @@ export const InputField = React.forwardRef<HTMLInputElement, InputFieldProps>(
     { label, required, error, help, className, id, ...inputProps },
     ref
   ) => {
-    const fieldId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const fieldId = id || generatedId;
 
     return (
       <div className={cn('form-field', className)}>
@@ -56,7 +57,8 @@ export const TextareaField = React.forwardRef<
     { label, required, error, help, className, id, ...textareaProps },
     ref
   ) => {
-    const fieldId = id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const fieldId = id || generatedId;
 
     return (
       <div className={cn('form-field', className)}>
@@ -88,7 +90,8 @@ export const SelectField = React.forwardRef<HTMLSelectElement, SelectFieldProps>
     { label, required, error, help, className, id, children, ...selectProps },
     ref
   ) => {
-    const fieldId = id || `select-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const fieldId = id || generatedId;
 
     return (
       <div className={cn('form-field', className)}>

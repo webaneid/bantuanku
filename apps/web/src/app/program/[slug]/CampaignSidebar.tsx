@@ -8,6 +8,7 @@ import { formatRupiahFull } from '@/lib/format';
 import { getImageUrl } from '@/lib/image';
 import { useI18n } from '@/lib/i18n/provider';
 import * as fbPixel from '@/lib/fbPixel';
+import feedbackToast from '@/lib/feedback-toast';
 import DonationAmountSelector from './DonationAmountSelector';
 import DonationConfirmModal from './DonationConfirmModal';
 
@@ -77,7 +78,7 @@ export default function CampaignSidebar({
 
   const handleDonateClick = () => {
     if (selectedAmount <= 0) {
-      alert(t('campaignDetail.sidebar.validation.selectAmount'));
+      feedbackToast.error(t('campaignDetail.sidebar.validation.selectAmount'));
       return;
     }
     setIsModalOpen(true);

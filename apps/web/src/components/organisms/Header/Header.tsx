@@ -71,7 +71,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
         { label: t('common.menuZakat'), href: '/zakat' },
         { label: t('common.menuQurban'), href: '/qurban' },
         { label: t('common.menuWakaf'), href: '/wakaf' },
-        { label: 'Laporan', href: '/laporan' },
+        { label: t('common.menuLaporan'), href: '/laporan' },
         { label: t('common.menuAbout'), href: '/page/tentang-kami' },
       ];
     }, [settings.frontend_header_menu, t]);

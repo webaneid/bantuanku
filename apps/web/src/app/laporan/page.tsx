@@ -41,7 +41,7 @@ export async function generateMetadata({
     ? `Arsip Laporan Kegiatan - Halaman ${page} | ${siteName}`
     : `Arsip Laporan Kegiatan | ${siteName}`;
   const description = 'Dokumentasi penyaluran donasi, zakat, qurban, dan kegiatan sosial Bantuanku yang dipublikasikan secara terbuka.';
-  const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og-image.jpg');
+  const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og');
   const isPaginated = page > 1;
 
   return {

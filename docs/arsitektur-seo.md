@@ -134,7 +134,7 @@ Tabel yang sudah memiliki field SEO:
 2. `site_tagline = "Platform Donasi Terpercaya"`
 3. `site_description` default donasi/zakat/qurban/wakaf
 4. `site_keywords` default
-5. `og_image = "/og-image.jpg"`
+5. `og_image = "/og"` (route dinamis `next/og` — 1200×630 branded image)
 6. `organization_favicon = "/logo.svg"`
 7. `twitter_handle = "@bantuanku"`
 
@@ -203,7 +203,7 @@ Pola fallback umum:
 3. `canonicalUrl` -> URL route default.
 4. `ogTitle` -> SEO title.
 5. `ogDescription` -> SEO description.
-6. `ogImageUrl` -> feature/entity image -> `settings.og_image` -> `/og-image.jpg`.
+6. `ogImageUrl` -> feature/entity image -> `settings.og_image` -> `/og` (route dinamis `next/og`).
 7. `noIndex`/`noFollow` -> robots override.
 
 ## Sitemap
@@ -365,14 +365,19 @@ Payload setiap item:
 4. `type = "json"`
 5. `isPublic = true`
 
+## Perbaikan (2026-07-06)
+
+| Item | Sebelum | Sesudah |
+|------|---------|---------|
+| OG image fallback | `/og-image.jpg` (404) | Route dinamis `/og` via `next/og` `ImageResponse` — mengembalikan 1200×630 branded image |
+| Sitemap noIndex filter | Hanya `activity_reports` yang filter `noIndex` | Semua entity (campaign, zakat type, qurban package, category, pillar, static page) kini filter `noIndex === true` |
+| AI crawler rules di robots | Tidak ada rule eksplisit AI bot | `robots.ts` sekarang punya explicit `allow: '/'` untuk GPTBot, ChatGPT-User, Google-Extended, PerplexityBot, anthropic-ai, Claude-Web, CCBot, Applebot-Extended — konsisten dengan meta tags di layout |
+
 ## Gap Implementasi
 
 | Gap | Dampak |
 |-----|--------|
-| `/og-image.jpg` direferensikan tetapi tidak ada di `apps/web/public` | OG/Twitter fallback image bisa 404 |
-| Robots belum punya AI crawler rules spesifik | Sinyal AI discoverability tidak konsisten antara metadata dan robots |
 | Tidak ada `llms.txt` | AI assistant tidak punya markdown guidance statis |
-| Sitemap tidak konsisten memakai `noIndex` semua entity | URL yang seharusnya tidak diindeks bisa tetap masuk sitemap |
 | Metadata belum locale-aware penuh | `html lang` bisa berubah, tetapi OG locale/global metadata default masih `id_ID` |
 | Tidak ada hreflang/alternate locale URL | Jika i18n dikembangkan ke URL `/en`, SEO belum siap |
 | SEO scoring hanya client-side | Tidak ada validasi/skor server-side yang konsisten untuk import/API |
@@ -395,11 +400,11 @@ Blueprint lama `03-SEO-blueprint.md` berstatus rencana. Sebagian klaimnya sudah 
 | SEO analyzer API direncanakan | Scoring aktual ada di client `SEOPanel`, bukan API |
 | `/admin/seo` direncanakan | UI aktual ada di `/dashboard/settings/seo` dan panel SEO di form entity |
 
-Namun beberapa gap blueprint masih relevan:
+Gap blueprint yang masih relevan:
 
-1. `/og-image.jpg` belum ada.
+1. ~~`/og-image.jpg` belum ada.~~ **Selesai (2026-07-06)** — diganti route dinamis `/og`.
 2. `llms.txt` belum ada.
-3. AI bot robots rule belum spesifik.
+3. ~~AI bot robots rule belum spesifik.~~ **Selesai (2026-07-06)** — `robots.ts` sudah punya explicit allow untuk 8 AI bot.
 4. Qurban URL belum slug-friendly.
 5. Redirect manager belum ada.
 6. SEO server-side analyzer belum ada.
@@ -408,9 +413,9 @@ Namun beberapa gap blueprint masih relevan:
 
 Prioritas 1:
 
-1. Tambahkan asset fallback `apps/web/public/og-image.jpg` atau ubah fallback ke asset yang benar-benar ada.
-2. Samakan sitemap filtering: semua entity dengan `noIndex === true` harus dikeluarkan dari sitemap.
-3. Tambahkan rules eksplisit untuk AI crawler di `robots.ts` jika memang kebijakan produk adalah allow AI indexing.
+1. ~~Tambahkan asset fallback `apps/web/public/og-image.jpg`~~ — **Selesai (2026-07-06)** via route `/og` (`next/og` ImageResponse).
+2. ~~Samakan sitemap filtering `noIndex`~~ — **Selesai (2026-07-06)** untuk semua 6 entity type.
+3. ~~Tambahkan rules AI crawler di `robots.ts`~~ — **Selesai (2026-07-06)**.
 4. Buat helper parser typed untuk `seo_page_*` settings agar JSON parsing tidak berulang dan tidak silent gagal.
 
 Prioritas 2:

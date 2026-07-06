@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { QurbanCarousel } from '../QurbanCarousel';
 import { QurbanCardProps } from '../QurbanCard';
 import { Button } from '@/components/atoms';
+import feedbackToast from '@/lib/feedback-toast';
 
 export interface QurbanSectionProps {
   items: QurbanCardProps[];
@@ -19,8 +20,7 @@ export const QurbanSection: React.FC<QurbanSectionProps> = ({
 }) => {
   const handleAddToCart = (item: QurbanCardProps) => {
     // TODO: Implement add to cart logic
-    console.log('Add to cart:', item);
-    alert(`${item.name} ditambahkan ke keranjang!`);
+    feedbackToast.success(`${item.name} ditambahkan ke keranjang!`);
   };
 
   // Add onAddToCart handler to each item

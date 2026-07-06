@@ -28,7 +28,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     searchParams?.program
   );
   const description = 'Laporan publik zakat Bantuanku untuk melihat titipan zakat dan kegiatan penyaluran secara transparan.';
-  const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og-image.jpg');
+  const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og');
 
   return {
     title: `Laporan Zakat Publik | ${siteName}`,

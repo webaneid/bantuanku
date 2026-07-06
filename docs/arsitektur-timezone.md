@@ -76,10 +76,30 @@ File: `apps/web/src/lib/timezone.ts`.
 | `formatDateWIB(date, format)` | `formatInTimeZone(date, 'Asia/Jakarta', format)` | Format custom WIB |
 | `nowWIB()` | Convert `new Date()` via `toDate` | Current WIB helper |
 | `toWIB(date)` | Convert input date via `toDate` | Konversi date helper |
+| `todayWIBDateInput()` | `formatInTimeZone(new Date(), tz, 'yyyy-MM-dd')` | Default value `<input type="date">` yang benar di WIB |
+| `toWIBDateInput(value)` | `formatInTimeZone(d, tz, 'yyyy-MM-dd')` | Konversi timestamp API ke format date input WIB |
 
 Dependensi `date-fns-tz` ada di `apps/web/package.json`.
 
 Fungsi `formatDate` dan `formatDateTime` di `apps/web/src/lib/format.ts` sudah dimigrasi: keduanya kini memakai `formatInTimeZone(d, 'Asia/Jakarta', pattern, { locale: indonesianLocale })` via `date-fns-tz`, sehingga output konsisten WIB dan bulan dalam Bahasa Indonesia.
+
+## Utility Frontend Admin
+
+File: `apps/admin/src/lib/timezone.ts`.
+
+| Function | Implementasi Aktual | Pemakaian |
+|---|---|---|
+| `formatDateWIB(date, format)` | `formatInTimeZone(date, 'Asia/Jakarta', format)` | Format tanggal custom WIB (menggantikan `format(date, pat, { locale })`) |
+| `formatDateTimeWIB(date)` | `formatInTimeZone(date, tz, 'dd MMM yyyy, HH:mm')` | Format datetime ringkas untuk tabel dan detail halaman admin |
+| `nowWIB()` | Convert `new Date()` via `toDate` | Current WIB date object |
+| `todayWIBDateInput()` | `formatInTimeZone(new Date(), tz, 'yyyy-MM-dd')` | Default value `<input type="date">` yang benar di WIB |
+| `toWIBDateInput(value)` | `formatInTimeZone(d, tz, 'yyyy-MM-dd')` | Konversi timestamp API ke format date input WIB untuk form edit |
+| `startOfMonthWIBInput()` | `formatInTimeZone(new Date(), tz, 'yyyy-MM-01')` | Default range filter "awal bulan ini" di halaman laporan |
+| `startOfYearWIBInput()` | `formatInTimeZone(new Date(), tz, 'yyyy-01-01')` | Default range filter "awal tahun ini" di halaman laporan |
+
+Dependensi `date-fns-tz` ada di `apps/admin/package.json`.
+
+Halaman admin yang sudah dimigrasikan ke helper WIB: ~44 file, ~75 lokasi (lihat "Cakupan Migrasi" di Status Implementasi).
 
 ## Pemakaian Backend Saat Ini
 

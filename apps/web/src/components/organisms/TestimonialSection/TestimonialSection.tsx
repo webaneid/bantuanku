@@ -34,7 +34,7 @@ export const TestimonialSection = () => {
         setMounted(true);
     }, []);
 
-    const { locale } = useI18n();
+    const { locale, t } = useI18n();
     const dateLocale = locale === "en" ? enUS : id;
 
     const { data, isLoading, error } = useQuery<TestimonialData>({
@@ -75,10 +75,10 @@ export const TestimonialSection = () => {
             <div className="container">
                 <div className="testimonial-section__header">
                     <h2 className="section-title text-gray-900">
-                        {locale === 'en' ? 'What People Say About Us' : 'Kata Orang Tentang Kami'}
+                        {t('testimonial.title')}
                     </h2>
                     <p className="section-description text-gray-600">
-                        {locale === 'en' ? 'Your trust is our priority. See the experiences of donors and beneficiaries.' : 'Kepercayaan Anda adalah prioritas kami. Simak pengalaman para donatur dan penerima manfaat.'}
+                        {t('testimonial.description')}
                     </p>
                 </div>
 
@@ -124,7 +124,7 @@ export const TestimonialSection = () => {
                                         </div>
 
                                         <p className="testimonial-card__text">
-                                            &ldquo;{review.text || (locale === 'en' ? "Rated " + review.rating + " stars." : "Memberikan rating " + review.rating + " bintang.")}&rdquo;
+                                            &ldquo;{review.text || t('testimonial.defaultReview', { rating: review.rating })}&rdquo;
                                         </p>
 
                                         <div className="testimonial-card__author">
@@ -134,7 +134,7 @@ export const TestimonialSection = () => {
                                             <div>
                                                 <div className="testimonial-card__name">{review.author_name}</div>
                                                 <div className="testimonial-card__time">
-                                                    {locale === 'en' ? 'Reviewed ' : 'Diulas '} {formatDistanceToNow(new Date(review.time * 1000), {
+                                                    {t('testimonial.reviewedPrefix')}{formatDistanceToNow(new Date(review.time * 1000), {
                                                         addSuffix: true,
                                                         locale: dateLocale,
                                                     })}

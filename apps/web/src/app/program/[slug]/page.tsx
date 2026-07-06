@@ -132,7 +132,7 @@ export async function generateMetadata({ params }: CampaignPageProps): Promise<M
       (campaign as any).ogImageUrl,
       featureImage,
       settings.og_image,
-      "/og-image.jpg",
+      '/og',
     ]);
 
     // Robots
@@ -267,7 +267,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
     (campaign as any).ogImageUrl,
     featureImage,
     settings.og_image,
-    "/og-image.jpg",
+    '/og',
   ]);
 
   const articleSchema: JsonLdArticle = {

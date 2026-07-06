@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/cn';
+import { sanitizeSvg } from '@/lib/sanitize-svg';
 
 interface CategoryItem {
   name: string;
@@ -34,7 +35,7 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories }) => {
           <div className={cn('category-card__inner', category.gradient || 'gradient-primary')}>
             <div
               className="category-card__icon"
-              dangerouslySetInnerHTML={{ __html: category.iconSvg || DEFAULT_ICON_SVG }}
+              dangerouslySetInnerHTML={{ __html: sanitizeSvg(category.iconSvg || DEFAULT_ICON_SVG) }}
             />
             <div className="category-card__content">
               <h3 className="category-card__title">{category.name}</h3>

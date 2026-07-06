@@ -10,6 +10,15 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: ['/dashboard/', '/checkout/payment-result/', '/api/'],
       },
+      // AI crawlers — explicitly allowed, consistent with meta ai-indexable/ai-training tags in layout
+      { userAgent: 'GPTBot', allow: '/' },
+      { userAgent: 'ChatGPT-User', allow: '/' },
+      { userAgent: 'Google-Extended', allow: '/' },
+      { userAgent: 'PerplexityBot', allow: '/' },
+      { userAgent: 'anthropic-ai', allow: '/' },
+      { userAgent: 'Claude-Web', allow: '/' },
+      { userAgent: 'CCBot', allow: '/' },
+      { userAgent: 'Applebot-Extended', allow: '/' },
     ],
     sitemap: `${appUrl}/sitemap.xml`,
   };

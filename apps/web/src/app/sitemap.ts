@@ -112,12 +112,14 @@ async function fetchCampaignPages(apiUrl: string, appUrl: string): Promise<Metad
       page++;
     }
 
-    return allCampaigns.map((campaign: any) => ({
-      url: `${appUrl}/program/${campaign.slug}`,
-      lastModified: safeDate(campaign.updatedAt || campaign.createdAt),
-      changeFrequency: 'weekly' as const,
-      priority: 0.7,
-    }));
+    return allCampaigns
+      .filter((campaign: any) => !campaign.noIndex)
+      .map((campaign: any) => ({
+        url: `${appUrl}/program/${campaign.slug}`,
+        lastModified: safeDate(campaign.updatedAt || campaign.createdAt),
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      }));
   } catch (error) {
     console.error('Error fetching campaigns for sitemap:', error);
     return [];
@@ -136,7 +138,7 @@ async function fetchZakatTypePages(apiUrl: string, appUrl: string): Promise<Meta
     const types = Array.isArray(data.data) ? data.data : (data.data?.data || []);
 
     return types
-      .filter((t: any) => t.isActive !== false && t.slug)
+      .filter((t: any) => t.isActive !== false && t.slug && !t.noIndex)
       .map((t: any) => ({
         url: `${appUrl}/zakat/${t.slug}`,
         lastModified: safeDate(t.updatedAt || t.createdAt),
@@ -179,7 +181,7 @@ async function fetchQurbanPages(apiUrl: string, appUrl: string): Promise<Metadat
     }
 
     return allPackages
-      .filter((pkg: any) => pkg.packagePeriodId)
+      .filter((pkg: any) => pkg.packagePeriodId && !pkg.noIndex)
       .map((pkg: any) => ({
         url: `${appUrl}/qurban/${pkg.packagePeriodId}`,
         lastModified: safeDate(pkg.updatedAt || pkg.createdAt),
@@ -204,7 +206,7 @@ async function fetchCategoryPages(apiUrl: string, appUrl: string): Promise<Metad
     const categories = Array.isArray(data.data) ? data.data : (data.data?.data || []);
 
     return categories
-      .filter((c: any) => c.isActive !== false && c.slug)
+      .filter((c: any) => c.isActive !== false && c.slug && !c.noIndex)
       .map((c: any) => ({
         url: `${appUrl}/program/kategori/${c.slug}`,
         lastModified: safeDate(c.updatedAt || c.createdAt),
@@ -229,7 +231,7 @@ async function fetchPillarPages(apiUrl: string, appUrl: string): Promise<Metadat
     const pillars = Array.isArray(data.data) ? data.data : (data.data?.data || []);
 
     return pillars
-      .filter((p: any) => p.slug)
+      .filter((p: any) => p.slug && !p.noIndex)
       .map((p: any) => ({
         url: `${appUrl}/program/pilar/${p.slug}`,
         lastModified: safeDate(p.updatedAt || p.createdAt),
@@ -256,7 +258,7 @@ async function fetchStaticContentPages(apiUrl: string, appUrl: string): Promise<
     if (!Array.isArray(pages)) return [];
 
     return pages
-      .filter((page: any) => page.isPublished !== false)
+      .filter((page: any) => page.isPublished !== false && !page.noIndex)
       .map((page: any) => ({
         url: `${appUrl}/page/${page.slug}`,
         lastModified: safeDate(page.updatedAt || page.createdAt),

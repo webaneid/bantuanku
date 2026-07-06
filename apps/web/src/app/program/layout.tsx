@@ -25,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const ogTitle = seo.ogTitle || title;
   const ogDescription = seo.ogDescription || description;
-  const ogImageUrl = resolveOgImageUrl(appUrl, [seo.ogImageUrl, settings.og_image], '/og-image.jpg');
+  const ogImageUrl = resolveOgImageUrl(appUrl, [seo.ogImageUrl, settings.og_image], '/og');
 
   const noIndex = seo.noIndex === true;
   const noFollow = seo.noFollow === true;

@@ -9,6 +9,7 @@ import MediaLibrary from "@/components/MediaLibrary";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import URLAutocomplete from "@/components/URLAutocomplete";
 import RichTextEditor from "@/components/RichTextEditor";
+import { sanitizeSvg } from "@/lib/sanitize-svg";
 
 type MenuItem = {
   id: string;
@@ -1740,7 +1741,7 @@ export default function FrontendSettingsPage() {
                                 {category.iconSvg && (
                                   <div
                                     className="w-8 h-8 flex items-center justify-center text-primary-500"
-                                    dangerouslySetInnerHTML={{ __html: category.iconSvg.replace(/width="\d+"/, 'width="24"').replace(/height="\d+"/, 'height="24"') }}
+                                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(category.iconSvg.replace(/width="\d+"/, 'width="24"').replace(/height="\d+"/, 'height="24"')) }}
                                   />
                                 )}
                                 <div>

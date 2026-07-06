@@ -468,7 +468,7 @@ Mapping metadata:
 | title | `page.metaTitle || page.title` |
 | description | `page.metaDescription || page.excerpt || page.title` |
 | canonical | `page.canonicalUrl || {APP_URL}/page/{slug}` |
-| OG image | `page.ogImageUrl || page.featureImageUrl || settings.og_image || /og-image.jpg` |
+| OG image | `page.ogImageUrl || page.featureImageUrl || settings.og_image || /og` (route dinamis `next/og`) |
 | OG title | `page.ogTitle || seoTitle` |
 | OG description | `page.ogDescription || seoDescription` |
 | robots index | `!page.noIndex` |

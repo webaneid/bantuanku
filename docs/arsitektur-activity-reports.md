@@ -278,7 +278,7 @@ Perilaku:
 
 - Fetch `GET /activity-reports/by-slug/:slug` dengan `revalidate=300`.
 - Metadata memakai field SEO dari report jika tersedia.
-- Fallback OG image: `ogImageUrl`, lalu gallery pertama, lalu setting `og_image`, lalu `/og-image.jpg`.
+- Fallback OG image: `ogImageUrl`, lalu gallery pertama, lalu setting `og_image`, lalu `/og` (route dinamis `next/og`).
 - Robots mengikuti `noIndex` dan `noFollow`.
 - Canonical memakai `canonicalUrl` jika ada; jika tidak, kode mencoba infer canonical dari title.
 - Jika canonical URL berbeda dari URL saat ini, halaman melakukan `permanentRedirect(canonicalUrl)`.

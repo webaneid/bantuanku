@@ -237,30 +237,42 @@ Gap:
 |------|--------------|
 | Admin modal feedback | `FeedbackDialog` banyak dipakai di form/settings/domain CRUD |
 | Admin toast | `react-hot-toast` dan `sonner` masih sama-sama dipakai |
-| Web toast | Dependency tersedia, pemakaian belum konsisten |
-| Browser native dialog | `alert`, `confirm`, `prompt` masih ada di web/admin |
+| Web toast | `feedbackToast` (event-emitter di `apps/web/src/lib/feedback-toast.ts`) — standar aktif untuk web |
+| Browser native dialog web | Sudah dibersihkan (2026-07-05) — lihat tabel perbaikan di bawah |
+| Browser native dialog admin | Masih ada di beberapa halaman — lihat daftar tersisa di bawah |
 
-### Native Dialog yang Masih Terdeteksi
+### Perbaikan Native Dialog (2026-07-05)
 
-Hasil audit `rg "alert\\(|confirm\\(|prompt\\(" apps/web/src apps/admin/src`:
+| Jenis | File | Sebelum | Sesudah |
+|-------|------|---------|---------|
+| `alert()` web | `QurbanSection.tsx` | `alert(...)` | `feedbackToast.success(...)` |
+| `alert()` web | `QurbanSidebar.tsx` | `alert(t(...))` | `feedbackToast.error(t(...))` |
+| `alert()` web | `CampaignSidebar.tsx` | `alert(t(...))` | `feedbackToast.error(t(...))` |
+| `alert()` web | `qurban/savings/new/page.tsx` | 3× `alert(t(...))` | `feedbackToast.error(t(...))` |
+| `confirm()` admin | `mitra/[id]/page.tsx` | `window.confirm(...)` | Inline modal state pattern |
+| `prompt()` admin | `mitra/[id]/page.tsx` | `window.prompt(...)` | Inline textarea modal pattern |
 
-| Jenis | Lokasi penting |
-|-------|----------------|
-| `alert()` web | `QurbanSidebar.tsx`, `QurbanSection.tsx`, `qurban/savings/new/page.tsx`, `CampaignSidebar.tsx` |
-| `confirm()` admin | `mitra/[id]/page.tsx`, `qurban/periods/[id]/page.tsx`, `zakat/distributions/[id]/page.tsx`, `donations/page.tsx`, `donations/[id]/edit/page.tsx`, `qurban/savings/pending-deposits/page.tsx`, `ledger/create/page.tsx`, `ledger/[id]/page.tsx` |
-| `prompt()` admin | `mitra/[id]/page.tsx`, `ledger/[id]/page.tsx` |
+### Native Dialog yang Masih Tersisa (Admin)
+
+Hasil audit setelah perbaikan Fase 1:
+
+| Jenis | Lokasi |
+|-------|--------|
+| `confirm()` admin | `qurban/periods/[id]/page.tsx`, `zakat/distributions/[id]/page.tsx`, `donations/page.tsx`, `donations/[id]/edit/page.tsx`, `qurban/savings/pending-deposits/page.tsx`, `ledger/create/page.tsx`, `ledger/[id]/page.tsx` |
+| `prompt()` admin | `ledger/[id]/page.tsx` |
 
 Catatan koreksi terhadap `dokumentasi-front-end.md` lama:
 
-1. Klaim lama tentang `CampaignForm.tsx` memakai `alert()` sudah tidak sesuai audit saat ini; `CampaignForm` sekarang memakai `FeedbackDialog`.
-2. Daftar alert lama belum mencakup banyak `confirm()`/`prompt()` admin yang masih ada.
-3. Qurban deposit/form alert yang disebut lama sebagian sudah bergeser; source of truth adalah audit kode terbaru di atas.
+1. Klaim lama tentang `CampaignForm.tsx` memakai `alert()` sudah tidak sesuai audit; `CampaignForm` sekarang memakai `FeedbackDialog`.
+2. Seluruh `alert()` di web sudah diganti ke `feedbackToast` (Fase 1, 2026-07-05).
+3. `window.confirm()` dan `window.prompt()` di `mitra/[id]/page.tsx` sudah diganti ke inline modal (Fase 1, 2026-07-05).
+4. Sisa `confirm()` admin tersebar di 7 file lain — dikerjakan di Fase berikutnya.
 
 Rekomendasi:
 
 1. Native `alert/confirm/prompt` harus dianggap legacy UX.
-2. Admin destructive confirmation sebaiknya memakai modal konfirmasi konsisten.
-3. Web validation/success sebaiknya memakai toast/dialog non-blocking.
+2. Admin destructive confirmation: gunakan pola inline modal yang sudah ada di `mitra/[id]/page.tsx` sebagai referensi.
+3. Web validation/success: standar aktif adalah `feedbackToast` — jangan kembali ke `alert()`.
 4. Jangan campur `react-hot-toast` dan `sonner` tanpa keputusan standar.
 
 ---

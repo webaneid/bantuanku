@@ -86,7 +86,7 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
     const ogImageUrl = resolveOgImageUrl(
       appUrl,
       [page.ogImageUrl, page.featureImageUrl ? getImageUrl(page.featureImageUrl) : null, settings.og_image],
-      "/og-image.jpg"
+      '/og'
     );
 
     // OG Title & Description: ogTitle > metaTitle > title
@@ -248,7 +248,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
   const rawOgImage = resolveOgImageUrl(
     appUrl,
     [page.ogImageUrl, featureImage ? featureImage : null, settings.og_image],
-    "/og-image.jpg"
+    '/og'
   );
 
   const webPageJsonLd = {

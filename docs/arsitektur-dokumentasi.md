@@ -52,7 +52,8 @@
 | Timezone (WIB, timestamptz, date input) | `arsitektur-timezone.md` | 🟢 Selesai | `dokumentasi-timezone-system-wide.md`, `TIMEZONE-FRONTEND-FIX.md`, `TIMEZONE-FIX-COMPLETED.md` ✅ Dihapus |
 | Audit log (audit trail user action) | `arsitektur-audit-log.md` | 🟢 Selesai | — |
 | Notifikasi WhatsApp, bot, account notification | `arsitektur-notifikasi.md` | 🟢 Selesai | `03-Notifikasi-Whatsapp-Blueprint.md` ✅ Dihapus |
-| WhatsApp Community Care (broadcast, re-engagement, ulang tahun) | `arsitektur-wa-community-care.md` | 🟡 Perencanaan | — |
+| WhatsApp Community Care (broadcast, re-engagement, ulang tahun) | `arsitektur-wa-community-care.md` | 🟢 Selesai | — |
+| WhatsApp AI Chatbot (bot donasi, intent routing, flow transaksi) | `arsitektur-wa-bot.md` | 🟢 Selesai | — |
 | Tracking: Meta Pixel + GTM + CAPI | `arsitektur-tracking.md` | 🟢 Selesai | `analisa-pixel.md`, `tutorial-pixel-standard-spesifik-peristiwa.md` ✅ Dihapus |
 
 ---

@@ -272,15 +272,20 @@ Bagian ini menyerap dan mengompresi audit root legacy:
 
 Tiga file itu adalah laporan/checklist lama, bukan source of truth. Sebagian item di dalamnya sudah berubah: contoh kritikal dummy address di `UniversalInvoice` tidak lagi ditemukan di komponen runtime saat audit ulang; invoice sekarang membaca `organization_email` dan `organization_phone` dari settings bila tersedia. Yang masih relevan adalah kesimpulan arsitekturalnya: hardcoded UI text masih banyak, settings frontend sudah menangani sebagian konten marketing/page, dan i18n belum mencakup seluruh public web.
 
-Contoh yang sudah diverifikasi di kode:
+**Perbaikan (2026-07-06):**
 
-| File | Contoh |
-|------|--------|
-| `apps/web/src/components/organisms/Header/Header.tsx` | Fallback menu `Laporan` |
-| `apps/web/src/app/keranjang-bantuan/page.tsx` | `Keranjang Bantuan Kosong`, `Telusuri Program`, `Ringkasan Bantuan`, `Lanjutkan Pembayaran`, `Tambah Program Lain` |
-| `apps/web/src/app/keranjang-bantuan/page.tsx` | `toLocaleString("id-ID")` untuk input nominal |
-| `apps/web/src/components/organisms/TestimonialSection/TestimonialSection.tsx` | Heading/subheading dipilih dengan ternary locale, bukan dictionary |
-| `apps/web/src/app/page.tsx` | Badge qurban `Unggulan` dari mapping card |
+| File | Yang Diperbaiki |
+|------|-----------------|
+| `Header.tsx` | Fallback menu `Laporan` → `t('common.menuLaporan')` |
+| `keranjang-bantuan/page.tsx` | Semua label UI: title, empty state, CTA, summary, item detail → namespace `keranjang.*` |
+| `TestimonialSection.tsx` | Heading, subheading, defaultReview, reviewedPrefix → namespace `testimonial.*` (hapus semua ternary locale) |
+
+Namespace baru yang ditambahkan ke `id.ts` dan `en.ts`:
+- `common.menuLaporan` — label menu Laporan/Reports
+- `testimonial.*` — heading, description, defaultReview, reviewedPrefix
+- `keranjang.*` — title, itemCount, clearCart, empty.*, item.*, summary.*
+
+Contoh yang masih tersisa sebagai gap:
 
 Daftar ini bukan audit lengkap semua hardcoded string. Ini adalah bukti bahwa implementasi i18n belum menyapu seluruh UI.
 

@@ -28,9 +28,9 @@ Berbeda dari `arsitektur-notifikasi.md` yang scope-nya event-driven per transaks
 
 | Fitur | Trigger | Audience | Status |
 |-------|---------|----------|--------|
-| **1a. Campaign baru** | Admin centang saat publish campaign | Semua donatur aktif + punya WA + opt-in | Belum (Fase 6) |
-| **1b. Broadcast manual konten lama** | Admin pilih campaign/laporan lama | Semua / per-program / pilihan | Belum (Fase 7) |
-| **1c. Broadcast manual pesan bebas** | Admin tulis pesan langsung | Semua / per-program / pilihan | Belum (Fase 7) |
+| **1a. Campaign baru** | Admin centang saat publish campaign | Semua donatur aktif + punya WA + opt-in | ✅ Selesai (Fase 6) |
+| **1b. Broadcast manual konten lama** | Admin pilih campaign/laporan lama | Semua / per-program / pilihan | ✅ Selesai (Fase 7) |
+| **1c. Broadcast manual pesan bebas** | Admin tulis pesan langsung | Semua / per-program / pilihan | ✅ Selesai (Fase 7) |
 | **2. Re-engagement** | Cron harian | Donatur yang 62+ hari tidak donasi | ✅ Selesai (Fase 4) |
 | **3. Ulang Tahun** | Cron harian | Donatur dengan `birthDate` = hari ini | ✅ Selesai (Fase 3) |
 
@@ -175,14 +175,16 @@ Cron berjalan setiap 30 menit: GET /cron/wa-broadcast?secret=...
 
 ```cron
 # Broadcast processor: setiap 30 menit
-*/30 * * * * curl -s "https://api.bantuanku.org/cron/wa-broadcast?secret=JWT_SECRET"
+*/30 * * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-broadcast
 
 # Re-engagement: setiap hari jam 10:00 WIB (03:00 UTC)
-0 3 * * * curl -s "https://api.bantuanku.org/cron/wa-reengagement?secret=JWT_SECRET"
+0 3 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-reengagement
 
 # Birthday: setiap hari jam 08:00 WIB (01:00 UTC)
-0 1 * * * curl -s "https://api.bantuanku.org/cron/wa-birthday?secret=JWT_SECRET"
+0 1 * * * curl -s -H "Authorization: Bearer $CRON_SECRET" https://api.bantuanku.org/cron/wa-birthday
 ```
+
+> **Catatan auth cron:** Secret dikirim via `Authorization: Bearer` header (bukan query param `?secret=` — query param muncul di access log server). Env var `CRON_SECRET` (atau fallback ke `JWT_SECRET` jika `CRON_SECRET` belum di-set di `.env` VPS).
 
 ---
 
@@ -440,7 +442,7 @@ GET  /cron/wa-reengagement?secret=...     — re-engagement harian
 GET  /cron/wa-birthday?secret=...         — birthday harian
 ```
 
-Pola auth: sama dengan `/cron/savings-reminder` — secret = `JWT_SECRET`.
+Pola auth: sama dengan `/cron/savings-reminder` — secret dikirim via header `Authorization: Bearer $CRON_SECRET` (fallback ke `JWT_SECRET` jika `CRON_SECRET` belum di-set).
 
 ### Publik (Opt-out)
 

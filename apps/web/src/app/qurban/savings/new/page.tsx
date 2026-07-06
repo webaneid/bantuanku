@@ -8,6 +8,7 @@ import { fetchPublicSettings, type PublicSettings } from '@/services/settings';
 import { useAuth } from '@/lib/auth';
 import { formatRupiahFull } from '@/lib/format';
 import { useI18n } from '@/lib/i18n/provider';
+import feedbackToast from '@/lib/feedback-toast';
 
 export default function NewSavingsPage() {
   const router = useRouter();
@@ -100,7 +101,7 @@ export default function NewSavingsPage() {
       }));
     } catch (error) {
       console.error('Error loading data:', error);
-      alert(t('qurbanSavingsCreate.alerts.loadFailed'));
+      feedbackToast.error(t('qurbanSavingsCreate.alerts.loadFailed'));
       router.push('/qurban');
     } finally {
       setIsLoading(false);
@@ -111,7 +112,7 @@ export default function NewSavingsPage() {
     e.preventDefault();
     if (!user || !qurbanPackage || !formData.selectedPeriodId || !formData.selectedPackagePeriodId) return;
     if (!user.phone) {
-      alert(t('qurbanSavingsCreate.alerts.phoneRequired'));
+      feedbackToast.error(t('qurbanSavingsCreate.alerts.phoneRequired'));
       return;
     }
 
@@ -132,7 +133,7 @@ export default function NewSavingsPage() {
       router.push(`/account/qurban-savings/${savings.id}`);
     } catch (error) {
       console.error('Failed to create savings:', error);
-      alert(t('qurbanSavingsCreate.alerts.createFailed'));
+      feedbackToast.error(t('qurbanSavingsCreate.alerts.createFailed'));
     } finally {
       setIsSubmitting(false);
     }

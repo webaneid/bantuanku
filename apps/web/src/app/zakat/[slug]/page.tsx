@@ -79,7 +79,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const ogImageUrl = resolveOgImageUrl(
       appUrl,
       [zt.ogImageUrl, zakatType.imageUrl || null, settings.og_image],
-      '/og-image.jpg'
+      '/og'
     );
 
     // OG Title & Description
