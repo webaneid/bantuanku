@@ -217,7 +217,7 @@ export async function processBroadcastBatch(
           phone: "",
           status: "skipped_no_phone",
           sentAt: new Date(),
-        }).onConflictDoNothing();
+        }).onConflictDoNothing({ target: [waBroadcastLogs.jobId, waBroadcastLogs.donaturId] });
         continue;
       }
 
@@ -233,7 +233,7 @@ export async function processBroadcastBatch(
         phone,
         status: "sending",
         sentAt: new Date(),
-      }).onConflictDoNothing().returning({ id: waBroadcastLogs.id });
+      }).onConflictDoNothing({ target: [waBroadcastLogs.jobId, waBroadcastLogs.donaturId] }).returning({ id: waBroadcastLogs.id });
 
       if (!claimed.length) {
         // 0 rows inserted = unique constraint conflict = already claimed by another process.

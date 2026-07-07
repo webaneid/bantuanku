@@ -8,8 +8,14 @@ UPDATE wa_broadcast_logs
 SET status = 'failed', error_message = 'stuck sending — cleaned up by migration 120'
 WHERE status = 'sending';
 
--- Tambahkan unique constraint
--- Hanya berlaku untuk donatur_id NOT NULL (NULL dianggap distinct oleh PostgreSQL)
-ALTER TABLE wa_broadcast_logs
-  ADD CONSTRAINT wa_broadcast_logs_job_donatur_unique
-  UNIQUE (job_id, donatur_id);
+-- Tambahkan unique constraint (idempotent — aman dijalankan ulang)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'wa_broadcast_logs_job_donatur_unique'
+  ) THEN
+    ALTER TABLE wa_broadcast_logs
+      ADD CONSTRAINT wa_broadcast_logs_job_donatur_unique
+      UNIQUE (job_id, donatur_id);
+  END IF;
+END $$;
