@@ -51,6 +51,7 @@ const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   completed: { label: "Selesai", className: "bg-green-100 text-green-800" },
   failed: { label: "Gagal", className: "bg-red-100 text-red-800" },
   cancelled: { label: "Dibatalkan", className: "bg-gray-100 text-gray-700" },
+  paused: { label: "Dijeda (WA Logout)", className: "bg-orange-100 text-orange-800" },
 };
 
 const TYPE_LABELS: Record<string, string> = {

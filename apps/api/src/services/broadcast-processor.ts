@@ -9,6 +9,7 @@ import {
 } from "@bantuanku/db";
 import type { Database } from "@bantuanku/db";
 import { WhatsAppService } from "./whatsapp";
+import { GOWAClient } from "./whatsapp-gowa";
 
 interface BatchResult {
   jobId: string;
@@ -199,6 +200,27 @@ export async function processBroadcastBatch(
 
     const sharedVars = await buildSharedVars(db, job, frontendUrl);
     const wa = new WhatsAppService(db, frontendUrl);
+    const waConfig = await wa.getConfig();
+
+    // Pre-batch connectivity check — abort early if device is not connected.
+    // Prevents sending 30+ failed requests when WA session has expired.
+    const gowaClient = new GOWAClient({
+      apiUrl: waConfig.apiUrl,
+      username: waConfig.username,
+      password: waConfig.password,
+      deviceId: waConfig.deviceId,
+      messageDelay: waConfig.messageDelay,
+    });
+    const { connected } = await gowaClient.checkStatus();
+    if (!connected) {
+      console.warn(`[Broadcast] Job ${job.id} aborted: GOWA device not connected`);
+      await db.update(waBroadcastJobs)
+        .set({ status: "paused", errorMessage: "Device WA tidak terhubung — reconnect lalu resume job ini" })
+        .where(eq(waBroadcastJobs.id, job.id));
+      return { jobId: job.id, jobName: job.name, batchSent: 0, batchFailed: 0, batchSkipped: 0, status: "no_job" };
+    }
+
+    const messageDelay = waConfig.messageDelay > 0 ? waConfig.messageDelay : 2000;
 
     let batchSent = 0;
     let batchFailed = 0;
@@ -270,7 +292,7 @@ export async function processBroadcastBatch(
       if (sent) batchSent++;
       else batchFailed++;
 
-      await new Promise((r) => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, messageDelay));
     }
 
     if (claimConflicts > 0) {
