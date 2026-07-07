@@ -47,7 +47,10 @@ export class GOWAClient {
         }),
       });
 
-      const result = (await response.json()) as { code?: string };
+      const result = (await response.json()) as { code?: string; message?: string };
+      if (result.code !== "SUCCESS") {
+        console.warn(`[GOWA] sendText failed: code=${result.code} message=${result.message}`);
+      }
       return result.code === "SUCCESS";
     } catch (err) {
       console.error("GOWA sendText error:", err);
