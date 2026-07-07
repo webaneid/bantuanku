@@ -295,6 +295,29 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
     ],
   },
   {
+    title: "Broadcast & Pengingat Otomatis",
+    templates: [
+      {
+        key: "wa_tpl_campaign_new",
+        label: "Program Baru (Broadcast Campaign)",
+        description: "Dikirim ke donatur saat campaign baru dipublikasikan dan broadcast WA diaktifkan",
+        variables: [...GLOBAL_VARS, "customer_name", "campaign_title", "campaign_name", "campaign_url", "campaign_description", "campaign_target"],
+      },
+      {
+        key: "wa_tpl_birthday",
+        label: "Selamat Ulang Tahun",
+        description: "Dikirim otomatis ke donatur pada hari ulang tahunnya (cron harian 08:00 WIB)",
+        variables: [...GLOBAL_VARS, "customer_name"],
+      },
+      {
+        key: "wa_tpl_reengagement",
+        label: "Pengingat Donatur Tidak Aktif",
+        description: "Dikirim ke donatur yang tidak bertransaksi lebih dari 62 hari (cron harian 10:00 WIB)",
+        variables: [...GLOBAL_VARS, "customer_name"],
+      },
+    ],
+  },
+  {
     title: "Notifikasi Mitra & Influencer",
     templates: [
       {
