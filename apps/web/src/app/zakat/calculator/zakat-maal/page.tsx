@@ -36,7 +36,7 @@ export default function ZakatMaalPage() {
   const [config, setConfig] = useState<any>(null);
   const [zakatTypes, setZakatTypes] = useState<ZakatType[]>([]);
   const [zakatType, setZakatType] = useState<ZakatType | null>(null);
-  const [organizationName, setOrganizationName] = useState('Bantuanku');
+  const [organizationName, setOrganizationName] = useState('');
   const [organizationWhatsapp, setOrganizationWhatsapp] = useState('');
   const [periods, setPeriods] = useState<ZakatPeriod[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('');
@@ -76,7 +76,7 @@ export default function ZakatMaalPage() {
       setConfig(configData);
       setPeriods(periodsData);
       setZakatTypes(zakatTypesData);
-      setOrganizationName(settingsData.organization_name || settingsData.site_name || 'Bantuanku');
+      setOrganizationName(settingsData.organization_name || settingsData.site_name || '');
       setOrganizationWhatsapp(settingsData.organization_whatsapp || '');
 
       const maalType = zakatTypesData.find((t: ZakatType) =>

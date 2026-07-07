@@ -20,7 +20,7 @@ async function fetchGoldPriceFromPluang(): Promise<number | null> {
 
   try {
     const res = await fetch("https://pluang.com/asset/gold", {
-      headers: { "User-Agent": "Bantuanku-ZakatBot/1.0" },
+      headers: { "User-Agent": "Jaladana-ZakatBot/1.0" },
       signal: AbortSignal.timeout(5000), // 5s timeout
     });
     if (!res.ok) return null;

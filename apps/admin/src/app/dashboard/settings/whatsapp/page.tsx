@@ -318,12 +318,12 @@ const TEMPLATE_GROUPS: TemplateGroup[] = [
 // ---------------------------------------------------------------------------
 
 const SAMPLE_DATA: Record<string, string> = {
-  store_name: "Yayasan Bantuanku",
+  store_name: "Yayasan Contoh",
   store_phone: "021-12345678",
   store_whatsapp: "628123456789",
-  store_email: "info@bantuanku.org",
-  store_website: "https://bantuanku.org",
-  frontend_url: "https://app.bantuanku.org",
+  store_email: "info@contoh.org",
+  store_website: "https://contoh.org",
+  frontend_url: "https://app.contoh.org",
   store_address: "Jl. Kebaikan No. 1, Jakarta",
   current_date: "18 Februari 2026",
   current_time: "14:30 WIB",
@@ -347,12 +347,12 @@ const SAMPLE_DATA: Record<string, string> = {
   payment_status: "Lunas",
   payment_method: "Bank Transfer",
   message: "",
-  invoice_url: "https://bantuanku.org/invoice/abc123",
+  invoice_url: "https://contoh.org/invoice/abc123",
   created_date: "18 Februari 2026",
   paid_date: "18 Februari 2026",
   bank_name: "Bank Syariah Indonesia",
   bank_account: "1234567890",
-  bank_holder: "Yayasan Bantuanku",
+  bank_holder: "Yayasan Contoh",
   zakat_type: "Zakat Maal",
   zakat_period: "2025/2026",
   zakat_year: "2026",
@@ -383,7 +383,7 @@ const SAMPLE_DATA: Record<string, string> = {
   report_title: "Progres Pembangunan Fondasi",
   report_date: "15 Februari 2026",
   report_description: "Alhamdulillah pembangunan fondasi masjid telah selesai 80%. Material telah terpenuhi dan pekerja telah menyelesaikan cor lantai dasar.",
-  report_url: "https://bantuanku.org/program/abc123",
+  report_url: "https://contoh.org/program/abc123",
   mitra_name: "Yayasan Amanah Umat",
   mitra_amount: "Rp 50.000",
   mitra_balance: "Rp 1.250.000",
@@ -444,7 +444,7 @@ export default function WhatsAppSettingsPage() {
 
   const [connectionStatus, setConnectionStatus] = useState<"unknown" | "connected" | "disconnected" | "checking">("unknown");
   const [testPhone, setTestPhone] = useState("");
-  const [testMessage, setTestMessage] = useState("Test notifikasi dari Bantuanku");
+  const [testMessage, setTestMessage] = useState("Test notifikasi dari sistem");
   const [isTesting, setIsTesting] = useState(false);
 
   // Populate config form from settings

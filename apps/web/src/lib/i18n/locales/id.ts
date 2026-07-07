@@ -102,7 +102,7 @@ export const idMessages: Messages = {
       },
     },
     whyChoose: {
-      title: "Mengapa Memilih Bantuanku?",
+      title: "Mengapa Memilih Kami?",
       description: "Platform donasi terpercaya dengan layanan terbaik",
       items: {
         trusted: {
@@ -371,7 +371,7 @@ export const idMessages: Messages = {
   },
   qurbanPage: {
     defaults: {
-      organizationName: "Bantuanku",
+      organizationName: "",
       title: "Paket Qurban",
       description:
         "Wujudkan ibadah qurban Anda bersama kami dengan hewan berkualitas dan penyaluran yang amanah",
@@ -476,7 +476,7 @@ export const idMessages: Messages = {
     defaults: {
       title: "Zakat",
       description: "Tunaikan zakat Anda dengan mudah dan amanah",
-      organizationName: "Bantuanku",
+      organizationName: "",
       infoTitle: "Tentang Zakat",
       infoItems: {
         item1: "Zakat adalah rukun Islam yang ke-3 dan wajib ditunaikan oleh setiap Muslim yang mampu",
@@ -742,7 +742,7 @@ export const idMessages: Messages = {
     paymentVerifiedDesc:
       "Transaksi Anda telah dikonfirmasi dan pembayaran telah diterima. Terima kasih atas kontribusi Anda!",
     terms: "Ketentuan",
-    fallbackTerms1: "Terima kasih atas donasi Anda melalui platform Bantuanku.",
+    fallbackTerms1: "Terima kasih atas donasi Anda.",
     fallbackTerms2:
       "Invoice ini adalah bukti transaksi yang sah dan dapat digunakan untuk keperluan administrasi.",
     fallbackTerms3:

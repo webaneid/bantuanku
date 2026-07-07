@@ -86,7 +86,7 @@ function formatTarget(amount: number | null): string {
 
 // Render template preview: replace {var} with sample/real values
 function renderPreview(template: string, detail?: CampaignDetail | null): string {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.org";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
   const campaignUrl = detail?.slug ? `${appUrl}/program/${detail.slug}` : `${appUrl}/program/nama-program`;
   return template
     .replace(/\{customer_name\}/g, "Budi Santoso")

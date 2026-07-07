@@ -9,7 +9,7 @@ export const documentationManifest: DocumentationManifest = {
       items: [
         {
           slug: "pengenalan",
-          title: "Pengenalan Bantuanku",
+          title: "Pengenalan Jaladana",
         },
         {
           slug: "login-dan-akses",

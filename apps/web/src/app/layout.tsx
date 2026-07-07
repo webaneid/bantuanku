@@ -24,7 +24,7 @@ export default async function RootLayout({
   const locale = normalizeLocale(cookies().get('locale')?.value);
   const settings = await fetchSeoSettings();
   const organizationSchema = generateOrganizationJsonLd(settings);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const skipToContentText = translate(locale, 'common.skipToContent');
 
   return (

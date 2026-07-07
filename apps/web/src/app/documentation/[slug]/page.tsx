@@ -27,7 +27,7 @@ export async function generateMetadata({
 
   return {
     title: `${page.title} | Dokumentasi`,
-    description: page.summary || "Dokumentasi operasional aplikasi Bantuanku.",
+    description: page.summary || "Dokumentasi operasional aplikasi Jaladana.",
   };
 }
 

@@ -17,9 +17,9 @@ interface PageProps {
 }
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const settings = await fetchSeoSettings();
-  const siteName = settings.site_name || 'Bantuanku';
+  const siteName = settings.site_name || '';
   const canonical = `${appUrl}/zakat/laporan`;
   const hasVariant = Boolean(
     searchParams?.tab === 'kegiatan' ||
@@ -27,7 +27,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     searchParams?.zakatTypeId ||
     searchParams?.program
   );
-  const description = 'Laporan publik zakat Bantuanku untuk melihat titipan zakat dan kegiatan penyaluran secara transparan.';
+  const description = `Laporan publik zakat ${siteName} untuk melihat titipan zakat dan kegiatan penyaluran secara transparan.`;
   const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og');
 
   return {

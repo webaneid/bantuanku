@@ -62,8 +62,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (!zakatType) return { title: t('zakatPage.defaults.title') };
 
     const settings = await fetchSeoSettings();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
-    const siteName = settings.site_name || 'Bantuanku';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    const siteName = settings.site_name || '';
 
     const zt = zakatType as any;
 
@@ -121,7 +121,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
       twitter: {
         card: 'summary_large_image',
-        site: settings.twitter_handle || '@bantuanku',
+        site: settings.twitter_handle || '',
         title: ogTitle,
         description: ogDescription,
         images: ogImageUrl ? [ogImageUrl] : undefined,
@@ -160,7 +160,7 @@ export default async function ZakatDetailPage({ params }: Props) {
   }
 
   // Generate JSON-LD
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const toAbsoluteUrl = (url: string) =>
     url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
 
@@ -179,7 +179,7 @@ export default async function ZakatDetailPage({ params }: Props) {
     ...(zakatType.imageUrl && { image: toAbsoluteUrl(zakatType.imageUrl) }),
     isPartOf: {
       '@type': 'WebSite',
-      name: settings.site_name || settings.organization_name || 'Bantuanku',
+      name: settings.site_name || settings.organization_name || '',
       url: appUrl,
     },
   };
@@ -210,7 +210,7 @@ export default async function ZakatDetailPage({ params }: Props) {
           }
         : {
             type: "organization" as const,
-            name: settings.organization_name || settings.site_name || "Bantuanku",
+            name: settings.organization_name || settings.site_name || '',
             slug: null,
             logoUrl: settings.organization_institution_logo || settings.organization_logo || null,
           };

@@ -12,7 +12,7 @@ export const zakatDoc: DocumentationPage = {
             id: "overview",
             heading: "Overview Modul Zakat",
             bodyHtml:
-                '<p>Modul zakat di Bantuanku mencakup pengumpulan, penghitungan, dan distribusi zakat secara lengkap.</p>' +
+                '<p>Modul zakat di Jaladana mencakup pengumpulan, penghitungan, dan distribusi zakat secara lengkap.</p>' +
                 '<img src="/docs/screenshot-zakat.png" alt="Halaman Zakat" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
                 '<p>Sub-modul yang tersedia di admin panel:</p>' +
                 '<ul>' +

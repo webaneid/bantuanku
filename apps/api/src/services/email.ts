@@ -34,11 +34,15 @@ export class EmailService {
   private apiKey: string;
   private fromEmail: string;
   private fromName: string;
+  private frontendUrl: string;
+  private adminUrl: string;
 
-  constructor(apiKey: string, fromEmail: string, fromName: string = "Bantuanku") {
+  constructor(apiKey: string, fromEmail: string, fromName: string = "", frontendUrl: string = "", adminUrl: string = "") {
     this.apiKey = apiKey;
     this.fromEmail = fromEmail;
     this.fromName = fromName;
+    this.frontendUrl = frontendUrl.replace(/\/+$/, "");
+    this.adminUrl = adminUrl.replace(/\/+$/, "");
   }
 
   async send(params: EmailParams): Promise<boolean> {
@@ -94,7 +98,7 @@ export class EmailService {
             </div>
             <div class="content">
               <p>Halo ${params.donorName},</p>
-              <p>Terima kasih telah berdonasi melalui Bantuanku. Donasi Anda akan sangat membantu.</p>
+              <p>Terima kasih telah berdonasi melalui ${this.fromName}. Donasi Anda akan sangat membantu.</p>
 
               <div class="details">
                 <h3>Detail Donasi</h3>
@@ -119,11 +123,11 @@ export class EmailService {
               <p>Donasi Anda sedang diproses. Anda akan menerima notifikasi setelah pembayaran dikonfirmasi.</p>
 
               <p style="text-align: center;">
-                <a href="https://bantuanku.org/account/donations" class="button">Lihat Status Donasi</a>
+                <a href="${this.frontendUrl}/account/donations" class="button">Lihat Status Donasi</a>
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2026 Bantuanku. All rights reserved.</p>
+              <p>&copy; 2026 ${this.fromName}. All rights reserved.</p>
               <p>Email ini dikirim secara otomatis, mohon tidak membalas email ini.</p>
             </div>
           </div>
@@ -191,11 +195,11 @@ export class EmailService {
 
               <p style="text-align: center;">
                 ${params.receiptUrl ? `<a href="${params.receiptUrl}" class="button">Download Bukti Donasi</a>` : ""}
-                <a href="https://bantuanku.org/account/donations" class="button">Lihat Riwayat Donasi</a>
+                <a href="${this.frontendUrl}/account/donations" class="button">Lihat Riwayat Donasi</a>
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2026 Bantuanku. All rights reserved.</p>
+              <p>&copy; 2026 ${this.fromName}. All rights reserved.</p>
               <p>Email ini dikirim secara otomatis, mohon tidak membalas email ini.</p>
             </div>
           </div>
@@ -246,11 +250,11 @@ export class EmailService {
               ${params.reason ? `<div class="info-box"><p><strong>Alasan:</strong></p><p>${params.reason}</p></div>` : ""}
 
               <p style="text-align: center;">
-                <a href="https://admin.bantuanku.org/campaigns" class="button">Lihat Campaign</a>
+                <a href="${this.adminUrl}/dashboard/campaigns" class="button">Lihat Campaign</a>
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2026 Bantuanku. All rights reserved.</p>
+              <p>&copy; 2026 ${this.fromName}. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -308,11 +312,11 @@ export class EmailService {
               </div>
 
               <p style="text-align: center;">
-                <a href="https://admin.bantuanku.org/disbursements" class="button">Lihat Detail</a>
+                <a href="${this.adminUrl}/dashboard/disbursements" class="button">Lihat Detail</a>
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2026 Bantuanku. All rights reserved.</p>
+              <p>&copy; 2026 ${this.fromName}. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -327,6 +331,6 @@ export class EmailService {
   }
 }
 
-export function createEmailService(apiKey: string, fromEmail: string, fromName?: string): EmailService {
-  return new EmailService(apiKey, fromEmail, fromName);
+export function createEmailService(apiKey: string, fromEmail: string, fromName?: string, frontendUrl?: string, adminUrl?: string): EmailService {
+  return new EmailService(apiKey, fromEmail, fromName, frontendUrl, adminUrl);
 }

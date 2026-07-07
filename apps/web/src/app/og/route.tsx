@@ -4,8 +4,10 @@ export const runtime = 'edge';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get('title') || 'Bantuanku';
+  const title = searchParams.get('title') || '';
   const subtitle = searchParams.get('subtitle') || 'Platform Donasi Terpercaya';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  const domain = appUrl ? new URL(appUrl).hostname : searchParams.get('domain') || '';
 
   return new ImageResponse(
     (
@@ -103,7 +105,7 @@ export async function GET(request: Request) {
             fontWeight: 500,
           }}
         >
-          bantuanku.org
+          {domain}
         </div>
       </div>
     ),

@@ -110,7 +110,7 @@ async function seed() {
   const adminPasswordHash = await bcrypt.hash("admin123", 12);
   console.log("Seeding admin user...");
   const adminId = await ensureSeedUser({
-    email: "admin@bantuanku.org",
+    email: process.env.SEED_ADMIN_EMAIL || "admin@example.org",
     name: "Super Admin",
     passwordHash: adminPasswordHash,
     isDeveloper: false,
@@ -227,9 +227,9 @@ async function seed() {
 
   // Seed Settings
   const settingsData = [
-    { key: "site_name", value: "Bantuanku", label: "Nama Situs", category: "general", type: "string", isPublic: true },
+    { key: "site_name", value: process.env.SEED_SITE_NAME || "Platform Donasi", label: "Nama Situs", category: "general", type: "string", isPublic: true },
     { key: "site_tagline", value: "Platform Donasi Terpercaya", label: "Tagline", category: "general", type: "string", isPublic: true },
-    { key: "contact_email", value: "info@bantuanku.org", label: "Email Kontak", category: "general", type: "string", isPublic: true },
+    { key: "contact_email", value: process.env.SEED_CONTACT_EMAIL || "info@example.org", label: "Email Kontak", category: "general", type: "string", isPublic: true },
     { key: "contact_phone", value: "+62 21 1234567", label: "Telepon", category: "general", type: "string", isPublic: true },
     { key: "gold_price_per_gram", value: "1140000", label: "Harga Emas per Gram (IDR)", category: "zakat", type: "number", isPublic: true },
     { key: "zakat_fitrah_amount", value: "45000", label: "Zakat Fitrah per Jiwa (IDR)", category: "zakat", type: "number", isPublic: true },
@@ -237,8 +237,8 @@ async function seed() {
     { key: "fidyah_amount_per_day", value: "45000", label: "Fidyah per Hari (IDR)", category: "zakat", type: "number", isPublic: true },
     { key: "minimum_donation", value: "10000", label: "Donasi Minimum (IDR)", category: "payment", type: "number", isPublic: true },
     // Organization settings - used by WA notifications, invoices, etc.
-    { key: "organization_name", value: "Bantuanku", label: "Nama Organisasi", category: "organization", type: "string", isPublic: true },
-    { key: "organization_website", value: process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.org", label: "Website Organisasi", category: "organization", type: "string", isPublic: true },
+    { key: "organization_name", value: process.env.SEED_ORGANIZATION_NAME || "Platform Donasi", label: "Nama Organisasi", category: "organization", type: "string", isPublic: true },
+    { key: "organization_website", value: process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_APP_URL || "", label: "Website Organisasi", category: "organization", type: "string", isPublic: true },
     { key: "organization_whatsapp", value: "08123456789", label: "WhatsApp Organisasi", category: "organization", type: "string", isPublic: true },
   ];
 

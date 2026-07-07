@@ -12,7 +12,7 @@ export const kategoriKeuanganDoc: DocumentationPage = {
             id: "konsep-dasar",
             heading: "Konsep Dasar: Selamat Tinggal Debit & Kredit!",
             bodyHtml: `
-                <p>Platform Bantuanku dirancang untuk memudahkan pengelola lembaga amal (yayasan) dalam mencatat keuangan <strong>tanpa harus mengerti ilmu akuntansi (Debit & Kredit)</strong>. Kami menggunakan sistem <strong>Kategori (Category System)</strong> yang jauh lebih human-friendly.</p>
+                <p>Platform Jaladana dirancang untuk memudahkan pengelola lembaga amal (yayasan) dalam mencatat keuangan <strong>tanpa harus mengerti ilmu akuntansi (Debit & Kredit)</strong>. Kami menggunakan sistem <strong>Kategori (Category System)</strong> yang jauh lebih human-friendly.</p>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 my-4">
                     <h4 className="font-semibold text-green-800 mb-2">Mengapa Sistem Kategori?</h4>
                     <ul className="list-disc pl-5 space-y-1 text-green-900">
@@ -138,7 +138,7 @@ export const kategoriKeuanganDoc: DocumentationPage = {
             id: "validasi-pencairan",
             heading: "Validasi Pintar Saat Pencairan",
             bodyHtml: `
-                <p>Sistem Kategori Bantuanku melarang manipulasi asal-asalan demi kepatuhan Syariat dan transparansi logis. Contoh penerapan peringatan di sistem kami:</p>
+                <p>Sistem Kategori Jaladana melarang manipulasi asal-asalan demi kepatuhan Syariat dan transparansi logis. Contoh penerapan peringatan di sistem kami:</p>
                 <ul className="list-disc pl-5 mt-2 space-y-2">
                     <li>⚠️ <strong>Kepatuhan Rekening Zakat:</strong> Jika Anda memilih Kategori <em>"Penyaluran ke Fakir"</em> (Grup Zakat), maka sistem otomatis <strong>mewajibkan</strong> akun Bank Sumber berasal dari Bank Khusus Zakat. Anda tidak bisa menggunakan Bank Operasional.</li>
                     <li>⚠️ <strong>Validasi Saldo:</strong> Jika jumlah pencairan yang diminta <strong>melebihi</strong> sisa saldo riil di Bank Pemotong, sistem akan menolak atau memberikan peringatan.</li>

@@ -2,17 +2,17 @@ import type { DocumentationPage } from "../types";
 
 export const pengenalanDoc: DocumentationPage = {
     slug: "pengenalan",
-    title: "Pengenalan Bantuanku",
+    title: "Pengenalan Jaladana",
     category: "Memulai",
     summary:
-        "Pengenalan umum platform Bantuanku — fitur, arsitektur, dan teknologi yang digunakan.",
+        "Pengenalan umum platform Jaladana — fitur, arsitektur, dan teknologi yang digunakan.",
     updatedAt: "2026-02-20",
     sections: [
         {
             id: "apa-itu-bantuanku",
-            heading: "Apa Itu Bantuanku?",
+            heading: "Apa Itu Jaladana?",
             bodyHtml:
-                '<p><strong>Bantuanku</strong> adalah platform donasi online yang komprehensif untuk mengelola campaign, donasi, zakat, qurban, tabungan qurban, dan penyaluran dana. Dikembangkan oleh <a href="https://webane.com" target="_blank">Webane Indonesia</a>.</p>' +
+                '<p><strong>Jaladana</strong> adalah platform donasi online yang komprehensif untuk mengelola campaign, donasi, zakat, qurban, tabungan qurban, dan penyaluran dana. Dikembangkan oleh <a href="https://webane.com" target="_blank">Webane Indonesia</a>.</p>' +
                 '<p>Platform ini mendukung berbagai jenis program penggalangan dana termasuk:</p>' +
                 '<ul>' +
                 '<li><strong>Campaign / Program</strong> — Penggalangan dana untuk berbagai keperluan sosial</li>' +
@@ -25,7 +25,7 @@ export const pengenalanDoc: DocumentationPage = {
             id: "arsitektur",
             heading: "Arsitektur Sistem",
             bodyHtml:
-                '<p>Bantuanku menggunakan arsitektur <strong>monorepo</strong> dengan tiga aplikasi utama:</p>' +
+                '<p>Jaladana menggunakan arsitektur <strong>monorepo</strong> dengan tiga aplikasi utama:</p>' +
                 '<table style="width:100%; border-collapse:collapse; margin:16px 0;">' +
                 '<thead><tr style="background:#f3f4f6;"><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Aplikasi</th><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Port</th><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Deskripsi</th></tr></thead>' +
                 '<tbody>' +

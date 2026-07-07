@@ -224,7 +224,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                 <div className="mb-4">
                   <img
                     src={invoiceLogoSrc}
-                    alt={settings.organization_name || 'Bantuanku'}
+                    alt={settings.organization_name || ''}
                     className="h-12 w-auto mb-2 object-contain"
                   />
                   {settings.organization_name && (

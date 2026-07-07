@@ -91,7 +91,7 @@ export class IPaymuAdapter implements PaymentGatewayAdapter {
     const body = {
       account: this.va,
       name: request.donorName,
-      email: request.donorEmail || "donor@bantuanku.org",
+      email: request.donorEmail || "donor@example.com",
       phone: request.donorPhone || "08123456789",
       amount: amount,
       notifyUrl: `${process.env.APP_URL || "http://localhost:50245"}/v1/webhooks/ipaymu`,

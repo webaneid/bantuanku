@@ -34,7 +34,7 @@ export default function DashboardLayout({
   const organizationLogo =
     organizationSettings.find((s: any) => s.key === "organization_logo")?.value || "";
   const organizationName =
-    organizationSettings.find((s: any) => s.key === "organization_name")?.value || "Bantuanku";
+    organizationSettings.find((s: any) => s.key === "organization_name")?.value || "";
 
   useEffect(() => {
     setMounted(true);

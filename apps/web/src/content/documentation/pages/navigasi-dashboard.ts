@@ -13,7 +13,7 @@ export const navigasiDashboardDoc: DocumentationPage = {
             heading: "Halaman Dashboard",
             bodyHtml:
                 '<p>Setelah login, Anda akan masuk ke halaman <strong>Dashboard</strong> yang menampilkan ringkasan data penting:</p>' +
-                '<img src="/docs/screenshot-dashboard.png" alt="Dashboard Admin Bantuanku" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
+                '<img src="/docs/screenshot-dashboard.png" alt="Dashboard Admin Jaladana" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
                 '<p>Dashboard menampilkan:</p>' +
                 '<ul>' +
                 '<li><strong>Total Pemasukan</strong> — Total dana masuk dan persentase pertumbuhan</li>' +

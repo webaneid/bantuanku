@@ -29,6 +29,15 @@ export default function ZakatInvoicePage({
     },
   });
 
+  const { data: siteSettings } = useQuery({
+    queryKey: ["public-settings"],
+    queryFn: async () => {
+      const response = await api.get("/settings");
+      return response.data?.data;
+    },
+  });
+  const siteName = siteSettings?.site_name || '';
+
   // Fetch payment methods for fallback bank details
   const { data: paymentMethodsData } = useQuery({
     queryKey: ["payment-methods"],
@@ -145,7 +154,7 @@ export default function ZakatInvoicePage({
         <div className="bg-white rounded-lg shadow p-8 max-w-lg w-full text-center border border-gray-200">
           <p className="text-lg font-semibold text-gray-900 mb-2">Invoice tidak ditemukan</p>
           <p className="text-sm text-gray-600">
-            Pastikan tautan invoice sudah benar atau hubungi admin Bantuanku.
+            Pastikan tautan invoice sudah benar atau hubungi admin {siteName}.
           </p>
         </div>
       </div>
@@ -160,7 +169,7 @@ export default function ZakatInvoicePage({
       <div className="max-w-3xl mx-auto">
         <div className="flex items-start justify-between mb-6 print:hidden">
           <div>
-            <p className="text-sm font-semibold text-primary-600">Bantuanku</p>
+            <p className="text-sm font-semibold text-primary-600">{siteName}</p>
             <h1 className="text-2xl font-bold text-gray-900">Invoice Zakat</h1>
             <p className="text-sm text-gray-600 mt-1">Nomor: {donation.referenceId}</p>
           </div>
@@ -329,7 +338,7 @@ export default function ZakatInvoicePage({
               Terima kasih atas zakat Anda. Semoga menjadi amal jariyah yang berkah.
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              Invoice ini dibuat secara otomatis oleh sistem Bantuanku
+              Invoice ini dibuat secara otomatis oleh sistem {siteName}
             </p>
           </div>
         </div>

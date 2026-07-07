@@ -10,6 +10,7 @@ import {
   qurbanPeriods,
   qurbanExecutions,
   qurbanSharedGroups,
+  settings,
   transactions,
   zakatDistributions,
   zakatPeriods,
@@ -77,6 +78,8 @@ publicStats.get("/", async (c) => {
 
 publicStats.get("/zakat-report", async (c) => {
   const db = c.get("db");
+  const siteNameRow = await db.select({ value: settings.value }).from(settings).where(eq(settings.key, "site_name")).limit(1);
+  const siteName = siteNameRow[0]?.value || "";
   const periodId = c.req.query("periodId");
   const zakatTypeId = c.req.query("zakatTypeId");
   const program = c.req.query("program");
@@ -107,7 +110,7 @@ publicStats.get("/zakat-report", async (c) => {
       zakatTypeId: zakatTypes.id,
       zakatTypeName: zakatTypes.name,
       programKey: sql<string>`coalesce(${mitra.slug}, 'organization')`,
-      programName: sql<string>`coalesce(${mitra.name}, 'Bantuanku')`,
+      programName: sql<string>`coalesce(${mitra.name}, ${siteName})`,
     })
     .from(transactions)
     .innerJoin(zakatPeriods, eq(transactions.productId, zakatPeriods.id))
@@ -156,7 +159,7 @@ publicStats.get("/zakat-report", async (c) => {
     .limit(100);
 
   const programMap = new Map<string, string>();
-  programMap.set("organization", "Bantuanku");
+  programMap.set("organization", siteName);
   rows.forEach((row) => {
     if (!programMap.has(row.programKey)) {
       programMap.set(row.programKey, row.programName);
@@ -190,7 +193,7 @@ publicStats.get("/zakat-report", async (c) => {
       zakatTypeId: zakatTypes.id,
       zakatTypeName: zakatTypes.name,
       programKey: sql<string>`coalesce(${mitra.slug}, 'organization')`,
-      programName: sql<string>`coalesce(${mitra.name}, 'Bantuanku')`,
+      programName: sql<string>`coalesce(${mitra.name}, ${siteName})`,
     })
     .from(activityReports)
     .innerJoin(zakatPeriods, eq(activityReports.referenceId, zakatPeriods.id))
@@ -235,6 +238,8 @@ publicStats.get("/zakat-report", async (c) => {
 
 publicStats.get("/zakat-activities", async (c) => {
   const db = c.get("db");
+  const siteNameRow = await db.select({ value: settings.value }).from(settings).where(eq(settings.key, "site_name")).limit(1);
+  const siteName = siteNameRow[0]?.value || "";
   const periodId = c.req.query("periodId");
   const zakatTypeId = c.req.query("zakatTypeId");
   const program = c.req.query("program");
@@ -266,7 +271,7 @@ publicStats.get("/zakat-activities", async (c) => {
       zakatTypeId: zakatTypes.id,
       zakatTypeName: zakatTypes.name,
       programKey: sql<string>`coalesce(${mitra.slug}, 'organization')`,
-      programName: sql<string>`coalesce(${mitra.name}, 'Bantuanku')`,
+      programName: sql<string>`coalesce(${mitra.name}, ${siteName})`,
     })
     .from(activityReports)
     .innerJoin(zakatPeriods, eq(activityReports.referenceId, zakatPeriods.id))
@@ -289,7 +294,7 @@ publicStats.get("/zakat-activities", async (c) => {
     .orderBy(zakatTypes.displayOrder);
 
   const programMap = new Map<string, string>();
-  programMap.set("organization", "Bantuanku");
+  programMap.set("organization", siteName);
   rows.forEach((row) => {
     if (!programMap.has(row.programKey)) {
       programMap.set(row.programKey, row.programName);
@@ -321,6 +326,8 @@ publicStats.get("/zakat-activities", async (c) => {
 
 publicStats.get("/qurban-report", async (c) => {
   const db = c.get("db");
+  const siteNameRow = await db.select({ value: settings.value }).from(settings).where(eq(settings.key, "site_name")).limit(1);
+  const siteName = siteNameRow[0]?.value || "";
   const periodId = c.req.query("periodId");
   const program = c.req.query("program");
 
@@ -350,7 +357,7 @@ publicStats.get("/qurban-report", async (c) => {
       packageName: qurbanPackages.name,
       animalType: qurbanPackages.animalType,
       programKey: sql<string>`coalesce(${mitra.slug}, 'organization')`,
-      programName: sql<string>`coalesce(${mitra.name}, 'Bantuanku')`,
+      programName: sql<string>`coalesce(${mitra.name}, ${siteName})`,
     })
     .from(transactions)
     .innerJoin(qurbanPackagePeriods, eq(transactions.productId, qurbanPackagePeriods.id))
@@ -368,7 +375,7 @@ publicStats.get("/qurban-report", async (c) => {
     .orderBy(desc(qurbanPeriods.gregorianYear));
 
   const programMap = new Map<string, string>();
-  programMap.set("organization", "Bantuanku");
+  programMap.set("organization", siteName);
   rows.forEach((row) => {
     if (!programMap.has(row.programKey)) {
       programMap.set(row.programKey, row.programName);
@@ -399,7 +406,7 @@ publicStats.get("/qurban-report", async (c) => {
       periodId: qurbanPeriods.id,
       periodName: qurbanPeriods.name,
       programKey: sql<string>`coalesce(${mitra.slug}, 'organization')`,
-      programName: sql<string>`coalesce(${mitra.name}, 'Bantuanku')`,
+      programName: sql<string>`coalesce(${mitra.name}, ${siteName})`,
     })
     .from(activityReports)
     .innerJoin(qurbanPeriods, eq(activityReports.referenceId, qurbanPeriods.id))
@@ -562,6 +569,8 @@ publicStats.get("/qurban-report", async (c) => {
 
 publicStats.get("/qurban-activities", async (c) => {
   const db = c.get("db");
+  const siteNameRow = await db.select({ value: settings.value }).from(settings).where(eq(settings.key, "site_name")).limit(1);
+  const siteName = siteNameRow[0]?.value || "";
   const periodId = c.req.query("periodId");
   const program = c.req.query("program");
 
@@ -587,7 +596,7 @@ publicStats.get("/qurban-activities", async (c) => {
       periodId: qurbanPeriods.id,
       periodName: qurbanPeriods.name,
       programKey: sql<string>`coalesce(${mitra.slug}, 'organization')`,
-      programName: sql<string>`coalesce(${mitra.name}, 'Bantuanku')`,
+      programName: sql<string>`coalesce(${mitra.name}, ${siteName})`,
     })
     .from(activityReports)
     .innerJoin(qurbanPeriods, eq(activityReports.referenceId, qurbanPeriods.id))
@@ -603,7 +612,7 @@ publicStats.get("/qurban-activities", async (c) => {
     .orderBy(desc(qurbanPeriods.gregorianYear));
 
   const programMap = new Map<string, string>();
-  programMap.set("organization", "Bantuanku");
+  programMap.set("organization", siteName);
   rows.forEach((row) => {
     if (!programMap.has(row.programKey)) {
       programMap.set(row.programKey, row.programName);

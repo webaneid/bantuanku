@@ -313,7 +313,7 @@ const DUMMY_FUNFACT_SECTION: FunfactSection = {
 
 // Dummy data for why choose us section
 const DUMMY_WHY_CHOOSE_US_SECTION: WhyChooseUsSection = {
-  title: "Mengapa Memilih Bantuanku?",
+  title: "Mengapa Memilih Kami?",
   description: "Platform donasi terpercaya dengan layanan terbaik",
   items: [
     {
@@ -491,7 +491,7 @@ export default function FrontendSettingsPage() {
   const [campaignAmounts, setCampaignAmounts] = useState<number[]>([50000, 100000, 200000]);
   const [wakafAmounts, setWakafAmounts] = useState<number[]>([100000, 500000, 1000000]);
   const [invoiceFooter, setInvoiceFooter] = useState<string>(
-    "<p>Terima kasih atas donasi Anda melalui platform Bantuanku.</p><p>Invoice ini adalah bukti transaksi yang sah dan dapat digunakan untuk keperluan administrasi.</p><p>Untuk pertanyaan lebih lanjut, silakan hubungi kami di info@bantuanku.id</p>"
+    "<p>Terima kasih atas donasi Anda.</p><p>Invoice ini adalah bukti transaksi yang sah dan dapat digunakan untuk keperluan administrasi.</p><p>Untuk pertanyaan lebih lanjut, silakan hubungi tim kami.</p>"
   );
 
   // Fetch settings to load menu items
@@ -2069,7 +2069,7 @@ export default function FrontendSettingsPage() {
                           value={whyChooseUsSection.title}
                           onChange={(e) => setWhyChooseUsSection({ ...whyChooseUsSection, title: e.target.value })}
                           className="form-input"
-                          placeholder="Contoh: Mengapa Memilih Bantuanku?"
+                          placeholder="Contoh: Mengapa Memilih Kami?"
                         />
                       </div>
                       <div>

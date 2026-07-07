@@ -25,7 +25,7 @@ export default function DocumentationView({ slug }: DocumentationViewProps) {
             />
             <div>
               <h1 className="text-lg md:text-xl font-semibold text-gray-900">
-                Dokumentasi Bantuanku
+                Dokumentasi Jaladana
               </h1>
               <p className="text-sm text-gray-500">Panduan operasional aplikasi</p>
             </div>

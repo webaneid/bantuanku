@@ -102,7 +102,7 @@ export const enMessages: Messages = {
       },
     },
     whyChoose: {
-      title: "Why Choose Bantuanku?",
+      title: "Why Choose Us?",
       description: "A trusted donation platform with the best services",
       items: {
         trusted: {
@@ -371,7 +371,7 @@ export const enMessages: Messages = {
   },
   qurbanPage: {
     defaults: {
-      organizationName: "Bantuanku",
+      organizationName: "",
       title: "Qurban Packages",
       description:
         "Fulfill your qurban worship with quality livestock and trustworthy distribution",
@@ -476,7 +476,7 @@ export const enMessages: Messages = {
     defaults: {
       title: "Zakat",
       description: "Pay your zakat easily and trustfully",
-      organizationName: "Bantuanku",
+      organizationName: "",
       infoTitle: "About Zakat",
       infoItems: {
         item1: "Zakat is the third pillar of Islam and is mandatory for every capable Muslim",
@@ -742,7 +742,7 @@ export const enMessages: Messages = {
     paymentVerifiedDesc:
       "Your transaction has been confirmed and payment has been received.",
     terms: "Terms",
-    fallbackTerms1: "Thank you for your donation through Bantuanku platform.",
+    fallbackTerms1: "Thank you for your donation.",
     fallbackTerms2:
       "This invoice is a valid transaction proof for administration purposes.",
     fallbackTerms3: "For further questions, please contact us through the available channels.",

@@ -88,8 +88,8 @@ export class XenditAdapter implements PaymentGatewayAdapter {
         channel_code: `ID_${channelCode}`,
         channel_properties: {
           mobile_number: request.donorPhone,
-          success_redirect_url: "https://bantuanku.org/donation/success",
-          failure_redirect_url: "https://bantuanku.org/donation/failed",
+          success_redirect_url: `${process.env.FRONTEND_URL || ''}/donation/success`,
+          failure_redirect_url: `${process.env.FRONTEND_URL || ''}/donation/failed`,
         },
       }),
     });

@@ -146,7 +146,7 @@ export default function DashboardLayout({
 
   // Use logo from settings or fallback
   const logo = settings.organization_logo || '/logo.svg';
-  const siteName = settings.site_name || 'Bantuanku';
+  const siteName = settings.site_name || '';
 
   // Check if current path is a guest-accessible transaction page
   const isTransactionPage = pathname?.match(/^\/(account\/)?(qurban|donations|zakat)\/[^/]+(\/(payment-method|payment-detail))?$/);

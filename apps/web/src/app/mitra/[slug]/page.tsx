@@ -67,7 +67,7 @@ export default async function MitraProfilePage({ params, searchParams }: MitraPa
 
   let settings: any = {
     organization_logo: '/logo.svg',
-    organization_name: 'Bantuanku',
+    organization_name: '',
   };
 
   let fullAddress: string | undefined;
@@ -382,7 +382,7 @@ export default async function MitraProfilePage({ params, searchParams }: MitraPa
 
       <Footer
         logo={settings.organization_logo || '/logo.svg'}
-        organizationName={settings.organization_name || 'Bantuanku'}
+        organizationName={settings.organization_name || ''}
         organizationAbout={settings.organization_about}
         organizationAboutUrl={settings.organization_about_url}
         organizationAboutUrlLabel={settings.organization_about_url_label}

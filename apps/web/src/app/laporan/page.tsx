@@ -33,14 +33,14 @@ export async function generateMetadata({
   searchParams?: { page?: string };
 }): Promise<Metadata> {
   const page = Math.max(1, parseInt(searchParams?.page || '1', 10) || 1);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const settings = await fetchSeoSettings();
-  const siteName = settings.site_name || 'Bantuanku';
+  const siteName = settings.site_name || '';
   const canonical = `${appUrl}/laporan`;
   const title = page > 1
     ? `Arsip Laporan Kegiatan - Halaman ${page} | ${siteName}`
     : `Arsip Laporan Kegiatan | ${siteName}`;
-  const description = 'Dokumentasi penyaluran donasi, zakat, qurban, dan kegiatan sosial Bantuanku yang dipublikasikan secara terbuka.';
+  const description = `Dokumentasi penyaluran donasi, zakat, qurban, dan kegiatan sosial ${siteName} yang dipublikasikan secara terbuka.`;
   const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og');
   const isPaginated = page > 1;
 

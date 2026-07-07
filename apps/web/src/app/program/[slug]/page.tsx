@@ -111,7 +111,7 @@ export async function generateMetadata({ params }: CampaignPageProps): Promise<M
       fetchSeoSettings(),
     ]);
     const categoryLabel = campaign.categoryName || campaign.category || '';
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
     const campaignUrl = `${appUrl}/program/${campaign.slug}`;
     const featureImage = getImageUrlByVariant(campaign.imageUrl, ['large', 'medium']);
 
@@ -155,7 +155,7 @@ export async function generateMetadata({ params }: CampaignPageProps): Promise<M
         url: canonical,
         title: ogTitle,
         description: ogDescription,
-        siteName: settings.site_name || 'Bantuanku',
+        siteName: settings.site_name || '',
         locale: 'id_ID',
         ...(ogImageUrl ? {
           images: [{ url: ogImageUrl, width: 1200, height: 630, alt: ogTitle }],
@@ -190,7 +190,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
   // Fetch settings for footer
   let settings: any = {
     organization_logo: '/logo.svg',
-    organization_name: 'Bantuanku',
+    organization_name: '',
   };
 
   let fullAddress: string | undefined;
@@ -261,7 +261,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
   }
 
   // Generate JSON-LD Schema for Campaign
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const featureImage = getImageUrlByVariant(campaign.imageUrl, ['large', 'medium']);
   const schemaImage = resolveCampaignOgImage(appUrl, [
     (campaign as any).ogImageUrl,
@@ -280,11 +280,11 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
     dateModified: campaign.updatedAt || campaign.createdAt,
     author: {
       '@type': 'Organization',
-      name: settings.site_name || 'Bantuanku',
+      name: settings.site_name || '',
     },
     publisher: {
       '@type': 'Organization',
-      name: settings.site_name || 'Bantuanku',
+      name: settings.site_name || '',
       logo: settings.organization_logo ? {
         '@type': 'ImageObject',
         url: settings.organization_logo.startsWith('http')
@@ -511,7 +511,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
 
       <Footer
         logo={settings.organization_logo || '/logo.svg'}
-        organizationName={settings.organization_name || 'Bantuanku'}
+        organizationName={settings.organization_name || ''}
         organizationAbout={settings.organization_about}
         organizationAboutUrl={settings.organization_about_url}
         organizationAboutUrlLabel={settings.organization_about_url_label}

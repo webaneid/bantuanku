@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const settings = await fetchSeoSettings();
-  const siteName = settings.site_name || 'Bantuanku';
+  const siteName = settings.site_name || '';
   const canonical = `${appUrl}/daftar-mitra`;
   const title = `Daftar Mitra | ${siteName}`;
-  const description = 'Daftarkan lembaga atau mitra Anda untuk bekerja sama dengan Bantuanku dalam program donasi, zakat, qurban, dan wakaf.';
+  const description = `Daftarkan lembaga atau mitra Anda untuk bekerja sama dengan ${siteName} dalam program donasi, zakat, qurban, dan wakaf.`;
   const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og');
 
   return {

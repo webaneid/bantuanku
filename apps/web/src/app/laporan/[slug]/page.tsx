@@ -93,10 +93,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const report = await fetchReport(slug);
   if (!report) return { title: 'Laporan Tidak Ditemukan' };
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   let settings: Record<string, any> = {};
   try { settings = await fetchSeoSettings(); } catch {}
-  const siteName = settings.site_name || 'Bantuanku';
+  const siteName = settings.site_name || '';
 
   const seoTitle = report.metaTitle || report.title;
   const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').substring(0, 160);
@@ -157,7 +157,7 @@ export default async function LaporanDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const canonicalUrl = inferCanonicalReportUrl(appUrl, report, slug);
 
   if (canonicalUrl !== `${appUrl}/laporan/${slug}`) {

@@ -642,7 +642,7 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
     // Send email after transaction successfully committed
     if (pendingEmailData && c.env.RESEND_API_KEY) {
       try {
-        const emailService = createEmailService(c.env.RESEND_API_KEY, c.env.FROM_EMAIL || "noreply@bantuanku.org");
+        const emailService = createEmailService(c.env.RESEND_API_KEY, c.env.FROM_EMAIL || "", c.env.FROM_NAME, c.env.FRONTEND_URL, c.env.ADMIN_URL);
         await emailService.sendPaymentSuccess(pendingEmailData);
       } catch (emailError) {
         // Log email error but don't fail the webhook

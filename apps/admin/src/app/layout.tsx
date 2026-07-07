@@ -3,7 +3,7 @@ import "../styles/main.scss";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Bantuanku Admin Dashboard",
+  title: "Admin Dashboard",
   description: "Admin dashboard for managing campaigns, donations, and more",
 };
 

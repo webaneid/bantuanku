@@ -69,8 +69,8 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
       fetchSeoSettings(),
     ]);
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.org";
-    const siteName = settings.site_name || "Bantuanku";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    const siteName = settings.site_name || '';
     const toAbsoluteUrl = (url: string) =>
       url.startsWith("data:") ? "" : url.startsWith("http") ? url : `${appUrl}${url.startsWith("/") ? url : `/${url}`}`;
 
@@ -165,7 +165,7 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
       },
       twitter: {
         card: "summary_large_image",
-        site: settings.twitter_handle || "@bantuanku",
+        site: settings.twitter_handle || "",
         title: ogTitle,
         description: ogDescription,
         images: ogImageUrl ? [ogImageUrl] : undefined,
@@ -229,7 +229,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
   }
 
   const featureImage = page.featureImageUrl ? getImageUrl(page.featureImageUrl) : null;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.org";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const toAbsoluteUrl = (url: string) =>
     url.startsWith("data:") ? "" : url.startsWith("http") ? url : `${appUrl}${url.startsWith("/") ? url : `/${url}`}`;
 
@@ -244,7 +244,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
   try {
     settings = await fetchSeoSettings();
   } catch {}
-  const siteName = settings.site_name || "Bantuanku";
+  const siteName = settings.site_name || '';
   const rawOgImage = resolveOgImageUrl(
     appUrl,
     [page.ogImageUrl, featureImage ? featureImage : null, settings.og_image],

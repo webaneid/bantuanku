@@ -57,10 +57,11 @@ app.use(
       if (origin?.startsWith("http://localhost") || origin?.startsWith("file://")) {
         return origin;
       }
-      // Allow production domains
-      if (origin === "https://bantuanku.org" || origin === "https://admin.bantuanku.org") {
-        return origin;
-      }
+      // Allow production domains from env
+      const frontendUrl = process.env.FRONTEND_URL || "";
+      const adminUrl = process.env.ADMIN_URL || "";
+      if (frontendUrl && origin === frontendUrl) return origin;
+      if (adminUrl && origin === adminUrl) return origin;
       return origin || "*";
     },
     credentials: true,
@@ -80,7 +81,7 @@ app.use("*", dbMiddleware);
 
 app.get("/", (c) => {
   return c.json({
-    name: "Bantuanku API",
+    name: "Jaladana API",
     version: "1.0.0",
     status: "ok",
   });

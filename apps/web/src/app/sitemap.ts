@@ -37,7 +37,7 @@ function buildReportCanonicalUrl(appUrl: string, report: any): string | null {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
   const now = new Date();

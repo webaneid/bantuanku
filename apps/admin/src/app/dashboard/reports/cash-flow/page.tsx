@@ -238,7 +238,7 @@ export default function CashFlowReportPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Mutasi Kas & Bank</h1>
           <p className="text-gray-600 mt-1">
-            Pergerakan uang masuk dan keluar berdasarkan data transaksi Bantuanku.
+            Pergerakan uang masuk dan keluar berdasarkan data transaksi.
           </p>
         </div>
         <ExportButton

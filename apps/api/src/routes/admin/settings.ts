@@ -486,7 +486,7 @@ settingsAdmin.post("/auto-update-gold-price", requireRole("super_admin", "admin_
     // Fetch from Pluang
     const response = await fetch("https://pluang.com/asset/gold", {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Bantuanku/1.0)"
+        "User-Agent": "Mozilla/5.0 (compatible; Jaladana/1.0)"
       }
     });
 
@@ -563,7 +563,7 @@ settingsAdmin.post("/auto-update-silver-price", requireRole("super_admin", "admi
     // Step 1: Fetch silver price from Pluang (in USD)
     const pluangResponse = await fetch("https://pluang.com/explore/metals-plus/silver", {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Bantuanku/1.0)"
+        "User-Agent": "Mozilla/5.0 (compatible; Jaladana/1.0)"
       }
     });
 

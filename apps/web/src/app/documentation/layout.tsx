@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Dokumentasi",
-  description: "Dokumentasi dan tutorial operasional aplikasi Bantuanku.",
+  description: "Dokumentasi dan tutorial operasional aplikasi Jaladana.",
 };
 
 export default function DocumentationLayout({

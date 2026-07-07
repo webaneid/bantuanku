@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [organizationLogo, setOrganizationLogo] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
 
   // Reset loading state on mount (Firefox fix)
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function LoginPage() {
         const response = await api.get("/settings");
         const settings = response.data?.data || {};
         setOrganizationLogo(typeof settings.organization_logo === "string" ? settings.organization_logo : "");
+        setOrganizationName(typeof settings.site_name === "string" ? settings.site_name : "");
       } catch {
         setOrganizationLogo("");
       }
@@ -77,7 +79,7 @@ export default function LoginPage() {
               className="h-12 w-auto mx-auto object-contain"
             />
           ) : (
-            <h1 className="text-3xl font-bold text-gray-900">Bantuanku</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{organizationName || 'Admin'}</h1>
           )}
           <p className="text-gray-600 mt-2">Admin Dashboard</p>
         </div>

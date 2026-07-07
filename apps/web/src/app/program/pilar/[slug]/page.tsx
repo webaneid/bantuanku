@@ -31,7 +31,7 @@ async function fetchPillarBySlug(slug: string) {
 // Generate metadata for SEO
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const pillar = await fetchPillarBySlug(params.slug);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
   if (!pillar) {
     return {

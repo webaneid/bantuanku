@@ -11,6 +11,7 @@ export interface Env {
   ADMIN_URL?: string;
   RESEND_API_KEY?: string;
   FROM_EMAIL?: string;
+  FROM_NAME?: string;
 }
 
 export interface Variables {

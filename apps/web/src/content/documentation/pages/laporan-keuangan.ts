@@ -25,7 +25,7 @@ export const laporanKeuanganDoc: DocumentationPage = {
             id: "kategori-laporan",
             heading: "Kategori Laporan yang Tersedia",
             bodyHtml: `
-                <p>Sistem Bantuanku kini membagi laporan menjadi beberapa kategori spesifik agar mudah dicari:</p>
+                <p>Sistem Jaladana kini membagi laporan menjadi beberapa kategori spesifik agar mudah dicari:</p>
                 <table className="w-full border-collapse mt-4">
                     <thead>
                         <tr className="bg-gray-50 border-b">

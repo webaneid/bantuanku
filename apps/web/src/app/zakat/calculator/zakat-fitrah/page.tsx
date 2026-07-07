@@ -34,7 +34,7 @@ export default function ZakatFitrahPage() {
   const [periods, setPeriods] = useState<ZakatPeriod[]>([]);
   const [zakatTypes, setZakatTypes] = useState<ZakatType[]>([]);
   const [zakatType, setZakatType] = useState<ZakatType | null>(null);
-  const [organizationName, setOrganizationName] = useState('Bantuanku');
+  const [organizationName, setOrganizationName] = useState('');
   const [organizationWhatsapp, setOrganizationWhatsapp] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -59,7 +59,7 @@ export default function ZakatFitrahPage() {
       setConfig(configData);
       setPeriods(periodsData);
       setZakatTypes(zakatTypesData);
-      setOrganizationName(settingsData.organization_name || settingsData.site_name || 'Bantuanku');
+      setOrganizationName(settingsData.organization_name || settingsData.site_name || '');
       setOrganizationWhatsapp(settingsData.organization_whatsapp || '');
 
       // Find zakat fitrah type - try different possible slugs

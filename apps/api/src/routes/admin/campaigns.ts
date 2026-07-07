@@ -607,7 +607,7 @@ campaignsAdmin.patch(
       });
 
       if (creator?.email) {
-        const emailService = createEmailService(c.env.RESEND_API_KEY, c.env.FROM_EMAIL || "noreply@bantuanku.org");
+        const emailService = createEmailService(c.env.RESEND_API_KEY, c.env.FROM_EMAIL || "", c.env.FROM_NAME, c.env.FRONTEND_URL, c.env.ADMIN_URL);
         await emailService.sendCampaignStatusUpdate({
           adminEmail: creator.email,
           campaignTitle: campaign.title,

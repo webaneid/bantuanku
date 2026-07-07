@@ -20,7 +20,7 @@ export const whatsappAiDoc: DocumentationPage = {
             id: "kemampuan-ai",
             heading: "Kemampuan Utama AI",
             bodyHtml: `
-                <p>Robot AI tidak hanya menjawab dari teks statis (seperti Auto-Reply biasa), tetapi AI tersebut memiliki akses internal ke database Bantuanku milik Anda, sehingga ia mampu:</p>
+                <p>Robot AI tidak hanya menjawab dari teks statis (seperti Auto-Reply biasa), tetapi AI tersebut memiliki akses internal ke database Jaladana milik Anda, sehingga ia mampu:</p>
                 <ol className="list-decimal pl-5 mt-2 space-y-3">
                     <li>
                         <strong>Memandu Proses Berdonasi Langsung:</strong>

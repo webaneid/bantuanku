@@ -62,7 +62,7 @@ export const kodeUnikDoc: DocumentationPage = {
             heading: "Bagaimana Kode Unik Dicatat di Laporan?",
             bodyHtml: `
                 <p>Dalam ilmu akuntansi/keuangan konvensional, penambahan kode unik sering membuat bingung saat pencatatan karena nominal "Donasi" berbeda dengan nominal "Uang Kas Masuk".</p>
-                <p>Tetapi di sistem Bantuanku, kami sudah menata pelaporannya agar sangat transparan:</p>
+                <p>Tetapi di sistem Jaladana, kami sudah menata pelaporannya agar sangat transparan:</p>
                 <ol className="list-decimal pl-5 mt-2 space-y-2">
                     <li><strong>Saldo Bank Valid:</strong> Saat transaksi disahkan (Paid), saldo bank akan otomatis bertambah sebesar total transfer (Donasi + Kode Unik). Jika donasi 100rb dan kode unik 347, maka saldo bank bertambah riil Rp 100.347.</li>
                     <li><strong>Laporan Arus Kas (Cash Flow):</strong> Di menu Laporan Arus Kas, transaksi tersebut akan terpisah menjadi dua baris agar pembukuannya rapi:

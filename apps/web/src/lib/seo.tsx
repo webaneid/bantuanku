@@ -59,20 +59,20 @@ export async function fetchSeoSettings(): Promise<Record<string, any>> {
     console.error('Error fetching SEO settings:', error);
     // Return defaults if fetch fails
     return {
-      site_name: 'Bantuanku',
+      site_name: '',
       site_tagline: 'Platform Donasi Terpercaya',
       site_description: 'Platform donasi online terpercaya untuk zakat, infaq, sedekah, qurban, dan wakaf.',
       site_keywords: 'donasi, zakat, infaq, sedekah, qurban, wakaf, donasi online',
       og_image: '/og',
       organization_favicon: '/logo.svg',
-      twitter_handle: '@bantuanku',
+      twitter_handle: '',
     };
   }
 }
 
 export async function generateSiteMetadata(overrides?: Partial<Metadata>): Promise<Metadata> {
   const settings = await fetchSeoSettings();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
   const title = overrides?.title || `${settings.site_name} - ${settings.site_tagline}`;
   const description = overrides?.description || settings.site_description;
@@ -112,8 +112,8 @@ export async function generateSiteMetadata(overrides?: Partial<Metadata>): Promi
     },
     twitter: {
       card: 'summary_large_image',
-      site: settings.twitter_handle || '@bantuanku',
-      creator: settings.twitter_handle || '@bantuanku',
+      site: settings.twitter_handle || '',
+      creator: settings.twitter_handle || '',
       title: (overrides?.twitter?.title as string) || title,
       description: (overrides?.twitter?.description as string) || description,
       images: overrides?.twitter?.images || [fullOgImageUrl],
@@ -204,13 +204,13 @@ export interface JsonLdArticle {
 }
 
 export function generateOrganizationJsonLd(settings: Record<string, any>): JsonLdOrganization {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const orgLogo = settings.organization_logo || settings.og_image;
 
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: settings.site_name || 'Bantuanku',
+    name: settings.site_name || '',
     url: appUrl,
     logo: orgLogo?.startsWith('http') ? orgLogo : `${appUrl}${orgLogo}`,
     description: settings.site_description,

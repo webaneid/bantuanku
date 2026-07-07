@@ -12,7 +12,7 @@ export const fundraiserDoc: DocumentationPage = {
             id: "apa-itu-fundraiser",
             heading: "Apa Itu Influencer?",
             bodyHtml:
-                '<p><strong>Influencer</strong> adalah individu yang membantu mempromosikan program di Bantuanku dan mendapatkan <strong>komisi</strong> dari setiap donasi yang masuk melalui link referralnya.</p>' +
+                '<p><strong>Influencer</strong> adalah individu yang membantu mempromosikan program di Jaladana dan mendapatkan <strong>komisi</strong> dari setiap donasi yang masuk melalui link referralnya.</p>' +
                 '<p>Influencer bisa berasal dari 2 sumber:</p>' +
                 '<ul>' +
                 '<li><strong>Donatur</strong> — Donatur luar yang mendaftar sendiri secara mandiri lewat akun mereka di website publik</li>' +

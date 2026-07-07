@@ -3,7 +3,7 @@ import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSeoSettings();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
   let seo: Record<string, any> = {};
   try {
@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
     }
   } catch {}
 
-  const siteName = settings.site_name || 'Bantuanku';
+  const siteName = settings.site_name || '';
   const title = seo.metaTitle || 'Program';
   const description = seo.metaDescription || 'Daftar program donasi dan campaign yang sedang berlangsung';
   const canonical = seo.canonicalUrl || `${appUrl}/program`;
@@ -64,8 +64,8 @@ export default async function ProgramLayout({
   children: React.ReactNode;
 }) {
   const settings = await fetchSeoSettings();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
-  const siteName = settings.site_name || 'Bantuanku';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  const siteName = settings.site_name || '';
 
   const collectionPageJsonLd = {
     '@context': 'https://schema.org',

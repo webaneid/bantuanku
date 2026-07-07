@@ -34,6 +34,15 @@ export default function QurbanInvoicePage({
     },
   });
 
+  const { data: siteSettings } = useQuery({
+    queryKey: ["public-settings"],
+    queryFn: async () => {
+      const response = await api.get("/settings");
+      return response.data?.data;
+    },
+  });
+  const siteName = siteSettings?.site_name || '';
+
   // Fetch payment methods to get bank account details
   const { data: paymentMethodsData } = useQuery({
     queryKey: ["payment-methods"],
@@ -422,7 +431,7 @@ export default function QurbanInvoicePage({
                 Terima kasih atas partisipasi Anda dalam ibadah qurban. Semoga diterima di sisi Allah SWT.
               </p>
               <p className="text-xs text-gray-400 mt-2">
-                Invoice ini dibuat secara otomatis oleh sistem Bantuanku
+                Invoice ini dibuat secara otomatis oleh sistem {siteName}
               </p>
             </div>
           </div>

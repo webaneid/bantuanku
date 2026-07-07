@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const categoriesResponse = await fetchCategories();
     const categories = categoriesResponse.data || [];
     const category = categories.find((cat: any) => cat.slug === params.slug);
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
     if (!category) {
       return {

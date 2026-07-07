@@ -217,7 +217,7 @@ export function Sidebar({ variant = "desktop", isOpen = true, onClose }: Sidebar
 
   const organizationSettings = groupedSettings?.organization || [];
   const organizationName =
-    organizationSettings.find((s: any) => s.key === "organization_name")?.value || "Bantuanku";
+    organizationSettings.find((s: any) => s.key === "organization_name")?.value || "";
   const organizationLogo =
     organizationSettings.find((s: any) => s.key === "organization_logo")?.value || "";
 

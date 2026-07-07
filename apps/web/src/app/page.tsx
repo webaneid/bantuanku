@@ -25,7 +25,7 @@ import { normalizeLocale, translate } from '@/lib/i18n';
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSeoSettings();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const toAbsoluteUrl = (url: string) =>
     url.startsWith('http') ? url : `${appUrl}${url.startsWith('/') ? url : `/${url}`}`;
 
@@ -39,7 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
     }
   } catch { }
 
-  const siteName = settings.site_name || 'Bantuanku';
+  const siteName = settings.site_name || '';
   const siteTagline = settings.site_tagline || 'Platform Donasi Terpercaya';
   const title = seo.metaTitle || `${siteName} - ${siteTagline}`;
   const description = seo.metaDescription || settings.site_description || `Platform donasi online terpercaya untuk zakat, infaq, sedekah, qurban, dan wakaf.`;
@@ -338,7 +338,7 @@ export default async function HomePage() {
 
   let settings: any = {
     organization_logo: '/logo.svg',
-    organization_name: 'Bantuanku',
+    organization_name: '',
   };
 
   let fullAddress: string | undefined;
@@ -443,12 +443,14 @@ export default async function HomePage() {
     ).values()
   );
 
+  const siteName = settings.site_name || '';
+
   // WebSite JSON-LD for homepage
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const webSiteJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: settings.site_name || 'Bantuanku',
+    name: settings.site_name || '',
     url: appUrl,
     description: settings.site_description || 'Platform donasi online terpercaya',
     potentialAction: {
@@ -479,7 +481,7 @@ export default async function HomePage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">Jelajahi Halaman Penting</h2>
-                <p className="text-sm text-gray-600">Akses cepat ke halaman utama Bantuanku untuk program, laporan, profil lembaga, dan kerja sama.</p>
+                <p className="text-sm text-gray-600">Akses cepat ke halaman utama {siteName} untuk program, laporan, profil lembaga, dan kerja sama.</p>
               </div>
               <div className="flex flex-wrap gap-3">
                 {crawlPriorityLinks.map((link) => (
@@ -722,7 +724,7 @@ export default async function HomePage() {
 
       <Footer
         logo={settings.organization_logo || '/logo.svg'}
-        organizationName={settings.organization_name || 'Bantuanku'}
+        organizationName={settings.organization_name || ''}
         organizationAbout={settings.organization_about}
         organizationAboutUrl={settings.organization_about_url}
         organizationAboutUrlLabel={settings.organization_about_url_label}

@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const locale = normalizeLocale(cookies().get('locale')?.value);
   const t = (key: string, params?: Record<string, string | number>) => translate(locale, key, params);
   const settings = await fetchSeoSettings();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
   let seo: Record<string, any> = {};
   try {
@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
     }
   } catch {}
 
-  const siteName = settings.site_name || 'Bantuanku';
+  const siteName = settings.site_name || '';
   const title = seo.metaTitle || t('zakatPage.defaults.title');
   const description = seo.metaDescription || t('zakatPage.defaults.description');
   const canonical = seo.canonicalUrl || `${appUrl}/zakat`;
@@ -184,16 +184,16 @@ export default async function ZakatPage() {
         '@type': 'CollectionPage',
         name: pageTitle,
         description: pageDescription,
-        url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org'}/zakat`,
+        url: `${process.env.NEXT_PUBLIC_APP_URL || ''}/zakat`,
         isPartOf: {
           '@type': 'WebSite',
           name: organizationName,
-          url: process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org',
+          url: process.env.NEXT_PUBLIC_APP_URL || '',
         },
       }) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(
         generateBreadcrumbJsonLd([
-          { name: t('zakatPage.breadcrumb.home'), url: process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org' },
+          { name: t('zakatPage.breadcrumb.home'), url: process.env.NEXT_PUBLIC_APP_URL || '' },
           { name: t('zakatPage.breadcrumb.zakat') },
         ])
       ) }} />

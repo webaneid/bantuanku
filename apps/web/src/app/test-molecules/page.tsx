@@ -28,7 +28,7 @@ export default function TestMoleculesPage() {
             Molecule Components Test
           </h1>
           <p className="text-lg text-gray-600">
-            Testing all molecule components for Bantuanku Front-End
+            Testing all molecule components for Jaladana Front-End
           </p>
         </header>
 
@@ -205,7 +205,7 @@ export default function TestMoleculesPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-700 mb-3">Default</h3>
                 <ShareButtons
-                  url="https://bantuanku.org/program/bantuan-pendidikan"
+                  url="https://contoh.org/program/bantuan-pendidikan"
                   title="Program Bantuan Pendidikan"
                   description="Mari bersama membantu pendidikan anak-anak yang membutuhkan"
                 />
@@ -214,8 +214,8 @@ export default function TestMoleculesPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-700 mb-3">Minimal</h3>
                 <ShareButtons
-                  url="https://bantuanku.org"
-                  title="Bantuanku"
+                  url="https://contoh.org"
+                  title="Contoh Platform"
                   variant="minimal"
                 />
               </div>
@@ -223,8 +223,8 @@ export default function TestMoleculesPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-700 mb-3">Icon Only</h3>
                 <ShareButtons
-                  url="https://bantuanku.org"
-                  title="Bantuanku"
+                  url="https://contoh.org"
+                  title="Contoh Platform"
                   variant="icon-only"
                 />
               </div>
@@ -233,17 +233,17 @@ export default function TestMoleculesPage() {
                 <h3 className="text-lg font-semibold text-gray-700 mb-3">Sizes</h3>
                 <div className="space-y-4">
                   <ShareButtons
-                    url="https://bantuanku.org"
+                    url="https://contoh.org"
                     title="Small"
                     size="sm"
                   />
                   <ShareButtons
-                    url="https://bantuanku.org"
+                    url="https://contoh.org"
                     title="Medium"
                     size="md"
                   />
                   <ShareButtons
-                    url="https://bantuanku.org"
+                    url="https://contoh.org"
                     title="Large"
                     size="lg"
                   />
@@ -253,7 +253,7 @@ export default function TestMoleculesPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-700 mb-3">Vertical Direction</h3>
                 <ShareButtons
-                  url="https://bantuanku.org"
+                  url="https://contoh.org"
                   title="Vertical Layout"
                   direction="vertical"
                 />
@@ -262,7 +262,7 @@ export default function TestMoleculesPage() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-700 mb-3">Custom Platforms</h3>
                 <ShareButtons
-                  url="https://bantuanku.org"
+                  url="https://contoh.org"
                   title="WhatsApp & Telegram Only"
                   platforms={['whatsapp', 'telegram', 'copy']}
                 />
@@ -410,8 +410,8 @@ export default function TestMoleculesPage() {
                   Bagikan program ini:
                 </p>
                 <ShareButtons
-                  url="https://bantuanku.org/program/bantuan-pendidikan"
-                  title="Program Bantuan Pendidikan - Bantuanku"
+                  url="https://contoh.org/program/bantuan-pendidikan"
+                  title="Program Bantuan Pendidikan - Jaladana"
                   variant="minimal"
                   size="sm"
                 />

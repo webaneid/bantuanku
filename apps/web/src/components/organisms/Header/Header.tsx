@@ -47,7 +47,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
 
     // Use application logo from settings
     const logo = settings.organization_logo || logoProp || '/logo.svg';
-    const siteName = settings.site_name || 'Bantuanku';
+    const siteName = settings.site_name || '';
 
     // Parse menu items from settings
     const menuItems = useMemo(() => {

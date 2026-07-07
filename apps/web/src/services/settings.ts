@@ -65,7 +65,7 @@ export interface PublicSettings {
 }
 
 const DEFAULT_SETTINGS: PublicSettings = {
-  site_name: 'Bantuanku',
+  site_name: '',
   site_tagline: 'Platform Donasi Terpercaya',
   organization_logo: '/logo.svg',
   organization_favicon: '/logo.svg',

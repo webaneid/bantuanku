@@ -129,7 +129,7 @@ export const Footer = React.forwardRef<HTMLElement, FooterProps>(
 
     // Use props or fallback to settings
     const logo = logoProp || settings.organization_logo || '/logo.svg';
-    const organizationName = nameProp || settings.organization_name || 'Bantuanku';
+    const organizationName = nameProp || settings.organization_name || '';
     const organizationAbout = aboutProp || settings.organization_about || t('footer.defaultAbout');
     const organizationAboutUrl = aboutUrlProp ?? settings.organization_about_url ?? '/page/tentang-kami';
     const organizationAboutUrlLabel = aboutUrlLabelProp || settings.organization_about_url_label || t('common.readMore');

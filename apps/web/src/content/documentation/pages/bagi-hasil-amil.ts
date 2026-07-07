@@ -17,7 +17,7 @@ export const amilRevenueDoc: DocumentationPage = {
                 '<table style="width:100%; border-collapse:collapse; margin:12px 0;">' +
                 '<thead><tr style="background:#f3f4f6;"><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Pihak</th><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Peran</th></tr></thead>' +
                 '<tbody>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>Amil</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Yayasan pemilik platform Bantuanku. Mengambil persentase dari donasi sesuai batas syariat.</td></tr>' +
+                '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>Amil</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Yayasan pemilik platform Jaladana. Mengambil persentase dari donasi sesuai batas syariat.</td></tr>' +
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>Platform Provider</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Fee platform (biaya operasional teknologi). Dipotong dari <em>bagian amil</em>, bukan dari dana program.</td></tr>' +
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>Influencer</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Penggalang dana yang mereferensikan donatur via link referral. Komisi dipotong dari <em>bagian amil</em>, hanya jika transaksi melalui referral.</td></tr>' +
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>Mitra</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Lembaga/organisasi pemilik program. Mendapat bagi hasil dari <em>bagian amil</em> sesuai pengaturan.</td></tr>' +

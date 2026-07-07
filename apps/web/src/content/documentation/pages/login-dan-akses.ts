@@ -13,18 +13,18 @@ export const loginDanAksesDoc: DocumentationPage = {
             heading: "Cara Login",
             bodyHtml:
                 '<ol>' +
-                '<li>Buka panel admin di <code>https://admin.bantuanku.org</code> (atau <code>http://localhost:3001</code> untuk development).</li>' +
+                '<li>Buka panel admin di <code>https://admin.namadomain.com</code> (atau <code>http://localhost:3001</code> untuk development).</li>' +
                 '<li>Masukkan <strong>Email</strong> dan <strong>Password</strong> akun Anda.</li>' +
                 '<li>Klik tombol <strong>Login</strong>.</li>' +
                 '</ol>' +
-                '<img src="/docs/screenshot-login.png" alt="Halaman Login Bantuanku Admin" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
-                '<p><em>Tampilan halaman login admin panel Bantuanku.</em></p>',
+                '<img src="/docs/screenshot-login.png" alt="Halaman Login Jaladana Admin" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
+                '<p><em>Tampilan halaman login admin panel Jaladana.</em></p>',
         },
         {
             id: "role-sistem",
             heading: "Role Dalam Sistem",
             bodyHtml:
-                '<p>Bantuanku menggunakan <strong>Role-Based Access Control (RBAC)</strong> dengan 6 role:</p>' +
+                '<p>Jaladana menggunakan <strong>Role-Based Access Control (RBAC)</strong> dengan 6 role:</p>' +
                 '<table style="width:100%; border-collapse:collapse; margin:16px 0;">' +
                 '<thead><tr style="background:#f3f4f6;"><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Role</th><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Akses</th></tr></thead>' +
                 '<tbody>' +

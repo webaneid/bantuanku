@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bantuanku.org';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
   // Fetch settings
   let settings: Record<string, any> = {};
@@ -20,7 +20,7 @@ export async function GET() {
 
   const aiReference = {
     platform: {
-      name: settings.site_name || 'Bantuanku',
+      name: settings.site_name || '',
       tagline: settings.site_tagline || 'Platform Donasi Online Terpercaya',
       description: settings.site_description || 'Platform donasi online terpercaya untuk zakat, infaq, sedekah, qurban, dan wakaf di Indonesia.',
       url: appUrl,

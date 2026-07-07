@@ -12,7 +12,7 @@ export const whatsappNotificationDoc: DocumentationPage = {
             id: "konsep-dasar",
             heading: "Konsep Dasar Notifikasi WA",
             bodyHtml: `
-                <p>Sistem Bantuanku terintegrasi dengan WhatsApp (menggunakan layanan GOWA / unofficial WhatsApp Web API) untuk mengirimkan <strong>notifikasi 1-arah secara otomatis</strong>.</p>
+                <p>Sistem Jaladana terintegrasi dengan WhatsApp (menggunakan layanan GOWA / unofficial WhatsApp Web API) untuk mengirimkan <strong>notifikasi 1-arah secara otomatis</strong>.</p>
                 <p>Notifikasi ini mencakup seluruh siklus hidup donatur, mulai dari pendaftaran akun, tagihan transaksi, konfirmasi pembayaran, pengingat cicilan qurban, hingga laporan penyaluran dana.</p>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-4">
                     <h4 className="font-semibold text-blue-800">Tanpa Biaya Per Pesan (Gratis)</h4>

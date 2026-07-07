@@ -103,7 +103,7 @@ const DEFAULT_SEO: SEOData = {
   seoScore: 0,
 };
 
-const DEFAULT_PUBLIC_SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://bantuanku.org").replace(/\/+$/, "");
+const DEFAULT_PUBLIC_SITE_URL = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/+$/, "");
 
 function safeHost(value: string): string | null {
   try {
