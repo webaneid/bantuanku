@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createId } from "../utils";
 import { donatur } from "./donatur";
@@ -11,10 +11,15 @@ export const waBroadcastLogs = pgTable("wa_broadcast_logs", {
   templateKey: text("template_key"),
   phone: text("phone").notNull(),
   status: text("status").notNull(),
-  // 'sent' | 'failed' | 'skipped_opt_out' | 'skipped_no_phone'
+  // 'sending' | 'sent' | 'failed' | 'skipped_opt_out' | 'skipped_no_phone'
+  // 'sending' = row di-insert sebelum kirim (claim-before-send); diupdate setelah response WA
   errorMessage: text("error_message"),
   sentAt: timestamp("sent_at", { precision: 3, mode: "date", withTimezone: true }).defaultNow().notNull(),
-});
+}, (t) => ({
+  // Unique per (job, donatur) — dipakai claim-before-send dengan onConflictDoNothing()
+  // untuk mencegah double-send jika cron overlap
+  uniqueJobDonatur: unique("wa_broadcast_logs_job_donatur_unique").on(t.jobId, t.donaturId),
+}));
 
 export const waBroadcastLogsRelations = relations(waBroadcastLogs, ({ one }) => ({
   job: one(waBroadcastJobs, {

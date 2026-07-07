@@ -205,6 +205,9 @@ const CORE_EXISTING: MigrationEntry[] = [
   {
     file: "packages/db/migrations/119_wa_community_care_schema.sql",
   },
+  {
+    file: "packages/db/migrations/120_wa_broadcast_unique_constraint.sql",
+  },
 ];
 
 const args = process.argv.slice(2);

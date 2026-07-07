@@ -95,7 +95,8 @@ CREATE TABLE wa_broadcast_logs (
   donatur_id   TEXT REFERENCES donatur(id) ON DELETE SET NULL,
   template_key TEXT,
   phone        TEXT NOT NULL,
-  status       TEXT NOT NULL,  -- 'sent' | 'failed' | 'skipped_opt_out' | 'skipped_no_phone'
+  status       TEXT NOT NULL,  -- 'sending' | 'sent' | 'failed' | 'skipped_opt_out' | 'skipped_no_phone'
+  -- 'sending' = claim sebelum kirim (claim-before-send), diupdate ke 'sent'/'failed' setelah response WA
   error_message TEXT,
   sent_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -128,7 +129,7 @@ Asumsi worst case: 5.000 donatur × 2 detik = **2,8 jam** per broadcast, dan sem
 
 ### Solusi: Batch + Cron
 
-Broadcast tidak dikirim sekaligus. Dikirim per **batch kecil** (default 50 penerima), dengan jeda antar batch (default 60 menit). Proses dikendalikan oleh cron yang berjalan setiap jam.
+Broadcast tidak dikirim sekaligus. Dikirim per **batch kecil** (default 50 penerima), dengan jeda antar batch (default 60 menit). Proses dikendalikan oleh cron yang berjalan setiap **30 menit** (bukan setiap jam — interval default batch 60 menit bisa lebih panjang dari frekuensi cron).
 
 ```
 Contoh: 500 donatur, batch_size=50, batch_interval=60 menit
@@ -163,16 +164,18 @@ Cron berjalan setiap 30 menit: GET /cron/wa-broadcast (dengan Authorization head
           LIMIT 1  -- satu job per run, serialized
 
       → Ambil recipients batch berikutnya
-          (OFFSET current_offset LIMIT batch_size)
-          (NOT EXISTS check di SQL untuk skip yang sudah terkirim)
+          WHERE NOT EXISTS log untuk job ini  ← satu-satunya penjaga, tanpa OFFSET
+          ORDER BY donatur.id                 ← deterministik
+          LIMIT batch_size
       → Kirim satu per satu via sendBulk (dengan delay 2s)
       → INSERT ke wa_broadcast_logs (status per penerima)
       → UPDATE wa_broadcast_jobs:
           sent_count += batch.sent
           failed_count += batch.failed
-          current_offset += batch.size
+          current_offset += batch.size    ← progress counter UI, bukan query offset
           next_batch_at = NOW() + batch_interval_minutes
-          status = current_offset >= total_recipients ? 'completed' : 'processing'
+          status = batch.size < batch_size ? 'completed' : 'processing'
+          ↑ jika batch lebih kecil dari batchSize = tidak ada sisa penerima
 ```
 
 ### Crontab VPS (tambahan)
@@ -547,6 +550,267 @@ GET /admin/whatsapp/broadcasts/estimate?audienceScope=X&referenceId=Y
 3. **Estimasi penerima** — debounced saat `audienceScope` atau `referenceId` berubah:
    - Fetch `GET /admin/whatsapp/broadcasts/estimate?...`
    - Tampilkan: "~N penerima · selesai ±X jam dengan batch 50/jam"
+
+---
+
+## Bug Kritis di Algoritma Batching (Ditemukan 2026-07-07)
+
+> Audit code dilakukan terhadap `apps/api/src/services/broadcast-processor.ts`.
+> Semua klaim di bawah telah diverifikasi terhadap kode aktual — bukan hanya klaim auditor.
+
+### Bug 1 — OFFSET + NOT EXISTS = Baris Terlewat *(Kritis)*
+
+**File:** `broadcast-processor.ts` baris 86, 98, 108
+
+**Masalah:**
+`queryAudienceBatch` menggunakan dua mekanisme sekaligus yang secara matematis bertentangan:
+1. `NOT EXISTS (... wa_broadcast_logs ...)` — mengecualikan donatur yang sudah punya log untuk job ini
+2. `.offset(currentOffset)` — skip N baris dari hasil query
+
+Ini **salah secara algoritma**. Setelah batch pertama (50 donatur) dikirim dan dicatat di log, query batch kedua:
+- `NOT EXISTS` mengecualikan 50 donatur yang sudah masuk log → dataset tersisa = 70 baris (dari total 120)
+- `.offset(50)` skip 50 baris dari dataset yang sudah mengerut 70 baris itu → hanya dapat 20 baris (posisi 51–70 dari dataset terfilter)
+- Baris 1–50 dari dataset terfilter (= donatur posisi 51–100 dari total asli) **tidak pernah dikirim**
+- Batch pendek (20 < 50) → `isLastBatch = true` → job ditandai `completed` padahal baru ~58% terkirim
+
+**Bukti kode aktual:**
+```typescript
+// Ketiga branch memiliki pola yang sama
+.where(and(..., notSent))   // NOT EXISTS mengecualikan sudah-dikirim
+.limit(limit)
+.offset(offset)             // ← ini menyebabkan skip
+```
+
+**Fix:**
+Hapus `offset` parameter dari `queryAudienceBatch` sepenuhnya. Dengan NOT EXISTS sudah menjadi filter, query `LIMIT batch_size` tanpa OFFSET selalu mengambil batch pertama dari **sisa yang belum dikirim**. Tambahkan `orderBy(donatur.id)` untuk urutan deterministik.
+
+Setelah fix, `isLastBatch = batch.length < batchSize` menjadi benar dan efisien — tidak perlu COUNT ekstra. `currentOffset` tetap diupdate sebagai progress counter UI (bukan untuk pagination query).
+
+---
+
+### Bug 2 — Tidak Ada ORDER BY = Urutan Tidak Deterministik *(Sedang)*
+
+**File:** `broadcast-processor.ts` baris 80–111 (semua branch `queryAudienceBatch`) dan baris 156–162 (job `findFirst`)
+
+**Masalah:**
+- Tanpa `ORDER BY`, PostgreSQL bisa mengembalikan baris dalam urutan berbeda antar eksekusi.
+- Untuk `findFirst` job: tanpa order, job mana yang diproses duluan tidak bisa diprediksi.
+- Untuk recipient query: tanpa order stabil, pagination (meski sudah tanpa OFFSET) bisa menghasilkan duplikasi jika ada concurrent query.
+
+**Fix:**
+- `queryAudienceBatch`: tambahkan `.orderBy(donatur.id)` di semua tiga branch.
+- `findFirst` job: tambahkan `orderBy: [asc(waBroadcastJobs.createdAt)]` agar job terlama diproses duluan.
+
+---
+
+### Bug 3 — Unique Constraint Saja Tidak Cukup: WA Dobel Tetap Bisa Terjadi *(Sedang)*
+
+**File:** `packages/db/src/schema/wa-broadcast-logs.ts`, `broadcast-processor.ts`
+
+**Masalah:**
+Jika unique constraint `(job_id, donatur_id)` ditambahkan tanpa mengubah urutan operasi, race condition tetap memungkinkan pesan dobel:
+1. Process A select donatur X
+2. Process B select donatur X (belum ada log — NOT EXISTS tidak memblokir)
+3. Process A kirim WA ke X ← pesan pertama terkirim
+4. Process B kirim WA ke X ← pesan kedua terkirim
+5. Process A insert log (sukses)
+6. Process B insert log (conflict — ditolak DB)
+
+DB menolak log kedua, tapi **WA kedua sudah terlanjur terkirim**. Unique constraint saja tidak cukup.
+
+**Fix yang benar — Claim-before-send:**
+Ubah urutan operasi dari "send → log" menjadi "claim (INSERT log status='sending') → send → update log":
+1. INSERT log dengan `status = 'sending'` terlebih dahulu — jika conflict, proses lain sudah claim donatur ini, skip
+2. Kirim WA
+3. UPDATE log ke `status = 'sent'` atau `'failed'`
+
+Dengan pola ini, unique constraint mencegah dua proses claim donatur yang sama sebelum WA dikirim. Ini adalah satu-satunya cara mencegah duplicate send tanpa job-level lock penuh.
+
+**Kasus edge — process crash antara INSERT dan UPDATE:**
+Log tetap sebagai `'sending'` permanen → donatur ini excluded dari sisa batch job ini. Ini acceptable (edge case langka) dan bisa dibersihkan via job cleanup jika diperlukan di masa depan.
+
+**Catatan soal job-level lock:**
+Untuk single-VPS single PM2 process, risiko dua cron concurrent sangat rendah (cron 30 menit, satu batch ≤ 100 detik). Claim-before-send cukup sebagai mitigation. Job-level lock (`locked_at`, `locked_by`) direkomendasikan jika sistem di-scale ke multiple worker di masa depan.
+
+---
+
+### Bug 4 — Error Background Tidak Update Job ke `failed` *(Sedang)*
+
+**File:** `apps/api/src/index.ts` baris 159
+
+**Masalah:**
+```typescript
+processBroadcastBatch(db, frontendUrl).catch((err) =>
+  console.error("[cron/wa-broadcast] background error:", err)
+);
+```
+Jika `processBroadcastBatch` throw error (DB connection drop, unhandled exception), hanya `console.error` yang dipanggil. Job tetap di status `processing` selamanya. Admin tidak bisa melihat bahwa job gagal dari UI — hanya bisa tahu dari PM2 log.
+
+**Fix:**
+Bungkus `processBroadcastBatch` dengan try-catch yang update job ke `failed`:
+```typescript
+setImmediate(async () => {
+  const { processBroadcastBatch } = await import("./services/broadcast-processor");
+  try {
+    await processBroadcastBatch(db, frontendUrl);
+  } catch (err) {
+    console.error("[cron/wa-broadcast] fatal error:", err);
+    // update job yang sedang processing ke failed
+    // (broadcast-processor harus expose currentJobId, atau handle di dalam processBroadcastBatch)
+  }
+});
+```
+
+Pendekatan lebih bersih: tambahkan try-catch di DALAM `processBroadcastBatch` setelah job dipick up, sehingga `job.id` sudah diketahui:
+```typescript
+try {
+  // ... logika batch ...
+} catch (err) {
+  await db.update(waBroadcastJobs).set({
+    status: "failed",
+    errorMessage: String(err),
+  }).where(eq(waBroadcastJobs.id, job.id));
+  throw err; // re-throw untuk console.error di caller
+}
+```
+
+---
+
+### Bug 5 — Retry untuk Recipient Gagal: Keputusan Desain yang Harus Eksplisit *(Dokumentasi)*
+
+**File:** `broadcast-processor.ts` baris 24–28
+
+**Masalah (bukan bug, tapi keputusan tersembunyi):**
+```typescript
+NOT EXISTS (
+  SELECT 1 FROM wa_broadcast_logs
+  WHERE donatur_id = X AND job_id = Y
+  -- tidak ada filter by status
+)
+```
+Semua status — `sent`, `failed`, `skipped_no_phone`, `sending` — menyebabkan donatur excluded dari batch berikutnya. Recipient yang gagal karena GOWA timeout tidak akan dicoba ulang dalam job yang sama.
+
+**Keputusan yang diambil:** "Sekali attempt per job per recipient." Jika ingin retry, harus buat job baru atau jalankan ulang dengan `audienceScope` yang lebih targeted.
+
+Ini keputusan yang **valid** untuk MVP. Yang penting didokumentasikan agar tidak dianggap bug.
+
+---
+
+### Apa yang TIDAK diubah dari arsitektur sebelumnya
+
+| Item | Keputusan |
+|------|-----------|
+| `setImmediate` untuk async batch | **Tetap** — return 202 langsung adalah desain yang benar (lesson learned 2026-07-06). Yang difix adalah error handling di dalamnya, bukan pola async-nya. |
+| `isLastBatch = batch.length < batchSize` | **Tetap setelah OFFSET difix** — termination condition yang benar dan efisien untuk cursor-less pagination. Tidak perlu COUNT ekstra. |
+| `currentOffset` sebagai field DB | **Tetap sebagai progress counter** — berguna untuk UI progress bar. Tidak lagi dipakai sebagai query offset. |
+| Tidak ada job-level lock (lockedAt/lockedBy) | **Tidak diimplementasikan Fase 8** — single-VPS single PM2, risiko concurrent processor sangat rendah. Claim-before-send cukup. Lock mekanisme penuh direkomendasikan bila scale ke multiple worker. |
+
+---
+
+### Rencana Fix (Fase 8)
+
+**Scope:** 2 file kode + 1 schema + 1 migration SQL baru
+
+#### Perubahan 1 — `broadcast-processor.ts`
+
+| Sub-perubahan | Detail |
+|---------------|--------|
+| Hapus `offset` dari `queryAudienceBatch` | Hapus parameter `offset: number`, hapus `.offset(offset)` di 3 branch |
+| Tambah `ORDER BY` di queryAudienceBatch | `.orderBy(donatur.id)` di semua 3 branch (deterministik) |
+| Tambah `ORDER BY` di job `findFirst` | `orderBy: [asc(waBroadcastJobs.createdAt)]` — job terlama diproses duluan |
+| Ubah urutan "send → log" menjadi "claim → send → update" | Lihat detail di bawah |
+| Tambah try-catch outer per job | Tangkap fatal error, update job ke `status = 'failed'` |
+
+**Detail claim-before-send:**
+```typescript
+// Sebelum: send → insert log
+// Sesudah: insert log (status='sending') → send → update log
+
+const logId = createId();
+
+// Gunakan onConflictDoNothing().returning() — JANGAN bare catch.
+// Bare catch menelan semua error termasuk DB down / column error.
+const claimed = await db.insert(waBroadcastLogs)
+  .values({
+    id: logId, jobId: job.id, donaturId: d.id,
+    templateKey: job.templateKey, phone,
+    status: "sending",  // ← claim sebelum kirim
+    sentAt: new Date(),
+  })
+  .onConflictDoNothing()
+  .returning({ id: waBroadcastLogs.id });
+
+if (!claimed.length) {
+  // Row tidak di-insert = conflict — recipient sudah di-claim proses lain.
+  // JANGAN increment batchSkipped — ini bukan skip karena data,
+  // tapi concurrency artifact. Gunakan counter lokal untuk observability.
+  claimConflicts++;
+  continue;
+}
+
+// Kirim WA
+const sent = await wa.send(...);
+
+// Update ke status final
+await db.update(waBroadcastLogs)
+  .set({ status: sent ? "sent" : "failed", errorMessage: sent ? null : errorMsg })
+  .where(eq(waBroadcastLogs.id, logId));
+```
+
+> **Mengapa `onConflictDoNothing()` bukan `catch { ... }`:**
+> Bare `catch` menelan semua exception — termasuk DB connection drop, column type error, FK violation. Semua kasus itu akan salah dianggap sebagai "sudah di-claim proses lain" dan recipient di-skip. `onConflictDoNothing` hanya silent pada actual unique conflict; error lain tetap throw dan ditangkap oleh outer try-catch yang update job ke `failed`.
+
+> **Mengapa `claimConflicts++` bukan `batchSkipped++`:**
+> `skippedCount` di job record adalah metrik bisnis yang terlihat admin di UI — menggambarkan recipient yang legitimately tidak bisa dikirim (no phone, etc.). Conflict dari concurrent processor bukan skip bisnis; memasukkannya ke `skippedCount` menyebabkan angka misleading. Counter lokal `claimConflicts` cukup untuk di-log ke console untuk debugging.
+
+**Detail outer try-catch:**
+```typescript
+export async function processBroadcastBatch(db, frontendUrl) {
+  const job = await pickJob(db);
+  if (!job) return { status: "no_job", ... };
+
+  try {
+    // ... seluruh logika batch ...
+  } catch (err) {
+    await db.update(waBroadcastJobs).set({
+      status: "failed",
+      errorMessage: String(err).slice(0, 500),
+    }).where(eq(waBroadcastJobs.id, job.id));
+    throw err;
+  }
+}
+```
+
+#### Perubahan 2 — `wa-broadcast-logs.ts` (schema)
+
+Tambahkan unique constraint:
+```typescript
+}, (t) => ({
+  uniqueJobDonatur: unique().on(t.jobId, t.donaturId),
+}));
+```
+
+#### Perubahan 3 — Migration SQL baru (120)
+
+```sql
+-- Migration 120: wa_broadcast unique constraint + sending status
+ALTER TABLE wa_broadcast_logs
+  ADD CONSTRAINT wa_broadcast_logs_job_donatur_unique UNIQUE (job_id, donatur_id);
+```
+
+> **Nama file:** `120_wa_broadcast_unique_constraint.sql`
+
+---
+
+**Tidak perlu diubah:**
+- `currentOffset` field DB — tetap ada sebagai progress counter
+- API endpoint — tidak ada perubahan kontrak
+- Frontend — tidak ada perubahan UI
+- Migration 119 — tidak ada perubahan retroaktif
+
+**Risiko backward compat:**
+- Job yang sedang `processing` dengan `currentOffset > 0` tidak perlu di-reset. Karena OFFSET sudah dihapus, query berikutnya akan menggunakan NOT EXISTS + LIMIT saja. Donatur yang sudah masuk log (termasuk status `sending` dari proses yang crash) otomatis excluded.
+- Unique constraint bisa conflict jika ada data lama dengan duplikasi `(job_id, donatur_id)` di production. Perlu cek sebelum apply migration: `SELECT job_id, donatur_id, COUNT(*) FROM wa_broadcast_logs GROUP BY job_id, donatur_id HAVING COUNT(*) > 1;`
 
 ---
 
