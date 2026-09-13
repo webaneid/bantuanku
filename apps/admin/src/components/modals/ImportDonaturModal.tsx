@@ -14,11 +14,20 @@ import api from "@/lib/api";
 type ImportMode = "skip" | "update";
 type RowStatus = "valid" | "error" | "duplicate";
 
+interface RowConflict {
+  field: "email" | "whatsapp";
+  existingValue: string;
+  newValue: string;
+  conflictsWithOtherDonatur?: boolean;
+}
+
 interface RowResult {
   rowNumber: number;
   status: RowStatus;
-  duplicateType?: "whatsapp" | "email" | "in_file";
+  duplicateType?: "whatsapp" | "email";
   existingId?: string;
+  conflict?: RowConflict;
+  warnings?: string[];
   data: {
     name?: string;
     whatsappNumber?: string;
@@ -66,6 +75,8 @@ export default function ImportDonaturModal({ isOpen, onClose, onSuccess }: Props
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
+  // Pilihan admin per-baris untuk conflict email/whatsapp saat mode update. Default (tidak ada entry) = pertahankan data lama.
+  const [resolutions, setResolutions] = useState<Record<number, "overwrite" | "keep">>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -78,6 +89,7 @@ export default function ImportDonaturModal({ isOpen, onClose, onSuccess }: Props
     setPreviewData(null);
     setCommitResult(null);
     setFilterStatus("all");
+    setResolutions({});
     setIsLoading(false);
   };
 
@@ -132,6 +144,9 @@ export default function ImportDonaturModal({ isOpen, onClose, onSuccess }: Props
     try {
       const fd = new FormData();
       fd.append("file", file);
+      if (Object.keys(resolutions).length > 0) {
+        fd.append("resolutions", JSON.stringify(resolutions));
+      }
       const res = await api.post(`/admin/donatur/import/commit?mode=${mode}`, fd, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -171,7 +186,7 @@ export default function ImportDonaturModal({ isOpen, onClose, onSuccess }: Props
   const statusLabel = (row: RowResult) => {
     if (row.status === "valid") return "Baru";
     if (row.status === "error") return row.errors?.join("; ") ?? "Error";
-    return `Duplikat (${row.duplicateType === "whatsapp" ? "WhatsApp" : row.duplicateType === "email" ? "Email" : "Dalam file"})`;
+    return `Duplikat (${row.duplicateType === "whatsapp" ? "WhatsApp" : "Email"})`;
   };
 
   return (
@@ -417,7 +432,44 @@ export default function ImportDonaturModal({ isOpen, onClose, onSuccess }: Props
                         </td>
                         <td className="px-3 py-2 font-medium text-gray-900">{row.data.name || "-"}</td>
                         <td className="px-3 py-2 text-gray-600">{row.data.whatsappNumber || "-"}</td>
-                        <td className="px-3 py-2 text-gray-600 max-w-xs truncate">{statusLabel(row)}</td>
+                        <td className="px-3 py-2 text-gray-600 max-w-xs">
+                          <div className="truncate">{statusLabel(row)}</div>
+                          {row.warnings && row.warnings.length > 0 && (
+                            <div className="mt-1 text-xs text-amber-600 whitespace-normal">
+                              {row.warnings.join("; ")}
+                            </div>
+                          )}
+                          {row.status === "duplicate" && row.conflict && (
+                            <div className="mt-1 text-xs whitespace-normal">
+                              {row.conflict.conflictsWithOtherDonatur ? (
+                                <span className="text-red-600">
+                                  {row.conflict.field === "email" ? "Email" : "WhatsApp"} baru (
+                                  {row.conflict.newValue}) sudah dipakai donatur lain — tidak bisa ditimpa
+                                </span>
+                              ) : mode === "update" ? (
+                                <label className="flex items-center gap-1.5 text-gray-700 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={resolutions[row.rowNumber] === "overwrite"}
+                                    onChange={(e) =>
+                                      setResolutions((prev) => ({
+                                        ...prev,
+                                        [row.rowNumber]: e.target.checked ? "overwrite" : "keep",
+                                      }))
+                                    }
+                                  />
+                                  Timpa {row.conflict.field === "email" ? "email" : "WhatsApp"} lama (
+                                  {row.conflict.existingValue}) dengan yang baru ({row.conflict.newValue})
+                                </label>
+                              ) : (
+                                <span className="text-gray-500">
+                                  {row.conflict.field === "email" ? "Email" : "WhatsApp"} beda di file (
+                                  {row.conflict.newValue}) — dipertahankan yang lama ({row.conflict.existingValue})
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

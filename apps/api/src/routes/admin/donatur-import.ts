@@ -51,13 +51,98 @@ interface ParsedRow {
   birthDate?: string;
 }
 
+interface RowConflict {
+  field: "email" | "whatsapp";
+  existingValue: string;
+  newValue: string;
+  // true kalau newValue sudah dipakai donatur LAIN (bukan yang match) — tidak boleh ditimpa
+  conflictsWithOtherDonatur?: boolean;
+}
+
 interface RowResult {
   rowNumber: number;
   status: "valid" | "error" | "duplicate";
-  duplicateType?: "whatsapp" | "email" | "in_file";
+  duplicateType?: "whatsapp" | "email";
   existingId?: string;
+  // Terisi kalau field lain (bukan yang jadi dasar match) berbeda nilainya dari data di DB —
+  // admin perlu pilih: pertahankan nilai lama atau timpa dengan nilai baru dari file
+  conflict?: RowConflict;
   data: Partial<ParsedRow>;
   errors?: string[];
+  // Field opsional yang formatnya tidak valid & di-skip (bukan gagalkan seluruh baris) — lihat
+  // NIK/Tanggal Lahir di validateAndNormalizeRow
+  warnings?: string[];
+}
+
+const INDONESIAN_MONTHS: Record<string, string> = {
+  januari: "01", februari: "02", maret: "03", april: "04", mei: "05", juni: "06",
+  juli: "07", agustus: "08", september: "09", oktober: "10", november: "11", desember: "12",
+};
+
+// Terima "YYYY-MM-DD" (format template) ATAU "D MMMM YYYY[ pukul HH.MM]" (format export
+// donatur bahasa Indonesia, misal "22 Mei 2003 pukul 07.00") — dua format ini yang paling
+// umum ditemukan di file yang diupload admin/client. Return null kalau tidak dikenali sama sekali.
+function parseBirthDate(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+
+  const match = trimmed.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})(?:\s+pukul\s+\d{1,2}[.:]\d{2})?$/i);
+  if (match) {
+    const [, day, monthName, year] = match;
+    const month = INDONESIAN_MONTHS[monthName.toLowerCase()];
+    if (month) return `${year}-${month}-${day.padStart(2, "0")}`;
+  }
+  return null;
+}
+
+type ImportResolution = "overwrite" | "keep";
+
+function parseResolutions(raw: string | null): Record<string, ImportResolution> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+// Deteksi apakah baris duplicate punya conflict di field yang tidak jadi dasar match
+// (dipakai sama persis di preview & commit supaya hasil klasifikasi konsisten)
+type DonaturLookup = { id: string; whatsappNumber: string | null; email: string };
+
+function detectConflict(
+  matchedField: "whatsapp" | "email",
+  fileData: Partial<ParsedRow>,
+  existing: DonaturLookup,
+  dbByWa: Map<string | null, DonaturLookup>,
+  dbByEmail: Map<string | null, DonaturLookup>
+): RowConflict | undefined {
+  if (matchedField === "whatsapp") {
+    const newEmail = fileData.email;
+    if (newEmail && existing.email && newEmail !== existing.email) {
+      const owner = dbByEmail.get(newEmail);
+      return {
+        field: "email",
+        existingValue: existing.email,
+        newValue: newEmail,
+        conflictsWithOtherDonatur: !!owner && owner.id !== existing.id,
+      };
+    }
+  } else {
+    const newWa = fileData.whatsappNumber;
+    if (newWa && existing.whatsappNumber && newWa !== existing.whatsappNumber) {
+      const owner = dbByWa.get(newWa);
+      return {
+        field: "whatsapp",
+        existingValue: existing.whatsappNumber,
+        newValue: newWa,
+        conflictsWithOtherDonatur: !!owner && owner.id !== existing.id,
+      };
+    }
+  }
+  return undefined;
 }
 
 function parseSheet(buffer: Buffer): Record<string, string>[] {
@@ -72,6 +157,7 @@ function parseSheet(buffer: Buffer): Record<string, string>[] {
 function validateAndNormalizeRow(raw: Record<string, string>, rowNumber: number): RowResult {
   const data: Partial<ParsedRow> = {};
   const errors: string[] = [];
+  const warnings: string[] = [];
 
   // Nama
   const name = String(raw["Nama"] || "").trim();
@@ -110,8 +196,9 @@ function validateAndNormalizeRow(raw: Record<string, string>, rowNumber: number)
     data.phone = normalizePhone(phoneRaw) || phoneRaw;
   }
 
-  // Alamat lengkap (opsional)
-  const addr = String(raw["Alamat Lengkap"] || "").trim();
+  // Alamat lengkap (opsional) — "Alamat Detail" adalah nama kolom yang dipakai file hasil
+  // export donatur (beda dari "Alamat Lengkap" di template import), diterima sebagai alias
+  const addr = String(raw["Alamat Lengkap"] || raw["Alamat Detail"] || "").trim();
   if (addr) data.detailAddress = addr;
 
   // Gender (opsional)
@@ -126,11 +213,12 @@ function validateAndNormalizeRow(raw: Record<string, string>, rowNumber: number)
     }
   }
 
-  // NIK (opsional)
+  // NIK (opsional) — kalau formatnya tidak valid, field ini di-skip (bukan gagalkan seluruh
+  // baris) karena banyak data lama pakai placeholder seperti "0", "123", "-", "000000"
   const nik = String(raw["NIK"] || "").trim().replace(/\s/g, "");
   if (nik) {
     if (!/^\d{16}$/.test(nik)) {
-      errors.push("NIK harus 16 digit angka");
+      warnings.push(`NIK "${nik}" tidak valid (harus 16 digit angka), field ini dilewati`);
     } else {
       data.nik = nik;
     }
@@ -144,13 +232,15 @@ function validateAndNormalizeRow(raw: Record<string, string>, rowNumber: number)
   const birthPlace = String(raw["Tempat Lahir"] || "").trim();
   if (birthPlace) data.birthPlace = birthPlace;
 
-  // Tanggal lahir (opsional)
+  // Tanggal lahir (opsional) — terima YYYY-MM-DD atau format export "D MMMM YYYY[ pukul HH.MM]".
+  // Kalau tidak dikenali sama sekali, field ini di-skip (bukan gagalkan seluruh baris).
   const birthDateRaw = String(raw["Tanggal Lahir"] || "").trim();
   if (birthDateRaw) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDateRaw)) {
-      errors.push('Format tanggal lahir harus YYYY-MM-DD (contoh: "1990-05-20")');
+    const parsed = parseBirthDate(birthDateRaw);
+    if (parsed) {
+      data.birthDate = parsed;
     } else {
-      data.birthDate = birthDateRaw;
+      warnings.push(`Tanggal lahir "${birthDateRaw}" tidak dikenali formatnya, field ini dilewati`);
     }
   }
 
@@ -159,6 +249,7 @@ function validateAndNormalizeRow(raw: Record<string, string>, rowNumber: number)
     status: errors.length > 0 ? "error" : "valid",
     data,
     errors: errors.length > 0 ? errors : undefined,
+    warnings: warnings.length > 0 ? warnings : undefined,
   };
 }
 
@@ -257,20 +348,24 @@ app.post(
             .where(or(...dbConditions))
         : [];
 
-      const dbWaMap = new Map(existingDonatur.map((d) => [d.whatsappNumber, d.id]));
-      const dbEmailMap = new Map(existingDonatur.map((d) => [d.email, d.id]));
+      const dbByWa = new Map(existingDonatur.map((d) => [d.whatsappNumber, d]));
+      const dbByEmail = new Map(existingDonatur.map((d) => [d.email, d]));
 
       for (const result of validRows) {
         const wa = result.data.whatsappNumber;
         const email = result.data.email;
-        if (wa && dbWaMap.has(wa)) {
+        if (wa && dbByWa.has(wa)) {
+          const existing = dbByWa.get(wa)!;
           result.status = "duplicate";
           result.duplicateType = "whatsapp";
-          result.existingId = dbWaMap.get(wa);
-        } else if (email && dbEmailMap.has(email)) {
+          result.existingId = existing.id;
+          result.conflict = detectConflict("whatsapp", result.data, existing, dbByWa, dbByEmail);
+        } else if (email && dbByEmail.has(email)) {
+          const existing = dbByEmail.get(email)!;
           result.status = "duplicate";
           result.duplicateType = "email";
-          result.existingId = dbEmailMap.get(email);
+          result.existingId = existing.id;
+          result.conflict = detectConflict("email", result.data, existing, dbByWa, dbByEmail);
         }
       }
     }
@@ -301,6 +396,10 @@ app.post(
     const formData = await c.req.formData();
     const file = formData.get("file") as File | null;
     if (!file) return error(c, "File wajib diupload", 400);
+
+    // Per-baris keputusan admin untuk conflict field (email/whatsapp) saat mode=update.
+    // Key = rowNumber (string), value = "overwrite" | "keep". Tidak ada entry = "keep" (aman, default lama).
+    const resolutions = parseResolutions(formData.get("resolutions") as string | null);
 
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (!ext || !["xlsx", "csv"].includes(ext)) {
@@ -360,20 +459,24 @@ app.post(
           .where(or(...dbConditions))
       : [];
 
-    const dbWaMap = new Map(existingDonatur.map((d) => [d.whatsappNumber, d.id]));
-    const dbEmailMap = new Map(existingDonatur.map((d) => [d.email, d.id]));
+    const dbByWa = new Map(existingDonatur.map((d) => [d.whatsappNumber, d]));
+    const dbByEmail = new Map(existingDonatur.map((d) => [d.email, d]));
 
     for (const result of validRows) {
       const wa = result.data.whatsappNumber;
       const em = result.data.email;
-      if (wa && dbWaMap.has(wa)) {
+      if (wa && dbByWa.has(wa)) {
+        const existing = dbByWa.get(wa)!;
         result.status = "duplicate";
         result.duplicateType = "whatsapp";
-        result.existingId = dbWaMap.get(wa);
-      } else if (em && dbEmailMap.has(em)) {
+        result.existingId = existing.id;
+        result.conflict = detectConflict("whatsapp", result.data, existing, dbByWa, dbByEmail);
+      } else if (em && dbByEmail.has(em)) {
+        const existing = dbByEmail.get(em)!;
         result.status = "duplicate";
         result.duplicateType = "email";
-        result.existingId = dbEmailMap.get(em);
+        result.existingId = existing.id;
+        result.conflict = detectConflict("email", result.data, existing, dbByWa, dbByEmail);
       }
     }
 
@@ -407,6 +510,21 @@ app.post(
           if (d.npwp) updateData.npwp = d.npwp;
           if (d.birthPlace) updateData.birthPlace = d.birthPlace;
           if (d.birthDate) updateData.birthDate = d.birthDate;
+
+          // Email/WhatsApp (dedup key) hanya ditimpa kalau admin eksplisit pilih "overwrite"
+          // untuk baris ini DAN nilai barunya tidak bentrok dengan donatur lain.
+          if (result.conflict && resolutions[String(result.rowNumber)] === "overwrite") {
+            if (result.conflict.conflictsWithOtherDonatur) {
+              result.status = "error";
+              result.errors = [
+                `${result.conflict.field === "email" ? "Email" : "WhatsApp"} "${result.conflict.newValue}" sudah dipakai donatur lain, tidak bisa ditimpa`,
+              ];
+              errors++;
+              continue;
+            }
+            if (result.conflict.field === "email" && d.email) updateData.email = d.email;
+            if (result.conflict.field === "whatsapp" && d.whatsappNumber) updateData.whatsappNumber = d.whatsappNumber;
+          }
 
           await db.update(donatur).set(updateData).where(eq(donatur.id, result.existingId));
           updated++;

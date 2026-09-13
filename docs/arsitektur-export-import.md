@@ -234,48 +234,59 @@ Parser server-side menggunakan `xlsx` (SheetJS) via `XLSX.read()` + `sheet_to_js
 ### Import Donatur
 
 **Endpoint**: `apps/api/src/routes/admin/donatur-import.ts`, dipasang di `/admin/donatur/import`
+**Dokumen detail**: `arsitektur-import-donatur.md` — dokumen ini hanya ringkasan, source of truth ada di sana.
 
-**Role**: `super_admin`, `admin_finance`, `admin_campaign`
+**Role**: `GET /template` — semua staff (hanya butuh `authMiddleware`, tanpa `requireRole`). `POST /preview` dan `POST /commit` — `super_admin`, `admin_campaign` (bukan `admin_finance`).
 
 | Endpoint | Fungsi |
 |----------|--------|
 | `GET /template` | Download template XLSX 10 kolom + 1 baris contoh |
-| `POST /preview` | Dry-run: parse XLSX, validasi, cek duplikat, return stats |
+| `POST /preview` | Dry-run: parse, validasi, cek duplikat, return stats. Tidak menulis ke DB. |
 | `POST /commit` | Tulis ke DB (mode: `skip` atau `update`) |
 
-**Kolom template** (10 kolom):
+**Kolom template** (10 kolom, urutan sesuai `TEMPLATE_HEADERS` di kode):
 
-| Kolom | Wajib | Keterangan |
-|-------|-------|------------|
-| Nama Lengkap | ✓ | |
-| WhatsApp | ✓ | Deduplikasi utama; `normalizePhone()` sebelum simpan |
-| Email | | Deduplikasi sekunder |
-| Telepon | | |
-| Jenis Kelamin | | `laki-laki` / `perempuan` |
-| Tanggal Lahir | | Format `YYYY-MM-DD` |
-| Kota | | |
-| Provinsi | | |
-| Pekerjaan | | |
-| Catatan | | |
+| Kolom | Field DB | Wajib | Keterangan |
+|-------|----------|-------|------------|
+| Nama | `name` | ✓ | min 2 karakter |
+| WhatsApp | `whatsappNumber` | ✓ | Deduplikasi utama (cek aplikasi, **bukan** constraint DB — lihat Catatan); `normalizePhone()` |
+| Email | `email` | | Deduplikasi sekunder; kosong → auto `donor-{id}@temp.local` saat insert (kolom `email` di DB `UNIQUE NOT NULL`) |
+| Telepon | `phone` | | Kosong → fallback ke nilai WhatsApp (tidak terdokumentasi sebelumnya, lihat kode `donatur-import.ts:428`) |
+| Alamat Lengkap | `detailAddress` | | Teks bebas; "Alamat Detail" (nama kolom di file export donatur) diterima sebagai alias |
+| Jenis Kelamin | `gender` | | Diterima: `laki-laki`/`laki`/`l` → `laki-laki`; `perempuan`/`wanita`/`p` → `perempuan` (case-insensitive) |
+| NIK | `nik` | | Harus 16 digit angka — kalau tidak valid, field ini di-skip dengan warning (baris tetap valid), tidak menggagalkan baris |
+| NPWP | `npwp` | | Teks bebas, tidak ada validasi format |
+| Tempat Lahir | `birthPlace` | | |
+| Tanggal Lahir | `birthDate` | | `YYYY-MM-DD` ATAU format export Indonesia `"D MMMM YYYY[ pukul HH.MM]"` — kalau tidak dikenali, field di-skip dengan warning (baris tetap valid) |
 
-**Deduplication logic**:
-1. In-file: kombinasi WA+email unik (buang duplikat dalam file yang sama)
-2. DB by WA: jika WA sudah ada → skip atau update (tergantung mode)
-3. DB by email: jika email sudah ada → skip atau update (tergantung mode)
+Kolom **Kota**, **Provinsi**, **Pekerjaan** yang sempat tercatat di versi dokumen sebelumnya **tidak ada** di template aktual — alamat cascade dan `jobTitleId` sengaja tidak diimport (lihat `arsitektur-import-donatur.md` § Gap & Batasan).
 
-**Mode `skip`** (default): baris duplikat dilewati.
-**Mode `update`**: baris duplikat di-update fieldnya.
+**Deduplication logic** (urutan pengecekan per baris):
+1. Duplikat WA atau email **dalam file yang sama** → status `error` (bukan `duplicate`), baris itu selalu di-skip saat commit
+2. Duplikat WA dengan data di DB → status `duplicate`, `duplicateType: "whatsapp"`
+3. Duplikat email dengan data di DB → status `duplicate`, `duplicateType: "email"`
+4. Lolos semua → status `valid`
 
-**Response preview**:
+**Mode `skip`** (default): baris `duplicate` dilewati, counter `skipped++`.
+**Mode `update`**: baris `duplicate` di-update — **hanya field yang tidak kosong di file** yang ditimpa, field kosong di file tidak menghapus data lama. Field yang selalu bisa diupdate: `name`, `phone`, `detailAddress`, `gender`, `nik`, `npwp`, `birthPlace`, `birthDate`. **`email`/`whatsappNumber` (dedup key) butuh persetujuan eksplisit per-baris** — kalau nilainya beda dari data di file, preview mengembalikan `conflict` dan admin pilih via checkbox di UI ("timpa" atau biarkan). Kalau nilai baru sudah dipakai donatur LAIN, sistem otomatis blokir pilihan itu (baris jadi error saat commit, bukan corrupt data). Detail lengkap mekanismenya di `arsitektur-import-donatur.md` § Conflict Resolution.
+
+**Response preview** (bentuk aktual, beda dari dokumen versi lama):
 ```json
 {
-  "total": 100,
-  "valid": 85,
-  "skipped": 10,
-  "errors": 5,
-  "rows": [{ "row": 2, "status": "valid"|"skip"|"error", "reason": "..." }]
+  "totalRows": 100, "validRows": 85, "errorRows": 5, "duplicateRows": 10,
+  "rows": [{ "rowNumber": 2, "status": "valid"|"error"|"duplicate", "duplicateType": "whatsapp"|"email", "existingId": "...", "data": {...}, "errors": ["..."] }]
 }
 ```
+
+**Response commit**:
+```json
+{ "imported": 42, "skipped": 5, "updated": 3, "errors": 2, "mode": "skip"|"update" }
+```
+
+**Catatan/gap yang ditemukan saat audit (2026-09-13)**:
+- ~~`mustahiq-import.ts` update mode meng-update whatsappNumber/email langsung, donatur-import mengecualikan keduanya~~ — sudah diselaraskan: donatur-import sekarang punya mekanisme conflict-resolution per-baris (lihat di atas) alih-alih exclude total. `mustahiq-import.ts` tetap pakai pola lama (langsung update tanpa guard) — kalau nanti mau diselaraskan juga, ikuti pola `detectConflict()` di `donatur-import.ts`.
+- Kolom `donatur.whatsapp_number` **tidak punya unique constraint di DB** (hanya `donatur.email` yang `UNIQUE`). Dedup WhatsApp saat import murni cek aplikasi (`SELECT` lalu `INSERT`) — dua commit import yang berjalan bersamaan (atau import bertabrakan dengan registrasi donatur normal di waktu yang sama) berpotensi race condition dan menghasilkan dua baris donatur dengan WhatsApp yang sama. Baca `arsitektur-donatur.md` untuk status keputusan soal ini.
+- Tipe `duplicateType` punya opsi `"in_file"` di backend & frontend tapi tidak pernah benar-benar di-set (duplikat dalam file diklasifikasikan `error`, bukan `duplicate`) — sisa kode dari desain sebelumnya, tidak berdampak fungsional.
 
 **Admin UI**: `ImportDonaturModal` di halaman `/dashboard/donatur` — 3-step wizard (upload → preview → result).
 
