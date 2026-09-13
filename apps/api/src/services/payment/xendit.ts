@@ -1,4 +1,5 @@
 import type { PaymentGatewayAdapter, PaymentRequest, PaymentResponse, WebhookPayload, GatewayCredentials } from "./types";
+import { timingSafeEqualString } from "../../lib/security";
 
 export class XenditAdapter implements PaymentGatewayAdapter {
   code = "xendit";
@@ -141,7 +142,7 @@ export class XenditAdapter implements PaymentGatewayAdapter {
 
   async verifyWebhook(payload: WebhookPayload, signature?: string): Promise<boolean> {
     if (!signature || !this.callbackToken) return false;
-    return signature === this.callbackToken;
+    return timingSafeEqualString(signature, this.callbackToken);
   }
 
   parseWebhook(payload: WebhookPayload): { externalId: string; status: "success" | "failed" | "expired"; paidAt?: Date } {

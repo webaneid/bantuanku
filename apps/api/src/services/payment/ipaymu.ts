@@ -5,6 +5,7 @@ import type {
   WebhookPayload,
   GatewayCredentials,
 } from "./types";
+import { timingSafeEqualString } from "../../lib/security";
 
 export class IPaymuAdapter implements PaymentGatewayAdapter {
   code = "ipaymu";
@@ -242,7 +243,7 @@ export class IPaymuAdapter implements PaymentGatewayAdapter {
       const binaryString = String.fromCharCode(...signatureArray);
       const computedSignature = btoa(binaryString);
 
-      return computedSignature === signature;
+      return timingSafeEqualString(computedSignature, signature);
     } catch (err) {
       console.error("Error verifying iPaymu webhook signature:", err);
       return false;

@@ -1,4 +1,5 @@
 import type { PaymentGatewayAdapter, PaymentRequest, PaymentResponse, WebhookPayload, GatewayCredentials } from "./types";
+import { timingSafeEqualString } from "../../lib/security";
 
 export class MidtransAdapter implements PaymentGatewayAdapter {
   code = "midtrans";
@@ -109,7 +110,7 @@ export class MidtransAdapter implements PaymentGatewayAdapter {
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const computedSignature = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 
-    return computedSignature === signature;
+    return timingSafeEqualString(computedSignature, signature);
   }
 
   parseWebhook(payload: WebhookPayload): { externalId: string; status: "success" | "failed" | "expired"; paidAt?: Date } {
