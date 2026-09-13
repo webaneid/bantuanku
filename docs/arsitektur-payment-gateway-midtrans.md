@@ -315,8 +315,10 @@ update transaction/payment status
 Adapter verify:
 
 ```text
-SHA512(order_id + status_code + gross_amount + serverKey) === signature
+timingSafeEqualString(SHA512(order_id + status_code + gross_amount + serverKey), signature)
 ```
+
+Perbandingan pakai `timingSafeEqualString()` (`apps/api/src/lib/security.ts`, `crypto.timingSafeEqual` di bawahnya) — bukan `===` biasa, untuk cegah timing attack (2026-09-13). Pola yang sama dipakai juga di `xendit.ts` (callback token) dan `ipaymu.ts` (HMAC signature); `flip.ts` sudah aman dari awal karena pakai `bcrypt.compare`.
 
 Masalah utama:
 

@@ -207,10 +207,12 @@ Rate limit saat ini in-memory:
 | Middleware | Limit |
 |------------|-------|
 | API global | 300 request / menit |
-| Auth | 20 request / 15 menit |
+| Auth | 20 request / 15 menit — mencakup `/login`, `/register`, `/forgot-password`, `/reset-password`, DAN `/refresh` (ditambahkan 2026-09-13, sebelumnya kelewatan) |
 | Payment create | 10 request / menit |
 
-Gap:
+**Bug yang sudah diperbaiki (2026-09-13)**: `rateLimitStore` di `middleware/ratelimit.ts` dulu satu `Map` yang dibagi bareng SEMUA instance `rateLimit()` (global, auth, payment), key-nya cuma `identifier:path` tanpa membedakan limiter mana yang punya. Karena API global (`app.use("*", apiRateLimit)`) jalan bareng limiter khusus rute (mis. `authRateLimit`) di path yang sama, keduanya menaikkan counter yang sama — limit yang lebih ketat trip kira-kira 2x lebih cepat dari yang dikonfigurasi (limit 20 diam-diam jadi ~10). Fix: tiap `rateLimit()` sekarang punya `Map` sendiri (closure). Diverifikasi lewat hammer test `/login` dan `/refresh` — block tepat di request ke-21, bukan ke-11.
+
+Gap yang masih ada:
 
 1. Rate limit tidak distributed; reset saat process restart.
 2. Multi-instance API akan punya counter berbeda.
@@ -232,17 +234,18 @@ Secret source:
 `apps/api/src/lib/encryption.ts` memakai AES-256-CBC dengan key dari:
 
 ```text
-ENCRYPTION_KEY || JWT_SECRET || "default_fallback_secret_key_32_bytes"
+ENCRYPTION_KEY || JWT_SECRET
 ```
+
+**Update 2026-09-13**: fallback hardcoded (`"default_fallback_secret_key_32_bytes"`) sudah dihapus — modul sekarang `throw` saat dimuat kalau kedua env var itu kosong, supaya kegagalan konfigurasi ketahuan langsung saat boot, bukan diam-diam enkripsi dengan key yang bisa dibaca siapapun dari git history. **Prasyarat yang wajib ikut**: `apps/api/server-node.ts` harus load `.env` SEBELUM `import app from "./src/index"` (module ini transitif butuh env itu) — lihat `apps/api/load-env.ts`, di-import paling awal di `server-node.ts` supaya urutan eksekusi ES module benar.
 
 Gap security:
 
 1. AES-CBC tidak memberi integrity/authentication tag seperti AES-GCM.
-2. Ada fallback default secret bila env tidak ada.
-3. `encrypt()` mengembalikan plaintext saat gagal.
-4. `decrypt()` mengembalikan input asli saat gagal.
-5. Sensitive key detection hanya berbasis substring `_api_key`, `_secret`, `_access_token`.
-6. Key seperti `gcs_private_key` tidak otomatis masuk pola sensitif tersebut.
+2. `encrypt()` mengembalikan plaintext saat gagal.
+3. `decrypt()` mengembalikan input asli saat gagal.
+4. Sensitive key detection hanya berbasis substring `_api_key`, `_secret`, `_access_token`.
+5. Key seperti `gcs_private_key` tidak otomatis masuk pola sensitif tersebut.
 
 ### Settings encryption inconsistency
 
@@ -277,10 +280,12 @@ Adapter gateway melakukan verifikasi:
 
 | Gateway | Verifikasi Aktual |
 |---------|-------------------|
-| Flip | `bcrypt.compare(token, validationTokenHash)`. |
-| Xendit | Header callback token dibandingkan dengan token setting. |
-| iPaymu | HMAC SHA-256 atas `JSON.stringify(payload)`, base64. |
-| Midtrans | Signature SHA-512 berbasis order/status/gross/server key. |
+| Flip | `bcrypt.compare(token, validationTokenHash)` — sudah constant-time by design. |
+| Xendit | Header callback token dibandingkan dengan token setting via `timingSafeEqualString()`. |
+| iPaymu | HMAC SHA-256 atas `JSON.stringify(payload)`, base64, dibandingkan via `timingSafeEqualString()`. |
+| Midtrans | Signature SHA-512 berbasis order/status/gross/server key, dibandingkan via `timingSafeEqualString()`. |
+
+Perbandingan signature/token di Xendit, iPaymu, dan Midtrans diganti dari `===` biasa ke `timingSafeEqualString()` (`apps/api/src/lib/security.ts`, pakai `crypto.timingSafeEqual`) pada 2026-09-13 untuk cegah timing attack — sebelumnya durasi respons `===` bisa dipakai menyimpulkan signature yang benar karakter demi karakter.
 
 Gap:
 
@@ -336,7 +341,7 @@ Gap:
 
 Gap:
 
-1. Validasi tipe file memakai `file.type` dari request, bukan magic-byte sniffing.
+1. ~~Validasi tipe file memakai `file.type` dari request, bukan magic-byte sniffing.~~ ✅ **Selesai** (2026-09-13) — `isAllowedFileSignature()` (`apps/api/src/lib/file-signature.ts`) verifikasi magic bytes JPEG/PNG/GIF/WebP/PDF setelah `file.type` check, sebelum file disimpan. Diverifikasi end-to-end: file `.php` yang Content-Type-nya dipalsukan jadi `image/jpeg` ditolak (`400`), JPEG/PDF asli tetap berhasil upload.
 2. Endpoint berbasis transaction id; perlu dipastikan threat model akses publik ke upload bukti memang disengaja.
 3. Error upload GCS masih dapat mengembalikan `error.message` ke client pada sebagian path.
 
@@ -354,8 +359,9 @@ Media library:
 Gap:
 
 1. Local `/uploads/:filename` bersifat public dan tidak memakai auth.
-2. Validasi utama masih MIME request, bukan file signature.
+2. ~~Validasi utama masih MIME request, bukan file signature.~~ ✅ **Selesai** (2026-09-13) — magic-byte check ditambahkan di 5 titik upload sekaligus (bukan cuma media library): `admin/media.ts`, `mitra.ts` (`/mitra/upload-document`, publik tanpa auth), `transactions.ts` (`/upload-proof`), dan dua titik di `qurban.ts` (bukti transfer). Lihat `apps/api/src/lib/file-signature.ts`.
 3. Original local retention perlu policy pembersihan yang jelas.
+4. **Ditemukan saat testing (belum diperbaiki)**: `DELETE /admin/media/:id` adalah stub — selalu return sukses tanpa benar-benar menghapus row DB maupun objek GCS. Sudah di-flag sebagai task terpisah, jangan asumsikan delete media benar-benar bekerja sampai itu selesai.
 4. Fallback local perlu diputuskan apakah boleh untuk production.
 
 ---
