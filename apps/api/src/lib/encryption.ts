@@ -1,7 +1,12 @@
 import crypto from "crypto";
 
-// Use JWT secret as the encryption key basis, or a dedicated one if provided
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || process.env.JWT_SECRET || "default_fallback_secret_key_32_bytes";
+// Use JWT secret as the encryption key basis, or a dedicated one if provided.
+// No hardcoded fallback: a missing env var must fail loudly at startup, not
+// silently encrypt with a key anyone can read from this file's git history.
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || process.env.JWT_SECRET;
+if (!ENCRYPTION_KEY) {
+  throw new Error("ENCRYPTION_KEY or JWT_SECRET must be set in env for encryption to work");
+}
 const ALGORITHM = "aes-256-cbc";
 
 // Ensure key is exactly 32 bytes for aes-256

@@ -62,7 +62,10 @@ app.use(
       const adminUrl = process.env.ADMIN_URL || "";
       if (frontendUrl && origin === frontendUrl) return origin;
       if (adminUrl && origin === adminUrl) return origin;
-      return origin || "*";
+      // Origin di luar whitelist: tolak (jangan reflect balik / "*"),
+      // terutama karena credentials:true — CORS terbuka + cookie/token
+      // credential adalah kombinasi berbahaya.
+      return undefined;
     },
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -168,6 +171,12 @@ app.get("/uploads/:filename", async (c) => {
   try {
     const filename = c.req.param("filename");
 
+    // Reject any filename that could escape the uploads directory
+    // (path separators or ".." segments) before it ever touches the filesystem.
+    if (filename.includes("/") || filename.includes("\\") || filename.includes("..")) {
+      return c.json({ success: false, message: "File not found" }, 404);
+    }
+
     // Initialize global storage if not exists
     if (!global.uploadedFiles) {
       global.uploadedFiles = new Map();
@@ -178,8 +187,13 @@ app.get("/uploads/:filename", async (c) => {
     // If not in memory, try to load from filesystem
     if (!file) {
       try {
-        const filePath = pathModule.join(process.cwd(), "uploads", filename);
-        if (fs.existsSync(filePath)) {
+        const uploadsDir = pathModule.join(process.cwd(), "uploads");
+        const filePath = pathModule.join(uploadsDir, filename);
+        // Defense in depth: confirm the resolved path is still inside uploadsDir.
+        if (
+          (filePath === uploadsDir || filePath.startsWith(uploadsDir + pathModule.sep)) &&
+          fs.existsSync(filePath)
+        ) {
           file = fs.readFileSync(filePath);
           // Cache in memory for next request
           global.uploadedFiles.set(filename, file);

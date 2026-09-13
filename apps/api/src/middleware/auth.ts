@@ -5,18 +5,9 @@ import type { Env, Variables } from "../types";
 
 export const authMiddleware = createMiddleware<{ Bindings: Env; Variables: Variables }>(
   async (c, next) => {
-    // Log untuk debugging upload
-    if (c.req.path.includes("/media/upload")) {
-      console.log("=== UPLOAD REQUEST DEBUG ===");
-      console.log("Path:", c.req.path);
-      console.log("Method:", c.req.method);
-      console.log("Headers:", Object.fromEntries(c.req.raw.headers));
-    }
-
     const authHeader = c.req.header("Authorization");
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      console.log("Auth failed: No Bearer token", { path: c.req.path, headers: authHeader });
       return error(c, "Unauthorized", 401);
     }
 
@@ -24,13 +15,8 @@ export const authMiddleware = createMiddleware<{ Bindings: Env; Variables: Varia
     const payload = await verifyToken(token, c.env.JWT_SECRET);
 
     if (!payload) {
-      console.log("Auth failed: Invalid token", { path: c.req.path });
       return error(c, "Invalid or expired token", 401);
     }
-
-    console.log("=== Auth Middleware Debug ===");
-    console.log("JWT Payload:", payload);
-    console.log("Roles from payload:", payload.roles);
 
     c.set("user", {
       id: payload.sub,
@@ -78,12 +64,6 @@ export function requireRole(...roles: string[]) {
     if (!user) {
       return error(c, "Unauthorized", 401);
     }
-
-    console.log("=== Role Check Debug ===");
-    console.log("User:", user);
-    console.log("User roles:", user.roles);
-    console.log("Required roles:", roles);
-    console.log("Has role:", user.roles.some((role) => roles.includes(role)));
 
     const hasRole = user.roles.some((role) => roles.includes(role));
 

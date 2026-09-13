@@ -1,14 +1,13 @@
+// Must be the first import: server-node.ts's own top-level code (below) isn't
+// the problem — it's that `import app from "./src/index"` transitively loads
+// modules (e.g. src/lib/encryption.ts) that read process.env at import time,
+// and ES module imports resolve before any of this file's own statements run.
+import "./load-env";
 import { serve } from "@hono/node-server";
 import app from "./src/index";
-import dotenv from "dotenv";
 import path from "path";
 import fs from "fs";
 import { closeDb } from "@bantuanku/db";
-
-// Load environment variables from .env (try both script directory and CWD)
-const __scriptDir = path.dirname(new URL(import.meta.url).pathname);
-dotenv.config({ path: path.join(__scriptDir, ".env") });
-dotenv.config({ path: path.join(process.cwd(), ".env") });
 
 const port = Number(process.env.API_PORT) || 50245;
 const host = process.env.API_HOST || "127.0.0.1";
