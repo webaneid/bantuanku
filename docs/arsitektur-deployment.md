@@ -155,6 +155,31 @@ Log default ditulis ke `packages/db/logs/production-manifest-*.log`, dan folder 
 6. File migrasi lama yang drop kolom/tabel legacy harus dicek ke schema runtime sebelum dipakai.
 7. Jangan memakai script root legacy seperti `setup-db.sh` atau `run-qurban-migrations.sh`; keduanya sudah dihapus karena tidak sesuai manifest migration.
 
+## Backup Database
+
+Backup dilakukan lewat `pg_dump` langsung (bukan `docker compose exec` — bantuanku bare-metal PM2, bukan Docker).
+
+| Script | Fungsi |
+|--------|--------|
+| `scripts/backup-db.sh` | Dump database ke `.sql.gz` lokal (default `~/backups/bantuanku-db/`), opsional upload via `rclone` kalau `RCLONE_REMOTE` diset, hapus backup lokal lebih tua dari `RETENTION_DAYS` hari (default 14) |
+| `scripts/restore-db.sh <file.sql.gz> [DATABASE_URL]` | Restore dari file backup — minta konfirmasi eksplisit sebelum eksekusi |
+
+**Setup rclone (opsional, untuk backup off-site ke Google Drive)** — dilakukan manual di VPS, tidak bisa diotomatisasi dari sini karena butuh OAuth interaktif:
+```bash
+rclone config   # bikin remote baru, mis. nama "gdrive"
+```
+Lalu jalankan backup dengan `RCLONE_REMOTE=gdrive:bantuanku-backups ./scripts/backup-db.sh`, atau set di crontab.
+
+**Cron harian** (jalankan sebagai user `bantuanku`, log ke `~/logs/` — BUKAN `/var/log/`, lihat lesson learned CLAUDE.md soal permission):
+```bash
+mkdir -p ~/logs
+crontab -e
+# tambahkan:
+0 2 * * * RCLONE_REMOTE=gdrive:bantuanku-backups /var/www/bantuanku/repo/scripts/backup-db.sh >> ~/logs/backup-db.log 2>&1
+```
+
+Jalankan `scripts/backup-db.sh` manual sebelum migration production apa pun (lihat Prinsip Migrasi #3).
+
 ## Fresh DB vs Existing DB
 
 Fresh DB:

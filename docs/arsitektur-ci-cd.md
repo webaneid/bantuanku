@@ -188,7 +188,7 @@ Runner mendukung:
 
 Gap release:
 
-1. Tidak ada backup DB otomatis sebelum migration.
+1. ~~Tidak ada backup DB otomatis sebelum migration.~~ ✅ Tersedia `scripts/backup-db.sh` (pg_dump + gzip, opsional upload rclone, retensi lokal) dan `scripts/restore-db.sh` (2026-09-13) — belum otomatis DIJALANKAN sebelum tiap migration, tapi tinggal panggil manual atau pasang di cron sebelum `db:manifest:run`.
 2. Tidak ada migration lock/advisory lock.
 3. Tidak ada rollback migration otomatis.
 4. Tidak ada CI check yang memastikan migration baru sudah masuk manifest.
@@ -340,7 +340,7 @@ CD sebaiknya bertahap, bukan langsung full auto deploy.
 | Tidak ada CD/deploy script | Deploy bergantung pada ingatan operator. | Buat script deploy bertahap dengan checklist. |
 | Tidak ada migration gate otomatis | Migration bisa lupa masuk manifest atau dijalankan tanpa dry-run. | Tambah CI check manifest + dry-run staging/test DB. |
 | Tidak ada rollback artifact | Rollback lambat dan rawan salah commit. | Simpan commit SHA/artifact release. |
-| Tidak ada backup otomatis sebelum migration | Data production berisiko saat migration gagal. | Backup wajib sebelum DB change. |
+| ~~Tidak ada backup otomatis sebelum migration~~ | Data production berisiko saat migration gagal. | ✅ Script tersedia (`scripts/backup-db.sh`) — jalankan manual sebelum migration, atau pasang cron harian terpisah dari siklus migration. |
 | Secret hanya dari env server manual | Drift antar environment sulit dilacak. | Gunakan secret manager pipeline/server dengan validasi env. |
 | `ENVIRONMENT=production` belum diset PM2 | Runtime bisa jatuh ke mode development. | Set env production di PM2/deploy script. |
 | Tidak ada smoke test otomatis | Deploy bisa dianggap selesai walau endpoint utama rusak. | Tambah health/smoke test post-deploy. |
