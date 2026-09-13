@@ -24,6 +24,7 @@ import {
 } from "@bantuanku/db";
 import { getCurrentYearWIB } from "../utils/timezone";
 import { uploadToGCS, generateGCSPath, type GCSConfig } from "../lib/gcs";
+import { isAllowedFileSignature } from "../lib/file-signature";
 import * as fs from "fs";
 import * as pathModule from "path";
 import { optionalAuthMiddleware } from "../middleware/auth";
@@ -1093,6 +1094,12 @@ app.post("/payments", async (c) => {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
+      // Content-Type di atas dikirim client, mudah dipalsukan — verifikasi ulang
+      // dari isi file sesungguhnya (magic bytes) sebelum disimpan.
+      if (!isAllowedFileSignature(buffer, { allowImages: true, allowPdf: true })) {
+        return c.json({ error: "Isi file tidak sesuai dengan format yang diklaim" }, 400);
+      }
+
       // Check if CDN is enabled
       const cdnConfig = await fetchCDNSettings(db);
       let path: string;
@@ -2105,6 +2112,12 @@ app.post("/orders/:id/upload-proof", async (c) => {
     // Get buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // Content-Type di atas dikirim client, mudah dipalsukan — verifikasi ulang
+    // dari isi file sesungguhnya (magic bytes) sebelum disimpan.
+    if (!isAllowedFileSignature(buffer, { allowImages: true, allowPdf: true })) {
+      return error(c, "Isi file tidak sesuai dengan format yang diklaim", 400);
+    }
 
     // Check if CDN is enabled
     console.log("Checking CDN settings...");

@@ -22,6 +22,7 @@ import {
 } from "@bantuanku/db/schema";
 import { createId } from "@bantuanku/db";
 import { uploadToGCS, type GCSConfig } from "../lib/gcs";
+import { isAllowedFileSignature } from "../lib/file-signature";
 import { TransactionService } from "../services/transaction";
 import { RevenueShareService } from "../services/revenue-share";
 import { WhatsAppService } from "../services/whatsapp";
@@ -616,6 +617,15 @@ app.post("/:id/upload-proof", async (c) => {
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // Content-Type di atas dikirim client, mudah dipalsukan — verifikasi ulang
+    // dari isi file sesungguhnya (magic bytes) sebelum disimpan.
+    if (!isAllowedFileSignature(buffer, { allowImages: true, allowPdf: true })) {
+      return c.json(
+        { success: false, message: "Isi file tidak sesuai dengan format yang diklaim" },
+        400
+      );
+    }
 
     const gcsConfig = await fetchCDNSettings(db);
 

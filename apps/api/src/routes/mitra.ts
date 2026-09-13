@@ -18,6 +18,7 @@ import {
 import { eq, and, desc } from "drizzle-orm";
 import { z } from "zod";
 import * as fs from "fs";
+import { isAllowedFileSignature } from "../lib/file-signature";
 import * as pathModule from "path";
 import { normalizeContactData } from "../lib/contact-helpers";
 import { success, error } from "../lib/response";
@@ -344,14 +345,20 @@ app.post("/upload-document", async (c) => {
       return error(c, "Ukuran PDF maksimal 10MB", 400);
     }
 
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Content-Type di atas dikirim client, mudah dipalsukan — verifikasi ulang
+    // dari isi file sesungguhnya (magic bytes) sebelum disimpan.
+    if (!isAllowedFileSignature(buffer, { allowImages: isImage, allowPdf: isPdf })) {
+      return error(c, "Isi file tidak sesuai dengan format yang diklaim", 400);
+    }
+
     const id = createId();
     const timestamp = Date.now();
     const baseName = sanitizeDocName(file.name) || "dokumen";
     const uploadsDir = pathModule.join(process.cwd(), "uploads");
     ensureDir(uploadsDir);
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
 
     const cdnConfig = await fetchCDNConfig(db);
 

@@ -6,6 +6,7 @@ import * as fs from "fs";
 import * as pathModule from "path";
 import { uploadToGCS, generateGCSPath, type GCSConfig } from "../../lib/gcs";
 import { processGeneralImage, processSingleWebp } from "../../lib/image-processor";
+import { isAllowedFileSignature } from "../../lib/file-signature";
 
 const IMAGE_MAX_SIZE = 5 * 1024 * 1024;
 const PDF_MAX_SIZE = 10 * 1024 * 1024;
@@ -324,6 +325,15 @@ media.post("/upload", async (c) => {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const timestamp = Date.now();
+
+    // Content-Type di atas dikirim client, mudah dipalsukan — verifikasi ulang
+    // dari isi file sesungguhnya (magic bytes) sebelum disimpan.
+    if (!isAllowedFileSignature(buffer, { allowImages: isImage, allowPdf: isPdf })) {
+      return c.json(
+        { success: false, message: "Isi file tidak sesuai dengan format yang diklaim" },
+        400
+      );
+    }
 
     // Keep local original for 7 days as rollback/debug source
     let originalLocalPath: string | null = null;
