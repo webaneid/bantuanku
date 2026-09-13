@@ -15,6 +15,7 @@ import { PlusIcon } from "@heroicons/react/24/outline";
 
 export interface CampaignFormData {
   title: string;
+  slug?: string;
   description: string;
   content?: string;
   imageUrl?: string;
@@ -69,6 +70,7 @@ export default function CampaignForm({ onSubmit, initialData, isLoading, isAlrea
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || "");
   const [images, setImages] = useState<string[]>(initialData?.images || []);
   const [status, setStatus] = useState(initialData?.status || "draft");
+  const [isEditingSlug, setIsEditingSlug] = useState(false);
   const [broadcastWa, setBroadcastWa] = useState(false);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [isGalleryLibraryOpen, setIsGalleryLibraryOpen] = useState(false);
@@ -295,6 +297,53 @@ export default function CampaignForm({ onSubmit, initialData, isLoading, isAlrea
             />
             {errors.title && <p className="form-error">{errors.title.message}</p>}
           </div>
+
+          {/* Slug / URL — manual edit only, tidak auto-update mengikuti judul */}
+          {initialData?.slug && (
+            <div className="form-field">
+              <label className="form-label">URL Campaign</label>
+              {isEditingSlug ? (
+                <>
+                  <input
+                    type="text"
+                    className={`form-input ${errors.slug ? 'border-danger-500' : ''}`}
+                    {...register("slug", {
+                      pattern: {
+                        value: /^[a-z0-9]+(-[a-z0-9]+)*$/,
+                        message: "Hanya huruf kecil, angka, dan tanda hubung (-)",
+                      },
+                    })}
+                  />
+                  {errors.slug && <p className="form-error">{errors.slug.message}</p>}
+                  {isAlreadyPublished && (
+                    <p className="form-helper text-danger-600">
+                      Campaign ini sudah pernah publish — link lama yang sudah dibagikan (invoice, WA, share fundraiser) akan berhenti berfungsi jika URL diubah.
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm"
+                    onClick={() => setIsEditingSlug(false)}
+                  >
+                    Selesai
+                  </button>
+                </>
+              ) : (
+                <div className="media-field-actions">
+                  <p className="form-helper" style={{ margin: 0 }}>
+                    {(process.env.NEXT_PUBLIC_WEB_URL || "").replace(/\/+$/, "")}/program/{watch("slug")}
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm"
+                    onClick={() => setIsEditingSlug(true)}
+                  >
+                    Ubah URL
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Description */}
           <div className="form-field">

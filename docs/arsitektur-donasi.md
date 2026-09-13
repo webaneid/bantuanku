@@ -72,7 +72,7 @@ Response di-enrich dengan `categoryName` dari tabel `categories`.
 |--------|------|--------|
 | `GET` | `/admin/campaigns` | List semua (termasuk draft) |
 | `POST` | `/admin/campaigns` | Buat kampanye baru |
-| `PUT` | `/admin/campaigns/:id` | Update kampanye |
+| `PUT`/`PATCH` | `/admin/campaigns/:id` | Update kampanye. `slug` bisa diubah manual lewat body — **tidak** auto-regenerate mengikuti `title` (lihat Catatan Penting #6) |
 | `DELETE` | `/admin/campaigns/:id` | Hapus kampanye |
 | `POST` | `/admin/campaigns/:id/updates` | Tambah update berita |
 | `PUT` | `/admin/campaigns/:id/toggle-featured` | Toggle featured |
@@ -191,3 +191,5 @@ Setiap donasi campaign yang lunas menghasilkan record `revenue_shares`:
 2. Mitra bisa punya campaign sendiri (`mitraId` filled) — akses via admin panel tapi dibatasi ke data miliknya.
 3. Guest checkout diperbolehkan — `userId` dan `donaturId` nullable di `transactions`.
 4. Referral fundraiser dikirim via body `referred_by_fundraiser_code`, diproses saat transaksi dibuat.
+5. **Mengosongkan field nullable via edit form wajib kirim `null`, bukan omit key.** `PUT/PATCH /admin/campaigns/:id` hanya meng-update kolom yang keynya ada di body (`if (body.field !== undefined) updateData.field = ...`) — key yang di-set ke `undefined` di payload akan hilang saat `JSON.stringify` dan diam-diam gagal mengosongkan kolom. Field nullable (`videoUrl`, `content`, `startDate`, `endDate`) harus dikirim sebagai `null` saat dikosongkan. Field `imageUrl` dan `pillar` adalah `NOT NULL` di DB — jangan pernah kirim `null` untuk keduanya (frontend sengaja fallback ke `undefined`/skip agar nilai lama dipertahankan bila form tidak mengisi ulang).
+6. **`slug` TIDAK auto-regenerate saat `title` diubah** — beda dengan `categories`/`pillars`/`activity_reports` yang regenerate slug otomatis setiap `name`/`title` berubah. Untuk campaign, keputusan desain: link yang sudah dibagikan (invoice, WA broadcast, share fundraiser) tidak boleh mendadak 404 hanya karena judul diedit. Admin bisa ubah slug secara manual lewat tombol "Ubah URL" di form edit (`apps/admin/src/components/CampaignForm.tsx`) — divalidasi format (`^[a-z0-9]+(-[a-z0-9]+)*$`) dan uniqueness (exclude diri sendiri) di `PUT/PATCH /admin/campaigns/:id`, return `409` jika slug sudah dipakai campaign lain.

@@ -15,18 +15,19 @@ const campaignsAdmin = new Hono<{ Bindings: Env; Variables: Variables }>();
 // Base schema without refine (for reuse)
 const baseCampaignSchema = z.object({
   title: z.string().min(5),
+  slug: z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Slug hanya boleh huruf kecil, angka, dan tanda hubung").optional(),
   description: z.string().min(20),
-  content: z.string().optional(),
+  content: z.string().optional().nullable(),
   imageUrl: z.string().optional(),
   images: z.array(z.string()).optional().nullable(),
-  videoUrl: z.string().optional(),
+  videoUrl: z.string().optional().nullable(),
   goal: z.number().nullable().optional(),
   category: z.string().optional(),
   categoryId: z.string(),
   pillar: z.string().optional(),
   coordinatorId: z.string().optional().nullable(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  startDate: z.string().optional().nullable(),
+  endDate: z.string().optional().nullable(),
   status: z.enum(["draft", "active", "completed", "cancelled"]).optional(),
   isFeatured: z.boolean().optional(),
   isUrgent: z.boolean().optional(),
@@ -412,6 +413,15 @@ const updateCampaign = async (c: any) => {
     return error(c, "Campaign not found", 404);
   }
 
+  if (body.slug !== undefined && body.slug !== campaign.slug) {
+    const slugTaken = await db.query.campaigns.findFirst({
+      where: eq(campaigns.slug, body.slug),
+    });
+    if (slugTaken && slugTaken.id !== id) {
+      return error(c, "Slug/URL sudah dipakai campaign lain, gunakan slug lain", 409);
+    }
+  }
+
   // If user is program_coordinator or employee-only, check ownership
   const isEmployeeRole = user?.roles?.includes("employee") &&
     !user?.roles?.includes("super_admin") &&
@@ -449,6 +459,7 @@ const updateCampaign = async (c: any) => {
   };
 
   if (body.title !== undefined) updateData.title = body.title;
+  if (body.slug !== undefined) updateData.slug = body.slug;
   if (body.description !== undefined) updateData.description = body.description;
   if (body.content !== undefined) updateData.content = body.content;
   if (body.imageUrl !== undefined) {

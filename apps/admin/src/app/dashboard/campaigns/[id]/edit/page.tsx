@@ -34,6 +34,7 @@ export default function EditCampaignPage() {
   // Transform campaign data for form
   const campaign = campaignData ? {
     title: campaignData.title,
+    slug: campaignData.slug,
     description: campaignData.description,
     content: campaignData.content,
     imageUrl: campaignData.imageUrl,
@@ -106,17 +107,18 @@ export default function EditCampaignPage() {
     // Build clean payload
     const payload: any = {
       title: data.title,
+      slug: data.slug || undefined,
       description: data.description,
-      content: data.content || undefined,
-      imageUrl: data.imageUrl || undefined,
-      videoUrl: data.videoUrl || undefined,
+      content: data.content || null,
+      imageUrl: data.imageUrl || undefined, // NOT NULL column — never send null, keep existing value if cleared
+      videoUrl: data.videoUrl || null,
       goal: Number(data.goal),
       categoryId: data.categoryId,
-      pillar: data.pillar || undefined,
+      pillar: data.pillar || undefined, // NOT NULL column — never send null, keep existing value if cleared
       coordinatorId: data.coordinatorId || null,
       status: data.status,
-      startDate: data.startDate || undefined,
-      endDate: data.endDate || undefined,
+      startDate: data.startDate || null,
+      endDate: data.endDate || null,
       isFeatured: data.isFeatured || false,
       isUrgent: data.isUrgent || false,
       broadcastWa: data.broadcastWa || false,
