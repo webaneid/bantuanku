@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { desc, like, or, eq, and } from "drizzle-orm";
-import { media as mediaTable, settings as settingsTable, type MediaVariant } from "@bantuanku/db";
+import { media as mediaTable, settings as settingsTable, campaigns as campaignsTable, type MediaVariant } from "@bantuanku/db";
 import type { Env, Variables } from "../../types";
 import * as fs from "fs";
 import * as pathModule from "path";
-import { uploadToGCS, generateGCSPath, type GCSConfig } from "../../lib/gcs";
+import { uploadToGCS, deleteFromGCS, generateGCSPath, type GCSConfig } from "../../lib/gcs";
 import { processGeneralImage, processSingleWebp } from "../../lib/image-processor";
 
 // Simple ID generator
@@ -550,12 +550,93 @@ media.patch("/:id", async (c) => {
   }
 });
 
+// Delete a stored file, whether it lives on GCS (full URL) or local disk (/uploads/...)
+const removeStoredFile = async (
+  storedPath: string,
+  cdnConfig: GCSConfig | null,
+  uploadsDir: string
+): Promise<void> => {
+  if (!storedPath) return;
+
+  if (isAbsoluteUrl(storedPath)) {
+    if (!cdnConfig) return;
+    const prefix = `https://storage.googleapis.com/${cdnConfig.bucketName}/`;
+    if (!storedPath.startsWith(prefix)) return;
+    const objectKey = storedPath.slice(prefix.length);
+    await deleteFromGCS(cdnConfig, objectKey);
+    return;
+  }
+
+  const filename = storedPath.replace(/^\/uploads\//, "");
+  const filePath = pathModule.join(uploadsDir, filename);
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+  if (global.uploadedFiles) {
+    global.uploadedFiles.delete(filename);
+  }
+};
+
 // Delete media
 media.delete("/:id", async (c) => {
   try {
     const id = c.req.param("id");
+    const db = c.get("db");
 
-    // TODO: Delete from database and R2 storage
+    const existing = await db
+      .select()
+      .from(mediaTable)
+      .where(eq(mediaTable.id, id))
+      .limit(1);
+
+    if (existing.length === 0) {
+      return c.json({ success: false, message: "Media not found" }, 404);
+    }
+
+    const record = existing[0];
+
+    // Guard: campaigns store this exact path/URL in imageUrl (see admin/campaigns.ts),
+    // so an exact match reliably means the campaign's hero image still points here.
+    const usedByCampaign = await db
+      .select({ id: campaignsTable.id, title: campaignsTable.title })
+      .from(campaignsTable)
+      .where(eq(campaignsTable.imageUrl, record.path))
+      .limit(1);
+
+    if (usedByCampaign.length > 0) {
+      return c.json(
+        {
+          success: false,
+          message: `Media masih digunakan sebagai gambar campaign "${usedByCampaign[0].title}"`,
+        },
+        400
+      );
+    }
+
+    const cdnConfig = await fetchCDNSettings(db);
+    const uploadsDir = pathModule.join(process.cwd(), "uploads");
+
+    await removeStoredFile(record.path, cdnConfig, uploadsDir);
+
+    if (record.variants) {
+      const variants = record.variants as Record<string, MediaVariant>;
+      for (const variant of Object.values(variants)) {
+        const variantPath = variant.path || variant.url;
+        if (variantPath && variantPath !== record.path) {
+          await removeStoredFile(variantPath, cdnConfig, uploadsDir);
+        }
+      }
+    }
+
+    if (record.originalLocalPath) {
+      const originalPath = pathModule.join(uploadsDir, record.originalLocalPath);
+      if (fs.existsSync(originalPath)) {
+        fs.unlinkSync(originalPath);
+      }
+    }
+
+    await db.delete(mediaTable).where(eq(mediaTable.id, id));
+
     return c.json({
       success: true,
       message: "Media deleted successfully",
