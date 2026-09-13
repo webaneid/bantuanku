@@ -428,7 +428,7 @@ auth.post(
   }
 );
 
-auth.post("/refresh", async (c) => {
+auth.post("/refresh", authRateLimit, async (c) => {
   const body = await c.req.json();
   const { refreshToken } = body;
 
