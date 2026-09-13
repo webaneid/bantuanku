@@ -42,7 +42,7 @@ Mitra boleh mengakses `/media`, tetapi pada list hanya melihat media yang dia up
 | `GET` | `/v1/admin/media` | Ambil media dengan filter search/category |
 | `POST` | `/v1/admin/media/upload` | Upload file, process image, simpan DB |
 | `PATCH` | `/v1/admin/media/:id` | Stub; belum update DB |
-| `DELETE` | `/v1/admin/media/:id` | Stub; belum delete DB/storage |
+| `DELETE` | `/v1/admin/media/:id` | ✅ Hapus row DB + file fisik (GCS atau lokal) + variants + original temp (2026-09-13, lihat § Delete Flow) |
 
 ### Endpoint Publik Upload Dokumen Mitra
 
@@ -191,6 +191,23 @@ Saat upload:
 9. Jika CDN tidak aktif atau upload GCS gagal, file disimpan lokal di `uploads/`.
 10. Row `media` dibuat di database.
 11. Response mengembalikan URL runtime dan `variants` jika ada.
+
+## Delete Flow
+
+`DELETE /v1/admin/media/:id` — sebelumnya stub (langsung `return { success: true }` tanpa menyentuh DB/storage sama sekali, ditemukan 2026-09-13 saat membersihkan file test upload). Alur sekarang:
+
+1. Ambil baris `media` by `id` — 404 kalau tidak ketemu.
+2. **Guard referensi**: cek apakah `campaigns.imageUrl` masih sama persis dengan `media.path`. Valid karena `admin/campaigns.ts` menyimpan `imageUrl` dengan normalisasi yang sama persis dengan media library (`extractPath()` untuk path lokal, URL GCS apa adanya untuk CDN) — exact-match aman dipakai sebagai sinyal "masih dipakai". Kalau dipakai, delete ditolak (`400`) dengan pesan campaign mana yang memakainya.
+3. Hapus file fisik lewat helper `removeStoredFile()`:
+   - Full GCS URL → ekstrak object key (bagian setelah `https://storage.googleapis.com/<bucket>/`), panggil `deleteFromGCS()` (`apps/api/src/lib/gcs.ts` — sudah ada sebelumnya tapi belum pernah dipanggil dari mana pun).
+   - Path lokal (`/uploads/...`) → hapus file di disk, bersihkan entry di `global.uploadedFiles`.
+   - Diulang untuk setiap `variants[*].path` yang berbeda dari `path` utama.
+4. Hapus juga `originalLocalPath` (file asli sementara) kalau masih ada di disk.
+5. Hapus baris dari tabel `media`.
+
+**Keterbatasan guard referensi (disengaja, bukan bug)**: karena tidak ada FK ke `media.id`, satu-satunya cara mengecek "masih dipakai" adalah exact-match string terhadap kolom URL di tabel lain — cuma reliable untuk kolom yang dinormalisasi sama seperti media library (saat ini: `campaigns.imageUrl`). Kolom lain seperti `mitra.logoUrl`, `donatur.avatar`, `users.avatar`, atau kolom JSON foto (`disbursements.photos`, `qurban_executions.photos`, `zakat_distributions.report_photos`) **tidak** dicek — exact-match di situ berisiko false negative/positive. Menghapus media yang masih dipakai di kolom-kolom ini akan membuat gambar broken di UI, sama seperti risiko yang sudah ada sebelum perbaikan ini — bukan regresi baru. Perbaikan yang lebih benar ke depan: migrasi kolom-kolom itu ke FK sungguhan ke `media.id` dengan `ON DELETE SET NULL`, bukan menambah lebih banyak string-matching.
+
+Diverifikasi end-to-end: upload gambar asli → hapus via endpoint → row DB hilang (dicek `psql`) DAN objek GCS beneran hilang (dicek langsung, `404` saat diakses). Guard diuji: coba hapus media yang jadi `imageUrl` campaign aktif → ditolak `400`, data tidak tersentuh.
 
 ## CDN/GCS Settings
 
@@ -420,7 +437,7 @@ Qurban payment/order upload punya flow upload sendiri di `apps/api/src/routes/qu
 | Gap | Dampak |
 |-----|--------|
 | `PATCH /v1/admin/media/:id` masih stub | Judul/alt/deskripsi media tidak tersimpan |
-| `DELETE /v1/admin/media/:id` masih stub | File dan row DB tidak benar-benar dihapus |
+| ~~`DELETE /v1/admin/media/:id` masih stub~~ | ✅ Selesai (2026-09-13) — lihat § Delete Flow |
 | Metadata `alt` dan `description` tidak ada di schema media aktif | UI sidebar tidak punya tempat persistence |
 | MediaLibrary tidak memakai thumbnail variant untuk grid | Grid selalu render URL utama, biasanya `large` untuk `general` |
 | Role category filtering belum enforced kecuali mitra uploader-only | Finance/campaign category separation belum benar-benar enforced server-side |
@@ -432,6 +449,13 @@ Qurban payment/order upload punya flow upload sendiri di `apps/api/src/routes/qu
 | `generateGCSPath` selalu pakai default slug `'bantuanku'` di semua 4 pemanggil | Saat multi-client aktif, semua upload dari server klien berbeda tetap masuk ke prefix `bantuanku/` — file tercampur, offboarding klien tidak bisa bersih. Fix: teruskan `ORGANIZATION_SLUG` env var ke semua pemanggil. Detail di `arsitektur-theme-system.md` section CDN. |
 
 ## Perbaikan yang Sudah Dilakukan
+
+> 2026-09-13
+
+| Fix | File | Detail |
+|-----|------|--------|
+| Implementasi `DELETE /v1/admin/media/:id` sungguhan | `apps/api/src/routes/admin/media.ts` | Sebelumnya stub — lihat § Delete Flow untuk alur lengkap |
+| Validasi upload berdasarkan magic bytes | `apps/api/src/routes/admin/media.ts`, `apps/api/src/lib/file-signature.ts` | `file.type` dari client mudah dipalsukan — sekarang isi file diverifikasi ulang dari magic bytes JPEG/PNG/GIF/WebP/PDF sebelum disimpan |
 
 > 2026-07-02
 
@@ -463,7 +487,7 @@ Qurban payment/order upload punya flow upload sendiri di `apps/api/src/routes/qu
 Prioritas 1:
 
 1. Implementasikan `PATCH /media/:id` atau hapus field edit alt/title/description dari UI sampai persistence tersedia.
-2. Implementasikan `DELETE /media/:id` untuk hapus row DB dan file storage/GCS.
+2. ~~Implementasikan `DELETE /media/:id` untuk hapus row DB dan file storage/GCS.~~ ✅ Selesai (2026-09-13).
 3. Tambahkan kolom `alt` dan `description` jika metadata media memang dibutuhkan untuk SEO/accessibility.
 4. Perbaiki `MediaLibrary` agar grid memakai `variants.thumbnail.url` jika tersedia.
 5. Selaraskan `check-media-consistency.ts` dengan `process.cwd()/uploads` atau jadikan path upload eksplisit lewat env.
