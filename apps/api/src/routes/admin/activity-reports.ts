@@ -7,6 +7,10 @@ import {
   transactions,
   settings,
   donatur,
+  campaigns,
+  zakatPeriods,
+  zakatDistributions,
+  qurbanPeriods,
   createId,
   generateSlug,
   indonesiaProvinces,
@@ -44,6 +48,32 @@ const getFrontendUrl = async (db: any, env?: Env): Promise<string> => {
     where: eq(settings.key, "organization_website"),
   });
   return (row?.value || "").replace(/\/+$/, "");
+};
+
+// Cek apakah target referensi (campaign/zakat period/zakat distribution/qurban period) masih ada.
+// referenceId polymorphic tidak punya FK di DB, jadi laporan bisa menempel ke ID yang sudah
+// dihapus tanpa terdeteksi (lihat lesson learned "Audit Activity Reports" 2026-09-22).
+const referenceExists = async (db: any, referenceType: string, referenceId: string): Promise<boolean> => {
+  switch (referenceType) {
+    case "campaign": {
+      const row = await db.query.campaigns.findFirst({ where: eq(campaigns.id, referenceId), columns: { id: true } });
+      return !!row;
+    }
+    case "zakat_period": {
+      const row = await db.query.zakatPeriods.findFirst({ where: eq(zakatPeriods.id, referenceId), columns: { id: true } });
+      return !!row;
+    }
+    case "zakat_disbursement": {
+      const row = await db.query.zakatDistributions.findFirst({ where: eq(zakatDistributions.id, referenceId), columns: { id: true } });
+      return !!row;
+    }
+    case "qurban_period": {
+      const row = await db.query.qurbanPeriods.findFirst({ where: eq(qurbanPeriods.id, referenceId), columns: { id: true } });
+      return !!row;
+    }
+    default:
+      return false;
+  }
 };
 
 // Send WA notification without blocking the HTTP response (report publish can have many recipients)
@@ -267,6 +297,10 @@ activityReportsAdmin.post("/", requireRole("super_admin", "admin_campaign", "pro
   const user = c.get("user");
   const body = c.req.valid("json");
 
+  if (!(await referenceExists(db, body.referenceType, body.referenceId))) {
+    return error(c, "Referensi (campaign/periode) yang dipilih tidak ditemukan", 400);
+  }
+
   const slug = await generateUniqueSlug(db, body.title);
 
   const [report] = await db
@@ -341,6 +375,14 @@ activityReportsAdmin.put("/:id", requireRole("super_admin", "admin_campaign", "p
   const isCoordinator = user?.roles?.includes("program_coordinator") && !user?.roles?.includes("super_admin") && !user?.roles?.includes("admin_finance") && !user?.roles?.includes("admin_campaign");
   if (isCoordinator && existing.createdBy !== user!.id) {
     return error(c, "Activity report not found", 404);
+  }
+
+  if (body.referenceType || body.referenceId) {
+    const newReferenceType = body.referenceType || existing.referenceType;
+    const newReferenceId = body.referenceId || existing.referenceId;
+    if (!(await referenceExists(db, newReferenceType, newReferenceId))) {
+      return error(c, "Referensi (campaign/periode) yang dipilih tidak ditemukan", 400);
+    }
   }
 
   const updateData: any = {

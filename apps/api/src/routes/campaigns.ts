@@ -165,6 +165,13 @@ campaignsRoute.get("/:idOrSlug", async (c) => {
     }
   }
 
+  // Campaign draft belum dipublish — jangan bocorkan ke publik walau URL/ID diketahui.
+  // Status lain (active, completed, dst) tetap dapat diakses agar link lama yang sudah
+  // dibagikan (invoice, WA, share) tidak mendadak 404 saat campaign selesai.
+  if (campaign.status === "draft") {
+    return error(c, "Campaign not found", 404);
+  }
+
   // Enrich with mitra data if campaign belongs to a mitra
   const result: any = { ...campaign };
 
