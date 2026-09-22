@@ -88,7 +88,6 @@ admin.use("/statistics/*", staffOnly);
 // /categories   — mitra lihat kategori campaign
 // /pillars      — mitra lihat pilar campaign
 // /mitra        — mitra lihat data sendiri
-// /activity-reports — mitra lihat laporan kegiatan miliknya
 // /media        — mitra upload gambar
 // /address      — mitra lookup alamat
 // /zakat/periods — mitra kelola periode zakat miliknya

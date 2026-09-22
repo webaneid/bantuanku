@@ -6,6 +6,7 @@ import {
   activityReports,
   transactions,
   settings,
+  donatur,
   createId,
   generateSlug,
   indonesiaProvinces,
@@ -45,17 +46,64 @@ const getFrontendUrl = async (db: any, env?: Env): Promise<string> => {
   return (row?.value || "").replace(/\/+$/, "");
 };
 
+// Send WA notification without blocking the HTTP response (report publish can have many recipients)
+const notifyReportPublished = async (
+  db: any,
+  env: Env | undefined,
+  report: { referenceId: string; referenceName: string | null; title: string; activityDate: Date | string; description: string; slug: string }
+): Promise<void> => {
+  const wa = new WhatsAppService(db, env?.FRONTEND_URL);
+  const frontendUrl = await getFrontendUrl(db, env);
+  const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").substring(0, 200);
+
+  // Only registered donatur can opt out; guest transactions (no donaturId) have no opt-out to honor
+  const donorTransactions = await db
+    .select({
+      donorPhone: transactions.donorPhone,
+      donorName: transactions.donorName,
+      waOptOut: donatur.waOptOut,
+    })
+    .from(transactions)
+    .leftJoin(donatur, eq(transactions.donaturId, donatur.id))
+    .where(and(eq(transactions.productId, report.referenceId), eq(transactions.paymentStatus, "paid")));
+
+  const uniqueDonors = new Map<string, string>();
+  for (const tx of donorTransactions) {
+    if (tx.donorPhone && tx.waOptOut !== true && !uniqueDonors.has(tx.donorPhone)) {
+      uniqueDonors.set(tx.donorPhone, tx.donorName);
+    }
+  }
+
+  const recipients = Array.from(uniqueDonors.entries()).map(([phone, name]) => ({
+    phone,
+    variables: {
+      customer_name: name,
+      product_name: report.referenceName || "",
+      report_title: report.title,
+      report_date: wa.formatDate(new Date(report.activityDate)),
+      report_description: stripHtml(report.description || ""),
+      report_url: `${frontendUrl}/laporan/${report.slug}`,
+    },
+  }));
+
+  if (recipients.length > 0) {
+    await wa.sendBulk(recipients, "wa_tpl_report_published");
+  }
+};
+
 const activityReportsAdmin = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 const createSchema = z.object({
   referenceType: z.enum(["campaign", "zakat_period", "zakat_disbursement", "qurban_period"]),
   referenceId: z.string(),
   referenceName: z.string().optional(),
   title: z.string().min(10, "Judul harus minimal 10 karakter").max(200, "Judul maksimal 200 karakter"),
-  activityDate: z.string(),
+  activityDate: z.string().refine((v) => !Number.isNaN(Date.parse(v)), "Tanggal kegiatan tidak valid"),
   description: z.string().min(50, "Deskripsi harus minimal 50 karakter"),
   gallery: z.array(z.string()).max(20).optional().default([]),
-  videoUrl: z.preprocess((val) => val === '' ? undefined : val, z.string().url("URL video tidak valid").optional()),
+  videoUrl: z.preprocess((val) => val === '' ? null : val, z.string().url("URL video tidak valid").nullable().optional()),
   typeSpecificData: z.record(z.any()).optional(),
   status: z.enum(["draft", "published"]).optional().default("draft"),
   // Address - Indonesia Address System
@@ -78,7 +126,9 @@ const createSchema = z.object({
   seoScore: z.number().optional(),
 });
 
-const updateSchema = createSchema.partial();
+const updateSchema = createSchema.partial().extend({
+  slug: z.string().regex(SLUG_PATTERN, "Slug hanya boleh huruf kecil, angka, dan tanda hubung").optional(),
+});
 
 // GET /admin/activity-reports - List all activity reports
 activityReportsAdmin.get("/", requireRole("super_admin", "admin_finance", "admin_campaign", "program_coordinator"), async (c) => {
@@ -258,52 +308,15 @@ activityReportsAdmin.post("/", requireRole("super_admin", "admin_campaign", "pro
     })
     .returning();
 
-  // WhatsApp notification: laporan kegiatan dipublikasikan
+  // WhatsApp notification: laporan kegiatan dipublikasikan — dijalankan di background
+  // agar tidak memblokir response saat penerima banyak (lihat CLAUDE.md 2026-07-06)
   if (report.status === "published" && report.referenceId) {
-    try {
-      const wa = new WhatsAppService(db, c.env.FRONTEND_URL);
-      const frontendUrl = await getFrontendUrl(db, c.env);
-      const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").substring(0, 200);
-
-      // Get unique donatur phones from transactions for this reference
-      const donorTransactions = await db
-        .select({
-          donorPhone: transactions.donorPhone,
-          donorName: transactions.donorName,
-        })
-        .from(transactions)
-        .where(
-          and(
-            eq(transactions.productId, report.referenceId),
-            eq(transactions.paymentStatus, "paid")
-          )
-        );
-
-      const uniqueDonors = new Map<string, string>();
-      for (const tx of donorTransactions) {
-        if (tx.donorPhone && !uniqueDonors.has(tx.donorPhone)) {
-          uniqueDonors.set(tx.donorPhone, tx.donorName);
-        }
-      }
-
-      const recipients = Array.from(uniqueDonors.entries()).map(([phone, name]) => ({
-        phone,
-        variables: {
-          customer_name: name,
-          product_name: report.referenceName || "",
-          report_title: report.title,
-          report_date: wa.formatDate(new Date(report.activityDate)),
-          report_description: stripHtml(report.description || ""),
-          report_url: `${frontendUrl}/laporan/${report.slug}`,
-        },
-      }));
-
-      if (recipients.length > 0) {
-        await wa.sendBulk(recipients, "wa_tpl_report_published");
-      }
-    } catch (err) {
-      console.error("WA report-published notification error:", err);
-    }
+    const env = c.env;
+    setImmediate(() => {
+      notifyReportPublished(db, env, report).catch((err) => {
+        console.error("WA report-published notification error:", err);
+      });
+    });
   }
 
   return success(c, report, "Activity report created successfully", 201);
@@ -312,6 +325,7 @@ activityReportsAdmin.post("/", requireRole("super_admin", "admin_campaign", "pro
 // PUT /admin/activity-reports/:id - Update activity report
 activityReportsAdmin.put("/:id", requireRole("super_admin", "admin_campaign", "program_coordinator"), zValidator("json", updateSchema), async (c) => {
   const db = c.get("db");
+  const user = c.get("user");
   const id = c.req.param("id");
   const body = c.req.valid("json");
 
@@ -323,6 +337,12 @@ activityReportsAdmin.put("/:id", requireRole("super_admin", "admin_campaign", "p
     return error(c, "Activity report not found", 404);
   }
 
+  // Program coordinator can only update their own reports (mirror GET :id guard)
+  const isCoordinator = user?.roles?.includes("program_coordinator") && !user?.roles?.includes("super_admin") && !user?.roles?.includes("admin_finance") && !user?.roles?.includes("admin_campaign");
+  if (isCoordinator && existing.createdBy !== user!.id) {
+    return error(c, "Activity report not found", 404);
+  }
+
   const updateData: any = {
     updatedAt: new Date(),
   };
@@ -330,9 +350,18 @@ activityReportsAdmin.put("/:id", requireRole("super_admin", "admin_campaign", "p
   if (body.referenceType) updateData.referenceType = body.referenceType;
   if (body.referenceId) updateData.referenceId = body.referenceId;
   if (body.referenceName !== undefined) updateData.referenceName = body.referenceName;
-  if (body.title) {
-    updateData.title = body.title;
-    updateData.slug = await generateUniqueSlug(db, body.title, id);
+  // Slug tidak lagi auto-regenerate saat title berubah — URL yang sudah dibagikan (WA, sitemap,
+  // Google) tetap stabil. Ubah slug hanya lewat field `slug` eksplisit (tombol "Ubah URL" di admin).
+  if (body.title) updateData.title = body.title;
+  if (body.slug !== undefined && body.slug !== existing.slug) {
+    const slugTaken = await db.query.activityReports.findFirst({
+      where: eq(activityReports.slug, body.slug),
+      columns: { id: true },
+    });
+    if (slugTaken && slugTaken.id !== id) {
+      return error(c, "Slug/URL sudah dipakai laporan lain, gunakan slug lain", 409);
+    }
+    updateData.slug = body.slug;
   }
   if (body.activityDate) updateData.activityDate = new Date(body.activityDate);
   if (body.description) updateData.description = body.description;
@@ -358,7 +387,11 @@ activityReportsAdmin.put("/:id", requireRole("super_admin", "admin_campaign", "p
   if (body.seoScore !== undefined) updateData.seoScore = body.seoScore;
   if (body.status) {
     updateData.status = body.status;
-    updateData.publishedAt = body.status === "published" ? new Date() : null;
+    if (body.status !== "published") {
+      updateData.publishedAt = null;
+    } else if (existing.status !== "published") {
+      updateData.publishedAt = new Date();
+    }
   }
 
   const [updated] = await db
@@ -367,52 +400,14 @@ activityReportsAdmin.put("/:id", requireRole("super_admin", "admin_campaign", "p
     .where(eq(activityReports.id, id))
     .returning();
 
-  // WhatsApp notification: laporan kegiatan dipublikasikan
-  // Only send if status changed to published (was not already published)
+  // WhatsApp notification: hanya saat status BERUBAH ke published, dijalankan di background
   if (body.status === "published" && existing.status !== "published" && updated.referenceId) {
-    try {
-      const wa = new WhatsAppService(db, c.env.FRONTEND_URL);
-      const frontendUrl = await getFrontendUrl(db, c.env);
-      const stripHtml = (html: string) => html.replace(/<[^>]*>/g, "").substring(0, 200);
-
-      const donorTransactions = await db
-        .select({
-          donorPhone: transactions.donorPhone,
-          donorName: transactions.donorName,
-        })
-        .from(transactions)
-        .where(
-          and(
-            eq(transactions.productId, updated.referenceId),
-            eq(transactions.paymentStatus, "paid")
-          )
-        );
-
-      const uniqueDonors = new Map<string, string>();
-      for (const tx of donorTransactions) {
-        if (tx.donorPhone && !uniqueDonors.has(tx.donorPhone)) {
-          uniqueDonors.set(tx.donorPhone, tx.donorName);
-        }
-      }
-
-      const recipients = Array.from(uniqueDonors.entries()).map(([phone, name]) => ({
-        phone,
-        variables: {
-          customer_name: name,
-          product_name: updated.referenceName || "",
-          report_title: updated.title,
-          report_date: wa.formatDate(new Date(updated.activityDate)),
-          report_description: stripHtml(updated.description || ""),
-          report_url: `${frontendUrl}/laporan/${updated.slug}`,
-        },
-      }));
-
-      if (recipients.length > 0) {
-        await wa.sendBulk(recipients, "wa_tpl_report_published");
-      }
-    } catch (err) {
-      console.error("WA report-published notification error:", err);
-    }
+    const env = c.env;
+    setImmediate(() => {
+      notifyReportPublished(db, env, updated).catch((err) => {
+        console.error("WA report-published notification error:", err);
+      });
+    });
   }
 
   return success(c, updated, "Activity report updated successfully");

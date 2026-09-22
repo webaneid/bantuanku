@@ -28,6 +28,8 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
   const [referenceId, setReferenceId] = useState("");
   const [referenceName, setReferenceName] = useState("");
   const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [isEditingSlug, setIsEditingSlug] = useState(false);
   const [activityDate, setActivityDate] = useState("");
   const [description, setDescription] = useState("");
   const [gallery, setGallery] = useState<string[]>([]);
@@ -76,6 +78,7 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
       setReferenceId(report.referenceId || report.campaignId || "");
       setReferenceName(report.referenceName || "");
       setTitle(report.title);
+      setSlug(report.slug || "");
       setActivityDate(report.activityDate?.split("T")[0] || "");
       setDescription(report.description);
       setGallery(report.gallery || []);
@@ -117,11 +120,11 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
     enabled: referenceType === "zakat_period",
   });
 
-  // Fetch disbursements (zakat type)
-  const { data: disbursementsData } = useQuery({
-    queryKey: ["disbursements-zakat-list"],
+  // Fetch zakat distributions (penyaluran ke mustahiq — referenceType "zakat_disbursement")
+  const { data: zakatDistributionsData } = useQuery({
+    queryKey: ["zakat-distributions-list"],
     queryFn: async () => {
-      const response = await api.get("/admin/disbursements?disbursement_type=zakat_distribution");
+      const response = await api.get("/admin/zakat/distributions?limit=100");
       return response.data;
     },
     enabled: referenceType === "zakat_disbursement",
@@ -147,9 +150,9 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
     label: `${p.name} - ${p.year}`,
   }));
 
-  const disbursementOptions = (disbursementsData?.data || []).map((d: any) => ({
+  const zakatDistributionOptions = (zakatDistributionsData?.data || []).map((d: any) => ({
     value: d.id,
-    label: `${d.disbursementNumber} - ${d.recipientName}`,
+    label: `${d.referenceId} - ${d.recipientName}`,
   }));
 
   const qurbanPeriodOptions = (qurbanPeriodsData?.data || []).map((p: any) => ({
@@ -161,7 +164,7 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
     switch (referenceType) {
       case "campaign": return campaignOptions;
       case "zakat_period": return zakatPeriodOptions;
-      case "zakat_disbursement": return disbursementOptions;
+      case "zakat_disbursement": return zakatDistributionOptions;
       case "qurban_period": return qurbanPeriodOptions;
       default: return [];
     }
@@ -263,16 +266,26 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
       });
       return;
     }
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug.trim())) {
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Validasi",
+        message: "URL laporan hanya boleh huruf kecil, angka, dan tanda hubung (-)",
+      });
+      return;
+    }
 
     updateMutation.mutate({
       referenceType,
       referenceId,
       referenceName,
       title,
+      slug: slug.trim(),
       activityDate,
       description,
       gallery,
-      videoUrl: videoUrl || undefined,
+      videoUrl: videoUrl.trim() || null,
       typeSpecificData: Object.keys(typeSpecificData).length > 0 ? typeSpecificData : undefined,
       status,
       ...addressFormData,
@@ -385,6 +398,48 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
                 placeholder="Contoh: Pembagian Sembako untuk 100 Keluarga"
               />
             </div>
+
+            {/* Slug / URL — manual edit only, tidak auto-update mengikuti judul */}
+            {slug && (
+              <div className="form-field">
+                <label className="form-label">URL Laporan</label>
+                {isEditingSlug ? (
+                  <>
+                    <input
+                      type="text"
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value)}
+                      className="form-input"
+                    />
+                    {status === "published" && (
+                      <p className="form-helper text-danger-600">
+                        Laporan ini sudah published — link lama yang sudah dibagikan (WhatsApp, share, mesin pencari) akan berhenti berfungsi jika URL diubah.
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-link btn-sm"
+                      onClick={() => setIsEditingSlug(false)}
+                    >
+                      Selesai
+                    </button>
+                  </>
+                ) : (
+                  <div className="media-field-actions">
+                    <p className="form-helper" style={{ margin: 0 }}>
+                      {(process.env.NEXT_PUBLIC_WEB_URL || "").replace(/\/+$/, "")}/laporan/{slug}
+                    </p>
+                    <button
+                      type="button"
+                      className="btn btn-link btn-sm"
+                      onClick={() => setIsEditingSlug(true)}
+                    >
+                      Ubah URL
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Activity Date */}
             <div className="form-field">

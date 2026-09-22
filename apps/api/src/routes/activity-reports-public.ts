@@ -42,7 +42,7 @@ const reportSelectFields = {
   noIndex: activityReports.noIndex,
   noFollow: activityReports.noFollow,
   canonicalUrl: activityReports.canonicalUrl,
-  // Creator
+  // Creator — ditampilkan publik sebagai byline "Dibuat oleh" (laporan/qurban/zakat), disengaja
   creatorName: users.name,
 } as const;
 
@@ -57,8 +57,8 @@ const reportJoins = (query: any) =>
 // GET /activity-reports - List all published activity reports (public)
 activityReportsPublic.get("/", async (c) => {
   const db = c.get("db");
-  const limit = parseInt(c.req.query("limit") || "20");
-  const page = parseInt(c.req.query("page") || "1");
+  const limit = Math.min(100, Math.max(1, parseInt(c.req.query("limit") || "20") || 20));
+  const page = Math.max(1, parseInt(c.req.query("page") || "1") || 1);
   const referenceType = c.req.query("reference_type");
   const offset = (page - 1) * limit;
 
@@ -138,8 +138,8 @@ activityReportsPublic.get("/:id", async (c) => {
 activityReportsPublic.get("/campaign/:campaignId", async (c) => {
   const db = c.get("db");
   const campaignId = c.req.param("campaignId");
-  const limit = parseInt(c.req.query("limit") || "50");
-  const page = parseInt(c.req.query("page") || "1");
+  const limit = Math.min(100, Math.max(1, parseInt(c.req.query("limit") || "50") || 50));
+  const page = Math.max(1, parseInt(c.req.query("page") || "1") || 1);
   const offset = (page - 1) * limit;
 
   const query = db

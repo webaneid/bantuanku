@@ -86,7 +86,7 @@ const allMenuItems = [
     icon: FileText,
     label: "Laporan Kegiatan",
     href: "/dashboard/activity-reports",
-    roles: ["super_admin", "admin_campaign", "admin_finance", "program_coordinator", "mitra"]
+    roles: ["super_admin", "admin_campaign", "admin_finance", "program_coordinator"]
   },
   {
     icon: Receipt,

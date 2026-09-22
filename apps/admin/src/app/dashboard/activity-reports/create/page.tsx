@@ -67,11 +67,11 @@ export default function CreateActivityReportPage() {
     enabled: referenceType === "zakat_period",
   });
 
-  // Fetch disbursements (zakat type)
-  const { data: disbursementsData } = useQuery({
-    queryKey: ["disbursements-zakat-list"],
+  // Fetch zakat distributions (penyaluran ke mustahiq — referenceType "zakat_disbursement")
+  const { data: zakatDistributionsData } = useQuery({
+    queryKey: ["zakat-distributions-list"],
     queryFn: async () => {
-      const response = await api.get("/admin/disbursements?disbursement_type=zakat_distribution");
+      const response = await api.get("/admin/zakat/distributions?limit=100");
       return response.data;
     },
     enabled: referenceType === "zakat_disbursement",
@@ -107,9 +107,9 @@ export default function CreateActivityReportPage() {
     label: `${p.name} - ${p.year}`,
   }));
 
-  const disbursementOptions = (disbursementsData?.data || []).map((d: any) => ({
+  const zakatDistributionOptions = (zakatDistributionsData?.data || []).map((d: any) => ({
     value: d.id,
-    label: `${d.disbursementNumber} - ${d.recipientName}`,
+    label: `${d.referenceId} - ${d.recipientName}`,
   }));
 
   const qurbanPeriodOptions = (qurbanPeriodsData?.data || []).map((p: any) => ({
@@ -121,7 +121,7 @@ export default function CreateActivityReportPage() {
     switch (referenceType) {
       case "campaign": return campaignOptions;
       case "zakat_period": return zakatPeriodOptions;
-      case "zakat_disbursement": return disbursementOptions;
+      case "zakat_disbursement": return zakatDistributionOptions;
       case "qurban_period": return qurbanPeriodOptions;
       default: return [];
     }
