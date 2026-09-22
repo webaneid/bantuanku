@@ -22,6 +22,7 @@ import { success, error } from "../../lib/response";
 import { requireRole } from "../../middleware/auth";
 import type { Env, Variables } from "../../types";
 import { RevenueShareService } from "../../services/revenue-share";
+import { APP_TIMEZONE, startOfDayWIB, endOfDayWIB } from "../../utils/timezone";
 
 const reportsAdmin = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -32,12 +33,8 @@ const parsePagination = (pageRaw?: string, limitRaw?: string, defaultLimit = 20,
   return { page, limit, offset };
 };
 
-/** Parse endDate string to end-of-day (23:59:59.999) so that <= comparisons include the full day */
-const endOfDay = (dateStr: string): Date => {
-  const d = new Date(dateStr);
-  d.setUTCHours(23, 59, 59, 999);
-  return d;
-};
+/** Parse endDate string to end-of-day (23:59:59.999 WIB) so that <= comparisons include the full day */
+const endOfDay = (dateStr: string): Date => endOfDayWIB(dateStr);
 
 const INCOME_CATEGORIES = [
   "campaign_donation",
@@ -133,8 +130,8 @@ reportsAdmin.get("/dashboard", requireRole("super_admin", "admin_finance"), asyn
   const disbConds = [eq(disbursements.status, "paid")];
 
   if (startDate) {
-    txnConds.push(gte(transactions.paidAt, new Date(startDate)));
-    disbConds.push(gte(disbursements.paidAt, new Date(startDate)));
+    txnConds.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
+    disbConds.push(gte(disbursements.paidAt, startOfDayWIB(startDate)));
   }
 
   if (endDate) {
@@ -192,7 +189,7 @@ reportsAdmin.get("/donations-summary", requireRole("super_admin", "admin_finance
   const conditions = [eq(transactions.paymentStatus, "paid")];
 
   if (startDate) {
-    conditions.push(gte(transactions.createdAt, new Date(startDate)));
+    conditions.push(gte(transactions.createdAt, startOfDayWIB(startDate)));
   }
 
   if (endDate) {
@@ -256,7 +253,7 @@ reportsAdmin.get("/campaigns-performance", requireRole("super_admin", "admin_cam
   const conditions = [];
 
   if (startDate) {
-    conditions.push(gte(campaigns.createdAt, new Date(startDate)));
+    conditions.push(gte(campaigns.createdAt, startOfDayWIB(startDate)));
   }
 
   if (endDate) {
@@ -368,10 +365,10 @@ reportsAdmin.get("/financial-statement", requireRole("super_admin", "admin_finan
     return error(c, "Invalid date format. Use YYYY-MM-DD", 400);
   }
 
-  const txnStartFilter = startDate ? `AND COALESCE(t.paid_at, t.created_at) >= '${startDate}'::timestamp` : "";
-  const txnEndFilter = endDate ? `AND COALESCE(t.paid_at, t.created_at) <= '${endDate} 23:59:59'::timestamp` : "";
-  const disbStartFilter = startDate ? `AND COALESCE(d.paid_at, d.created_at) >= '${startDate}'::timestamp` : "";
-  const disbEndFilter = endDate ? `AND COALESCE(d.paid_at, d.created_at) <= '${endDate} 23:59:59'::timestamp` : "";
+  const txnStartFilter = startDate ? `AND COALESCE(t.paid_at, t.created_at) >= ('${startDate}'::timestamp AT TIME ZONE '${APP_TIMEZONE}')` : "";
+  const txnEndFilter = endDate ? `AND COALESCE(t.paid_at, t.created_at) <= ('${endDate} 23:59:59.999'::timestamp AT TIME ZONE '${APP_TIMEZONE}')` : "";
+  const disbStartFilter = startDate ? `AND COALESCE(d.paid_at, d.created_at) >= ('${startDate}'::timestamp AT TIME ZONE '${APP_TIMEZONE}')` : "";
+  const disbEndFilter = endDate ? `AND COALESCE(d.paid_at, d.created_at) <= ('${endDate} 23:59:59.999'::timestamp AT TIME ZONE '${APP_TIMEZONE}')` : "";
 
   const aggResult = await db.execute(sql.raw(`
     WITH income_all AS (
@@ -514,7 +511,7 @@ reportsAdmin.get("/ledger-summary", requireRole("super_admin", "admin_finance"),
   const conditions = [];
 
   if (startDate) {
-    conditions.push(gte(disbursements.createdAt, new Date(startDate)));
+    conditions.push(gte(disbursements.createdAt, startOfDayWIB(startDate)));
   }
 
   if (endDate) {
@@ -566,7 +563,7 @@ reportsAdmin.get("/donor-analytics", requireRole("super_admin", "admin_finance")
   const conditions = [eq(transactions.paymentStatus, "paid")];
 
   if (startDate) {
-    conditions.push(gte(transactions.createdAt, new Date(startDate)));
+    conditions.push(gte(transactions.createdAt, startOfDayWIB(startDate)));
   }
 
   if (endDate) {
@@ -593,14 +590,14 @@ reportsAdmin.get("/donor-analytics", requireRole("super_admin", "admin_finance")
 
   const donorRetention = await db
     .select({
-      month: sql<string>`to_char(${transactions.createdAt}, 'YYYY-MM')`,
+      month: sql<string>`to_char(${transactions.createdAt} AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM')`,
       newDonors: sql<number>`0`,
       returningDonors: sql<number>`0`,
     })
     .from(transactions)
     .where(whereClause)
-    .groupBy(sql`to_char(${transactions.createdAt}, 'YYYY-MM')`)
-    .orderBy(sql`to_char(${transactions.createdAt}, 'YYYY-MM')`);
+    .groupBy(sql`to_char(${transactions.createdAt} AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM')`)
+    .orderBy(sql`to_char(${transactions.createdAt} AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM')`);
 
   return success(c, {
     topDonors,
@@ -613,12 +610,12 @@ reportsAdmin.get("/donor-analytics", requireRole("super_admin", "admin_finance")
  *
  * Get liability balance (saldo titipan dana) per campaign
  *
- * This report shows:
- * - Total donations received (credit to 2010)
- * - Total disbursements made (debit to 2010)
+ * This report shows (per campaign, all-time, no date filter):
+ * - Total donations received (paid transactions, product_type = campaign)
+ * - Total disbursements made (paid disbursements, reference_type = campaign)
  * - Remaining liability (donations - disbursements)
  *
- * Based on ledger entries with account code 2010 (Titipan Dana Campaign)
+ * Source: universal tables (transactions + disbursements), NOT ledger/COA 2010.
  */
 reportsAdmin.get("/liability-balance", requireRole("super_admin", "admin_finance"), async (c) => {
   const db = c.get("db");
@@ -687,8 +684,7 @@ reportsAdmin.get("/liability-balance", requireRole("super_admin", "admin_finance
 /**
  * GET /admin/reports/account-balance/:code
  *
- * Get balance for a specific ledger account
- * Useful for checking 2010 (Titipan Dana) or any other account
+ * DEPRECATED — always returns 410. Use /admin/reports/financial-statement instead.
  */
 reportsAdmin.get("/account-balance/:code", requireRole("super_admin", "admin_finance"), async (c) => {
   return error(c, "Legacy ledger account balance endpoint is deprecated. Use /admin/reports/financial-statement (universal source).", 410);
@@ -722,7 +718,7 @@ reportsAdmin.get("/cash-flow", requireRole("super_admin", "admin_finance"), asyn
     }
 
     // Add time to make endDate inclusive (end of day)
-    const endDateTime = `${endDate} 23:59:59`;
+    const endDateTime = `${endDate} 23:59:59.999`;
 
     const STANDARD_CASH_ACCOUNT_CODES = new Set(["6201", "6202", "6203", "6204", "6205", "6206", "6210"]);
     const normalizeBankId = (value?: string | null) => {
@@ -759,8 +755,8 @@ reportsAdmin.get("/cash-flow", requireRole("super_admin", "admin_finance"), asyn
           EXISTS(SELECT 1 FROM transaction_payments tp WHERE tp.transaction_id = t.id AND tp.payment_proof IS NOT NULL) as has_evidence
         FROM transactions t
         WHERE t.payment_status = 'paid'
-          AND COALESCE(t.paid_at, t.created_at) >= '${startDate}'::timestamp
-          AND COALESCE(t.paid_at, t.created_at) <= '${endDateTime}'::timestamp
+          AND COALESCE(t.paid_at, t.created_at) >= ('${startDate}'::timestamp AT TIME ZONE '${APP_TIMEZONE}')
+          AND COALESCE(t.paid_at, t.created_at) <= ('${endDateTime}'::timestamp AT TIME ZONE '${APP_TIMEZONE}')
 
         UNION ALL
 
@@ -791,8 +787,8 @@ reportsAdmin.get("/cash-flow", requireRole("super_admin", "admin_finance"), asyn
           d.payment_proof IS NOT NULL as has_evidence
         FROM disbursements d
         WHERE d.status = 'paid'
-          AND COALESCE(d.paid_at, d.created_at) >= '${startDate}'::timestamp
-          AND COALESCE(d.paid_at, d.created_at) <= '${endDateTime}'::timestamp
+          AND COALESCE(d.paid_at, d.created_at) >= ('${startDate}'::timestamp AT TIME ZONE '${APP_TIMEZONE}')
+          AND COALESCE(d.paid_at, d.created_at) <= ('${endDateTime}'::timestamp AT TIME ZONE '${APP_TIMEZONE}')
 
         UNION ALL
 
@@ -819,8 +815,8 @@ reportsAdmin.get("/cash-flow", requireRole("super_admin", "admin_finance"), asyn
         FROM transactions t2
         WHERE t2.payment_status = 'paid'
           AND t2.unique_code > 0
-          AND COALESCE(t2.paid_at, t2.created_at) >= '${startDate}'::timestamp
-          AND COALESCE(t2.paid_at, t2.created_at) <= '${endDateTime}'::timestamp
+          AND COALESCE(t2.paid_at, t2.created_at) >= ('${startDate}'::timestamp AT TIME ZONE '${APP_TIMEZONE}')
+          AND COALESCE(t2.paid_at, t2.created_at) <= ('${endDateTime}'::timestamp AT TIME ZONE '${APP_TIMEZONE}')
       ) AS all_transactions
       ORDER BY transaction_date DESC
     `));
@@ -1070,7 +1066,7 @@ reportsAdmin.get("/cash-flow-by-category", requireRole("super_admin", "admin_fin
   const conditions = [];
 
   if (startDate) {
-    conditions.push(gte(transactions.paidAt, new Date(startDate)));
+    conditions.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
     conditions.push(lte(transactions.paidAt, endOfDay(endDate)));
@@ -1098,7 +1094,7 @@ reportsAdmin.get("/cash-flow-by-category", requireRole("super_admin", "admin_fin
   // Expense: dari disbursements baru (dengan category)
   const disbConditions = [];
   if (startDate) {
-    disbConditions.push(gte(disbursements.paidAt, new Date(startDate)));
+    disbConditions.push(gte(disbursements.paidAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
     disbConditions.push(lte(disbursements.paidAt, endOfDay(endDate)));
@@ -1209,7 +1205,7 @@ reportsAdmin.get("/zakat", requireRole("super_admin", "admin_finance"), async (c
 
   if (startDate) {
     incomeConditions.push(
-      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) >= ${new Date(startDate)}`
+      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) >= ${startOfDayWIB(startDate)}`
     );
   }
   if (endDate) {
@@ -1235,7 +1231,7 @@ reportsAdmin.get("/zakat", requireRole("super_admin", "admin_finance"), async (c
   ];
 
   if (startDate) {
-    expenseConditions.push(gte(disbursements.paidAt, new Date(startDate)));
+    expenseConditions.push(gte(disbursements.paidAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
     expenseConditions.push(lte(disbursements.paidAt, endOfDay(endDate)));
@@ -1272,7 +1268,7 @@ reportsAdmin.get("/zakat", requireRole("super_admin", "admin_finance"), async (c
 
   if (startDate) {
     periodTypeConditions.push(
-      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) >= ${new Date(startDate)}`
+      sql`coalesce(${transactions.paidAt}, ${transactions.createdAt}) >= ${startOfDayWIB(startDate)}`
     );
   }
   if (endDate) {
@@ -1352,7 +1348,7 @@ reportsAdmin.get("/qurban", requireRole("super_admin", "admin_finance"), async (
   ];
 
   if (startDate) {
-    incomeConditions.push(gte(transactions.paidAt, new Date(startDate)));
+    incomeConditions.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
     incomeConditions.push(lte(transactions.paidAt, endOfDay(endDate)));
@@ -1375,7 +1371,7 @@ reportsAdmin.get("/qurban", requireRole("super_admin", "admin_finance"), async (
   ];
 
   if (startDate) {
-    expenseConditions.push(gte(disbursements.paidAt, new Date(startDate)));
+    expenseConditions.push(gte(disbursements.paidAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
     expenseConditions.push(lte(disbursements.paidAt, endOfDay(endDate)));
@@ -1413,7 +1409,7 @@ reportsAdmin.get("/qurban", requireRole("super_admin", "admin_finance"), async (
   ];
 
   if (startDate) {
-    qurbanPeriodAnimalConditions.push(gte(transactions.paidAt, new Date(startDate)));
+    qurbanPeriodAnimalConditions.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
     qurbanPeriodAnimalConditions.push(lte(transactions.paidAt, endOfDay(endDate)));
@@ -1486,7 +1482,7 @@ reportsAdmin.get("/qurban-execution", requireRole("super_admin", "admin_finance"
 
     const executionConditions = [];
     if (startDate) {
-      executionConditions.push(gte(qurbanExecutions.executionDate, new Date(startDate)));
+      executionConditions.push(gte(qurbanExecutions.executionDate, startOfDayWIB(startDate)));
     }
     if (endDate) {
       executionConditions.push(lte(qurbanExecutions.executionDate, endOfDay(endDate)));
@@ -1624,7 +1620,7 @@ reportsAdmin.get("/campaign", requireRole("super_admin", "admin_finance"), async
   ];
 
   if (startDate) {
-    incomeConditions.push(gte(transactions.paidAt, new Date(startDate)));
+    incomeConditions.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
     incomeConditions.push(lte(transactions.paidAt, endOfDay(endDate)));
@@ -1648,7 +1644,7 @@ reportsAdmin.get("/campaign", requireRole("super_admin", "admin_finance"), async
   ];
 
   if (startDate) {
-    expenseConditions.push(gte(disbursements.paidAt, new Date(startDate)));
+    expenseConditions.push(gte(disbursements.paidAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
     expenseConditions.push(lte(disbursements.paidAt, endOfDay(endDate)));
@@ -1718,7 +1714,7 @@ reportsAdmin.get("/unique-codes", requireRole("super_admin", "admin_finance"), a
     sql`${transactions.uniqueCode} > 0`
   ];
 
-  if (startDate) conditions.push(gte(transactions.paidAt, new Date(startDate)));
+  if (startDate) conditions.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
   if (endDate) conditions.push(lte(transactions.paidAt, endOfDay(endDate)));
 
   const [summary] = await db
@@ -1732,14 +1728,14 @@ reportsAdmin.get("/unique-codes", requireRole("super_admin", "admin_finance"), a
 
   const byMonth = await db
     .select({
-      month: sql<string>`to_char(${transactions.paidAt}, 'YYYY-MM')`,
+      month: sql<string>`to_char(${transactions.paidAt} AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM')`,
       totalAmount: sql<number>`coalesce(sum(${transactions.uniqueCode}), 0)`,
       transactionCount: sql<number>`count(*)`,
     })
     .from(transactions)
     .where(and(...conditions))
-    .groupBy(sql`to_char(${transactions.paidAt}, 'YYYY-MM')`)
-    .orderBy(sql`to_char(${transactions.paidAt}, 'YYYY-MM')`);
+    .groupBy(sql`to_char(${transactions.paidAt} AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM')`)
+    .orderBy(sql`to_char(${transactions.paidAt} AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM')`);
 
   const byProductType = await db
     .select({
@@ -1790,12 +1786,12 @@ reportsAdmin.get("/revenue-sharing", requireRole("super_admin", "admin_finance")
   const { page, limit } = parsePagination(c.req.query("page"), c.req.query("limit"), 50, 100);
   const parseDateStart = (input?: string) => {
     if (!input) return undefined;
-    const date = new Date(`${input}T00:00:00.000`);
+    const date = startOfDayWIB(input);
     return Number.isNaN(date.getTime()) ? undefined : date;
   };
   const parseDateEnd = (input?: string) => {
     if (!input) return undefined;
-    const date = new Date(`${input}T23:59:59.999`);
+    const date = endOfDayWIB(input);
     return Number.isNaN(date.getTime()) ? undefined : date;
   };
 
@@ -1837,7 +1833,7 @@ reportsAdmin.get("/program-summary", requireRole("super_admin", "admin_finance",
   try {
     const dateFilter = (dateCol: any) => {
       const conds: any[] = [];
-      if (startDate) conds.push(gte(dateCol, new Date(startDate)));
+      if (startDate) conds.push(gte(dateCol, startOfDayWIB(startDate)));
       if (endDate) conds.push(lte(dateCol, endOfDay(endDate)));
       return conds;
     };
@@ -1969,7 +1965,7 @@ reportsAdmin.get("/program-detail", requireRole("super_admin", "admin_finance", 
       eq(transactions.productId, campaignId),
       eq(transactions.productType, "campaign"),
     ];
-    if (startDate) incomeConds.push(gte(transactions.paidAt, new Date(startDate)));
+    if (startDate) incomeConds.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
     if (endDate) incomeConds.push(lte(transactions.paidAt, endOfDay(endDate)));
 
     const incomeList = await db
@@ -1991,7 +1987,7 @@ reportsAdmin.get("/program-detail", requireRole("super_admin", "admin_finance", 
       eq(disbursements.status, "paid"),
       eq(disbursements.referenceId, campaignId),
     ];
-    if (startDate) expenseConds.push(gte(disbursements.paidAt, new Date(startDate)));
+    if (startDate) expenseConds.push(gte(disbursements.paidAt, startOfDayWIB(startDate)));
     if (endDate) expenseConds.push(lte(disbursements.paidAt, endOfDay(endDate)));
 
     const expenseList = await db
@@ -2167,7 +2163,7 @@ reportsAdmin.get("/mitra-detail", requireRole("super_admin", "admin_finance"), a
       eq(revenueShares.mitraId, mitraId),
       sql`${revenueShares.mitraAmount} > 0`,
     ];
-    if (startDate) shareConds.push(gte(revenueShares.calculatedAt, new Date(startDate)));
+    if (startDate) shareConds.push(gte(revenueShares.calculatedAt, startOfDayWIB(startDate)));
     if (endDate) shareConds.push(lte(revenueShares.calculatedAt, endOfDay(endDate)));
 
     const shares = await db
@@ -2194,7 +2190,7 @@ reportsAdmin.get("/mitra-detail", requireRole("super_admin", "admin_finance"), a
       eq(disbursements.recipientId, mitraId),
       eq(disbursements.category, "revenue_share_mitra"),
     ];
-    if (startDate) disbConds.push(gte(disbursements.paidAt, new Date(startDate)));
+    if (startDate) disbConds.push(gte(disbursements.paidAt, startOfDayWIB(startDate)));
     if (endDate) disbConds.push(lte(disbursements.paidAt, endOfDay(endDate)));
 
     const disbList = await db
@@ -2357,7 +2353,7 @@ reportsAdmin.get("/fundraiser-detail", requireRole("super_admin", "admin_finance
       eq(transactions.paymentStatus, "paid"),
       eq(transactions.referredByFundraiserId, fundraiserId),
     ];
-    if (startDate) refConds.push(gte(transactions.paidAt, new Date(startDate)));
+    if (startDate) refConds.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
     if (endDate) refConds.push(lte(transactions.paidAt, endOfDay(endDate)));
 
     const refs = await db
@@ -2385,7 +2381,7 @@ reportsAdmin.get("/fundraiser-detail", requireRole("super_admin", "admin_finance
       eq(disbursements.category, "revenue_share_fundraiser"),
       inArray(disbursements.status, ["submitted", "approved", "paid"]),
     ];
-    if (startDate) disbConds.push(gte(disbursements.createdAt, new Date(startDate)));
+    if (startDate) disbConds.push(gte(disbursements.createdAt, startOfDayWIB(startDate)));
     if (endDate) disbConds.push(lte(disbursements.createdAt, endOfDay(endDate)));
 
     const disbList = await db
@@ -2459,7 +2455,7 @@ reportsAdmin.get("/rekening-summary", requireRole("super_admin", "admin_finance"
     const inResult = await db.execute(sql`
       SELECT payment_method_id, coalesce(sum(total_amount), 0)::numeric as total_in, count(*) as tx_count
       FROM transactions
-      WHERE payment_status = 'paid' AND payment_method_id LIKE 'bank_%'
+      WHERE payment_status = 'paid' AND payment_method_id LIKE 'bank%'
       GROUP BY payment_method_id
     `);
 
@@ -2467,7 +2463,7 @@ reportsAdmin.get("/rekening-summary", requireRole("super_admin", "admin_finance"
     const ucResult = await db.execute(sql`
       SELECT payment_method_id, coalesce(sum(unique_code), 0)::numeric as total_uc
       FROM transactions
-      WHERE payment_status = 'paid' AND unique_code > 0 AND payment_method_id LIKE 'bank_%'
+      WHERE payment_status = 'paid' AND unique_code > 0 AND payment_method_id LIKE 'bank%'
       GROUP BY payment_method_id
     `);
 
@@ -2481,9 +2477,18 @@ reportsAdmin.get("/rekening-summary", requireRole("super_admin", "admin_finance"
     }
 
     const accounts = bankAccounts.map((ba: any) => {
-      const pmId = `bank_${ba.id}`;
-      const income = inMap[pmId] || { totalIn: 0, txCount: 0 };
-      const ucIncome = ucMap[pmId] || 0;
+      // transactions.payment_method_id tersimpan dalam dua bentuk: `<id>` apa adanya
+      // (checkout publik, id rekening sudah berformat "bank-<ts>") dan `bank_<id>`
+      // (form admin qurban). Satu transaksi hanya punya satu bentuk, jadi aman dijumlahkan.
+      const pmIds = [ba.id, `bank_${ba.id}`];
+      const income = pmIds.reduce(
+        (acc, pm) => {
+          const row = inMap[pm];
+          return row ? { totalIn: acc.totalIn + row.totalIn, txCount: acc.txCount + row.txCount } : acc;
+        },
+        { totalIn: 0, txCount: 0 }
+      );
+      const ucIncome = pmIds.reduce((sum, pm) => sum + (ucMap[pm] || 0), 0);
       const totalIn = income.totalIn + ucIncome;
       // Note: disbursements don't reliably link to bank account, so balance is income-only for now
       return {
@@ -2539,8 +2544,11 @@ reportsAdmin.get("/rekening-detail", requireRole("super_admin", "admin_finance")
   }
 
   try {
-    const pmId = bankAccountId.startsWith("bank_") ? bankAccountId : `bank_${bankAccountId}`;
-    const endDateTime = `${endDate} 23:59:59`;
+    const rawId = bankAccountId.replace(/^bank_/, "");
+    // Dua bentuk payment_method_id yang ada di DB (lihat catatan di /rekening-summary).
+    const pmIdPlain = rawId;
+    const pmIdLegacy = `bank_${rawId}`;
+    const endDateTime = `${endDate} 23:59:59.999`;
 
     // Get bank account info from settings
     const allSettings = await db.query.settings.findMany();
@@ -2549,10 +2557,9 @@ reportsAdmin.get("/rekening-detail", requireRole("super_admin", "admin_finance")
     if (bankSetting?.value) {
       try { bankAccounts = JSON.parse(bankSetting.value); } catch (e) { /* ignore */ }
     }
-    const rawId = bankAccountId.replace(/^bank_/, "");
     const bankInfo = bankAccounts.find((b: any) => b.id === rawId);
 
-    const result = await db.execute(sql.raw(`
+    const result = await db.execute(sql`
       SELECT * FROM (
         SELECT
           t.id, COALESCE(t.paid_at, t.created_at) as date,
@@ -2561,9 +2568,9 @@ reportsAdmin.get("/rekening-detail", requireRole("super_admin", "admin_finance")
           t.product_type as type
         FROM transactions t
         WHERE t.payment_status = 'paid'
-          AND t.payment_method_id = '${pmId}'
-          AND COALESCE(t.paid_at, t.created_at) >= '${startDate}'::timestamp
-          AND COALESCE(t.paid_at, t.created_at) <= '${endDateTime}'::timestamp
+          AND t.payment_method_id IN (${pmIdPlain}, ${pmIdLegacy})
+          AND COALESCE(t.paid_at, t.created_at) >= (${startDate}::timestamp AT TIME ZONE ${APP_TIMEZONE})
+          AND COALESCE(t.paid_at, t.created_at) <= (${endDateTime}::timestamp AT TIME ZONE ${APP_TIMEZONE})
 
         UNION ALL
 
@@ -2575,12 +2582,12 @@ reportsAdmin.get("/rekening-detail", requireRole("super_admin", "admin_finance")
         FROM transactions t2
         WHERE t2.payment_status = 'paid'
           AND t2.unique_code > 0
-          AND t2.payment_method_id = '${pmId}'
-          AND COALESCE(t2.paid_at, t2.created_at) >= '${startDate}'::timestamp
-          AND COALESCE(t2.paid_at, t2.created_at) <= '${endDateTime}'::timestamp
+          AND t2.payment_method_id IN (${pmIdPlain}, ${pmIdLegacy})
+          AND COALESCE(t2.paid_at, t2.created_at) >= (${startDate}::timestamp AT TIME ZONE ${APP_TIMEZONE})
+          AND COALESCE(t2.paid_at, t2.created_at) <= (${endDateTime}::timestamp AT TIME ZONE ${APP_TIMEZONE})
       ) AS mutations
       ORDER BY date ASC
-    `));
+    `);
 
     let runningBalance = 0;
     const mutations = (result.rows as any[]).map(row => {
@@ -2634,7 +2641,7 @@ reportsAdmin.get("/donor-detail", requireRole("super_admin", "admin_finance"), a
       eq(transactions.paymentStatus, "paid"),
       eq(transactions.donorEmail, donor.email),
     ];
-    if (startDate) txConds.push(gte(transactions.paidAt, new Date(startDate)));
+    if (startDate) txConds.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
     if (endDate) txConds.push(lte(transactions.paidAt, endOfDay(endDate)));
 
     const txList = await db
@@ -2687,8 +2694,8 @@ reportsAdmin.get("/consistency-check", requireRole("super_admin", "admin_finance
   const disbConds: any[] = [inArray(disbursements.status, ["submitted", "approved", "paid"])];
 
   if (startDate) {
-    txConds.push(gte(transactions.paidAt, new Date(startDate)));
-    disbConds.push(gte(disbursements.createdAt, new Date(startDate)));
+    txConds.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
+    disbConds.push(gte(disbursements.createdAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
     txConds.push(lte(transactions.paidAt, endOfDay(endDate)));
@@ -2751,8 +2758,8 @@ reportsAdmin.get("/consistency-check/details", requireRole("super_admin", "admin
   const disbConds: any[] = [inArray(disbursements.status, ["submitted", "approved", "paid"])];
 
   if (startDate) {
-    txConds.push(gte(transactions.paidAt, new Date(startDate)));
-    disbConds.push(gte(disbursements.createdAt, new Date(startDate)));
+    txConds.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
+    disbConds.push(gte(disbursements.createdAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
     txConds.push(lte(transactions.paidAt, endOfDay(endDate)));

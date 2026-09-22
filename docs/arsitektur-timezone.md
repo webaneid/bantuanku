@@ -64,6 +64,9 @@ File: `apps/api/src/utils/timezone.ts`.
 | `addDaysWIB(date, days)` | Convert via `toDate`, lalu `setDate` | Analytics/dashboard period |
 | `getStartOfMonthWIB(date)` | Membuat midnight tanggal 1 WIB sebagai UTC instant | Dashboard monthly stats |
 | `nowWIB()` | Convert `new Date()` via `toDate` | Tersedia |
+| `APP_TIMEZONE` | Konstanta `'Asia/Jakarta'` — satu-satunya titik konfigurasi zona waktu bisnis di backend (belum ada setting UI/DB untuk mengubahnya) | `reports.ts`, `analytics.ts` (SQL `AT TIME ZONE`) |
+| `startOfDayWIB(dateStr)` | `YYYY-MM-DD` → instant 00:00:00.000 WIB (string non-date-only dipakai apa adanya) | Filter `startDate` di reports/analytics/export |
+| `endOfDayWIB(dateStr)` | `YYYY-MM-DD` → instant 23:59:59.999 WIB | Filter `endDate` di reports/analytics/export |
 
 Dependensi `date-fns-tz` ada di `apps/api/package.json`.
 
@@ -136,7 +139,7 @@ Implementasi:
 - Dashboard period comparison memakai `addDaysWIB`.
 - Analytics overview period `7d`, `30d`, `90d`, `1y` memakai `addDaysWIB`.
 
-Gap: grouping trend analytics masih memakai SQL `date(transactions.paidAt)` tanpa timezone eksplisit. Jika session database UTC, bucket tanggal dapat mengikuti UTC, bukan WIB.
+Bucket `/growth` kini memakai `to_char(col AT TIME ZONE 'Asia/Jakarta', fmt)` sehingga mengikuti WIB walau session database UTC.
 
 ### Notifikasi
 
@@ -249,7 +252,7 @@ Gap berikut masih terbuka (formatter tanggal display sudah selesai 100%):
 
 | # | Item | Status |
 |---|------|--------|
-| 1 | SQL grouping WIB — `analytics.ts`, `dashboard.ts`, `reports.ts`, `audit.ts` | ✅ Selesai |
+| 1 | SQL grouping & boundary WIB — `analytics.ts`, `dashboard.ts`, `reports.ts`, `export.ts`, `audit.ts` | ✅ Selesai (2026-09-22). Filter `startDate`/`endDate` memakai `startOfDayWIB`/`endOfDayWIB`; raw SQL memakai `::timestamp AT TIME ZONE 'Asia/Jakarta'`; bucket bulan/hari dikonversi ke WIB. Diverifikasi pada DB yang meniru produksi (`timestamptz` + timezone DB UTC). Catatan: DB dev yang belum menjalankan migrasi 111 masih punya kolom `timestamp` tanpa zona sehingga hasil uji boundary di sana menyesatkan. Sisa: `/admin/statistics/*` masih `setHours` timezone server; nama file CSV memakai tanggal UTC. Lihat `arsitektur-laporan.md` § Filter Tanggal. |
 | 2 | `apps/web/src/lib/format.ts` — `formatDate` + `formatDateTime` pakai `formatInTimeZone` + `indonesianLocale` | ✅ Selesai |
 | 3 | `apps/web/src/lib/timezone.ts` — tambah `todayWIBDateInput()` + `toWIBDateInput()` | ✅ Selesai |
 | 4 | Install `date-fns-tz` di admin, buat `apps/admin/src/lib/timezone.ts` dengan semua helper | ✅ Selesai |

@@ -152,13 +152,7 @@ Origin yang dikenali:
 - `https://www.bantuanku.org`;
 - `https://admin.bantuanku.org`.
 
-Namun callback CORS saat ini fallback ke:
-
-```ts
-return origin || "*";
-```
-
-Konsekuensi: origin yang tidak ada di allowlist tetap direfleksikan. Dengan `credentials: true`, konfigurasi ini terlalu permisif untuk production.
+Callback CORS mengembalikan origin hanya untuk allowlist (`FRONTEND_URL`/`ADMIN_URL` dan origin yang dikenali). Untuk origin lain callback `return undefined` — header `Access-Control-Allow-Origin` tidak diset sehingga browser menolak. **Diperbaiki 2026-09-13**; sebelumnya fallback `return origin || "*"` merefleksikan origin sembarang, kombinasi berbahaya dengan `credentials: true`.
 
 ### Security headers API
 
@@ -458,8 +452,8 @@ Gap deployment lain:
 | Risiko | Bukti Implementasi | Rekomendasi |
 |--------|--------------------|-------------|
 | WhatsApp webhook tanpa signature verification | `apps/api/src/routes/whatsapp.ts` tidak memverifikasi `X-Hub-Signature-256`. | Wajib verifikasi HMAC raw body dengan secret khusus, reject 401 jika invalid. |
-| CORS terlalu permisif | Fallback `return origin || "*"` dengan `credentials: true`. | Reject origin di luar allowlist; jangan reflect arbitrary origin. |
-| Secret/PII bocor ke log | Auth header/JWT/user object, Flip token, WhatsApp body dicetak. | Implement redaction logger dan hapus log sensitif. |
+| ~~CORS terlalu permisif~~ ✅ Selesai 2026-09-13 | Sebelumnya fallback `return origin || "*"` dengan `credentials: true`; sekarang origin di luar allowlist ditolak (`return undefined`). | — |
+| Secret/PII bocor ke log (sebagian selesai) | Debug log JWT payload/header/role di `middleware/auth.ts` sudah dihapus (2026-09-13). Masih ada: Flip token dan body webhook WhatsApp dicetak. | Implement redaction logger dan hapus log sensitif sisanya. |
 | Env production bisa jatuh ke development | PM2 set `NODE_ENV`, bukan `ENVIRONMENT`; server default development. | Set `ENVIRONMENT=production` di PM2/env dan fail-fast jika env kritis kosong. |
 | Settings secret encryption tidak konsisten | Batch encrypt, PATCH raw, GET single tidak konsisten. | Buat service settings tunggal dengan encrypt/decrypt/masking konsisten. |
 | Cron memakai `JWT_SECRET` di query URL | `/cron/savings-reminder?secret=...`. | Pakai `CRON_SECRET` terpisah via header, bukan query. |
@@ -473,7 +467,7 @@ Gap deployment lain:
 | Permission table belum enforce | Runtime hanya `requireRole`. | Tambah `requirePermission` dan migrasi guard per modul. |
 | Role stale di JWT | Role embedded di token. | Perpendek TTL, cek token version/session, atau fetch authorization runtime untuk aksi sensitif. |
 | Role assignment belum cukup dibatasi | Endpoint menerima role slug existing. | Tambah allowlist target role per actor dan blok privilege escalation. |
-| Upload validasi MIME saja | `file.type` digunakan sebagai sumber tipe. | Tambah magic-byte sniffing, antivirus scanning bila perlu, dan storage policy. |
+| ~~Upload validasi MIME saja~~ ✅ Selesai 2026-09-13 (magic-byte) | Magic-byte check di 5 titik upload (`lib/file-signature.ts`). | Antivirus scanning dan storage policy masih opsional. |
 | Webhook payment tanpa replay protection | Tidak ada nonce/timestamp/idempotency eksplisit selain status. | Simpan event id/signature/timestamp, reject replay. |
 | Rate limit in-memory | Map process-local. | Pindah ke Redis/DB backed limiter untuk production. |
 | AES-CBC tanpa auth tag | `lib/encryption.ts`. | Migrasi ke AES-256-GCM atau KMS/secret manager. |
@@ -487,6 +481,7 @@ Gap deployment lain:
 | Audit log belum otomatis | `audit_logs` ada, writer belum terpasang luas. | Pasang audit middleware/service untuk aksi sensitif. |
 | Tidak ada request id | Logging manual. | Tambah request/correlation id. |
 | Tidak ada SAST/dependency audit pipeline | Tidak terlihat di script runtime. | Tambah CI security check. |
+| Raw SQL dengan string interpolation | `sql.raw(...)` masih dipakai di `reports.ts` (`/financial-statement`, `/cash-flow`) — aman hanya karena tanggal divalidasi regex `^\d{4}-\d{2}-\d{2}$`. `/rekening-detail` **pernah** rentan SQL injection lewat `bankAccountId` (diperbaiki 2026-09-22, kini parameter terikat). | Jangan interpolasi param request ke `sql.raw`; pakai template `sql` (parameter terikat). Pertimbangkan migrasi dua endpoint yang tersisa ke parameter terikat. |
 
 ---
 

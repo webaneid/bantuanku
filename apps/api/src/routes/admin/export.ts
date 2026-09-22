@@ -1,16 +1,16 @@
 import { Hono } from "hono";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
-import { campaigns, transactions, ledger, users, ledgerEntries, ledgerLines, ledgerAccounts } from "@bantuanku/db";
+import { campaigns, transactions, users, ledgerEntries, ledgerLines, ledgerAccounts } from "@bantuanku/db";
 import { requireRole } from "../../middleware/auth";
 import {
   generateCSV,
   campaignExportColumns,
   donationExportColumns,
-  disbursementExportColumns,
   userExportColumns,
   ledgerExportColumns,
 } from "../../services/export";
 import type { Env, Variables } from "../../types";
+import { startOfDayWIB, endOfDayWIB } from "../../utils/timezone";
 
 const exportAdmin = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -28,11 +28,11 @@ exportAdmin.get("/campaigns", requireRole("super_admin", "admin_campaign"), asyn
   }
 
   if (startDate) {
-    conditions.push(gte(campaigns.createdAt, new Date(startDate)));
+    conditions.push(gte(campaigns.createdAt, startOfDayWIB(startDate)));
   }
 
   if (endDate) {
-    conditions.push(lte(campaigns.createdAt, new Date(endDate)));
+    conditions.push(lte(campaigns.createdAt, endOfDayWIB(endDate)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -74,11 +74,11 @@ exportAdmin.get("/donations", requireRole("super_admin", "admin_finance"), async
   }
 
   if (startDate) {
-    conditions.push(gte(transactions.createdAt, new Date(startDate)));
+    conditions.push(gte(transactions.createdAt, startOfDayWIB(startDate)));
   }
 
   if (endDate) {
-    conditions.push(lte(transactions.createdAt, new Date(endDate)));
+    conditions.push(lte(transactions.createdAt, endOfDayWIB(endDate)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -99,44 +99,6 @@ exportAdmin.get("/donations", requireRole("super_admin", "admin_finance"), async
   });
 });
 
-exportAdmin.get("/ledger", requireRole("super_admin", "admin_finance"), async (c) => {
-  const db = c.get("db");
-
-  const status = c.req.query("status");
-  const startDate = c.req.query("startDate");
-  const endDate = c.req.query("endDate");
-
-  const conditions = [];
-
-  if (status) {
-    conditions.push(eq(ledger.status, status));
-  }
-
-  if (startDate) {
-    conditions.push(gte(ledger.createdAt, new Date(startDate)));
-  }
-
-  if (endDate) {
-    conditions.push(lte(ledger.createdAt, new Date(endDate)));
-  }
-
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-  const data = await db.query.ledger.findMany({
-    where: whereClause,
-    orderBy: [desc(ledger.createdAt)],
-  });
-
-  const csv = generateCSV(data, disbursementExportColumns);
-
-  return new Response(csv, {
-    headers: {
-      "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="ledger-${new Date().toISOString().split("T")[0]}.csv"`,
-    },
-  });
-});
-
 exportAdmin.get("/users", requireRole("super_admin"), async (c) => {
   const db = c.get("db");
 
@@ -151,11 +113,11 @@ exportAdmin.get("/users", requireRole("super_admin"), async (c) => {
   }
 
   if (startDate) {
-    conditions.push(gte(users.createdAt, new Date(startDate)));
+    conditions.push(gte(users.createdAt, startOfDayWIB(startDate)));
   }
 
   if (endDate) {
-    conditions.push(lte(users.createdAt, new Date(endDate)));
+    conditions.push(lte(users.createdAt, endOfDayWIB(endDate)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -191,24 +153,19 @@ exportAdmin.get("/ledger", requireRole("super_admin", "admin_finance"), async (c
   const endDate = c.req.query("endDate");
   const accountCode = c.req.query("accountCode");
 
-  const entryConditions = [];
+  const conditions = [];
 
   if (startDate) {
-    entryConditions.push(gte(ledgerEntries.postedAt, new Date(startDate)));
+    conditions.push(gte(ledgerEntries.postedAt, startOfDayWIB(startDate)));
   }
 
   if (endDate) {
-    entryConditions.push(lte(ledgerEntries.postedAt, new Date(endDate)));
+    conditions.push(lte(ledgerEntries.postedAt, endOfDayWIB(endDate)));
   }
 
-  const entryWhereClause = entryConditions.length > 0 ? and(...entryConditions) : undefined;
-
-  const entries = await db.query.ledgerEntries.findMany({
-    where: entryWhereClause,
-    orderBy: [desc(ledgerEntries.postedAt)],
-  });
-
-  const entryIds = entries.map((e) => e.id);
+  if (accountCode) {
+    conditions.push(eq(ledgerAccounts.code, accountCode));
+  }
 
   const lines = await db
     .select({
@@ -226,7 +183,7 @@ exportAdmin.get("/ledger", requireRole("super_admin", "admin_finance"), async (c
     .from(ledgerLines)
     .innerJoin(ledgerEntries, eq(ledgerLines.entryId, ledgerEntries.id))
     .innerJoin(ledgerAccounts, eq(ledgerLines.accountId, ledgerAccounts.id))
-    .where(accountCode ? eq(ledgerAccounts.code, accountCode) : undefined)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(ledgerEntries.postedAt));
 
   const csv = generateCSV(lines, ledgerExportColumns);

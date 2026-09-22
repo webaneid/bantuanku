@@ -55,3 +55,12 @@ kentara dari nama-nama dokumen yang ada.
 1. User pilih 1 item dulu (atau beberapa yang saling terkait, mis. #1+#2+#3 sama-sama "quick fix keamanan sepele").
 2. Eksekusi lewat SOP normal project ini — bukan langsung edit dari audit ini.
 3. Update baris di tabel ini jadi selesai/coret setelah dieksekusi & diverifikasi, supaya dokumen ini tetap jadi living roadmap, bukan snapshot basi.
+
+## Temuan Tambahan (di luar checklist template)
+
+| # | Temuan | Status |
+|---|--------|--------|
+| A | SQL injection di `GET /admin/reports/rekening-detail` — `bankAccountId` diinterpolasi mentah ke `sql.raw` (`apps/api/src/routes/admin/reports.ts`) | ✅ **Selesai** (2026-09-22) — diganti template `sql` dengan parameter terikat; diverifikasi payload `x' OR '1'='1` kini menghasilkan hasil kosong. Dua `sql.raw` lain (`/financial-statement`, `/cash-flow`) hanya menginterpolasi tanggal yang divalidasi regex — aman, tapi sebaiknya dimigrasikan ke parameter terikat. |
+| B | Laporan rekening tidak menghitung transaksi checkout publik (mismatch prefix `bank-` vs `bank_`) | ✅ **Selesai** (2026-09-22) — kedua bentuk `payment_method_id` dicocokkan. Lihat `arsitektur-laporan.md` § Perbaikan. |
+| C | `/admin/dashboard/*` tanpa `requireRole` lokal dan tanpa `coordinatorFilter` — `program_coordinator`/`employee` bisa membaca total income & jumlah donatur seluruh lembaga | ✅ **Diputuskan OK** (2026-09-22, oleh pemilik) — home dashboard memang boleh dilihat semua staf; tidak ada perubahan kode. |
+

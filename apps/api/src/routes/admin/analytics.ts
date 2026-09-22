@@ -4,7 +4,7 @@ import { campaigns, transactions, users } from "@bantuanku/db";
 import { success } from "../../lib/response";
 import { requireRole } from "../../middleware/auth";
 import type { Env, Variables } from "../../types";
-import { addDaysWIB } from "../../utils/timezone";
+import { addDaysWIB, APP_TIMEZONE, startOfDayWIB, endOfDayWIB } from "../../utils/timezone";
 
 const analyticsAdmin = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -82,10 +82,10 @@ analyticsAdmin.get("/conversion", requireRole("super_admin", "admin_finance", "a
 
   const conditions: any[] = [];
   if (startDate) {
-    conditions.push(gte(transactions.createdAt, new Date(startDate)));
+    conditions.push(gte(transactions.createdAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
-    conditions.push(lte(transactions.createdAt, new Date(endDate)));
+    conditions.push(lte(transactions.createdAt, endOfDayWIB(endDate)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -137,36 +137,43 @@ analyticsAdmin.get("/growth", requireRole("super_admin", "admin_finance", "admin
     dateFormat = "YYYY";
   }
 
+  // dateFormat hanya salah satu dari 4 konstanta di atas (bukan input user), jadi aman
+  // di-inline sebagai literal. Wajib literal (bukan parameter terikat): kalau tidak,
+  // ekspresi di SELECT dan GROUP BY menjadi placeholder berbeda dan Postgres menolak
+  // dengan "must appear in the GROUP BY clause".
+  const bucket = (col: any) =>
+    sql`to_char(${col} AT TIME ZONE ${sql.raw(`'${APP_TIMEZONE}'`)}, ${sql.raw(`'${dateFormat}'`)})`;
+
   const donationGrowth = await db
     .select({
-      period: sql<string>`to_char(${transactions.paidAt}, ${dateFormat})`,
+      period: bucket(transactions.paidAt),
       totalDonations: sql<number>`count(*)`,
       totalAmount: sql<number>`coalesce(sum(${transactions.totalAmount}), 0)`,
       uniqueDonors: sql<number>`count(distinct ${transactions.donorName})`,
     })
     .from(transactions)
     .where(eq(transactions.paymentStatus, "paid"))
-    .groupBy(sql`to_char(${transactions.paidAt}, ${dateFormat})`)
-    .orderBy(sql`to_char(${transactions.paidAt}, ${dateFormat})`);
+    .groupBy(bucket(transactions.paidAt))
+    .orderBy(bucket(transactions.paidAt));
 
   const campaignGrowth = await db
     .select({
-      period: sql<string>`to_char(${campaigns.createdAt}, ${dateFormat})`,
+      period: bucket(campaigns.createdAt),
       totalCampaigns: sql<number>`count(*)`,
       activeCampaigns: sql<number>`count(*) filter (where ${campaigns.status} = 'active')`,
     })
     .from(campaigns)
-    .groupBy(sql`to_char(${campaigns.createdAt}, ${dateFormat})`)
-    .orderBy(sql`to_char(${campaigns.createdAt}, ${dateFormat})`);
+    .groupBy(bucket(campaigns.createdAt))
+    .orderBy(bucket(campaigns.createdAt));
 
   const userGrowth = await db
     .select({
-      period: sql<string>`to_char(${users.createdAt}, ${dateFormat})`,
+      period: bucket(users.createdAt),
       totalUsers: sql<number>`count(*)`,
     })
     .from(users)
-    .groupBy(sql`to_char(${users.createdAt}, ${dateFormat})`)
-    .orderBy(sql`to_char(${users.createdAt}, ${dateFormat})`);
+    .groupBy(bucket(users.createdAt))
+    .orderBy(bucket(users.createdAt));
 
   return success(c, {
     donationGrowth,

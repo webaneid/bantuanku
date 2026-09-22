@@ -90,7 +90,7 @@ Kolom export predefined:
 |---|---|
 | `campaignExportColumns` | Campaign |
 | `donationExportColumns` | Donations/transaksi |
-| `disbursementExportColumns` | Legacy ledger/disbursement style |
+| `disbursementExportColumns` | Legacy ledger/disbursement style — **tidak dipakai lagi** sejak handler legacy dihapus (definisi di `services/export.ts` masih ada) |
 | `userExportColumns` | Users |
 | `ledgerExportColumns` | Ledger entries/lines |
 
@@ -110,11 +110,10 @@ Endpoint:
 |---|---|---|---|
 | `GET /admin/export/campaigns` | `super_admin`, `admin_campaign` | `status`, `startDate`, `endDate` by `campaigns.createdAt` | CSV campaign |
 | `GET /admin/export/donations` | `super_admin`, `admin_finance` | `campaignId`, `paymentStatus`, `startDate`, `endDate` by `transactions.createdAt` | CSV transactions |
-| `GET /admin/export/ledger` | `super_admin`, `admin_finance` | Implementasi pertama: `status`, `startDate`, `endDate` by `ledger.createdAt` | CSV legacy ledger/disbursement columns |
 | `GET /admin/export/users` | `super_admin` | `status`, `startDate`, `endDate` by `users.createdAt` | CSV users |
-| `GET /admin/export/ledger` | `super_admin`, `admin_finance` | Implementasi kedua: `startDate`, `endDate`, `accountCode`, join `ledgerEntries`, `ledgerLines`, `ledgerAccounts` | CSV ledger accounting |
+| `GET /admin/export/ledger` | `super_admin`, `admin_finance` | `startDate`, `endDate` (by `ledgerEntries.postedAt`, batas hari WIB), `accountCode`; join `ledgerEntries`, `ledgerLines`, `ledgerAccounts` | CSV ledger accounting |
 
-Catatan kritis: file `apps/api/src/routes/admin/export.ts` mendefinisikan `GET /ledger` dua kali. Pada Hono, route pertama yang match dapat membuat route kedua tidak pernah dipakai, tergantung urutan matching. Ini harus dianggap gap sampai diverifikasi/fix.
+Catatan: sampai 2026-09-22 `GET /ledger` didefinisikan dua kali; handler pertama (tabel `ledger` legacy) selalu menang dan handler kedua tidak pernah tercapai. Handler legacy sudah **dihapus**; handler tersisa juga diperbaiki agar filter tanggal benar-benar berlaku. Filter tanggal semua endpoint export memakai batas hari WIB (`startOfDayWIB`/`endOfDayWIB`). Lihat `arsitektur-laporan.md` § Endpoint Export CSV.
 
 Semua response CSV memakai `Content-Disposition: attachment`. Filename dibuat dengan `new Date().toISOString().split("T")[0]`, sehingga tanggal filename mengikuti UTC, bukan WIB.
 
@@ -370,7 +369,6 @@ CSV escaping sudah menangani tanda kutip, tetapi belum secara eksplisit menangan
 
 | Gap | Dampak | Rekomendasi |
 |---|---|---|
-| `GET /admin/export/ledger` didefinisikan dua kali | Salah satu handler bisa tidak pernah dipakai; perilaku export ledger ambigu | Pisahkan path, misalnya `/ledger-legacy` dan `/ledger-entries`, atau hapus handler lama |
 | Import hanya tersedia untuk donatur & mustahiq | Entitas lain (mitra, karyawan, dll.) belum punya import | Tambahkan mengikuti pola 3-step yang sama |
 | Filename backend memakai `toISOString()` | Tanggal filename bisa UTC, bukan WIB | Gunakan helper dari `arsitektur-timezone.md` |
 | Filter `startDate/endDate` memakai `new Date("yyyy-MM-dd")` | Boundary bisa UTC dan tidak sesuai tanggal bisnis WIB | Parse sebagai date input WIB |

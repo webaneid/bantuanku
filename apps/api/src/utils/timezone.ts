@@ -68,3 +68,30 @@ export function getStartOfMonthWIB(date: Date): Date {
 export function nowWIB(): Date {
   return toDate(new Date(), { timeZone: INDONESIA_TZ });
 }
+
+/**
+ * Zona waktu aplikasi (satu-satunya sumber kebenaran untuk boundary laporan).
+ * Belum ada setting yang bisa dikonfigurasi — seluruh sistem memakai WIB.
+ * Dipakai juga di SQL (`AT TIME ZONE`) supaya hasil tidak bergantung TimeZone sesi Postgres.
+ */
+export const APP_TIMEZONE = INDONESIA_TZ;
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * 'YYYY-MM-DD' → awal hari (00:00:00.000) di zona waktu aplikasi.
+ * String yang sudah memuat komponen waktu/offset dipakai apa adanya.
+ */
+export function startOfDayWIB(dateStr: string): Date {
+  if (!DATE_ONLY.test(dateStr)) return new Date(dateStr);
+  return toDate(`${dateStr}T00:00:00.000`, { timeZone: INDONESIA_TZ });
+}
+
+/**
+ * 'YYYY-MM-DD' → akhir hari (23:59:59.999) di zona waktu aplikasi, supaya
+ * perbandingan `<=` menyertakan seluruh hari terakhir.
+ */
+export function endOfDayWIB(dateStr: string): Date {
+  if (!DATE_ONLY.test(dateStr)) return new Date(dateStr);
+  return toDate(`${dateStr}T23:59:59.999`, { timeZone: INDONESIA_TZ });
+}
