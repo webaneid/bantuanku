@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatDateWIB } from "@/lib/timezone";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { EyeIcon, PencilIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Modal from "@/components/Modal";
@@ -36,12 +36,22 @@ export default function CampaignsPage() {
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const ITEMS_PER_PAGE = 10;
+
+  // Pencarian dikirim ke API setelah jeda ketik, bukan di setiap huruf
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Fetch categories from API
   const { data: categoriesData } = useQuery({
@@ -69,13 +79,29 @@ export default function CampaignsPage() {
     { value: "cancelled", label: "Dibatalkan" },
   ];
 
-  const { data: campaigns, isLoading } = useQuery({
-    queryKey: ["admin-campaigns"],
+  // Paginasi, pencarian, dan filter dikerjakan API; halaman ini hanya menampilkan satu halaman hasil
+  const { data: campaignsResponse, isLoading } = useQuery({
+    queryKey: ["admin-campaigns", currentPage, debouncedSearch, categoryFilter, statusFilter],
     queryFn: async () => {
-      const response = await api.get("/admin/campaigns");
-      return response.data.data;
+      const params: Record<string, string | number> = { page: currentPage, limit: ITEMS_PER_PAGE };
+      if (debouncedSearch) params.search = debouncedSearch;
+      if (categoryFilter) params.categoryId = categoryFilter;
+      if (statusFilter) params.status = statusFilter;
+      const response = await api.get("/admin/campaigns", { params });
+      return response.data;
     },
+    placeholderData: keepPreviousData,
   });
+
+  const campaigns: any[] = campaignsResponse?.data || [];
+  const totalItems = campaignsResponse?.pagination?.total ?? 0;
+  const totalPages = campaignsResponse?.pagination?.totalPages ?? 0;
+  const hasActiveFilter = Boolean(debouncedSearch || categoryFilter || statusFilter);
+
+  // Setelah menghapus item terakhir di sebuah halaman, mundur ke halaman terakhir yang masih ada
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
 
   // Fetch current user's employee record if program_coordinator or employee
   const needsEmployeeRecord = user?.roles?.includes("program_coordinator") || user?.roles?.includes("employee");
@@ -137,29 +163,16 @@ export default function CampaignsPage() {
            (isMitra && isMitraApproved);
   };
 
-  // Filter campaigns based on search and filters
-  const filteredCampaigns = campaigns?.filter((campaign: any) => {
-    const matchesSearch = searchQuery === "" ||
-      campaign.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      campaign.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesCategory = categoryFilter === "" || campaign.categoryId === categoryFilter;
-    const matchesStatus = statusFilter === "" || campaign.status === statusFilter;
-
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
-
-  // Pagination logic
-  const totalItems = filteredCampaigns?.length || 0;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedCampaigns = filteredCampaigns?.slice(startIndex, endIndex);
-
   // Reset to page 1 when filters change
   const handleFilterChange = (setter: (value: string) => void) => (value: string) => {
     setter(value);
     setCurrentPage(1);
+    setSelectedCampaigns([]);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    setSelectedCampaigns([]);
   };
 
   // Delete campaign mutation
@@ -187,7 +200,7 @@ export default function CampaignsPage() {
   // Bulk actions handlers
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allIds = paginatedCampaigns?.map((c: any) => c.id) || [];
+      const allIds = campaigns?.map((c: any) => c.id) || [];
       setSelectedCampaigns(allIds);
     } else {
       setSelectedCampaigns([]);
@@ -202,8 +215,8 @@ export default function CampaignsPage() {
     }
   };
 
-  const isAllSelected = paginatedCampaigns?.length > 0 && selectedCampaigns.length === paginatedCampaigns?.length;
-  const isSomeSelected = selectedCampaigns.length > 0 && selectedCampaigns.length < (paginatedCampaigns?.length || 0);
+  const isAllSelected = campaigns?.length > 0 && selectedCampaigns.length === campaigns?.length;
+  const isSomeSelected = selectedCampaigns.length > 0 && selectedCampaigns.length < (campaigns?.length || 0);
 
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
@@ -416,7 +429,7 @@ export default function CampaignsPage() {
             </tr>
           </thead>
           <tbody>
-            {paginatedCampaigns?.map((campaign: any) => {
+            {campaigns?.map((campaign: any) => {
               const progress = (campaign.collected / campaign.goal) * 100;
               const iconClass =
                 campaign.category === "pendidikan"
@@ -518,10 +531,10 @@ export default function CampaignsPage() {
           </tbody>
         </table>
 
-        {filteredCampaigns?.length === 0 && (
+        {campaigns.length === 0 && !isLoading && (
           <div className="text-center py-12">
             <p className="text-gray-500">
-              {campaigns?.length === 0
+              {!hasActiveFilter
                 ? (isEmployeeOnly
                     ? "Tidak ada campaign yang berada dibawah tanggung jawab Anda."
                     : "Belum ada campaign. Buat campaign pertama Anda!")
@@ -532,7 +545,7 @@ export default function CampaignsPage() {
 
         {/* Mobile Card View */}
         <div className="table-mobile-cards">
-          {paginatedCampaigns?.map((campaign: any) => {
+          {campaigns?.map((campaign: any) => {
             const progress = (campaign.collected / campaign.goal) * 100;
 
             return (
@@ -633,7 +646,7 @@ export default function CampaignsPage() {
           currentPage={currentPage}
           totalPages={totalPages}
           totalItems={totalItems}
-          onPageChange={setCurrentPage}
+          onPageChange={handlePageChange}
         />
       )}
 

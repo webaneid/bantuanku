@@ -104,7 +104,7 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
   const { data: campaignsData } = useQuery({
     queryKey: ["campaigns-list"],
     queryFn: async () => {
-      const response = await api.get("/admin/campaigns");
+      const response = await api.get("/admin/campaigns", { params: { limit: 500 } });
       return response.data;
     },
     enabled: referenceType === "campaign",

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, desc, and, like, sql } from "drizzle-orm";
+import { eq, desc, and, or, ilike, sql } from "drizzle-orm";
 import { campaigns, campaignUpdates, users, categories, employees, mitra, generateSlug, createId, ledger, waBroadcastJobs } from "@bantuanku/db";
 import { success, error, paginated } from "../../lib/response";
 import { requireRole } from "../../middleware/auth";
@@ -81,10 +81,12 @@ const updateCampaignSchema = baseCampaignSchema.partial().refine((data) => {
 campaignsAdmin.get("/", coordinatorFilter, async (c) => {
   const db = c.get("db");
   const user = c.get("user");
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "10");
+  // Batas aman: NaN/negatif jatuh ke default; limit dibatasi agar satu request tidak menarik seluruh tabel
+  const page = Math.max(1, parseInt(c.req.query("page") || "1") || 1);
+  const limit = Math.min(1000, Math.max(1, parseInt(c.req.query("limit") || "10") || 10));
   const status = c.req.query("status");
-  const search = c.req.query("search");
+  const categoryId = c.req.query("categoryId");
+  const search = c.req.query("search")?.trim();
   const coordinatorEmployeeId = c.get("coordinatorEmployeeId");
 
   const offset = (page - 1) * limit;
@@ -93,8 +95,13 @@ campaignsAdmin.get("/", coordinatorFilter, async (c) => {
   if (status) {
     conditions.push(eq(campaigns.status, status));
   }
+  if (categoryId) {
+    conditions.push(eq(campaigns.categoryId, categoryId));
+  }
   if (search) {
-    conditions.push(like(campaigns.title, `%${search}%`));
+    // Cari di judul dan deskripsi (tanpa membedakan huruf besar/kecil); wildcard milik pengguna di-escape
+    const pattern = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
+    conditions.push(or(ilike(campaigns.title, pattern), ilike(campaigns.description, pattern)));
   }
   // Filter by coordinator if user is program_coordinator
   if (coordinatorEmployeeId) {
