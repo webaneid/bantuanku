@@ -78,7 +78,7 @@ kentara dari nama-nama dokumen yang ada.
 
 | # | Temuan | Status |
 |---|--------|--------|
-| D | Webhook WhatsApp tanpa verifikasi signature (Critical) | ✅ **Selesai** — HMAC-SHA256 wajib, fail-closed; diuji 7 kasus runtime (401/200/400/503). **Prasyarat deploy:** set `WHATSAPP_WEBHOOK_SECRET` di GOWA dan env API. ADR-0008 |
+| D | Webhook WhatsApp tanpa verifikasi signature (Critical) | ✅ **Selesai & deployed (2026-10-22)** — HMAC-SHA256 wajib, fail-closed; diuji 7 kasus runtime (401/200/400/503). Di produksi: tanpa signature → 401, pesan WA asli via GOWA diterima (bot normal). ADR-0008 |
 | E | SSRF + kebocoran kredensial GOWA pada unduhan media (Critical) | ✅ **Selesai** — `lib/gowa-media.ts`; 31 kasus uji (host di query, userinfo, traversal, IP privat, non-gambar, batas ukuran) |
 | F | Tool bot tanpa pengecekan kepemilikan: `check_transaction_status`, `confirm_payment`, `send_qris` (High) + `get_payment_link`, `get_bank_details` (tidak disebut auditor, ditemukan saat verifikasi) | ✅ **Selesai** — 15 kasus uji dengan data dev. `send_qris` tidak diuji runtime (mengirim WA sungguhan) |
 | G | Log menulis payload webhook utuh | ◐ Payload webhook dihapus dari log. `console.log` di `whatsapp-ai.ts`/`whatsapp-flow.ts` masih memuat nomor HP + potongan teks → menunggu structured logger (#11) |
@@ -94,3 +94,4 @@ kentara dari nama-nama dokumen yang ada.
 | R | (Re-audit, Low) hardening media GOWA, `get_campaign_detail` tanpa filter status, kunci Gemini di query string, kode mati menerima identitas, `phoneMatches` hanya 10 digit terakhir (`sendSavingsDepositInfo` di `whatsapp-flow.ts` masih `ilike`) | ⏳ **Belum** — Low |
 | L | `signUnsubscribeToken` tanpa pemanggil — link unsubscribe tidak ada di pesan broadcast/birthday/re-engagement (gap kepatuhan, bukan kerentanan) | ⏳ **Belum** — butuh fitur: sisipkan `{unsubscribe_url}` ke template + `buildSharedVars` |
 
+> Seluruh perbaikan D–O (kecuali P–R dan L yang masih terbuka) di-deploy ke VPS pada 2026-10-22 (commit `fe15011`); bot WA diverifikasi normal setelah `WHATSAPP_WEBHOOK_SECRET` dipasang di GOWA dan API.
