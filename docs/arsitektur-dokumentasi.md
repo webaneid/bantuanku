@@ -17,6 +17,14 @@
 6. File root yang diabaikan `.gitignore` seperti `/*.md`, `/*.sql`, `/*.html`, dan `/*.db` diperlakukan sebagai bahan audit/staging, bukan dokumentasi resmi, sampai dilakukan review dan mapping.
 7. Cleanup dilakukan bertahap per domain arsitektur, bukan sapu bersih berdasarkan nama file.
 
+### Dokumen Pendamping (bukan arsitektur, bukan pengganti `arsitektur-*.md`)
+
+| Lokasi | Isi |
+|--------|-----|
+| `docs/decisions/adr-NNNN-*.md` | ADR: *kenapa* sebuah keputusan desain diambil (immutable setelah `Accepted`). Arsitektur menjelaskan *apa/bagaimana*; ADR menjelaskan *kenapa*. |
+| `docs/lessons-learned.md` | Gotcha dan bug dari eksekusi nyata, per tanggal. |
+| `docs/RETROFIT-GAPS.md` | Roadmap gap terhadap standar template `master-typescript`. |
+
 ---
 
 ## Status Legenda
