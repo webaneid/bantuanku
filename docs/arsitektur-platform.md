@@ -108,7 +108,7 @@ npm run db:manifest:run:fresh # jalankan manifest dari awal (fresh install)
 |----------|-------|---------|------------|
 | `DATABASE_URL` | ✅ | — | PostgreSQL connection string |
 | `JWT_SECRET` | ✅ | — | Secret untuk sign/verify JWT |
-| `JWT_EXPIRES_IN` | — | `15m` | Masa berlaku access token |
+| `JWT_EXPIRES_IN` | — | `15m` | Masa berlaku access token (produksi `2h`, ADR-0012) |
 | `ENVIRONMENT` | — | — | `development` / `production` |
 | `API_PORT` | — | `50245` | Port server |
 | `API_HOST` | — | `127.0.0.1` | Host server |

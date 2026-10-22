@@ -84,7 +84,7 @@ Auth memakai JWT stateless:
 |----------|---------------|
 | Algorithm | `HS256` via `jose`. |
 | Secret | `JWT_SECRET`. |
-| Access token | Default `15m`, override `JWT_EXPIRES_IN`. |
+| Access token | Default kode `15m`, override `JWT_EXPIRES_IN`; produksi `2h` (ADR-0012). Tidak dicek ke DB: pencabutan sesi baru efektif setelah token habis. |
 | Refresh token | `7d`, juga stateless JWT. |
 | Session store | Tidak ada. |
 | Revocation | Tidak ada revocation list / refresh token table. |

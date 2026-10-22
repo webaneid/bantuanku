@@ -11,7 +11,7 @@ Sistem auth berbasis **JWT stateless**. Token disimpan di `localStorage` — tid
 Detail otorisasi role, permission table, route guard, dan gap RBAC dicatat terpisah di `arsitektur-permission-rbac.md`.
 Threat model auth, token storage, secret, logging sensitif, dan prioritas hardening dicatat di `arsitektur-security.md`.
 
-- Access token: berlaku `15m` (default, bisa diubah via `JWT_EXPIRES_IN`), membawa claim `typ: "access"`.
+- Access token: berlaku `15m` (default kode, diubah via `JWT_EXPIRES_IN`; **produksi `2h`**, ADR-0012), membawa claim `typ: "access"`.
 - Refresh token: berlaku `7d`, juga stateless JWT, membawa `typ: "refresh"`. Tidak ada tabel/session refresh token di DB. Access token **ditolak** di `/auth/refresh`, dan refresh token ditolak sebagai Bearer (ADR-0009).
 - Token unsubscribe WA (`purpose: "wa-unsubscribe"`) ditolak oleh `verifyToken` dan `verifyRefreshToken`.
 - Login password dan penukaran kode Google memakai penerbit sesi yang sama: `services/session.ts` (`buildSession`).
@@ -59,7 +59,7 @@ Roles di-embed langsung ke dalam token — tidak di-fetch dari DB per request.
 | `POST` | `/auth/forgot-password/reset` | Reset password dengan OTP |
 
 ### Pencabutan sesi (ADR-0011, migrasi 122)
-`users.sessions_valid_after` diisi saat reset password (email dan OTP WA), ganti password (`PATCH /auth/me/password`), daftar ulang akun belum terverifikasi, dan klaim Google. `POST /auth/refresh` menolak refresh token yang `iat`-nya (detik) lebih lama dari nilai itu (jadi token yang terbit di detik yang sama dengan reset masih sah), dan menolak akun yang belum terverifikasi. Access token (15 menit) tidak dicek ke DB sehingga berlaku sampai kedaluwarsa. Web saat ini hanya menyimpan access token.
+`users.sessions_valid_after` diisi saat reset password (email dan OTP WA), ganti password (`PATCH /auth/me/password`), daftar ulang akun belum terverifikasi, dan klaim Google. `POST /auth/refresh` menolak refresh token yang `iat`-nya (detik) lebih lama dari nilai itu (jadi token yang terbit di detik yang sama dengan reset masih sah), dan menolak akun yang belum terverifikasi. Access token (15 menit default, 2 jam di produksi) tidak dicek ke DB sehingga berlaku sampai kedaluwarsa. **Admin dan web hanya menyimpan access token** dan membuang `refreshToken` dari respons login; interceptor axios (`apps/admin|web/src/lib/api.ts`) tidak memanggil `/auth/refresh`, jadi setiap `401` langsung logout. Itu penyebab pengguna "logout sendiri" saat token habis; dimitigasi dengan memperpanjang access token ke 2 jam (ADR-0012), refresh otomatis ditunda (lihat Gap).
 
 ### Login: gate verifikasi email
 `POST /auth/login` menolak akun dengan `email_verified_at IS NULL` dengan `403 {code: "EMAIL_NOT_VERIFIED"}` setelah password terbukti benar, dan mengirim ulang link verifikasi. Akun yang dibuat admin (users, employees, donatur, mitra ×2) dan akun seed diberi `email_verified_at` saat dibuat; migrasi 121 mem-backfill semua user ber-peran selain `user`.
@@ -278,3 +278,5 @@ Backfill: `users.email_verified_at = NOW()` untuk semua user yang punya peran se
 ### Aturan gate login
 `POST /auth/login`: (1) password salah → `401` generik; (2) akun nonaktif → `403`; (3) `email_verified_at IS NULL` → `403 {code: "EMAIL_NOT_VERIFIED"}` + kirim ulang link (cooldown 60 dtk). Semua jalur pembuatan akun oleh admin wajib mengisi `email_verified_at` (`admin/users.ts`, `admin/employees.ts`, `admin/donatur.ts`, `admin/mitra.ts` ×2).
 
+### Gap: Refresh Otomatis di Frontend (2026-10-23)
+Admin dan web belum memakai `refreshToken`. Setelah access token habis (2 jam di produksi) pengguna tetap dilempar ke `/login` dan pekerjaan yang belum disimpan hilang. Opsi lanjutan (ADR-0012): refresh token di cookie httpOnly + refresh diam-diam di interceptor (butuh endpoint `/auth/logout`, perubahan login/Google/verifikasi email, uji CORS/cookie), atau penyimpanan localStorage + auto-refresh. Alternatif murah yang belum dikerjakan: autosave draf (mis. form berita) agar logout tidak menghilangkan tulisan.
