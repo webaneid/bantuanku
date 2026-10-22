@@ -11,6 +11,9 @@ import { normalizePhone } from "../lib/contact-helpers";
 import { authMiddleware } from "../middleware/auth";
 import { authRateLimit } from "../middleware/ratelimit";
 import { WhatsAppService } from "../services/whatsapp";
+import { sendVerificationEmail } from "../services/auth-email";
+import { linkVerifiedAccountData, markEmailVerified } from "../services/account-linking";
+import { consumeEmailToken } from "../lib/email-tokens";
 import type { Env, Variables } from "../types";
 
 const auth = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -103,30 +106,19 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
     });
   }
 
-  // Create or update donatur record for this user
-  const { donatur, transactions } = await import("@bantuanku/db");
+  // Record donatur dibuat HANYA bila belum ada donatur dengan email ini. Donatur yang sudah ada
+  // (mis. dari donasi guest) TIDAK diambil alih di sini: email belum terbukti milik pendaftar.
+  // Penautan data lama terjadi saat email diverifikasi (linkVerifiedAccountData).
+  const { donatur } = await import("@bantuanku/db");
+  const normalizedEmail = email.toLowerCase().trim();
   const existingDonatur = await db.query.donatur.findFirst({
-    where: eq(donatur.email, email.toLowerCase().trim()),
+    where: eq(donatur.email, normalizedEmail),
   });
 
-  if (existingDonatur) {
-    // Update existing donatur with password and link to user account
-    await db
-      .update(donatur)
-      .set({
-        passwordHash,
-        name,
-        phone: phone || existingDonatur.phone,
-        whatsappNumber: whatsappNumber || existingDonatur.whatsappNumber,
-        userId,
-        updatedAt: new Date(),
-      })
-      .where(eq(donatur.id, existingDonatur.id));
-  } else {
-    // Create new donatur record linked to user account
+  if (!existingDonatur) {
     await db.insert(donatur).values({
       id: createId(),
-      email,
+      email: normalizedEmail,
       passwordHash,
       name,
       phone,
@@ -135,23 +127,8 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
     });
   }
 
-  // Link existing transactions to new user account
-  const { or } = await import("drizzle-orm");
-
-  const conditions = [eq(transactions.donorEmail, email.toLowerCase().trim())];
-  if (phone) {
-    conditions.push(eq(transactions.donorPhone, normalizePhone(phone)));
-  }
-  if (whatsappNumber) {
-    conditions.push(eq(transactions.donorPhone, normalizePhone(whatsappNumber)));
-  }
-
-  if (conditions.length > 0) {
-    await db
-      .update(transactions)
-      .set({ userId, updatedAt: new Date() })
-      .where(or(...conditions));
-  }
+  // Kirim link verifikasi; kegagalan tidak menggagalkan pendaftaran (pengguna bisa kirim ulang)
+  const verificationEmail = await sendVerificationEmail(db, c.env, { id: userId, email, name });
 
   // WhatsApp notification: selamat datang
   if (whatsappNumber) {
@@ -171,7 +148,7 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
     }
   }
 
-  return success(c, { id: userId, email, name }, "Registration successful", 201);
+  return success(c, { id: userId, email, name, emailVerificationRequired: true, verificationEmail }, "Registration successful", 201);
 });
 
 auth.post("/login", authRateLimit, zValidator("json", loginSchema), async (c) => {
@@ -194,6 +171,21 @@ auth.post("/login", authRateLimit, zValidator("json", loginSchema), async (c) =>
 
   if (!user.isActive) {
     return error(c, "Account is disabled", 403);
+  }
+
+  // Wajib email terverifikasi (ADR-0010). Dicek SETELAH password benar supaya status akun tidak
+  // bocor ke penebak. Link verifikasi dikirim ulang otomatis (ada cooldown di sendVerificationEmail).
+  if (!user.emailVerifiedAt) {
+    const verificationEmail = await sendVerificationEmail(db, c.env, { id: user.id, email: user.email, name: user.name });
+    return c.json(
+      {
+        success: false,
+        message: "Email belum diverifikasi. Kami telah mengirim tautan verifikasi ke email Anda.",
+        code: "EMAIL_NOT_VERIFIED",
+        verificationEmail,
+      },
+      403
+    );
   }
 
   const userRolesList = await db.query.userRoles.findMany({
@@ -239,6 +231,48 @@ auth.post("/login", authRateLimit, zValidator("json", loginSchema), async (c) =>
       isDeveloper: Boolean(user.isDeveloper),
     },
   });
+});
+
+const emailVerifySchema = z.object({ token: z.string().min(20).max(200) });
+const emailResendSchema = z.object({ email: z.string().email().max(255) });
+
+// Dipanggil oleh halaman web /verifikasi-email (POST, bukan GET yang mengubah state, agar link
+// tidak terkonsumsi oleh prefetch/scanner email).
+auth.post("/email/verify", authRateLimit, zValidator("json", emailVerifySchema), async (c) => {
+  const { token } = c.req.valid("json");
+  const db = c.get("db");
+
+  const row = await consumeEmailToken(db, token, "verify_email");
+  if (!row) {
+    return error(c, "Tautan verifikasi tidak valid atau sudah kedaluwarsa", 400);
+  }
+
+  const user = await db.query.users.findFirst({ where: eq(users.id, row.userId) });
+  // Token diterbitkan untuk email tertentu; bila email akun sudah berubah, tautan tidak berlaku
+  if (!user || user.email !== row.email) {
+    return error(c, "Tautan verifikasi tidak valid atau sudah kedaluwarsa", 400);
+  }
+
+  await markEmailVerified(db, user.id);
+  const linked = await linkVerifiedAccountData(db, { id: user.id, email: user.email, passwordHash: user.passwordHash });
+
+  return success(c, { verified: true, email: user.email, linked }, "Email berhasil diverifikasi");
+});
+
+auth.post("/email/resend", authRateLimit, zValidator("json", emailResendSchema), async (c) => {
+  const { email } = c.req.valid("json");
+  const db = c.get("db");
+  const generic = "Jika email terdaftar dan belum terverifikasi, tautan verifikasi baru telah dikirim.";
+
+  const user =
+    (await db.query.users.findFirst({ where: eq(users.email, email) })) ||
+    (await db.query.users.findFirst({ where: eq(users.email, email.toLowerCase().trim()) }));
+
+  if (user && user.isActive && !user.emailVerifiedAt) {
+    await sendVerificationEmail(db, c.env, { id: user.id, email: user.email, name: user.name });
+  }
+  // Respons identik di semua kasus: tidak membocorkan apakah email terdaftar
+  return success(c, { sent: true }, generic);
 });
 
 auth.post(
@@ -1163,7 +1197,7 @@ auth.patch("/me/password", authMiddleware, async (c) => {
 });
 
 // Check if email/phone exists in users or donatur table
-auth.get("/check-registration", async (c) => {
+auth.get("/check-registration", authRateLimit, async (c) => {
   const db = c.get("db");
   const email = c.req.query("email");
   const phone = c.req.query("phone");
@@ -1183,15 +1217,8 @@ auth.get("/check-registration", async (c) => {
   }
 
   if (existingUser) {
-    return success(c, {
-      exists: true,
-      registered: !!existingUser.passwordHash,
-      source: "users",
-      name: existingUser.name,
-      email: existingUser.email,
-      phone: existingUser.phone,
-      whatsappNumber: existingUser.whatsappNumber,
-    });
+    // Hanya status, tanpa data pribadi: endpoint ini publik (ADR-0010)
+    return success(c, { exists: true, registered: !!existingUser.passwordHash });
   }
 
   // Check in donatur table
@@ -1214,15 +1241,7 @@ auth.get("/check-registration", async (c) => {
   });
 
   if (existingDonatur) {
-    return success(c, {
-      exists: true,
-      registered: !!existingDonatur.passwordHash,
-      source: "donatur",
-      name: existingDonatur.name,
-      email: existingDonatur.email,
-      phone: existingDonatur.phone,
-      whatsappNumber: existingDonatur.whatsappNumber,
-    });
+    return success(c, { exists: true, registered: !!existingDonatur.passwordHash });
   }
 
   return success(c, { exists: false, registered: false });

@@ -41,7 +41,9 @@ Roles di-embed langsung ke dalam token — tidak di-fetch dari DB per request.
 
 | Method | Path | Fungsi |
 |--------|------|--------|
-| `POST` | `/auth/register` | Daftar akun baru (donatur) |
+| `POST` | `/auth/register` | Daftar akun baru (donatur). Tidak mengembalikan token dan **tidak lagi mengambil alih** record donatur lama; mengirim link verifikasi. Respons: `emailVerificationRequired`, `verificationEmail` (`sent`/`cooldown`/`failed`) |
+| `POST` | `/auth/email/verify` | Konsumsi token verifikasi (sekali pakai, 24 jam), set `email_verified_at`, tautkan record donatur + transaksi guest yang emailnya sama |
+| `POST` | `/auth/email/resend` | Kirim ulang link verifikasi; respons generik (tidak membocorkan apakah email terdaftar), cooldown 60 dtk |
 | `POST` | `/auth/login` | Login, return `accessToken` + `refreshToken` |
 | `POST` | `/auth/refresh` | Perbarui access token dengan refresh token |
 | `GET` | `/auth/me` | Profil user saat ini (butuh token) |
@@ -49,9 +51,15 @@ Roles di-embed langsung ke dalam token — tidak di-fetch dari DB per request.
 | `GET` | `/auth/me/profile-data` | Profil unified untuk employee/mitra/donatur |
 | `PATCH` | `/auth/me/profile` | Update profil unified |
 | `PATCH` | `/auth/me/password` | Ganti password (butuh token) |
-| `GET` | `/auth/check-registration` | Cek email/phone sudah terdaftar |
+| `GET` | `/auth/check-registration` | Cek email/phone sudah terdaftar. Hanya `{exists, registered}` (tanpa data pribadi), kena `authRateLimit`. Auto-isi data di halaman register dihapus |
 | `POST` | `/auth/forgot-password/request-otp` | Kirim OTP via WhatsApp |
 | `POST` | `/auth/forgot-password/reset` | Reset password dengan OTP |
+
+### Login: gate verifikasi email
+`POST /auth/login` menolak akun dengan `email_verified_at IS NULL` dengan `403 {code: "EMAIL_NOT_VERIFIED"}` setelah password terbukti benar, dan mengirim ulang link verifikasi. Akun yang dibuat admin (users, employees, donatur, mitra ×2) dan akun seed diberi `email_verified_at` saat dibuat; migrasi 121 mem-backfill semua user ber-peran selain `user`.
+
+### Kepemilikan transaksi di akun
+`GET /account/donations` dan `/account/donations/:id` mengenali transaksi lewat `transactions.user_id` atau `donor_email` yang cocok dengan email akun **yang sudah terverifikasi**. Nomor telepon/WA tidak lagi dipakai (klaim tak terverifikasi).
 
 ### Register schema
 ```ts
@@ -216,3 +224,35 @@ createdAt / updatedAt timestamptz
 ```
 
 TTL: 5 menit. Max attempts: 5 (setelah itu OTP hangus).
+
+---
+
+## Rencana: Verifikasi Email, Reset Email, dan Login Google (ADR-0010)
+
+> Status: **direncanakan** (2026-10-22). Dokumen ini diperbarui per fase saat kode selesai; bagian yang belum berstatus ✅ belum ada di kode.
+
+| Fase | Isi | Status |
+|------|-----|--------|
+| 1 | Verifikasi email (tabel token, kirim/verifikasi/kirim-ulang, gate login, perketat register, tutup `check-registration`, kepemilikan transaksi via email terverifikasi) | ✅ API + web (halaman `/verifikasi-email`, panel cek email di register/login) — diuji 28 kasus API + alur browser |
+| 2 | Lupa password via email (link 1 jam) | ⏳ |
+| 3 | Login/daftar Google (`/auth/methods`, `/auth/google/start|callback|exchange`, `user_oauth_accounts`) | ⏳ |
+| 4 | Frontend web: `/verifikasi-email` + panel cek email ✅ (Fase 1); `/forgot-password` via email, tombol Google, lengkapi data WA ⏳. Halaman aksi auth (`/login`, `/register`, `/verifikasi-email`) sengaja tidak masuk `url-registry` (bukan tujuan tautan) | ◐ |
+
+### Skema baru (migrasi 121)
+```
+auth_email_tokens
+  id text PK, user_id FK users ON DELETE CASCADE, email text,
+  purpose text   -- 'verify_email' | 'reset_password' | 'google_exchange'
+  token_hash text UNIQUE   -- SHA-256 dari token acak; token mentah hanya ada di email/URL
+  expires_at timestamptz, consumed_at timestamptz NULL, created_at timestamptz
+
+user_oauth_accounts
+  id text PK, user_id FK users ON DELETE CASCADE,
+  provider text, provider_account_id text, email text, created_at,
+  UNIQUE (provider, provider_account_id)
+```
+Backfill: `users.email_verified_at = NOW()` untuk semua user yang punya peran selain `user`.
+
+### Aturan gate login
+`POST /auth/login`: (1) password salah → `401` generik; (2) akun nonaktif → `403`; (3) `email_verified_at IS NULL` → `403 {code: "EMAIL_NOT_VERIFIED"}` + kirim ulang link (cooldown 60 dtk). Semua jalur pembuatan akun oleh admin wajib mengisi `email_verified_at` (`admin/users.ts`, `admin/employees.ts`, `admin/donatur.ts`, `admin/mitra.ts` ×2).
+

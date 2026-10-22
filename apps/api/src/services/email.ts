@@ -73,6 +73,72 @@ export class EmailService {
     }
   }
 
+  // Email transaksional akun (verifikasi/reset). Nama brand datang dari fromName (diambil dari settings
+  // oleh pemanggil), bukan hardcode.
+  private accountEmailHtml(params: { heading: string; intro: string; buttonLabel: string; url: string; note: string }): string {
+    const brand = this.fromName;
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #10b981; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f9fafb; }
+            .footer { padding: 20px; text-align: center; font-size: 12px; color: #6b7280; }
+            .button { display: inline-block; padding: 12px 24px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            .small { font-size: 12px; color: #6b7280; word-break: break-all; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header"><h1>${params.heading}</h1></div>
+            <div class="content">
+              ${params.intro}
+              <p style="text-align: center;"><a href="${params.url}" class="button">${params.buttonLabel}</a></p>
+              <p class="small">Jika tombol tidak berfungsi, salin tautan ini ke browser:<br>${params.url}</p>
+              <p>${params.note}</p>
+            </div>
+            <div class="footer">
+              <p>${brand}</p>
+              <p>Email ini dikirim secara otomatis, mohon tidak membalas email ini.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+  }
+
+  async sendEmailVerification(params: { to: string; name: string; url: string }): Promise<boolean> {
+    return this.send({
+      to: params.to,
+      subject: `Verifikasi email Anda${this.fromName ? ` - ${this.fromName}` : ""}`,
+      html: this.accountEmailHtml({
+        heading: "Verifikasi Email",
+        intro: `<p>Halo ${params.name},</p><p>Terima kasih telah mendaftar. Klik tombol di bawah untuk memverifikasi alamat email Anda dan mengaktifkan akun.</p>`,
+        buttonLabel: "Verifikasi Email",
+        url: params.url,
+        note: "Tautan ini berlaku 24 jam dan hanya bisa dipakai sekali. Jika Anda tidak merasa mendaftar, abaikan email ini.",
+      }),
+    });
+  }
+
+  async sendPasswordResetLink(params: { to: string; name: string; url: string }): Promise<boolean> {
+    return this.send({
+      to: params.to,
+      subject: `Atur ulang password${this.fromName ? ` - ${this.fromName}` : ""}`,
+      html: this.accountEmailHtml({
+        heading: "Atur Ulang Password",
+        intro: `<p>Halo ${params.name},</p><p>Kami menerima permintaan untuk mengatur ulang password akun Anda. Klik tombol di bawah untuk membuat password baru.</p>`,
+        buttonLabel: "Atur Password Baru",
+        url: params.url,
+        note: "Tautan ini berlaku 1 jam dan hanya bisa dipakai sekali. Jika Anda tidak meminta ini, abaikan email ini; password Anda tetap aman.",
+      }),
+    });
+  }
+
   async sendDonationConfirmation(params: DonationEmailParams): Promise<boolean> {
     const html = `
       <!DOCTYPE html>

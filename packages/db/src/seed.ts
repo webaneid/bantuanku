@@ -91,6 +91,7 @@ async function seed() {
         name: payload.name,
         isActive: true,
         isDeveloper: Boolean(payload.isDeveloper),
+        emailVerifiedAt: new Date(), // akun seed = admin awal, tidak melalui verifikasi email (ADR-0010)
       })
       .onConflictDoNothing();
 

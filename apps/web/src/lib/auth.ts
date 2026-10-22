@@ -11,6 +11,14 @@ interface User {
   roles: string[];
 }
 
+export interface RegisterResult {
+  id: string;
+  email: string;
+  name: string;
+  emailVerificationRequired: boolean;
+  verificationEmail?: "sent" | "cooldown" | "failed";
+}
+
 interface AuthState {
   user: User | null;
   token: string | null;
@@ -23,7 +31,7 @@ interface AuthState {
     phone?: string;
     whatsappNumber: string;
     password: string;
-  }) => Promise<void>;
+  }) => Promise<RegisterResult>;
   logout: () => void;
   setUser: (user: User | null) => void;
   setHydrated: () => void;
@@ -61,24 +69,10 @@ export const useAuth = create<AuthState>()(
       register: async (data) => {
         set({ isLoading: true });
         try {
-          await api.post("/auth/register", data);
-          // After successful registration, automatically log in
-          await new Promise(resolve => setTimeout(resolve, 100));
-          const loginResponse = await api.post("/auth/login", {
-            email: data.email,
-            password: data.password,
-          });
-          const { user, accessToken } = loginResponse.data.data;
-
-          // Save to localStorage first
-          localStorage.setItem("token", accessToken);
-          localStorage.setItem("user", JSON.stringify(user));
-
-          // Then update state
-          set({ user, token: accessToken, isLoading: false });
-
-          // Small delay to ensure localStorage is written
-          await new Promise(resolve => setTimeout(resolve, 50));
+          // Tidak ada auto-login: akun baru harus memverifikasi email dulu (ADR-0010)
+          const response = await api.post("/auth/register", data);
+          set({ isLoading: false });
+          return response.data.data as RegisterResult;
         } catch (error) {
           set({ isLoading: false });
           throw error;

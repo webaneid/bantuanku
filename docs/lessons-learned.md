@@ -387,3 +387,21 @@
 **Konteks:** Setelah tool bot WA dipaksa memakai `context.phone`, audit ulang menemukan `register_donatur` masih menerima `phone` dari argumen LLM dan mengembalikan nama + email donatur yang sudah ada.
 **Masalah:** Di fase perbaikan, daftar tool yang dicek diambil dari laporan auditor pertama (3 tool), lalu diperluas manual ke 2 tool lain — tetapi tidak sistematis terhadap SELURUH tool di `executeTool`. `register_donatur` terlewat, padahal dampaknya lebih besar (penyerobotan identitas: transaksi korban jatuh ke email penyerang, lalu terbaca lewat `/account/donations`).
 **Pelajaran:** Saat menutup satu kelas celah, enumerasi SEMUA tempat yang menerima input dari sumber yang sama (di sini: setiap `case` di `executeTool`) dan centang satu per satu, bukan hanya yang disebut laporan. Jalankan audit ulang dengan agent setelah perbaikan; ia menemukan celah yang tersisa di pola yang sama. Fungsi yang mengembalikan data "yang sudah ada" saat duplikat (nama/email) adalah jalur enumerasi — jawab generik.
+
+### 2026-10-22 — Mewajibkan Verifikasi Email: Backfill Akun Lama Dulu, Atau Admin Terkunci
+
+**Konteks:** ADR-0010 mewajibkan `email_verified_at` untuk login. Kolom itu ada sejak awal tetapi tidak pernah diisi, jadi SEMUA akun yang ada bernilai NULL, termasuk super admin.
+**Masalah:** Gate login yang di-deploy tanpa backfill mengunci seluruh staf sekaligus (dan admin yang mau memperbaikinya). Selain itu ada 6 jalur `insert(users)` (1 publik, 5 buatan admin) plus seed; jalur yang lupa diberi `emailVerifiedAt` menghasilkan akun yang tidak bisa login tanpa gejala error yang jelas.
+**Pelajaran:** Sebelum menambah syarat baru pada login, (1) `grep` SEMUA jalur pembuatan entitas itu, (2) backfill akun lama yang sah dalam migrasi yang SAMA (di sini: peran selain `user`), (3) jalankan migrasi sebelum deploy kode, (4) uji login akun staf nyata setelah gate dipasang. Akun donatur biasa sengaja tidak di-backfill (emailnya tak pernah terbukti) dan diverifikasi sekali saat login berikutnya.
+
+### 2026-10-22 — Prefill dari Endpoint Publik Adalah Kebocoran PII yang Terlihat Seperti Fitur
+
+**Konteks:** `GET /auth/check-registration` dipakai halaman register untuk mengisi otomatis nama dan WA dari data donatur lama, cukup dengan mengetahui email.
+**Masalah:** Endpoint tanpa login yang mengembalikan nama, email, telepon, WA dari input sembarang adalah mesin enumerasi data donatur, walau dibuat untuk kenyamanan. Tidak ada error atau gejala; terlihat benar di UI.
+**Pelajaran:** Endpoint publik hanya boleh mengembalikan status minimum (`exists/registered`). Kenyamanan prefill harus lewat sesi terautentikasi atau bukti kepemilikan (email terverifikasi), bukan sekadar mengetahui email/telepon.
+
+### 2026-10-22 — Link Verifikasi: Halaman Web + POST, Bukan GET yang Mengubah State
+
+**Konteks:** Pemindai email dan antivirus membuka (prefetch) setiap link di email.
+**Masalah:** Link yang langsung menjalankan verifikasi lewat GET akan terkonsumsi oleh pemindai sebelum pengguna mengkliknya, sehingga pengguna melihat "tautan kedaluwarsa". Token sekali pakai membuat ini fatal.
+**Pelajaran:** Link email membuka halaman web (`/verifikasi-email?token=…`) yang memanggil `POST /auth/email/verify` lewat JS; pemindai tidak menjalankan JS. Di halaman, jaga dengan `useRef` agar mode strict React tidak memanggil dua kali (panggilan kedua pasti gagal untuk token sekali pakai). Konsumsi token secara atomik (`UPDATE … WHERE consumed_at IS NULL AND expires_at > now() RETURNING`).

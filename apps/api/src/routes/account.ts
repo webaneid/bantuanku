@@ -3,7 +3,6 @@ import { eq, desc, sql, or, and } from "drizzle-orm";
 import { zakatCalculationLogs, notifications, users, transactions, donatur } from "@bantuanku/db";
 import { success, error, paginated } from "../lib/response";
 import { authMiddleware } from "../middleware/auth";
-import { normalizePhone } from "../lib/contact-helpers";
 import type { Env, Variables } from "../types";
 
 const account = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -33,21 +32,14 @@ account.get("/donations", async (c) => {
     return error(c, "User not found", 404);
   }
 
-  // Build transactions conditions (match by userId, email, or phone)
+  // Kepemilikan transaksi: akun ini (userId) ATAU email yang sudah terbukti dimiliki (emailVerifiedAt).
+  // Nomor telepon/WA TIDAK dipakai: itu klaim yang tidak diverifikasi (ADR-0010, temuan P).
   const transactionConditions = [];
   if (userDetails.id) {
     transactionConditions.push(eq(transactions.userId, userDetails.id));
   }
-  if (userDetails.email) {
+  if (userDetails.email && userDetails.emailVerifiedAt) {
     transactionConditions.push(eq(transactions.donorEmail, userDetails.email.toLowerCase().trim()));
-  }
-  const normalizedPhone = normalizePhone(userDetails.phone);
-  const normalizedWhatsapp = normalizePhone(userDetails.whatsappNumber);
-  if (normalizedPhone) {
-    transactionConditions.push(eq(transactions.donorPhone, normalizedPhone));
-  }
-  if (normalizedWhatsapp && normalizedWhatsapp !== normalizedPhone) {
-    transactionConditions.push(eq(transactions.donorPhone, normalizedWhatsapp));
   }
 
   const whereClause = transactionConditions.length > 0 ? or(...transactionConditions) : undefined;
@@ -134,15 +126,12 @@ account.get("/donations/:id", async (c) => {
     return error(c, "Transaction not found", 404);
   }
 
-  // Check ownership
-  const normalizedPhone = normalizePhone(userDetails.phone);
-  const normalizedWhatsapp = normalizePhone(userDetails.whatsappNumber);
-
+  // Check ownership (userId, atau email yang sudah terverifikasi; tanpa klaim telepon)
   const isOwner =
     transaction.userId === user!.id ||
-    transaction.donorEmail?.toLowerCase().trim() === userDetails.email?.toLowerCase().trim() ||
-    (!!normalizedPhone && !!transaction.donorPhone && normalizePhone(transaction.donorPhone) === normalizedPhone) ||
-    (!!normalizedWhatsapp && !!transaction.donorPhone && normalizePhone(transaction.donorPhone) === normalizedWhatsapp);
+    (!!userDetails.emailVerifiedAt &&
+      !!transaction.donorEmail &&
+      transaction.donorEmail.toLowerCase().trim() === userDetails.email?.toLowerCase().trim());
 
   if (!isOwner) {
     return error(c, "Transaction not found", 404);

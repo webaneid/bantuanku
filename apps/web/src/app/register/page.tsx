@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { Input, Button, Label } from "@/components/atoms";
+import { VerifyEmailNotice } from "@/components/molecules";
 import toast from "@/lib/feedback-toast";
 import * as fbPixel from "@/lib/fbPixel";
 import { useI18n } from "@/lib/i18n/provider";
@@ -43,6 +44,8 @@ export default function RegisterPage() {
   const [isChecking, setIsChecking] = useState(false);
   const [isAutoFilled, setIsAutoFilled] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  // Diisi setelah daftar berhasil: akun baru wajib verifikasi email sebelum bisa login (ADR-0010)
+  const [registered, setRegistered] = useState<{ email: string; status?: "sent" | "cooldown" | "failed" } | null>(null);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -70,26 +73,6 @@ export default function RegisterPage() {
           // User already registered with password
           setShowLoginPrompt(true);
           toast.error(t("auth.register.toastAlreadyRegistered"));
-        } else {
-          // User exists from checkout/WA bot but hasn't registered yet
-          // Auto-fill available fields so user only needs to enter password
-          if (!isAutoFilled) {
-            const updates: Partial<typeof formData> = {};
-            if (data.data.name) updates.name = data.data.name;
-            if (data.data.whatsappNumber) {
-              updates.whatsappNumber = data.data.whatsappNumber;
-              // If WA number matches phone, also check the "same as phone" box
-              if (normalizePhone(data.data.whatsappNumber) === normalizePhone(phone)) {
-                setSameAsPhone(true);
-              }
-            }
-
-            if (Object.keys(updates).length > 0) {
-              setFormData((prev) => ({ ...prev, ...updates }));
-              setIsAutoFilled(true);
-              toast.success(t("auth.register.toastDataFound"));
-            }
-          }
         }
       }
     } catch (error) {
@@ -97,7 +80,7 @@ export default function RegisterPage() {
     } finally {
       setIsChecking(false);
     }
-  }, [isAutoFilled, t]);
+  }, [t]);
 
   // Debounced check - trigger when both email and phone are filled
   useEffect(() => {
@@ -182,7 +165,7 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      await register({
+      const result = await register({
         name: formData.name,
         email: formData.email,
         phone: formData.phone || undefined,
@@ -191,7 +174,7 @@ export default function RegisterPage() {
       });
       fbPixel.completeRegistration({ content_name: "user_registration", status: "success" });
       toast.success(t("auth.register.toastSuccess"));
-      router.push("/");
+      setRegistered({ email: result.email, status: result.verificationEmail });
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || t("auth.register.toastFailed");
       toast.error(errorMessage);
@@ -199,6 +182,16 @@ export default function RegisterPage() {
       setIsLoading(false);
     }
   };
+
+  if (registered) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700 px-4 py-8">
+        <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+          <VerifyEmailNotice email={registered.email} sendStatus={registered.status} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700 px-4 py-8">

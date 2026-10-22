@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { Input, Button, Label } from "@/components/atoms";
+import { VerifyEmailNotice } from "@/components/molecules";
 import toast from "@/lib/feedback-toast";
 import { useI18n } from "@/lib/i18n/provider";
 
@@ -15,6 +16,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  // Diisi saat API menolak login karena email belum terverifikasi (EMAIL_NOT_VERIFIED)
+  const [unverified, setUnverified] = useState<{ email: string; status?: "sent" | "cooldown" | "failed" } | null>(null);
 
   // Redirect if already logged in (only after hydration)
   useEffect(() => {
@@ -35,11 +38,25 @@ export default function LoginPage() {
       // Redirect to account dashboard
       router.push("/account");
     } catch (error: any) {
-      toast.error(error.response?.data?.message || t("auth.login.failed"));
+      if (error.response?.data?.code === "EMAIL_NOT_VERIFIED") {
+        setUnverified({ email, status: error.response.data.verificationEmail });
+      } else {
+        toast.error(error.response?.data?.message || t("auth.login.failed"));
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (unverified) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700 px-4">
+        <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+          <VerifyEmailNotice email={unverified.email} sendStatus={unverified.status} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700 px-4">

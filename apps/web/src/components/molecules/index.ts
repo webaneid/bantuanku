@@ -25,3 +25,7 @@ export type { ShareButtonsProps } from './ShareButtons';
 // Quantity Selector
 export { QuantitySelector } from './QuantitySelector';
 export type { QuantitySelectorProps } from './QuantitySelector';
+
+// Verify Email Notice
+export { VerifyEmailNotice } from './VerifyEmailNotice';
+export type { VerifyEmailNoticeProps } from './VerifyEmailNotice';

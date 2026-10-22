@@ -637,6 +637,7 @@ app.post("/", requireRoles("super_admin"), async (c) => {
           name: data.picName,
           phone: data.phone || null,
           isActive: true,
+          emailVerifiedAt: new Date(), // dibuat admin (ADR-0010)
         })
         .returning();
 
@@ -974,6 +975,7 @@ app.post("/:id/activate-user", requireRoles("super_admin"), async (c) => {
         name: existing.picName,
         phone: existing.phone || null,
         isActive: true,
+        emailVerifiedAt: new Date(), // dibuat admin (ADR-0010)
       })
       .returning();
 

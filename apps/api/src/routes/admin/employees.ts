@@ -902,6 +902,7 @@ app.post("/:id/activate-user", requireRoles("super_admin"), async (c) => {
         name: employee.name,
         phone: employee.phone || null,
         isActive: true,
+        emailVerifiedAt: new Date(), // dibuat admin (ADR-0010)
       })
       .returning();
 

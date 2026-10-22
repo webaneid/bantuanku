@@ -1117,6 +1117,22 @@ export const enMessages: Messages = {
       success: "Login successful!",
       failed: "Login failed",
     },
+    verifyEmail: {
+      title: "Check Your Email",
+      sentTo: "We have sent a verification link to",
+      instruction: "Click the link in the email to activate your account. The link is valid for 24 hours. Please also check your spam folder.",
+      sendFailed: "The verification email could not be sent. Please try resending.",
+      resend: "Resend verification email",
+      resent: "If the email is registered and not yet verified, a new link has been sent.",
+      resendFailed: "Failed to resend the verification email",
+      backToLogin: "Back to login",
+      verifying: "Verifying email...",
+      successTitle: "Email Verified",
+      successDesc: "Your account is now active. Please log in to continue.",
+      goLogin: "Log in now",
+      errorTitle: "Invalid Link",
+      errorDesc: "The verification link is invalid or has expired. Please log in and we will send you a new link.",
+    },
     register: {
       title: "Register",
       subtitle: "Create a new account to start donating",
@@ -1153,7 +1169,7 @@ export const enMessages: Messages = {
       toastPasswordMin: "Password must be at least 8 characters",
       toastInvalidWhatsapp:
         "Invalid WhatsApp number (minimum 10 digits)",
-      toastSuccess: "Registration successful! You will be redirected to home",
+      toastSuccess: "Registration successful! Please check your email to verify your account",
       toastFailed: "Registration failed",
     },
     forgotPassword: {

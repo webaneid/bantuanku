@@ -729,6 +729,7 @@ donaturAdmin.post("/:id/activate-user", requireRole("super_admin"), async (c) =>
         phone: existing.phone || null,
         whatsappNumber: existing.whatsappNumber || null,
         isActive: true,
+        emailVerifiedAt: new Date(), // dibuat admin (ADR-0010)
       })
       .returning();
 

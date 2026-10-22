@@ -110,6 +110,7 @@ usersAdmin.post("/", zValidator("json", createUserSchema), async (c) => {
     passwordHash,
     name: body.name,
     phone: body.phone,
+    emailVerifiedAt: new Date(), // dibuat admin: admin yang menjamin email (ADR-0010)
   });
 
   if (body.roleIds && body.roleIds.length > 0) {
