@@ -299,6 +299,7 @@ Behavior awal:
 - jika user login, autofill data dari `useAuth()`
 - jika guest mengisi email/phone/WA, cek donatur existing via `GET /v1/donatur/search`; hasilnya **tersamar**, jadi form TIDAK diisi otomatis: hanya `donaturId` disimpan dan toast "Data Anda ditemukan (nama tersamar)" tampil
 - jika donatur existing tanpa user account, tampil popup ajakan register
+- guest melihat tombol "Lanjutkan dengan Google" (`GoogleSignInButton`, `returnTo="/checkout"`, hanya tampil bila `GET /auth/methods` melaporkan Google aktif); setelah login kembali ke checkout dan form terisi dari akun. Keranjang aman karena tersimpan di localStorage. Akun Google baru tanpa nomor WA diarahkan dulu ke `/account/profile` (keranjang tetap ada)
 
 ## Checkout Validation
 

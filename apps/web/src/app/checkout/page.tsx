@@ -8,6 +8,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/lib/auth';
 import { Button, Input, Checkbox } from '@/components/atoms';
 import { InputField, TextareaField } from '@/components/molecules/FormField';
+import { GoogleSignInButton } from '@/components/molecules';
 import { Header, Footer } from '@/components/organisms';
 import toast from '@/lib/feedback-toast';
 import { getReferralCode } from '@/lib/referral';
@@ -643,6 +644,11 @@ export default function CheckoutPage() {
                           {t('checkout.main.loginHere')}
                         </Link>
                       </p>
+                    </div>
+                  )}
+                  {!user && (
+                    <div className="mt-4">
+                      <GoogleSignInButton returnTo="/checkout" />
                     </div>
                   )}
                 </div>
