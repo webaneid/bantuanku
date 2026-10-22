@@ -26,6 +26,12 @@
     align-items: center;
     gap: $spacing-8;
 
+    // Sejajar dengan `.container` section (px-8 di lg+); sebelumnya 24px sehingga tepi kiri header
+    // berbeda 8px dari konten section di bawahnya.
+    @include respond-to('lg') {
+      padding: $spacing-4 $spacing-8;
+    }
+
     @include mobile {
       padding: $spacing-3 $spacing-4;
       gap: $spacing-2;

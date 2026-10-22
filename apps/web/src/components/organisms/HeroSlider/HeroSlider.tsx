@@ -114,13 +114,16 @@ export const HeroSlider = React.forwardRef<HTMLDivElement, HeroSliderProps>(
     if (slides.length === 0) return null;
 
     return (
-      <div ref={ref} className={cn('hero-slider', className)} {...props}>
-        <div
-          className="hero-slider__slides"
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-        >
+      <div
+        ref={ref}
+        className={cn('hero-slider', className)}
+        {...props}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        {/* Kartu: gambar + overlay */}
+        <div className="hero-slider__slides">
           {slides.map((slide, index) => (
             <div
               key={slide.id}
@@ -131,7 +134,6 @@ export const HeroSlider = React.forwardRef<HTMLDivElement, HeroSliderProps>(
                 index > currentSlide && 'hero-slider__slide--next'
               )}
             >
-              {/* Background Image */}
               <div className="hero-slider__image-wrapper">
                 <Image
                   src={slide.image}
@@ -139,14 +141,24 @@ export const HeroSlider = React.forwardRef<HTMLDivElement, HeroSliderProps>(
                   fill
                   className="hero-slider__image"
                   priority={index === 0}
-                  quality={90}
-                  sizes="100vw"
+                  quality={80}
+                  sizes="(min-width: 640px) calc(100vw - 80px), calc(100vw - 32px)"
                 />
                 <div className="hero-slider__overlay" />
               </div>
+            </div>
+          ))}
+        </div>
 
-              {/* Content */}
-              <div className="hero-slider__content">
+        {/* Teks: memakai .container standar agar tepi kirinya sejajar dengan header dan section */}
+        <div className="hero-slider__contents">
+          {slides.map((slide, index) => (
+            <div
+              key={slide.id}
+              className={cn('hero-slider__content', index === currentSlide && 'hero-slider__content--active')}
+              aria-hidden={index !== currentSlide}
+            >
+              <div className="container">
                 <div className="hero-slider__content-inner">
                   <h1 className="hero-slider__title">{slide.title}</h1>
                   <p className="hero-slider__description">{slide.description}</p>

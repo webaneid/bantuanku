@@ -146,7 +146,7 @@ Folder: `apps/web/src/components/organisms`.
 | `Header` | Header publik, menu dari settings, search, language selector, cart count, user menu |
 | `Footer` | Footer publik, data organisasi/menu/social media dari settings |
 | `Breadcrumb` | Navigasi breadcrumb halaman |
-| `HeroSlider` | Hero carousel image full-width dengan autoplay, swipe, optional navigation |
+| `HeroSlider` | Hero berbentuk kartu (tidak full width, radius 24px) dengan autoplay, swipe, optional navigation; teks sejajar `.container` (lihat § HeroSlider) |
 | `ProgramCard` | Card campaign donasi dengan image, badge, progress, stats |
 | `FeaturedCarousel` | Carousel campaign featured/urgent |
 | `CategoryGrid` | Grid kategori layanan/program |
@@ -157,6 +157,8 @@ Folder: `apps/web/src/components/organisms`.
 | `TestimonialSection` | Section testimoni |
 
 ### Header
+
+Catatan layout (2026-10-23): `.header__container` memakai padding kiri-kanan 32px di ≥1024px (sebelumnya 24px) agar tepinya sama dengan `.container` section (`px-4 sm:px-6 lg:px-8`). **Gap yang diketahui:** di lebar ~900–1340px `.header__actions` (pencarian + bahasa + keranjang + Masuk) melebihi lebar layar sehingga muncul scroll horizontal (37px di 1280, ~217px di 1100; sudah ada sebelum perubahan ini); tidak terjadi di ≥1366px.
 
 `Header` adalah client component.
 
@@ -231,6 +233,14 @@ Behavior:
 - default `showNavigation=false`
 - mendukung swipe mobile
 - slide pertama memakai `priority` image
+
+Layout (redesign 2026-10-23, desktop/tablet; mobile ≤639px tidak berubah):
+
+- Struktur: pembungkus `.hero-slider` (padding kiri-kanan `--hero-gutter`) → kartu `.hero-slider__slides` (gambar + overlay, `overflow:hidden`, `border-radius: $radius-2xl` 24px, tinggi `clamp(560px, 78vh, 760px)`; tablet `clamp(480px, 62vh, 600px)`) dan lapisan teks `.hero-slider__contents` yang menutupi SELURUH lebar pembungkus (bukan hanya kartu). Tiap teks slide dibungkus `.container` standar, sehingga tepi kirinya sama dengan header dan section di bawahnya.
+- `--hero-gutter: clamp(8px, calc((100% - 1280px) / 2 + 8px), 40px)`: jarak kartu ke tepi layar 40px di layar lebar (≥~1344px), menyempit di layar sedang supaya teks yang sejajar container selalu minimal ~24px (16px di tablet) di dalam kartu. Persen = lebar blok pembungkus (bukan `100vw`, jadi tidak terpengaruh scrollbar).
+- Touch swipe dipasang di pembungkus (bukan di kartu) karena lapisan teks berada di atas kartu.
+- Ringan: tanpa JS tambahan; `next/image` `quality={80}` dan `sizes="(min-width: 640px) calc(100vw - 80px), calc(100vw - 32px)"`.
+- Terverifikasi di browser: header, teks hero, dan konten section sejajar di x=108 (1440px), 32 (1280/1100), 24 (900/700).
 
 ## Template Components
 

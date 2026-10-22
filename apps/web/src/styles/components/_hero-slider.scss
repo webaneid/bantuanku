@@ -1,28 +1,42 @@
 @import '../variables';
 @import '../mixins';
 
+// Hero berbentuk kartu (tidak full width, sudut membulat). Teks berada di lapisan `__contents` yang
+// memakai `.container` standar, sehingga tepi kirinya SAMA dengan header dan section di bawahnya.
+// `--hero-gutter`: jarak kartu ke tepi layar, 40px di layar lebar dan menyempit di layar sedang agar teks
+// (yang sejajar container) selalu berada minimal ~24px di dalam kartu. Persen = lebar blok pembungkus.
 .hero-slider {
+  --hero-gutter: clamp(8px, calc((100% - 1280px) / 2 + 8px), 40px);
   position: relative;
   width: 100%;
-  height: 600px;
-  overflow: hidden;
-  background: $gray-900;
-
-  @include tablet-down {
-    height: 500px;
-  }
+  padding: $spacing-3 var(--hero-gutter);
 
   @include mobile {
-    height: 320px; // Reduced height for mobile
-    margin: 0 $spacing-4; // Add horizontal margin
-    width: calc(100% - #{$spacing-4} * 2); // Adjust width
-    border-radius: $radius-xl; // Add border radius (16px)
+    // Mobile: tampilan lama dipertahankan (kartu dengan margin 16px, tinggi 320px)
+    padding: 0;
+    margin: 0 $spacing-4;
+    width: calc(100% - #{$spacing-4} * 2);
   }
 
+  // Kartu: gambar + overlay
   &__slides {
     position: relative;
     width: 100%;
-    height: 100%;
+    height: clamp(560px, 78vh, 760px);
+    overflow: hidden;
+    background: $gray-900;
+    border-radius: $radius-2xl;
+    box-shadow: 0 12px 32px rgba($gray-900, 0.14);
+
+    @include tablet-down {
+      height: clamp(480px, 62vh, 600px);
+    }
+
+    @include mobile {
+      height: 320px;
+      border-radius: $radius-xl;
+      box-shadow: none;
+    }
   }
 
   &__slide {
@@ -36,10 +50,6 @@
       opacity: 1;
       visibility: visible;
       z-index: 1;
-
-      .hero-slider__content-inner {
-        animation: slideUpFadeIn 0.8s ease forwards;
-      }
     }
 
     &--prev {
@@ -80,30 +90,63 @@
     }
   }
 
+  // Lapisan teks: menutupi seluruh lebar pembungkus (bukan hanya kartu) agar `.container` di dalamnya
+  // sejajar dengan container halaman. Tinggi mengikuti kartu.
+  &__contents {
+    position: absolute;
+    top: $spacing-3;
+    bottom: $spacing-3;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    pointer-events: none;
+
+    @include mobile {
+      top: 0;
+      bottom: 0;
+    }
+  }
+
   &__content {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: center;
-    z-index: 2;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+
+    > .container {
+      width: 100%;
+    }
+
+    &--active {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+
+      .hero-slider__content-inner {
+        animation: slideUpFadeIn 0.8s ease forwards;
+      }
+    }
 
     @include mobile {
-      align-items: flex-end; // Position at bottom for mobile
+      align-items: flex-end; // Posisi di bawah untuk mobile
+
+      > .container {
+        padding: 0; // padding mobile dipegang content-inner (sama seperti sebelumnya)
+        max-width: 100%;
+      }
     }
   }
 
   &__content-inner {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 0 $spacing-6;
-    width: 100%;
     max-width: 700px;
     opacity: 0;
+    text-align: left;
 
     @include mobile {
       padding: $spacing-4;
-      text-align: left; // Left align for mobile
-      margin: 0; // Remove auto margin
       max-width: 100%;
     }
   }
@@ -208,7 +251,7 @@
     }
 
     &--prev {
-      left: $spacing-6;
+      left: calc(var(--hero-gutter) + #{$spacing-6});
 
       @include mobile {
         left: $spacing-4;
@@ -218,7 +261,7 @@
     }
 
     &--next {
-      right: $spacing-6;
+      right: calc(var(--hero-gutter) + #{$spacing-6});
 
       @include mobile {
         right: $spacing-4;
@@ -230,7 +273,7 @@
 
   &__indicators {
     position: absolute;
-    bottom: $spacing-8;
+    bottom: calc(#{$spacing-3} + #{$spacing-6}); // 24px di dalam kartu
     left: 50%;
     transform: translateX(-50%);
     display: flex;
