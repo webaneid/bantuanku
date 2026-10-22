@@ -343,6 +343,7 @@ export default async function HomePage() {
 
   let fullAddress: string | undefined;
   let footerProgramLinks: Array<{ label: string; href: string }> = [];
+  // Tautan internal prioritas untuk crawler: ditampilkan lewat Footer (normalizedFooterProgramLinks), bukan section di beranda
   const crawlPriorityLinks = [
     { label: 'Program Donasi', href: '/program' },
     { label: 'Laporan Kegiatan', href: '/laporan' },
@@ -473,28 +474,6 @@ export default async function HomePage() {
         <section className="categories-section py-12 bg-gray-50">
           <div className="container">
             <CategoryGrid categories={serviceCategoriesData} />
-          </div>
-        </section>
-
-        <section className="py-8 bg-white border-b border-gray-200">
-          <div className="container">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Jelajahi Halaman Penting</h2>
-                <p className="text-sm text-gray-600">Akses cepat ke halaman utama {siteName} untuk program, laporan, profil lembaga, dan kerja sama.</p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {crawlPriorityLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="inline-flex items-center rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-primary-500 hover:text-primary-600"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
           </div>
         </section>
 
