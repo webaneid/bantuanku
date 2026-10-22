@@ -1,39 +1,15 @@
 import { MetadataRoute } from 'next';
+import { inferCanonicalReportUrl } from '@/lib/report-url';
 
-// Generate sitemap at request time, not build time
+// Generate sitemap at request time, not build time.
+// `force-dynamic` saja TIDAK menjamin fetch di route metadata ini tidak di-cache oleh Next 14 (terbukti di produksi:
+// sitemap memuat data lama); karena itu setiap fetch di bawah memakai `cache: 'no-store'` secara eksplisit.
 export const dynamic = 'force-dynamic';
 
 function safeDate(value: any): Date {
   if (!value) return new Date();
   const d = new Date(value);
   return isNaN(d.getTime()) ? new Date() : d;
-}
-
-function slugifyTitle(value: string): string {
-  return value
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-');
-}
-
-function toAbsoluteUrl(appUrl: string, value?: string | null): string | null {
-  if (!value) return null;
-  if (value.startsWith('http://') || value.startsWith('https://')) return value;
-  return `${appUrl}${value.startsWith('/') ? value : `/${value}`}`;
-}
-
-function buildReportCanonicalUrl(appUrl: string, report: any): string | null {
-  const explicitCanonical = toAbsoluteUrl(appUrl, report.canonicalUrl);
-  if (explicitCanonical) return explicitCanonical;
-
-  const titleSlug = slugifyTitle(report.title || '');
-  if (titleSlug) return `${appUrl}/laporan/${titleSlug}`;
-  if (report.slug) return `${appUrl}/laporan/${report.slug}`;
-
-  return null;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -99,6 +75,7 @@ async function fetchCampaignPages(apiUrl: string, appUrl: string): Promise<Metad
 
     while (true) {
       const response = await fetch(`${apiUrl}/campaigns?limit=${limit}&page=${page}`, {
+        cache: 'no-store', // sitemap harus selalu dari data terbaru; fetch default Next 14 di-cache
         signal: AbortSignal.timeout(10000),
       });
 
@@ -129,6 +106,7 @@ async function fetchCampaignPages(apiUrl: string, appUrl: string): Promise<Metad
 async function fetchZakatTypePages(apiUrl: string, appUrl: string): Promise<MetadataRoute.Sitemap> {
   try {
     const response = await fetch(`${apiUrl}/zakat/types`, {
+      cache: 'no-store', // sitemap harus selalu dari data terbaru; fetch default Next 14 di-cache
       signal: AbortSignal.timeout(10000),
     });
 
@@ -155,6 +133,7 @@ async function fetchQurbanPages(apiUrl: string, appUrl: string): Promise<Metadat
   try {
     // 1. Fetch active periods
     const periodsRes = await fetch(`${apiUrl}/qurban/periods?status=active`, {
+      cache: 'no-store', // sitemap harus selalu dari data terbaru; fetch default Next 14 di-cache
       signal: AbortSignal.timeout(10000),
     });
 
@@ -168,6 +147,7 @@ async function fetchQurbanPages(apiUrl: string, appUrl: string): Promise<Metadat
     for (const period of periods) {
       try {
         const pkgRes = await fetch(`${apiUrl}/qurban/periods/${period.id}/packages`, {
+          cache: 'no-store', // sitemap harus selalu dari data terbaru; fetch default Next 14 di-cache
           signal: AbortSignal.timeout(10000),
         });
         if (!pkgRes.ok) continue;
@@ -197,6 +177,7 @@ async function fetchQurbanPages(apiUrl: string, appUrl: string): Promise<Metadat
 async function fetchCategoryPages(apiUrl: string, appUrl: string): Promise<MetadataRoute.Sitemap> {
   try {
     const response = await fetch(`${apiUrl}/categories`, {
+      cache: 'no-store', // sitemap harus selalu dari data terbaru; fetch default Next 14 di-cache
       signal: AbortSignal.timeout(10000),
     });
 
@@ -222,6 +203,7 @@ async function fetchCategoryPages(apiUrl: string, appUrl: string): Promise<Metad
 async function fetchPillarPages(apiUrl: string, appUrl: string): Promise<MetadataRoute.Sitemap> {
   try {
     const response = await fetch(`${apiUrl}/pillars`, {
+      cache: 'no-store', // sitemap harus selalu dari data terbaru; fetch default Next 14 di-cache
       signal: AbortSignal.timeout(10000),
     });
 
@@ -247,6 +229,7 @@ async function fetchPillarPages(apiUrl: string, appUrl: string): Promise<Metadat
 async function fetchStaticContentPages(apiUrl: string, appUrl: string): Promise<MetadataRoute.Sitemap> {
   try {
     const response = await fetch(`${apiUrl}/pages`, {
+      cache: 'no-store', // sitemap harus selalu dari data terbaru; fetch default Next 14 di-cache
       signal: AbortSignal.timeout(10000),
     });
 
@@ -279,6 +262,7 @@ async function fetchReportPages(apiUrl: string, appUrl: string): Promise<Metadat
 
     while (true) {
       const response = await fetch(`${apiUrl}/activity-reports?limit=${limit}&page=${page}`, {
+        cache: 'no-store', // sitemap harus selalu dari data terbaru; fetch default Next 14 di-cache
         signal: AbortSignal.timeout(10000),
       });
 
@@ -298,8 +282,7 @@ async function fetchReportPages(apiUrl: string, appUrl: string): Promise<Metadat
     for (const report of allReports) {
       if (!report?.slug || report?.noIndex === true) continue;
 
-      const canonicalUrl = buildReportCanonicalUrl(appUrl, report);
-      if (!canonicalUrl) continue;
+      const canonicalUrl = inferCanonicalReportUrl(appUrl, report, report.slug);
 
       const entry = {
         url: canonicalUrl,

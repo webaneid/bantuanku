@@ -254,7 +254,7 @@ Sitemap memasukkan:
 
 Catatan gap dari SEO:
 
-1. Activity report sitemap skip `noIndex === true`.
+1. Activity report sitemap skip `noIndex === true` dan memakai URL kanonik yang sama dengan halaman laporan (`lib/report-url.ts`); semua fetch sitemap `cache: 'no-store'` (2026-10-23, lihat `arsitektur-seo.md` § Sitemap).
 2. Campaign, zakat, qurban, category, pillar, dan page sitemap belum terlihat konsisten skip `noIndex`.
 3. Sitemap fetch data runtime dan bisa menghasilkan subset kosong jika API gagal.
 4. Robots hanya allow `*`, disallow `/dashboard/`, `/checkout/payment-result/`, dan `/api/`.

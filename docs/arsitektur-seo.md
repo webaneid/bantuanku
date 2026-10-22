@@ -240,10 +240,11 @@ Sitemap berisi:
 | Static content pages | `/pages` |
 | Activity report pages | Paginated `/activity-reports?limit=100&page=N` |
 
-Activity report sitemap punya dedupe berdasarkan canonical URL dan skip `noIndex === true`.
+Activity report sitemap punya dedupe berdasarkan canonical URL dan skip `noIndex === true`. URL tiap laporan dihitung oleh `inferCanonicalReportUrl()` di `apps/web/src/lib/report-url.ts`, fungsi yang SAMA dengan halaman `/laporan/[slug]`: `canonicalUrl` eksplisit menang; selain itu `/laporan/<slug>` laporan itu sendiri; slug berpola duplikat (`<slug-judul>-2`/`-ab12cd`) dialihkan ke `/laporan/<slug-judul>`. Sampai 2026-10-23 sitemap selalu memakai slug dari JUDUL, sehingga laporan yang judulnya berbeda dari slug (judul diedit setelah terbit, slug sengaja tetap) tercantum dengan URL yang 404.
 
 Catatan penting:
 
+0. **Semua `fetch` di `sitemap.ts` wajib `cache: 'no-store'`** (sejak 2026-10-23). Next 14 men-cache `fetch` secara default dan `export const dynamic = 'force-dynamic'` di route metadata ini tidak menjamin sebaliknya: di produksi sitemap memuat data lama (3 dari 13 laporan, 2 campaign yang sudah tidak ada, 7 campaign aktif hilang) sementara API sudah benar.
 1. Campaign, zakat, qurban, category, pillar, dan static page sitemap belum terlihat memfilter `noIndex`.
 2. Sitemap memakai public API runtime; jika API gagal, bagian dynamic yang gagal akan kosong dan hanya bagian lain tetap keluar.
 3. Qurban URL memakai `packagePeriodId`, bukan slug SEO-friendly.
