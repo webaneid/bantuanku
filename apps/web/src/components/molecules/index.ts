@@ -29,3 +29,6 @@ export type { QuantitySelectorProps } from './QuantitySelector';
 // Verify Email Notice
 export { VerifyEmailNotice } from './VerifyEmailNotice';
 export type { VerifyEmailNoticeProps } from './VerifyEmailNotice';
+
+// Forgot Password (email)
+export { ForgotPasswordEmail } from './ForgotPasswordEmail';

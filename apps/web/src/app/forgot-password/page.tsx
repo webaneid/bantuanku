@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input, Button, Label } from "@/components/atoms";
+import { ForgotPasswordEmail } from "@/components/molecules";
 import toast from "@/lib/feedback-toast";
 import api from "@/lib/api";
 import { useI18n } from "@/lib/i18n/provider";
@@ -17,6 +18,8 @@ export default function ForgotPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  // Email jadi default: tidak bergantung pada gateway WhatsApp yang sering diblokir
+  const [method, setMethod] = useState<"email" | "whatsapp">("email");
 
   const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +75,26 @@ export default function ForgotPasswordPage() {
           <p className="text-gray-600 mt-2">{t("auth.forgotPassword.subtitle")}</p>
         </div>
 
-        {!otpSent ? (
+        <div className="flex gap-2 mb-6" role="tablist">
+          {(["email", "whatsapp"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={method === m}
+              onClick={() => setMethod(m)}
+              className={`flex-1 py-2 text-sm font-medium rounded-md border ${
+                method === m ? "bg-primary-600 text-white border-primary-600" : "bg-white text-gray-600 border-gray-300"
+              }`}
+            >
+              {t(m === "email" ? "auth.forgotPassword.methodEmail" : "auth.forgotPassword.methodWhatsapp")}
+            </button>
+          ))}
+        </div>
+
+        {method === "email" && <ForgotPasswordEmail />}
+
+        {method === "whatsapp" && (!otpSent ? (
           <form onSubmit={handleRequestOtp} className="space-y-6">
             <div>
               <Label htmlFor="phone">{t("auth.forgotPassword.phone")}</Label>
@@ -133,7 +155,7 @@ export default function ForgotPasswordPage() {
               {isLoading ? t("auth.forgotPassword.processing") : t("auth.forgotPassword.submit")}
             </Button>
           </form>
-        )}
+        ))}
 
         <div className="mt-6 text-center">
           <Link href="/login" className="text-sm text-primary-600 hover:text-primary-700 font-medium">

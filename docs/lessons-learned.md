@@ -405,3 +405,9 @@
 **Konteks:** Pemindai email dan antivirus membuka (prefetch) setiap link di email.
 **Masalah:** Link yang langsung menjalankan verifikasi lewat GET akan terkonsumsi oleh pemindai sebelum pengguna mengkliknya, sehingga pengguna melihat "tautan kedaluwarsa". Token sekali pakai membuat ini fatal.
 **Pelajaran:** Link email membuka halaman web (`/verifikasi-email?token=…`) yang memanggil `POST /auth/email/verify` lewat JS; pemindai tidak menjalankan JS. Di halaman, jaga dengan `useRef` agar mode strict React tidak memanggil dua kali (panggilan kedua pasti gagal untuk token sekali pakai). Konsumsi token secara atomik (`UPDATE … WHERE consumed_at IS NULL AND expires_at > now() RETURNING`).
+
+### 2026-10-22 — Endpoint "Kirim Email" Publik: Respons Harus Sama Cepat untuk Akun Ada dan Tidak Ada
+
+**Konteks:** `forgot-password/email/request` dan `email/resend` membalas pesan generik yang identik untuk email terdaftar maupun tidak.
+**Masalah:** Pesan identik belum cukup: pengiriman email (ratusan ms ke Resend) hanya terjadi untuk akun yang ada, jadi penyerang bisa membedakan keduanya dari waktu respons dan mengenumerasi email donatur. Ditemukan saat security review inline, bukan lewat test fungsional (semua kasus fungsional sudah lolos).
+**Pelajaran:** Untuk endpoint publik yang memicu efek samping mahal hanya pada akun yang ada, jalankan efek samping itu di background (`void fn().catch(log)`) dan balas segera. Berlaku untuk reset password, kirim ulang verifikasi, dan jalur serupa. Pada jalur login (setelah password terbukti benar), menunggu pengiriman tidak masalah karena pemanggil sudah terautentikasi sebagian.

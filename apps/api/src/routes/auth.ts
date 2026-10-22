@@ -11,7 +11,7 @@ import { normalizePhone } from "../lib/contact-helpers";
 import { authMiddleware } from "../middleware/auth";
 import { authRateLimit } from "../middleware/ratelimit";
 import { WhatsAppService } from "../services/whatsapp";
-import { sendVerificationEmail } from "../services/auth-email";
+import { sendVerificationEmail, sendPasswordResetEmail } from "../services/auth-email";
 import { linkVerifiedAccountData, markEmailVerified } from "../services/account-linking";
 import { consumeEmailToken } from "../lib/email-tokens";
 import type { Env, Variables } from "../types";
@@ -268,8 +268,10 @@ auth.post("/email/resend", authRateLimit, zValidator("json", emailResendSchema),
     (await db.query.users.findFirst({ where: eq(users.email, email) })) ||
     (await db.query.users.findFirst({ where: eq(users.email, email.toLowerCase().trim()) }));
 
+  // Di background (lihat catatan di forgot-password/email/request): cegah enumerasi lewat waktu respons
   if (user && user.isActive && !user.emailVerifiedAt) {
-    await sendVerificationEmail(db, c.env, { id: user.id, email: user.email, name: user.name });
+    const target = { id: user.id, email: user.email, name: user.name };
+    void sendVerificationEmail(db, c.env, target).catch((err) => console.error("[auth] verification email error:", err));
   }
   // Respons identik di semua kasus: tidak membocorkan apakah email terdaftar
   return success(c, { sent: true }, generic);
@@ -457,6 +459,68 @@ auth.post(
         updatedAt: new Date(),
       })
       .where(eq(authOtpCodes.id, otpRow.id));
+
+    return success(c, { reset: true }, "Password berhasil diubah");
+  }
+);
+
+const forgotPasswordEmailRequestSchema = z.object({ email: z.string().trim().email().max(255) });
+const forgotPasswordEmailResetSchema = z.object({
+  token: z.string().min(20).max(200),
+  newPassword: z.string().min(8).max(128),
+});
+
+// Alternatif OTP WhatsApp saat gateway WA tidak aktif (ADR-0010). Respons selalu generik.
+auth.post(
+  "/forgot-password/email/request",
+  authRateLimit,
+  zValidator("json", forgotPasswordEmailRequestSchema),
+  async (c) => {
+    const { email } = c.req.valid("json");
+    const db = c.get("db");
+    const generic = "Jika email terdaftar, tautan untuk mengatur ulang password telah dikirim.";
+
+    const user =
+      (await db.query.users.findFirst({ where: eq(users.email, email) })) ||
+      (await db.query.users.findFirst({ where: eq(users.email, email.toLowerCase().trim()) }));
+
+    // Kirim di background: waktu respons tidak boleh membedakan email terdaftar dari yang tidak
+    // (pengiriman via Resend memakan ratusan ms, hanya terjadi untuk akun yang ada).
+    if (user && user.isActive) {
+      const target = { id: user.id, email: user.email, name: user.name };
+      void sendPasswordResetEmail(db, c.env, target).catch((err) => console.error("[auth] reset email error:", err));
+    }
+    return success(c, { sent: true }, generic);
+  }
+);
+
+auth.post(
+  "/forgot-password/email/reset",
+  authRateLimit,
+  zValidator("json", forgotPasswordEmailResetSchema),
+  async (c) => {
+    const { token, newPassword } = c.req.valid("json");
+    const db = c.get("db");
+    const invalid = "Tautan tidak valid atau sudah kedaluwarsa";
+
+    const row = await consumeEmailToken(db, token, "reset_password");
+    if (!row) return error(c, invalid, 400);
+
+    const user = await db.query.users.findFirst({ where: eq(users.id, row.userId) });
+    // Token diterbitkan untuk email tertentu; bila email akun sudah berubah, tautan tidak berlaku
+    if (!user || user.email !== row.email || !user.isActive) return error(c, invalid, 400);
+
+    const newPasswordHash = await hashPassword(newPassword);
+    await db.update(users).set({ passwordHash: newPasswordHash, updatedAt: new Date() }).where(eq(users.id, user.id));
+    await db
+      .update(donaturTable)
+      .set({ passwordHash: newPasswordHash, updatedAt: new Date() })
+      .where(eq(donaturTable.userId, user.id));
+
+    // Memakai tautan ini membuktikan pemilik mengakses kotak surat tersebut: email otomatis terverifikasi
+    // (jika tidak, akun daftar-mandiri yang belum klik link verifikasi tetap ditolak login setelah reset).
+    await markEmailVerified(db, user.id);
+    await linkVerifiedAccountData(db, { id: user.id, email: user.email, passwordHash: newPasswordHash });
 
     return success(c, { reset: true }, "Password berhasil diubah");
   }

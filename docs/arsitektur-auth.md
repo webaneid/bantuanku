@@ -52,11 +52,16 @@ Roles di-embed langsung ke dalam token — tidak di-fetch dari DB per request.
 | `PATCH` | `/auth/me/profile` | Update profil unified |
 | `PATCH` | `/auth/me/password` | Ganti password (butuh token) |
 | `GET` | `/auth/check-registration` | Cek email/phone sudah terdaftar. Hanya `{exists, registered}` (tanpa data pribadi), kena `authRateLimit`. Auto-isi data di halaman register dihapus |
+| `POST` | `/auth/forgot-password/email/request` | Minta link reset via email (1 jam, sekali pakai). Respons generik identik untuk email terdaftar/tidak; pengiriman di background (tidak ada beda waktu respons) |
+| `POST` | `/auth/forgot-password/email/reset` | Reset password dengan token + password baru (8–128). Memakai link otomatis menandai email terverifikasi dan menautkan data guest |
 | `POST` | `/auth/forgot-password/request-otp` | Kirim OTP via WhatsApp |
 | `POST` | `/auth/forgot-password/reset` | Reset password dengan OTP |
 
 ### Login: gate verifikasi email
 `POST /auth/login` menolak akun dengan `email_verified_at IS NULL` dengan `403 {code: "EMAIL_NOT_VERIFIED"}` setelah password terbukti benar, dan mengirim ulang link verifikasi. Akun yang dibuat admin (users, employees, donatur, mitra ×2) dan akun seed diberi `email_verified_at` saat dibuat; migrasi 121 mem-backfill semua user ber-peran selain `user`.
+
+### Reset password via email
+Token `reset_password` (1 jam) tidak bisa dipakai untuk verifikasi, dan sebaliknya (kolom `purpose` ikut dicek saat konsumsi). Permintaan baru menghanguskan token lama. Reset mengganti `users.password_hash` dan `donatur.password_hash` (donatur dengan `user_id` akun itu). **Gap yang diketahui:** refresh token yang sudah terbit tetap berlaku sampai kedaluwarsa (7 hari) karena tidak ada revocation (lihat `arsitektur-security.md`); reset password tidak mencabut sesi yang ada.
 
 ### Kepemilikan transaksi di akun
 `GET /account/donations` dan `/account/donations/:id` mengenali transaksi lewat `transactions.user_id` atau `donor_email` yang cocok dengan email akun **yang sudah terverifikasi**. Nomor telepon/WA tidak lagi dipakai (klaim tak terverifikasi).
@@ -234,7 +239,7 @@ TTL: 5 menit. Max attempts: 5 (setelah itu OTP hangus).
 | Fase | Isi | Status |
 |------|-----|--------|
 | 1 | Verifikasi email (tabel token, kirim/verifikasi/kirim-ulang, gate login, perketat register, tutup `check-registration`, kepemilikan transaksi via email terverifikasi) | ✅ API + web (halaman `/verifikasi-email`, panel cek email di register/login) — diuji 28 kasus API + alur browser |
-| 2 | Lupa password via email (link 1 jam) | ⏳ |
+| 2 | Lupa password via email (link 1 jam) | ✅ API + web (`/forgot-password` tab Via Email default, `/reset-password`) — 20 kasus API + alur browser |
 | 3 | Login/daftar Google (`/auth/methods`, `/auth/google/start|callback|exchange`, `user_oauth_accounts`) | ⏳ |
 | 4 | Frontend web: `/verifikasi-email` + panel cek email ✅ (Fase 1); `/forgot-password` via email, tombol Google, lengkapi data WA ⏳. Halaman aksi auth (`/login`, `/register`, `/verifikasi-email`) sengaja tidak masuk `url-registry` (bukan tujuan tautan) | ◐ |
 

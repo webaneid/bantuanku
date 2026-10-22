@@ -40,3 +40,23 @@ export async function sendVerificationEmail(db: Database, env: Env, user: Target
     return "failed";
   }
 }
+
+// Kirim link reset password (berlaku 1 jam). Mengembalikan "sent" | "cooldown" | "failed".
+export async function sendPasswordResetEmail(db: Database, env: Env, user: TargetUser): Promise<"sent" | "cooldown" | "failed"> {
+  if (await isInCooldown(db, user.id, "reset_password")) return "cooldown";
+  if (!env.RESEND_API_KEY || !env.FROM_EMAIL) {
+    console.error("[auth-email] RESEND_API_KEY/FROM_EMAIL belum di-set — email reset password tidak terkirim");
+    return "failed";
+  }
+  try {
+    const token = await issueEmailToken(db, { userId: user.id, email: user.email, purpose: "reset_password" });
+    const base = await getFrontendBase(db, env);
+    const brand = await getBrandName(db);
+    const url = `${base}/reset-password?token=${encodeURIComponent(token)}`;
+    const mailer = createEmailService(env.RESEND_API_KEY, env.FROM_EMAIL, brand, base, env.ADMIN_URL);
+    return (await mailer.sendPasswordResetLink({ to: user.email, name: user.name, url })) ? "sent" : "failed";
+  } catch (err) {
+    console.error("[auth-email] gagal mengirim reset password:", err);
+    return "failed";
+  }
+}
