@@ -865,7 +865,6 @@ export const enMessages: Messages = {
       },
       hints: {
         autoFilledFromAccount: "Data auto-filled from your account (editable)",
-        autoFilledFromHistory: "Data found from donation history (editable)",
         donationProofEmail: "Donation proof will be sent to this email",
         whatsappNotification: "For notifications and payment confirmation",
         onBehalfQurbanZakat:
@@ -900,7 +899,7 @@ export const enMessages: Messages = {
         donation: "Donation",
       },
       toasts: {
-        donorFound: "Your data was found! Name has been auto-filled.",
+        donorFoundMasked: "We found your record ({name}). Please complete the details below.",
         whatsappAutoFilled: "WhatsApp auto-filled from phone number",
         successDefault: "Transaction created successfully!",
         successQurbanAndOthers: "Donation and qurban order created successfully!",

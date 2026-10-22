@@ -102,13 +102,13 @@ kentara dari nama-nama dokumen yang ada.
 |---|------|--------|
 | S | **Rate limit bisa dilewati dengan memalsukan `X-Forwarded-For`** (brute force `/auth/login`, OTP, reset). Terbukti: 30/30 percobaan lolos dengan header berbeda | ✅ **Deployed 2026-10-23**: topologi terkonfirmasi Cloudflare + Nginx (`$proxy_add_x_forwarded_for`), `TRUSTED_PROXY_HOPS=2` di `.env` VPS. Uji produksi ke `api.bantuanku.org/v1/auth/login` dengan XFF berbeda tiap request: 20 × 401 lalu 429 (limit `authRateLimit` tercapai, header palsu diabaikan) |
 | T | Verifikasi email (Fase 1), lupa password via email (Fase 2), login/daftar Google (Fase 3), frontend (Fase 4) | ✅ di kode; **deployed & teruji di produksi (2026-10-23, lihat Status deploy di bawah)**. Prasyarat deploy: migrasi 121 → env Resend → env Google (opsional) |
-| U | Refresh token tidak dicabut saat reset password (tidak ada revocation) | ⏳ Gap lama (token 7 hari), kini lebih relevan karena ada reset via email; kandidat: tabel sesi/token version |
+| U | Refresh token tidak dicabut saat reset password | ✅ Sudah ditutup ADR-0011 (sesi dicabut saat reset/ganti password); terbukti di `e2e-auth-email.ts` ("refresh token LAMA dicabut setelah reset/ganti password -> 401"). Catatan lama ini usang, dikoreksi 2026-10-23 |
 
 ## Audit `security-auditor` atas ADR-0010 (2026-10-22) — diperbaiki di ADR-0011
 
 | # | Temuan audit | Status |
 |---|--------------|--------|
-| V | **(High)** `GET /v1/donatur/search` publik membuka nama, email, telepon, WA donatur (autofill checkout) | ◐ `userId` diganti `hasAccount` + rate limit 30/15 menit. **PII-nya masih terbuka — butuh keputusan produk:** hanya `exists` tanpa autofill, atau autofill setelah OTP/login, atau masking |
+| V | **(High)** `GET /v1/donatur/search` publik membuka nama, email, telepon, WA donatur (autofill checkout) | ✅ 2026-10-23 (keputusan user: masking). Respons kini `{id, name, email, phone, whatsappNumber}` tersamar (`Ahm** Fau**`, `a***@gmail.com`, `0812******90`) + `hasAccount`; checkout tidak lagi autofill dari hasil ini, hanya menyimpan `donaturId` + toast + popup daftar. Sisa risiko kecil: `POST /v1/donatur` masih mengembalikan `id` untuk email yang sudah ada, dan `POST /transactions` mempercayai `donatur_id` dari klien (tanpa PII, hanya bisa menautkan donasi ke riwayat donatur lain) — kandidat: tautkan donatur di server berdasar email/telepon, bukan id dari klien |
 | W | **(High)** Pre-registration hijack belum tertutup: link verifikasi yang diklik pemilik email mengesahkan akun ber-password penyerang | ✅ Verifikasi butuh token + password; daftar ulang akun belum terverifikasi menimpa password; Google meng-klaim akun (hapus password). 54 + 53 kasus uji |
 | X | **(Medium)** Tidak ada pencabutan sesi; `/refresh` tidak cek verifikasi | ✅ `users.sessions_valid_after` (migrasi 122) + cek verifikasi. Gap #U selesai |
 | Y | **(Medium)** Admin bisa memberi peran staf ke user belum terverifikasi (`admin/employees.ts`, 2 jalur) | ✅ Ditolak bila `email_verified_at` NULL. Tidak diuji runtime (butuh fixture admin+employee), terverifikasi lewat tsc dan baca kode |

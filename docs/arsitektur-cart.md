@@ -297,7 +297,7 @@ Behavior awal:
 - saat page load dengan item, kirim Meta Pixel `InitiateCheckout`
 - ambil referral code dari localStorage via `getReferralCode()`
 - jika user login, autofill data dari `useAuth()`
-- jika guest mengisi email/phone/WA, cek donatur existing via `GET /v1/donatur/search`
+- jika guest mengisi email/phone/WA, cek donatur existing via `GET /v1/donatur/search`; hasilnya **tersamar**, jadi form TIDAK diisi otomatis: hanya `donaturId` disimpan dan toast "Data Anda ditemukan (nama tersamar)" tampil
 - jika donatur existing tanpa user account, tampil popup ajakan register
 
 ## Checkout Validation

@@ -96,3 +96,34 @@ export function normalizeContactData(data: Record<string, any>): Record<string, 
   
   return normalized;
 }
+
+// Penyamaran data pribadi untuk respons publik (mis. pencarian donatur di checkout).
+// Cukup untuk dikenali pemiliknya, tidak cukup untuk dipakai pihak lain.
+
+/** "Ahmad Fauzi" -> "Ahm** Fau**" */
+export function maskName(name: string | null | undefined): string {
+  if (!name) return "";
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      const keep = Math.min(3, Math.ceil(word.length / 2));
+      return word.slice(0, keep) + "*".repeat(word.length - keep);
+    })
+    .join(" ");
+}
+
+/** "andi@gmail.com" -> "a***@gmail.com" */
+export function maskEmail(email: string | null | undefined): string {
+  if (!email) return "";
+  const at = email.lastIndexOf("@");
+  if (at < 1) return "***";
+  return `${email[0]}***${email.slice(at)}`;
+}
+
+/** "081234567890" -> "0812******90" */
+export function maskPhone(phone: string | null | undefined): string {
+  if (!phone) return "";
+  if (phone.length <= 6) return phone[0] + "*".repeat(phone.length - 1);
+  return phone.slice(0, 4) + "*".repeat(phone.length - 6) + phone.slice(-2);
+}

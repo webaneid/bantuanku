@@ -439,3 +439,8 @@
 
 **Konteks:** Skrip uji Fase 1 dan 2 saya hapus setelah lolos. Ketika desain berubah (ADR-0011), seluruh skenario harus ditulis ulang dari nol.
 **Pelajaran:** Skenario uji keamanan (pre-hijack, token silang, replay, kedaluwarsa) adalah aset. Simpan sebagai skrip di `apps/api/scripts/e2e-*.ts` dengan pengaman (DB lokal, integrasi eksternal dimatikan) agar bisa dijalankan ulang setiap kali auth disentuh: `e2e-auth-email.ts` (54 kasus) dan `e2e-google-oauth.ts` (53 kasus).
+
+### 2026-10-23 — Endpoint Pencarian Identitas Publik: Samarkan, Jangan Autofill
+**Konteks:** `GET /v1/donatur/search` dipakai checkout tamu untuk autofill form dan membuka nama/email/HP/WA lengkap siapa pun yang emailnya atau nomornya diketahui.
+**Masalah:** Kemudahan autofill menjadi kebocoran data pribadi (UU PDP) dan alat enumerasi donatur. Rate limit saja tidak menutupnya.
+**Pelajaran:** Endpoint publik yang mencari berdasarkan identitas harus mengembalikan data tersamar (cukup agar pemilik mengenali dirinya) dan klien tidak boleh memakainya untuk mengisi form. Kalau perlu data lengkap, minta bukti kepemilikan (login/OTP). Waspadai juga jalur lain yang membocorkan `id` yang sama (`POST /donatur` untuk email yang ada) dan server yang mempercayai `donatur_id` dari klien.

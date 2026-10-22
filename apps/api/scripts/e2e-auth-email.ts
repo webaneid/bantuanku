@@ -201,6 +201,8 @@ const clean = async () => {
     ok("email baru disimpan huruf kecil", mc?.email === E("mixed"), mc);
     const sr = await req("GET", `/donatur/search?email=${encodeURIComponent(E("victim"))}`);
     ok("/donatur/search: tanpa userId, dengan hasAccount", sr.status === 200 && !("userId" in (sr.body.data || {})) && sr.body.data?.hasAccount === true, sr.body);
+    const sd = sr.body.data || {};
+    ok("/donatur/search: data pribadi disamarkan", typeof sd.email === "string" && sd.email !== E("victim") && sd.email.includes("***@") && /\*/.test(sd.name || "") && !!sd.id, sd);
     let last = 0; for (let i = 0; i < 32; i++) { const x = await fetch(`${API}/donatur/search?email=nobody-${i}@test.invalid`, { headers: { "X-Forwarded-For": "10.77.0.1" }, __fixedIp: true } as any); last = x.status; }
     ok("/donatur/search kena rate limit ketat (429 setelah 30)", last === 429, last);
 

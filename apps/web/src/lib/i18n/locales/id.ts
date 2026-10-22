@@ -869,7 +869,6 @@ export const idMessages: Messages = {
       },
       hints: {
         autoFilledFromAccount: "Data diisi otomatis dari akun Anda (dapat diubah)",
-        autoFilledFromHistory: "Data ditemukan dari riwayat donasi (dapat diubah)",
         donationProofEmail: "Bukti donasi akan dikirim ke email ini",
         whatsappNotification: "Untuk notifikasi dan konfirmasi pembayaran",
         onBehalfQurbanZakat:
@@ -904,7 +903,7 @@ export const idMessages: Messages = {
         donation: "Donasi",
       },
       toasts: {
-        donorFound: "Data Anda ditemukan! Nama telah diisi otomatis.",
+        donorFoundMasked: "Data Anda ditemukan ({name}). Lengkapi data di bawah ini.",
         whatsappAutoFilled: "WhatsApp diisi otomatis dari nomor telepon",
         successDefault: "Transaksi berhasil dibuat!",
         successQurbanAndOthers: "Donasi dan pesanan qurban berhasil dibuat!",

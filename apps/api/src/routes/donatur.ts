@@ -4,14 +4,14 @@ import { z } from "zod";
 import { eq, or } from "drizzle-orm";
 import { donatur, createId } from "@bantuanku/db";
 import { success, error } from "../lib/response";
-import { normalizeContactData } from "../lib/contact-helpers";
+import { normalizeContactData, maskName, maskEmail, maskPhone } from "../lib/contact-helpers";
 import { hashPassword } from "../lib/password";
 import { lookupRateLimit } from "../middleware/ratelimit";
 import type { Env, Variables } from "../types";
 
 const donaturRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// GET /donatur/search - Search donatur by email or phone (public)
+// GET /donatur/search - Cari donatur by email/phone (public, respons disamarkan)
 donaturRoute.get("/search", lookupRateLimit, async (c) => {
   const db = c.get("db");
   const email = c.req.query("email");
@@ -47,9 +47,16 @@ donaturRoute.get("/search", lookupRateLimit, async (c) => {
     return error(c, "Donatur not found", 404);
   }
 
-  // userId internal tidak diekspos ke publik; cukup tahu apakah donatur ini sudah punya akun
-  const { userId, ...publicFields } = found;
-  return success(c, { ...publicFields, hasAccount: !!userId });
+  // Endpoint publik: data pribadi disamarkan agar tidak bisa dipakai untuk mengintip identitas orang lain.
+  // userId internal juga tidak diekspos; cukup tahu apakah donatur ini sudah punya akun.
+  return success(c, {
+    id: found.id,
+    name: maskName(found.name),
+    email: maskEmail(found.email),
+    phone: maskPhone(found.phone),
+    whatsappNumber: maskPhone(found.whatsappNumber),
+    hasAccount: !!found.userId,
+  });
 });
 
 // POST /donatur - Create donatur (public, for guest checkout)

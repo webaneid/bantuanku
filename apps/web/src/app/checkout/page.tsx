@@ -171,22 +171,10 @@ export default function CheckoutPage() {
           // Set donatur ID
           setDonaturId(donatur.id);
 
-          // Auto-fill all fields (only for guests)
+          // Data dari endpoint publik sudah disamarkan: jangan dipakai mengisi form.
+          // Cukup beri tahu donatur dikenali; donaturId menyambungkan riwayat donasinya.
           if (!user) {
-            const donaturPhone = donatur.phone || '';
-            const donaturWa = donatur.whatsappNumber || '';
-            const waSame = !donaturWa || normalizePhone(donaturWa) === normalizePhone(donaturPhone);
-
-            setFormData(prev => ({
-              ...prev,
-              name: donatur.name || prev.name,
-              email: donatur.email || prev.email,
-              phone: donaturPhone || prev.phone,
-              whatsapp: waSame ? '' : donaturWa,
-            }));
-            setWhatsappSameAsPhone(waSame);
-            setIsAutoFilled(true);
-            toast.success(t('checkout.main.toasts.donorFound'));
+            toast.success(t('checkout.main.toasts.donorFoundMasked', { name: donatur.name }));
 
             // Show register popup if donatur exists but has no user account
             if (!donatur.hasAccount) {
@@ -698,11 +686,6 @@ export default function CheckoutPage() {
                     {isAutoFilled && user && (
                       <p className="text-xs text-green-600 mt-1">
                         {t('checkout.main.hints.autoFilledFromAccount')}
-                      </p>
-                    )}
-                    {isAutoFilled && !user && (
-                      <p className="text-xs text-green-600 mt-1">
-                        {t('checkout.main.hints.autoFilledFromHistory')}
                       </p>
                     )}
                   </div>
