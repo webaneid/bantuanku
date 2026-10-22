@@ -101,7 +101,7 @@ kentara dari nama-nama dokumen yang ada.
 | # | Item | Status |
 |---|------|--------|
 | S | **Rate limit bisa dilewati dengan memalsukan `X-Forwarded-For`** (brute force `/auth/login`, OTP, reset). Terbukti: 30/30 percobaan lolos dengan header berbeda | ◐ Kode siap, **opt-in**: set env `TRUSTED_PROXY_HOPS` di VPS setelah memeriksa konfigurasi Nginx/Cloudflare (Nginx saja = 1, Cloudflare + Nginx = 2). Diuji: dengan nilai 1, pemalsuan sisi kiri tidak lagi lolos dan klien lain tidak ikut terkunci. **Perlu keputusan/konfirmasi topologi proxy** |
-| T | Verifikasi email (Fase 1), lupa password via email (Fase 2), login/daftar Google (Fase 3), frontend (Fase 4) | ✅ di kode; belum deployed. Prasyarat deploy: migrasi 121 → env Resend → env Google (opsional) |
+| T | Verifikasi email (Fase 1), lupa password via email (Fase 2), login/daftar Google (Fase 3), frontend (Fase 4) | ✅ di kode; **deploy sebagian (2026-10-22, lihat Status deploy di bawah)**. Prasyarat deploy: migrasi 121 → env Resend → env Google (opsional) |
 | U | Refresh token tidak dicabut saat reset password (tidak ada revocation) | ⏳ Gap lama (token 7 hari), kini lebih relevan karena ada reset via email; kandidat: tabel sesi/token version |
 
 ## Audit `security-auditor` atas ADR-0010 (2026-10-22) — diperbaiki di ADR-0011
@@ -122,3 +122,11 @@ kentara dari nama-nama dokumen yang ada.
 
 > **Prasyarat deploy bertambah:** jalankan migrasi **121 dan 122** sebelum restart API.
 
+
+
+### Status deploy auth email + Google (2026-10-22, sesi ditutup di tengah jalan)
+- **Sudah di VPS:** `git pull` kode Fase 1–4, migrasi 121 + 122 sukses, `.env` di `/var/www/bantuanku/shared/` ditambah `GOOGLE_*` dan `RESEND_API_KEY`/`FROM_EMAIL`, API direstart; `GET /v1/auth/methods` → `{"google":true}` (kode baru aktif, Google terbaca).
+- **Belum terkonfirmasi:** build+restart admin dan web (user sempat berada di `apps/web`; kesalahan awal `cd apps/admin` relatif dari `packages/db`), `ENVIRONMENT=production` dan domain `FROM_EMAIL` terverifikasi di Resend (hanya diminta cek, belum dilaporkan), `pm2 status`/log API bersih.
+- **Belum diuji sama sekali di produksi (ditunda user):** login admin lama (WAJIB pertama), daftar akun baru + email verifikasi masuk, lupa password via email, login Google (redirect URI `https://api.bantuanku.org/v1/auth/google/callback`).
+- **Menunggu:** `TRUSTED_PROXY_HOPS` (butuh output `grep -rn "proxy_set_header\|real_ip\|set_real_ip_from" /etc/nginx/` + info Cloudflare), keputusan produk `/v1/donatur/search` (item V).
+- Risiko selama belum diuji: bila Resend belum benar, pendaftar baru tidak bisa login (akun lama/staf aman berkat backfill 121).

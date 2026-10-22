@@ -251,7 +251,7 @@ TTL: 5 menit. Max attempts: 5 (setelah itu OTP hangus).
 
 ## Rencana: Verifikasi Email, Reset Email, dan Login Google (ADR-0010)
 
-> Status: **diimplementasikan** (2026-10-22) dan diperketat oleh ADR-0011 setelah audit `security-auditor`. Belum deployed.
+> Status: **diimplementasikan** (2026-10-22) dan diperketat oleh ADR-0011 setelah audit `security-auditor`. Deploy sebagian per 2026-10-22 (migrasi + env + API; uji produksi belum), lihat RETROFIT-GAPS "Status deploy auth email + Google".
 
 | Fase | Isi | Status |
 |------|-----|--------|
