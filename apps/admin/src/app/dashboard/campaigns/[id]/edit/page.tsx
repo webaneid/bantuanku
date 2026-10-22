@@ -7,6 +7,7 @@ import CampaignForm, { CampaignFormData } from "@/components/CampaignForm";
 import { useState } from "react";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
+import { clearFormDraft } from "@/lib/hooks/use-form-draft";
 import { toWIBDateInput } from "@/lib/timezone";
 
 export default function EditCampaignPage() {
@@ -70,6 +71,7 @@ export default function EditCampaignPage() {
       return api.put(`/admin/campaigns/${campaignId}`, data);
     },
     onSuccess: () => {
+      clearFormDraft(`campaign:${campaignId}`);
       queryClient.invalidateQueries({ queryKey: ["admin-campaigns"] });
       queryClient.invalidateQueries({ queryKey: ["campaign", campaignId] });
       setRedirectAfterFeedback(true);
@@ -184,6 +186,7 @@ export default function EditCampaignPage() {
       {/* Form Card */}
       <div className="form-page-card">
         <CampaignForm
+          draftKey={`campaign:${campaignId}`}
           onSubmit={handleSubmit}
           initialData={campaign}
           isLoading={updateMutation.isPending}

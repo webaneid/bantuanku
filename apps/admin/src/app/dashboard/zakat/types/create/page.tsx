@@ -7,6 +7,7 @@ import ZakatTypeForm, { ZakatTypeFormData } from "@/components/ZakatTypeForm";
 import { useState } from "react";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
+import { clearFormDraft } from "@/lib/hooks/use-form-draft";
 
 export default function CreateZakatTypePage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function CreateZakatTypePage() {
       return api.post("/admin/zakat/types", data);
     },
     onSuccess: () => {
+      clearFormDraft("zakat-type:create");
       queryClient.invalidateQueries({ queryKey: ["zakat-types-all"] });
       queryClient.invalidateQueries({ queryKey: ["zakat-types-active"] });
       setRedirectAfterFeedback(true);
@@ -75,6 +77,7 @@ export default function CreateZakatTypePage() {
       {/* Form Card */}
       <div className="form-page-card">
         <ZakatTypeForm
+          draftKey="zakat-type:create"
           onSubmit={handleSubmit}
           isLoading={createMutation.isPending}
         />

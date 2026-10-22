@@ -10,7 +10,9 @@ import RichTextEditor from "./RichTextEditor";
 import MediaLibrary from "./MediaLibrary";
 import EmployeeModal from "./modals/EmployeeModal";
 import FeedbackDialog from "./FeedbackDialog";
-import SEOPanel, { type SEOData } from "./SEOPanel";
+import SEOPanel, { seoDraftValue, type SEOData } from "./SEOPanel";
+import DraftRestoreBanner from "./DraftRestoreBanner";
+import { useFormDraft } from "@/lib/hooks/use-form-draft";
 import { PlusIcon } from "@heroicons/react/24/outline";
 
 export interface CampaignFormData {
@@ -48,13 +50,15 @@ export interface CampaignFormData {
 }
 
 interface CampaignFormProps {
+  /** Pengenal cadangan otomatis (mis. "campaign:create", "campaign:<id>"). */
+  draftKey: string;
   onSubmit: (data: CampaignFormData) => void;
   initialData?: Partial<CampaignFormData>;
   isLoading?: boolean;
   isAlreadyPublished?: boolean;
 }
 
-export default function CampaignForm({ onSubmit, initialData, isLoading, isAlreadyPublished }: CampaignFormProps) {
+export default function CampaignForm({ draftKey, onSubmit, initialData, isLoading, isAlreadyPublished }: CampaignFormProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isMitra = user?.roles?.includes("mitra") && user.roles.length === 1;
@@ -248,6 +252,31 @@ export default function CampaignForm({ onSubmit, initialData, isLoading, isAlrea
     }
   }, [initialData]);
 
+  // Cadangan otomatis: nilai field react-hook-form + state terpisah (kategori, konten, gambar, SEO, dst.)
+  const { draft, restore, discard } = useFormDraft({
+    formKey: draftKey,
+    values: {
+      fields: watch(),
+      category, pillar, coordinatorId, content, imageUrl, images, status, broadcastWa,
+      seo: seoDraftValue(seoValues),
+    },
+    ready: true,
+    onRestore: (v) => {
+      (Object.keys(v.fields) as (keyof CampaignFormData)[]).forEach((name) => {
+        setValue(name, v.fields[name] as never);
+      });
+      setCategory(v.category);
+      setPillar(v.pillar);
+      setCoordinatorId(v.coordinatorId);
+      setContent(v.content);
+      setImageUrl(v.imageUrl);
+      setImages(v.images);
+      setStatus(v.status);
+      setBroadcastWa(v.broadcastWa);
+      setSeoValues(v.seo);
+    },
+  });
+
   const handleFormSubmit = (data: CampaignFormData) => {
     console.log('Form submitted with data:', data);
     console.log('Form errors:', errors);
@@ -281,6 +310,7 @@ export default function CampaignForm({ onSubmit, initialData, isLoading, isAlrea
 
   return (
     <>
+      {draft && <DraftRestoreBanner savedAt={draft.savedAt} onRestore={restore} onDiscard={discard} />}
       <form id="campaign-form" onSubmit={handleSubmit(handleFormSubmit, handleFormError)}>
         <div className="form-layout-two-column">
         {/* Main Content (Left Column) */}

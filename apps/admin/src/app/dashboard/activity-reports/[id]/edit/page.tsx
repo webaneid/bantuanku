@@ -8,8 +8,10 @@ import Autocomplete from "@/components/Autocomplete";
 import RichTextEditor from "@/components/RichTextEditor";
 import MediaLibrary from "@/components/MediaLibrary";
 import FeedbackDialog from "@/components/FeedbackDialog";
-import SEOPanel, { type SEOData } from "@/components/SEOPanel";
-import { AddressForm, type AddressValue } from "@/components/forms/AddressForm";
+import SEOPanel, { seoDraftValue, type SEOData } from "@/components/SEOPanel";
+import { AddressForm, normalizeAddressValue, type AddressValue } from "@/components/forms/AddressForm";
+import DraftRestoreBanner from "@/components/DraftRestoreBanner";
+import { useFormDraft, clearFormDraft } from "@/lib/hooks/use-form-draft";
 import api from "@/lib/api";
 
 const referenceTypeOptions = [
@@ -37,6 +39,8 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
   const [status, setStatus] = useState("draft");
   const [typeSpecificData, setTypeSpecificData] = useState<any>({});
   const [addressFormData, setAddressFormData] = useState<Partial<AddressValue>>({});
+  const [restoredAddress, setRestoredAddress] = useState<Partial<AddressValue> | undefined>(undefined);
+  const [populatedFor, setPopulatedFor] = useState<unknown>(null);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [seoValues, setSeoValues] = useState<Partial<SEOData>>({});
   const handleSEOChange = useCallback((data: Partial<SEOData>) => {
@@ -97,8 +101,43 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
         ogImageUrl: report.ogImageUrl || "",
         seoScore: report.seoScore || 0,
       });
+      setPopulatedFor(report);
     }
   }, [report]);
+
+  // Siap untuk cadangan otomatis hanya bila state sudah terisi dari server DAN AddressForm sudah menyusul
+  // (alamat baru terisi beberapa render setelah data tiba), supaya pembanding awal tidak salah
+  const savedAddress = normalizeAddressValue(addressData);
+  const currentAddress = normalizeAddressValue(addressFormData);
+  const formReady =
+    Boolean(report) &&
+    populatedFor === report &&
+    JSON.stringify(savedAddress) === JSON.stringify(currentAddress);
+
+  const { draft, restore, discard } = useFormDraft({
+    formKey: `activity-report:${id}`,
+    values: {
+      referenceType, referenceId, referenceName, title, slug, activityDate, description, gallery, videoUrl,
+      status, typeSpecificData, address: currentAddress, seoValues: seoDraftValue(seoValues),
+    },
+    ready: formReady,
+    onRestore: (v) => {
+      setReferenceType(v.referenceType);
+      setReferenceId(v.referenceId);
+      setReferenceName(v.referenceName);
+      setTitle(v.title);
+      setSlug(v.slug);
+      setActivityDate(v.activityDate);
+      setDescription(v.description);
+      setGallery(v.gallery);
+      setVideoUrl(v.videoUrl);
+      setStatus(v.status);
+      setTypeSpecificData(v.typeSpecificData);
+      setRestoredAddress(v.address);
+      setAddressFormData(v.address);
+      setSeoValues(v.seoValues);
+    },
+  });
 
   // Fetch campaigns
   const { data: campaignsData } = useQuery({
@@ -199,6 +238,7 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
       return api.put(`/admin/activity-reports/${id}`, data);
     },
     onSuccess: () => {
+      clearFormDraft(`activity-report:${id}`);
       queryClient.invalidateQueries({ queryKey: ["activity-report", id] });
       queryClient.invalidateQueries({ queryKey: ["activity-reports"] });
       setFeedback({
@@ -351,6 +391,8 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
       </div>
 
       {/* Form */}
+      {draft && <DraftRestoreBanner savedAt={draft.savedAt} onRestore={restore} onDiscard={discard} />}
+
       <form onSubmit={handleSubmit} id="activity-report-form">
         <div className="form-layout-two-column">
           {/* Main Content (Left Column) */}
@@ -456,7 +498,7 @@ export default function EditActivityReportPage({ params }: { params: Promise<{ i
 
             {/* Lokasi Kegiatan */}
             <AddressForm
-              value={addressData}
+              value={restoredAddress ?? addressData}
               onChange={setAddressFormData}
               required={false}
               showTitle={true}

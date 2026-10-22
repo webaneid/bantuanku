@@ -8,6 +8,7 @@ import FeedbackDialog from "@/components/FeedbackDialog";
 import PageForm, { type PageFormData } from "@/components/PageForm";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { clearFormDraft } from "@/lib/hooks/use-form-draft";
 
 export default function EditPageAdminPage() {
   const params = useParams<{ id: string }>();
@@ -63,6 +64,7 @@ export default function EditPageAdminPage() {
       return response.data;
     },
     onSuccess: () => {
+      clearFormDraft(`page:${pageId}`);
       queryClient.invalidateQueries({ queryKey: ["admin-pages"] });
       queryClient.invalidateQueries({ queryKey: ["admin-page-detail", pageId] });
       setRedirectAfterFeedback(true);
@@ -133,6 +135,8 @@ export default function EditPageAdminPage() {
 
       <div className="form-page-card">
         <PageForm
+          draftKey={`page:${pageId}`}
+          draftReady={Boolean(initialData)}
           initialData={initialData}
           isLoading={updateMutation.isPending}
           onCancel={() => router.push("/dashboard/pages")}

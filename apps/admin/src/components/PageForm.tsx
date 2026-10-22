@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import MediaLibrary from "./MediaLibrary";
 import RichTextEditor from "./RichTextEditor";
 import SEOPanel, { type SEOData } from "./SEOPanel";
+import DraftRestoreBanner from "./DraftRestoreBanner";
+import { useFormDraft } from "@/lib/hooks/use-form-draft";
 
 export interface PageFormData {
   title: string;
@@ -27,6 +29,10 @@ export interface PageFormData {
 
 interface PageFormProps {
   initialData?: Partial<PageFormData>;
+  /** Pengenal cadangan otomatis (mis. "page:create", "page:<id>"). */
+  draftKey: string;
+  /** false selama data awal (edit) masih dimuat. */
+  draftReady?: boolean;
   isLoading?: boolean;
   onCancel: () => void;
   onSubmit: (data: PageFormData, mode: "draft" | "publish") => void;
@@ -62,7 +68,7 @@ function generateSlug(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-export default function PageForm({ initialData, isLoading = false, onCancel, onSubmit }: PageFormProps) {
+export default function PageForm({ initialData, draftKey, draftReady = true, isLoading = false, onCancel, onSubmit }: PageFormProps) {
   const [formData, setFormData] = useState<PageFormData>(() => ({
     ...DEFAULT_FORM_DATA,
     ...initialData,
@@ -72,6 +78,9 @@ export default function PageForm({ initialData, isLoading = false, onCancel, onS
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const [formError, setFormError] = useState("");
 
+  // Form baru dianggap siap (untuk cadangan otomatis) setelah state-nya benar-benar terisi dari initialData
+  const [syncedInitial, setSyncedInitial] = useState(initialData);
+
   useEffect(() => {
     setFormData({
       ...DEFAULT_FORM_DATA,
@@ -79,7 +88,18 @@ export default function PageForm({ initialData, isLoading = false, onCancel, onS
       isPublished: Boolean(initialData?.isPublished),
     });
     setSlugManuallyEdited(Boolean(initialData?.slug));
+    setSyncedInitial(initialData);
   }, [initialData]);
+
+  const { draft, restore, discard } = useFormDraft({
+    formKey: draftKey,
+    values: { formData, slugManuallyEdited },
+    ready: draftReady && syncedInitial === initialData,
+    onRestore: (saved) => {
+      setFormData({ ...DEFAULT_FORM_DATA, ...saved.formData });
+      setSlugManuallyEdited(saved.slugManuallyEdited);
+    },
+  });
 
   const contentText = useMemo(
     () =>
@@ -153,6 +173,7 @@ export default function PageForm({ initialData, isLoading = false, onCancel, onS
 
   return (
     <>
+      {draft && <DraftRestoreBanner savedAt={draft.savedAt} onRestore={restore} onDiscard={discard} />}
       <div className="form-layout-two-column">
         <div className="form-main-content">
           <div className="form-field">

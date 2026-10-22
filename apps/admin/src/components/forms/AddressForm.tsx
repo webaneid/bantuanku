@@ -41,6 +41,18 @@ export interface AddressValue {
   postalCode: string | null;
 }
 
+/** Bentuk baku nilai alamat (undefined → "" / null) agar dua nilai "kosong" dianggap sama saat dibandingkan. */
+export function normalizeAddressValue(value: Partial<AddressValue> | undefined): AddressValue {
+  return {
+    detailAddress: value?.detailAddress || "",
+    provinceCode: value?.provinceCode || "",
+    regencyCode: value?.regencyCode || "",
+    districtCode: value?.districtCode || "",
+    villageCode: value?.villageCode || "",
+    postalCode: value?.postalCode || null,
+  };
+}
+
 interface AddressFormProps {
   value?: Partial<AddressValue>;
   onChange?: (value: AddressValue) => void;

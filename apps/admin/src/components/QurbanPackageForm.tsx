@@ -6,7 +6,9 @@ import { useQuery } from "@tanstack/react-query";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import RichTextEditor from "./RichTextEditor";
 import MediaLibrary from "./MediaLibrary";
-import SEOPanel, { type SEOData } from "./SEOPanel";
+import SEOPanel, { seoDraftValue, type SEOData } from "./SEOPanel";
+import DraftRestoreBanner from "./DraftRestoreBanner";
+import { useFormDraft } from "@/lib/hooks/use-form-draft";
 import api from "@/lib/api";
 
 export interface PackagePeriod {
@@ -44,6 +46,8 @@ export interface QurbanPackageFormData {
 }
 
 interface QurbanPackageFormProps {
+  /** Pengenal cadangan otomatis (mis. "qurban-package:create", "qurban-package:<id>"). */
+  draftKey: string;
   onSubmit: (data: QurbanPackageFormData) => void;
   initialData?: Partial<QurbanPackageFormData>;
   isLoading?: boolean;
@@ -57,7 +61,7 @@ interface Period {
   status: "draft" | "active" | "closed" | "executed";
 }
 
-export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: QurbanPackageFormProps) {
+export default function QurbanPackageForm({ draftKey, onSubmit, initialData, isLoading }: QurbanPackageFormProps) {
   const { register, handleSubmit, formState: { errors }, setValue, watch, control, reset } = useForm<QurbanPackageFormData>({
     defaultValues: initialData || {
       animalType: "cow",
@@ -155,6 +159,19 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
     }
   }, [initialData]);
 
+  // Cadangan otomatis: nilai field react-hook-form (termasuk array periode) + state terpisah (deskripsi, gambar, SEO)
+  const { draft, restore, discard } = useFormDraft({
+    formKey: draftKey,
+    values: { fields: watch(), description, imageUrl, seo: seoDraftValue(seoValues) },
+    ready: true,
+    onRestore: (v) => {
+      reset(v.fields); // reset menyusun ulang seluruh form, termasuk array periode (useFieldArray)
+      setDescription(v.description);
+      setImageUrl(v.imageUrl);
+      setSeoValues(v.seo);
+    },
+  });
+
   const handleFormSubmit = (data: QurbanPackageFormData) => {
     onSubmit({ ...data, ...seoValues });
   };
@@ -181,6 +198,7 @@ export default function QurbanPackageForm({ onSubmit, initialData, isLoading }: 
 
   return (
     <>
+      {draft && <DraftRestoreBanner savedAt={draft.savedAt} onRestore={restore} onDiscard={discard} />}
       <form id="qurban-package-form" onSubmit={handleSubmit(handleFormSubmit)}>
         <div className="form-layout-two-column">
           {/* Main Content (Left Column) */}

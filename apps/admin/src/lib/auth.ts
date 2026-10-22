@@ -51,6 +51,14 @@ export const useAuth = create<AuthState>()(
       },
 
       logout: () => {
+        // Logout yang disengaja menghapus cadangan otomatis form milik pengguna ini (komputer bersama).
+        // Logout otomatis karena sesi habis (interceptor 401 di api.ts) sengaja TIDAK menghapusnya.
+        const userId = useAuth.getState().user?.id;
+        if (userId) {
+          Object.keys(localStorage)
+            .filter((key) => key.startsWith(`form-draft:${userId}:`))
+            .forEach((key) => localStorage.removeItem(key));
+        }
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         set({ user: null, token: null });

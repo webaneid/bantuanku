@@ -30,6 +30,25 @@ export interface SEOData {
   seoScore: number;
 }
 
+/**
+ * Field SEO yang diisi manusia, dalam bentuk baku untuk cadangan otomatis. `seoScore` sengaja dikeluarkan:
+ * dihitung ulang oleh SEOPanel sendiri, dan SEOPanel mengirim nilai awal lengkap saat dipasang sehingga
+ * form yang belum disentuh akan terbaca "berubah" bila skor ikut dibandingkan.
+ */
+export function seoDraftValue(value: Partial<SEOData> | undefined): Omit<SEOData, "seoScore"> {
+  return {
+    focusKeyphrase: value?.focusKeyphrase || "",
+    metaTitle: value?.metaTitle || "",
+    metaDescription: value?.metaDescription || "",
+    canonicalUrl: value?.canonicalUrl || "",
+    noIndex: Boolean(value?.noIndex),
+    noFollow: Boolean(value?.noFollow),
+    ogTitle: value?.ogTitle || "",
+    ogDescription: value?.ogDescription || "",
+    ogImageUrl: value?.ogImageUrl || "",
+  };
+}
+
 interface SEOCheck {
   id: string;
   name: string;

@@ -278,6 +278,29 @@ Admin memakai dua icon library:
 
 Rekomendasi: untuk fitur baru, gunakan `lucide-react` kecuali komponen existing di area tersebut sudah konsisten memakai Heroicons.
 
+## Cadangan Otomatis Form (`useFormDraft`)
+
+Keputusan: ADR-0013. Form panjang dicadangkan ke `localStorage` browser agar logout (sesi habis), refresh, atau tab tertutup tidak menghapus tulisan.
+
+| Bagian | File |
+|---|---|
+| Hook + `clearFormDraft` | `apps/admin/src/lib/hooks/use-form-draft.ts` |
+| Banner pemulihan | `apps/admin/src/components/DraftRestoreBanner.tsx` |
+| Helper normalisasi | `seoDraftValue` (`SEOPanel.tsx`), `normalizeAddressValue` (`forms/AddressForm.tsx`) |
+
+Form yang memakainya: `PageForm` (`page:create`, `page:<id>`), laporan kegiatan create/edit (`activity-report:create`, `activity-report:<id>`), `CampaignForm` (`campaign:*`), `ZakatTypeForm` (`zakat-type:*`), `QurbanPackageForm` (`qurban-package:*`).
+
+Memasang di form baru:
+1. Di komponen form: `const { draft, restore, discard } = useFormDraft({ formKey, values, ready, onRestore })`. `values` = SELURUH nilai form (react-hook-form: `watch()` + state terpisah). `ready` = true setelah data awal edit selesai dimuat DAN tersinkron ke state. `onRestore` menerapkan nilai ke state (RHF: `setValue` per field, atau `reset(fields)` bila ada `useFieldArray`).
+2. Render `{draft && <DraftRestoreBanner savedAt={draft.savedAt} onRestore={restore} onDiscard={discard} />}` di atas form.
+3. Di `onSuccess` mutasi simpan (halaman induk): `clearFormDraft(formKey)`. JANGAN menghapus saat tombol simpan ditekan (simpan bisa gagal, mis. 401).
+4. Normalkan nilai yang dikirim komponen anak saat dipasang: `seoDraftValue(seoValues)` (abaikan `seoScore`), `normalizeAddressValue(address)`; kalau tidak, form yang belum disentuh akan menulis cadangan palsu. Hook sudah punya jendela penyesuaian 1,5 detik sebagai pengaman, bukan pengganti normalisasi.
+5. Uji: form belum disentuh → 0 cadangan; ketik → cadangan tertulis; hapus token (`localStorage.removeItem("token")`) lalu login ulang → banner → Pulihkan; simpan sukses → cadangan hilang.
+
+Perilaku: tulis 800 ms setelah ketikan terakhir dan saat `pagehide`; kedaluwarsa 7 hari; kunci memuat id pengguna; logout yang disengaja (`useAuth.logout`) menghapus cadangan pengguna itu, logout karena sesi habis tidak.
+
+Batasan: hanya satu browser/perangkat; form lain di admin (mis. settings, mitra, karyawan) belum punya cadangan; tombol "Buang" tidak meminta konfirmasi.
+
 ## Gap dan Rekomendasi
 
 1. **Konsolidasikan sistem feedback.** Pilih standar: `react-hot-toast` untuk toast global, `FeedbackDialog` untuk modal result, dan buat `ConfirmDialog` untuk destructive/approval.

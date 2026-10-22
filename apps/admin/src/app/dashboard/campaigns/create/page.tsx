@@ -7,6 +7,7 @@ import CampaignForm, { CampaignFormData } from "@/components/CampaignForm";
 import { useState } from "react";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
+import { clearFormDraft } from "@/lib/hooks/use-form-draft";
 
 export default function CreateCampaignPage() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function CreateCampaignPage() {
       return api.post("/admin/campaigns", data);
     },
     onSuccess: () => {
+      clearFormDraft("campaign:create");
       queryClient.invalidateQueries({ queryKey: ["admin-campaigns"] });
       router.push("/dashboard/campaigns");
     },
@@ -87,6 +89,7 @@ export default function CreateCampaignPage() {
       {/* Form Card */}
       <div className="form-page-card">
         <CampaignForm
+          draftKey="campaign:create"
           onSubmit={handleSubmit}
           isLoading={createMutation.isPending}
         />

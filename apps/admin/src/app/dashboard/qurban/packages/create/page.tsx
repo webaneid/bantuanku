@@ -7,6 +7,7 @@ import QurbanPackageForm, { QurbanPackageFormData } from "@/components/QurbanPac
 import { useState } from "react";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
+import { clearFormDraft } from "@/lib/hooks/use-form-draft";
 
 export default function CreateQurbanPackagePage() {
   const router = useRouter();
@@ -45,6 +46,7 @@ export default function CreateQurbanPackagePage() {
       return api.post("/admin/qurban/packages", payload);
     },
     onSuccess: () => {
+      clearFormDraft("qurban-package:create");
       queryClient.invalidateQueries({ queryKey: ["qurban-packages"] });
       setRedirectAfterFeedback(true);
       setFeedback({
@@ -95,6 +97,7 @@ export default function CreateQurbanPackagePage() {
       {/* Form Card */}
       <div className="form-page-card">
         <QurbanPackageForm
+          draftKey="qurban-package:create"
           onSubmit={handleSubmit}
           isLoading={createMutation.isPending}
         />

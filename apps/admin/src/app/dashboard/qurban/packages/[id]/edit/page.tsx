@@ -7,6 +7,7 @@ import QurbanPackageForm, { QurbanPackageFormData } from "@/components/QurbanPac
 import { useState } from "react";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
+import { clearFormDraft } from "@/lib/hooks/use-form-draft";
 import { toWIBDateInput } from "@/lib/timezone";
 
 export default function EditQurbanPackagePage() {
@@ -57,6 +58,7 @@ export default function EditQurbanPackagePage() {
       return api.patch(`/admin/qurban/packages/${packageId}`, payload);
     },
     onSuccess: () => {
+      clearFormDraft(`qurban-package:${packageId}`);
       queryClient.invalidateQueries({ queryKey: ["qurban-packages"] });
       queryClient.invalidateQueries({ queryKey: ["qurban-package", packageId] });
       setRedirectAfterFeedback(true);
@@ -152,6 +154,7 @@ export default function EditQurbanPackagePage() {
       {/* Form Card */}
       <div className="form-page-card">
         <QurbanPackageForm
+          draftKey={`qurban-package:${packageId}`}
           onSubmit={handleSubmit}
           initialData={qurbanPackage}
           isLoading={updateMutation.isPending}

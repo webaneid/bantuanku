@@ -5,7 +5,9 @@ import { useForm } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import RichTextEditor from "./RichTextEditor";
 import MediaLibrary from "./MediaLibrary";
-import SEOPanel, { type SEOData } from "./SEOPanel";
+import SEOPanel, { seoDraftValue, type SEOData } from "./SEOPanel";
+import DraftRestoreBanner from "./DraftRestoreBanner";
+import { useFormDraft } from "@/lib/hooks/use-form-draft";
 import api from "@/lib/api";
 
 export interface ZakatTypeFormData {
@@ -33,12 +35,14 @@ export interface ZakatTypeFormData {
 }
 
 interface ZakatTypeFormProps {
+  /** Pengenal cadangan otomatis (mis. "zakat-type:create", "zakat-type:<id>"). */
+  draftKey: string;
   onSubmit: (data: ZakatTypeFormData) => void;
   initialData?: Partial<ZakatTypeFormData>;
   isLoading?: boolean;
 }
 
-export default function ZakatTypeForm({ onSubmit, initialData, isLoading }: ZakatTypeFormProps) {
+export default function ZakatTypeForm({ draftKey, onSubmit, initialData, isLoading }: ZakatTypeFormProps) {
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ZakatTypeFormData>({
     defaultValues: initialData || {
       hasCalculator: true,
@@ -129,12 +133,28 @@ export default function ZakatTypeForm({ onSubmit, initialData, isLoading }: Zaka
     }
   }, [initialData]);
 
+  // Cadangan otomatis: nilai field react-hook-form + state terpisah (deskripsi, gambar, SEO)
+  const { draft, restore, discard } = useFormDraft({
+    formKey: draftKey,
+    values: { fields: watch(), description, imageUrl, seo: seoDraftValue(seoValues) },
+    ready: true,
+    onRestore: (v) => {
+      (Object.keys(v.fields) as (keyof ZakatTypeFormData)[]).forEach((name) => {
+        setValue(name, v.fields[name] as never);
+      });
+      setDescription(v.description);
+      setImageUrl(v.imageUrl);
+      setSeoValues(v.seo);
+    },
+  });
+
   const handleFormSubmit = (data: ZakatTypeFormData) => {
     onSubmit({ ...data, ...seoValues });
   };
 
   return (
     <>
+      {draft && <DraftRestoreBanner savedAt={draft.savedAt} onRestore={restore} onDiscard={discard} />}
       <form id="zakat-type-form" onSubmit={handleSubmit(handleFormSubmit)}>
         <div className="form-layout-two-column">
           {/* Main Content (Left Column) */}
