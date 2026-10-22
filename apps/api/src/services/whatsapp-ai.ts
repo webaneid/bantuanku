@@ -1,10 +1,41 @@
 import { eq, and, or, ilike, desc, sql } from "drizzle-orm";
+import { resolveGowaMediaUrl, readBodyWithLimit, acceptImageBuffer, isSafeGowaMediaId, GOWA_MEDIA_MAX_BYTES } from "../lib/gowa-media";
 import { campaigns, zakatTypes, zakatPeriods, transactions, transactionPayments, settings, donatur, qurbanSavings, qurbanPackages, qurbanPackagePeriods, qurbanPeriods, createId } from "@bantuanku/db";
 import type { Database } from "@bantuanku/db";
 import { WhatsAppService } from "./whatsapp";
 import { TransactionService } from "./transaction";
 import { decrypt } from "../lib/encryption";
 import { handleFlowStep, generateFirstFlowMessage, createZakatFlowState, createDonationFlowState, createFidyahFlowState, createQurbanFlowState, createQurbanSavingsFlowState, createQurbanSavingsDepositFlowState, type FlowState, type FlowContext } from "./whatsapp-flow";
+
+// ---------------------------------------------------------------------------
+// Identitas pengirim & kepemilikan resource
+// ---------------------------------------------------------------------------
+// Tool dipanggil oleh LLM, dan argumen yang dihasilkan LLM bisa dipengaruhi
+// prompt injection dari pengguna. Identitas pengirim (nomor WA) HARUS selalu
+// berasal dari konteks webhook (`context.phone`), bukan dari argumen tool, dan
+// resource by-id (transaksi) wajib dicek kepemilikannya terhadap nomor itu.
+
+// Cocokkan nomor persis pada 10 digit terakhir (setelah dinormalisasi ke digit saja).
+// Pengganti `ilike '%...%'` yang bisa cocok ke nomor lain dan memperlakukan `%`/`_` sebagai wildcard.
+function phoneMatches(column: any, phone: string) {
+  const last10 = phone.replace(/[^0-9]/g, "").slice(-10);
+  // Nomor tanpa digit / terlalu pendek tidak boleh cocok ke baris apa pun (mis. donor_phone kosong)
+  if (last10.length < 8) return sql`false`;
+  return sql`right(regexp_replace(${column}, '[^0-9]', '', 'g'), 10) = ${last10}`;
+}
+
+// Ambil transaksi by id hanya jika milik nomor pengirim; selain itu null (seolah tidak ada).
+async function findOwnedTransaction(db: Database, transactionId: string, ownerPhone: string) {
+  if (!transactionId || !ownerPhone) return null;
+  const rows = await db
+    .select()
+    .from(transactions)
+    .where(and(eq(transactions.id, transactionId), phoneMatches(transactions.donorPhone, ownerPhone)))
+    .limit(1);
+  return rows[0] || null;
+}
+
+const NO_OWNER_MSG = "Nomor HP pengirim tidak tersedia.";
 
 // ---------------------------------------------------------------------------
 // Gold Price Scraper (Pluang) with 1-hour cache
@@ -111,6 +142,7 @@ interface ExecutionState {
 
 const conversations = new Map<string, ConversationContext>();
 const CONVERSATION_TTL = 30 * 60 * 1000; // 30 minutes
+const CONVERSATION_MAX = 2_000; // batas memori percakapan in-memory
 
 function getConversation(phone: string, profileName: string): ConversationContext {
   // Cleanup expired conversations
@@ -123,6 +155,12 @@ function getConversation(phone: string, profileName: string): ConversationContex
 
   let ctx = conversations.get(phone);
   if (!ctx) {
+    // Map menjaga urutan insert — buang percakapan tertua kalau melebihi batas
+    while (conversations.size >= CONVERSATION_MAX) {
+      const oldest = conversations.keys().next().value;
+      if (oldest === undefined) break;
+      conversations.delete(oldest);
+    }
     ctx = {
       phone,
       profileName,
@@ -312,7 +350,8 @@ async function getCampaignDetail(
 
 async function checkTransactionStatus(
   db: Database,
-  params: { phone?: string; transactionNumber?: string }
+  params: { transactionNumber?: string },
+  ownerPhone: string
 ): Promise<string> {
   let txs;
 
@@ -320,6 +359,10 @@ async function checkTransactionStatus(
     // Search by transaction number (exact or partial match, auto-fix missing "T" prefix)
     let txNum = params.transactionNumber.trim().toUpperCase();
     if (txNum.startsWith("RX-")) txNum = "T" + txNum; // fix common typo: RX- → TRX-
+    // Whitelist karakter nomor transaksi — mencegah wildcard `%`/`_` dari input LLM/pengguna
+    if (!/^[A-Z0-9-]{3,40}$/.test(txNum)) {
+      return "Format nomor transaksi tidak valid. Minta donatur menyebutkan nomor transaksi (TRX-...) dengan benar.";
+    }
 
     txs = await db
       .select({
@@ -333,11 +376,10 @@ async function checkTransactionStatus(
         createdAt: transactions.createdAt,
       })
       .from(transactions)
-      .where(ilike(transactions.transactionNumber, `%${txNum}%`))
+      .where(and(ilike(transactions.transactionNumber, `%${txNum}%`), phoneMatches(transactions.donorPhone, ownerPhone)))
       .orderBy(desc(transactions.createdAt))
       .limit(5);
-  } else if (params.phone) {
-    const phone = params.phone.replace(/[^0-9]/g, "");
+  } else {
     txs = await db
       .select({
         id: transactions.id,
@@ -350,11 +392,9 @@ async function checkTransactionStatus(
         createdAt: transactions.createdAt,
       })
       .from(transactions)
-      .where(ilike(transactions.donorPhone, `%${phone.slice(-10)}%`))
+      .where(phoneMatches(transactions.donorPhone, ownerPhone))
       .orderBy(desc(transactions.createdAt))
       .limit(5);
-  } else {
-    return "Parameter phone atau transactionNumber diperlukan.";
   }
 
   if (!txs || txs.length === 0) {
@@ -652,15 +692,14 @@ async function createZakatPayment(
 async function getPaymentLink(
   db: Database,
   params: { transactionId: string; method?: string },
+  ownerPhone: string,
   envFrontendUrl?: string
 ): Promise<string> {
   if (!params.transactionId) {
     return "Parameter transactionId diperlukan.";
   }
 
-  const tx = await db.query.transactions.findFirst({
-    where: eq(transactions.id, params.transactionId),
-  });
+  const tx = await findOwnedTransaction(db, params.transactionId, ownerPhone);
 
   if (!tx) {
     return "Transaksi tidak ditemukan.";
@@ -832,62 +871,68 @@ async function calculateZakat(
 
 async function registerDonatur(
   db: Database,
-  params: { name: string; email: string; phone: string }
+  params: { name: string; email: string },
+  ownerPhone: string
 ): Promise<string> {
-  if (!params.name || !params.email || !params.phone) {
-    return "Parameter tidak lengkap. Dibutuhkan: name, email, phone.";
+  // Nomor SELALU nomor pengirim WA (bukan argumen LLM) — kalau tidak, siapa pun bisa
+  // mendaftarkan nomor orang lain dengan email miliknya lalu "menyerobot" identitas donatur itu.
+  if (!ownerPhone) return NO_OWNER_MSG;
+
+  // Nama masuk ke system prompt percakapan berikutnya: buang newline/kontrol dan batasi panjang
+  const name = String(params.name || "").replace(/[\r\n\t]+/g, " ").trim().slice(0, 100);
+  const email = String(params.email || "").toLowerCase().trim();
+  if (!name || !email) {
+    return "Parameter tidak lengkap. Dibutuhkan: name, email.";
+  }
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return "Format email tidak valid. Minta donatur menuliskan email yang benar.";
   }
 
-  const normalizedEmail = params.email.toLowerCase().trim();
-  const normalizedPhone = params.phone.replace(/[^0-9]/g, "");
+  const normalizedPhone = ownerPhone.replace(/[^0-9]/g, "");
 
-  // Check if already exists
-  const existing = await db.query.donatur.findFirst({
-    where: or(
-      eq(donatur.email, normalizedEmail),
-      eq(donatur.phone, normalizedPhone),
-      eq(donatur.whatsappNumber, normalizedPhone)
-    ),
+  // Jangan pernah mengembalikan nama/email baris yang sudah ada (enumerasi data donatur lain)
+  const existingByPhone = await db.query.donatur.findFirst({
+    where: or(phoneMatches(donatur.phone, ownerPhone), phoneMatches(donatur.whatsappNumber, ownerPhone)),
   });
+  if (existingByPhone) {
+    return "Nomor WhatsApp ini sudah terdaftar sebagai donatur.";
+  }
 
-  if (existing) {
-    return `Donatur sudah terdaftar dengan nama *${existing.name}* (${existing.email}).`;
+  const existingByEmail = await db.query.donatur.findFirst({
+    where: eq(donatur.email, email),
+  });
+  if (existingByEmail) {
+    return "Email tersebut sudah digunakan. Minta donatur memakai email lain.";
   }
 
   const id = createId();
   await db.insert(donatur).values({
     id,
-    name: params.name,
-    email: normalizedEmail,
+    name,
+    email,
     phone: normalizedPhone,
     whatsappNumber: normalizedPhone,
   });
 
-  return `Pendaftaran berhasil! Data donatur:\n- Nama: ${params.name}\n- Email: ${normalizedEmail}\n- WhatsApp: ${normalizedPhone}`;
+  return `Pendaftaran berhasil! Data donatur:\n- Nama: ${name}\n- Email: ${email}\n- WhatsApp: ${normalizedPhone}`;
 }
 
 async function getBankDetails(
   db: Database,
-  params: { transactionId: string; phone?: string }
+  params: { transactionId: string },
+  ownerPhone: string
 ): Promise<string> {
-  let tx: any = null;
-
-  // Try finding by transactionId first
-  if (params.transactionId) {
-    tx = await db.query.transactions.findFirst({
-      where: eq(transactions.id, params.transactionId),
-    });
-  }
+  // Try finding by transactionId first (hanya jika milik pengirim)
+  let tx: any = await findOwnedTransaction(db, params.transactionId, ownerPhone);
 
   // Fallback: find latest pending transaction by phone
-  if (!tx && params.phone) {
-    const normalPhone = params.phone.replace(/[^0-9]/g, "");
+  if (!tx) {
     const txs = await db
       .select()
       .from(transactions)
       .where(
         and(
-          ilike(transactions.donorPhone, `%${normalPhone.slice(-10)}%`),
+          phoneMatches(transactions.donorPhone, ownerPhone),
           eq(transactions.paymentStatus, "pending")
         )
       )
@@ -990,16 +1035,20 @@ async function getBankDetails(
 async function confirmPayment(
   db: Database,
   params: { transactionId: string; amount: number; paymentDate?: string },
+  ownerPhone: string,
   context?: ToolContext
 ): Promise<string> {
   if (!params.transactionId) return "Parameter transactionId diperlukan.";
-  if (!params.amount || params.amount <= 0) return "Nominal pembayaran harus lebih dari 0.";
+  if (!Number.isFinite(params.amount) || params.amount <= 0) return "Nominal pembayaran harus lebih dari 0.";
 
-  const tx = await db.query.transactions.findFirst({
-    where: eq(transactions.id, params.transactionId),
-  });
+  // Hanya pemilik transaksi (nomor WA pengirim) yang boleh mengonfirmasi pembayarannya
+  const tx = await findOwnedTransaction(db, params.transactionId, ownerPhone);
 
   if (!tx) return "Transaksi tidak ditemukan.";
+  // Nominal konfirmasi tidak boleh melebihi total tagihan (nilai dari LLM/pengguna tak tepercaya)
+  if (params.amount > tx.totalAmount + (tx.uniqueCode || 0)) {
+    return "Nominal konfirmasi melebihi total tagihan transaksi ini. Mohon periksa kembali nominal pada bukti transfer.";
+  }
   if (tx.paymentStatus === "paid") return "Transaksi ini sudah lunas.";
   if (tx.paymentStatus === "processing") return "Transaksi ini sudah dalam proses verifikasi. Mohon tunggu konfirmasi admin.";
 
@@ -1081,29 +1130,21 @@ async function confirmPayment(
 
 async function sendQrisToWhatsapp(
   db: Database,
-  params: { transactionId: string; phone: string }
+  params: { transactionId: string },
+  ownerPhone: string
 ): Promise<string> {
-  if (!params.phone) {
-    return "Parameter phone diperlukan.";
-  }
-
-  let tx: any = null;
-
-  if (params.transactionId) {
-    tx = await db.query.transactions.findFirst({
-      where: eq(transactions.id, params.transactionId),
-    });
-  }
+  // QRIS hanya dikirim ke nomor pengirim sendiri (bukan nomor dari argumen LLM)
+  // dan hanya untuk transaksi miliknya.
+  let tx: any = await findOwnedTransaction(db, params.transactionId, ownerPhone);
 
   // Fallback: find latest pending transaction by phone
-  if (!tx && params.phone) {
-    const normalPhone = params.phone.replace(/[^0-9]/g, "");
+  if (!tx) {
     const txs = await db
       .select()
       .from(transactions)
       .where(
         and(
-          ilike(transactions.donorPhone, `%${normalPhone.slice(-10)}%`),
+          phoneMatches(transactions.donorPhone, ownerPhone),
           eq(transactions.paymentStatus, "pending")
         )
       )
@@ -1152,7 +1193,7 @@ async function sendQrisToWhatsapp(
           messageDelay: config.messageDelay,
         });
         await client.sendImage(
-          params.phone,
+          ownerPhone,
           staticQris.imageUrl,
           `QRIS ${staticQris.name || ""}  — Rp ${transferAmount.toLocaleString("id-ID")}\n${tx.transactionNumber}`
         );
@@ -1193,7 +1234,7 @@ async function sendQrisToWhatsapp(
   const caption = `*QRIS ${dynamicQris.name || ""}*\nNo. Transaksi: ${tx.transactionNumber}\nTotal: *Rp ${transferAmount.toLocaleString("id-ID")}*\n\nSilakan scan QR code untuk pembayaran.`;
 
   await client.sendFile(
-    params.phone,
+    ownerPhone,
     pngBuffer,
     `QRIS-${tx.transactionNumber}.png`,
     caption
@@ -1203,7 +1244,7 @@ async function sendQrisToWhatsapp(
 }
 
 // Tool execution dispatcher
-async function executeTool(
+export async function executeTool(
   db: Database,
   toolName: string,
   params: Record<string, any>,
@@ -1219,26 +1260,31 @@ async function executeTool(
     case "get_campaign_detail":
       return getCampaignDetail(db, params as any);
     case "check_transaction_status":
-      return checkTransactionStatus(db, params as any);
+      if (!context?.phone) return NO_OWNER_MSG;
+      return checkTransactionStatus(db, params as any, context.phone);
     case "get_zakat_menu":
       return getZakatMenu(db);
     case "get_zakat_programs":
       return getZakatPrograms(db, params as any);
     case "get_payment_link":
-      return getPaymentLink(db, params as any, envFrontendUrl);
+      if (!context?.phone) return NO_OWNER_MSG;
+      return getPaymentLink(db, params as any, context.phone, envFrontendUrl);
     case "register_donatur":
-      return registerDonatur(db, params as any);
+      if (!context?.phone) return NO_OWNER_MSG;
+      return registerDonatur(db, params as any, context.phone);
     case "get_bank_details":
-      return getBankDetails(db, params as any);
+      if (!context?.phone) return NO_OWNER_MSG;
+      return getBankDetails(db, params as any, context.phone);
     case "send_qris":
-      return sendQrisToWhatsapp(db, params as any);
+      if (!context?.phone) return NO_OWNER_MSG;
+      return sendQrisToWhatsapp(db, params as any, context.phone);
     case "confirm_payment": {
       // GUARD RAIL: REQUIRE image proof before processing payment confirmation
       if (!context?.imageBuffer) {
         console.warn("[WA AI] GUARD RAIL: confirm_payment called WITHOUT image proof. Blocked.");
         return "GAGAL: Bukti transfer belum dikirim. Donatur HARUS mengirim foto/screenshot bukti transfer terlebih dahulu. Sampaikan ke donatur: 'Mohon kirimkan bukti transfer berupa foto/screenshot agar kami dapat memproses konfirmasi pembayaran Anda.'";
       }
-      return confirmPayment(db, params as any, context);
+      return confirmPayment(db, params as any, context.phone || "", context);
     }
     case "respond_to_user": {
       const msg = (params as any).message || "";
@@ -1269,7 +1315,7 @@ async function executeTool(
       // Check donor registration
       if (context?.phone) {
         const ph = context.phone.replace(/[^0-9]/g, "");
-        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        const donor = await db.query.donatur.findFirst({ where: phoneMatches(donatur.phone, ph) });
         if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
       }
       if (execState) execState.flowTrigger = createZakatFlowState(params as any);
@@ -1280,7 +1326,7 @@ async function executeTool(
       // Check donor registration
       if (context?.phone) {
         const ph = context.phone.replace(/[^0-9]/g, "");
-        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        const donor = await db.query.donatur.findFirst({ where: phoneMatches(donatur.phone, ph) });
         if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
       }
       if (execState) execState.flowTrigger = createDonationFlowState(params as any);
@@ -1291,7 +1337,7 @@ async function executeTool(
       // Check donor registration
       if (context?.phone) {
         const ph = context.phone.replace(/[^0-9]/g, "");
-        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        const donor = await db.query.donatur.findFirst({ where: phoneMatches(donatur.phone, ph) });
         if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
       }
       if (execState) execState.flowTrigger = createFidyahFlowState(params as any);
@@ -1301,7 +1347,7 @@ async function executeTool(
       // Check donor registration
       if (context?.phone) {
         const ph = context.phone.replace(/[^0-9]/g, "");
-        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        const donor = await db.query.donatur.findFirst({ where: phoneMatches(donatur.phone, ph) });
         if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
       }
       if (execState) execState.flowTrigger = createQurbanFlowState();
@@ -1311,7 +1357,7 @@ async function executeTool(
       // Check donor registration
       if (context?.phone) {
         const ph = context.phone.replace(/[^0-9]/g, "");
-        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        const donor = await db.query.donatur.findFirst({ where: phoneMatches(donatur.phone, ph) });
         if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
       }
       if (execState) execState.flowTrigger = createQurbanSavingsFlowState();
@@ -1323,7 +1369,7 @@ async function executeTool(
 
       // Look up donatur for precise filtering
       const donaturForSavings = await db.query.donatur.findFirst({
-        where: ilike(donatur.phone, `%${ph.slice(-10)}%`),
+        where: phoneMatches(donatur.phone, ph),
       });
 
       let savingsList = await db
@@ -1343,7 +1389,7 @@ async function executeTool(
         .from(qurbanSavings)
         .leftJoin(qurbanPackagePeriods, eq(qurbanSavings.targetPackagePeriodId, qurbanPackagePeriods.id))
         .leftJoin(qurbanPackages, eq(qurbanPackagePeriods.packageId, qurbanPackages.id))
-        .where(ilike(qurbanSavings.donorPhone, `%${ph.slice(-10)}%`));
+        .where(phoneMatches(qurbanSavings.donorPhone, ph));
 
       // Narrow down by donatur email/name to avoid showing other donors' savings
       if (savingsList.length > 1 && donaturForSavings?.email) {
@@ -1379,7 +1425,7 @@ async function executeTool(
       // Check donor registration
       if (context?.phone) {
         const ph = context.phone.replace(/[^0-9]/g, "");
-        const donor = await db.query.donatur.findFirst({ where: ilike(donatur.phone, `%${ph.slice(-10)}%`) });
+        const donor = await db.query.donatur.findFirst({ where: phoneMatches(donatur.phone, ph) });
         if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
       }
       if (execState) execState.flowTrigger = createQurbanSavingsDepositFlowState();
@@ -1427,11 +1473,10 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: "check_transaction_status",
-    description: "Cek status transaksi. Bisa cari berdasarkan nomor HP donatur ATAU nomor transaksi (TRX-...).",
+    description: "Cek status transaksi milik donatur yang sedang chat (nomor HP diambil otomatis dari percakapan). Opsional: filter dengan nomor transaksi (TRX-...).",
     parameters: {
       type: "object",
       properties: {
-        phone: { type: "string", description: "Nomor HP donatur" },
         transactionNumber: { type: "string", description: "Nomor transaksi (misal TRX-20260219-58636)" },
       },
     },
@@ -1542,25 +1587,23 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: "register_donatur",
-    description: "Daftarkan donatur baru ke sistem",
+    description: "Daftarkan donatur baru ke sistem. Nomor WhatsApp diambil otomatis dari percakapan (tidak perlu ditanyakan).",
     parameters: {
       type: "object",
       properties: {
         name: { type: "string", description: "Nama lengkap donatur" },
         email: { type: "string", description: "Alamat email donatur" },
-        phone: { type: "string", description: "Nomor WhatsApp donatur" },
       },
-      required: ["name", "email", "phone"],
+      required: ["name", "email"],
     },
   },
   {
     name: "get_bank_details",
-    description: "Tampilkan detail rekening bank untuk transfer pembayaran. Jika transactionId tidak diketahui, kirim phone untuk mencari transaksi pending terakhir.",
+    description: "Tampilkan detail rekening bank untuk transfer pembayaran. Jika transactionId tidak diketahui, otomatis dipakai transaksi pending terakhir donatur yang sedang chat.",
     parameters: {
       type: "object",
       properties: {
-        transactionId: { type: "string", description: "ID transaksi (dari riwayat percakapan)" },
-        phone: { type: "string", description: "Nomor HP donatur (fallback jika transactionId tidak tersedia)" },
+        transactionId: { type: "string", description: "ID transaksi (dari riwayat percakapan). Jika kosong, dipakai transaksi pending terakhir donatur." },
       },
     },
   },
@@ -1571,9 +1614,8 @@ const TOOL_DEFINITIONS = [
       type: "object",
       properties: {
         transactionId: { type: "string", description: "ID transaksi" },
-        phone: { type: "string", description: "Nomor WhatsApp donatur tujuan" },
       },
-      required: ["transactionId", "phone"],
+      required: ["transactionId"],
     },
   },
   {
@@ -2061,7 +2103,7 @@ export async function processIncomingMessage(
   // Lookup donatur dari DB berdasarkan nomor HP
   const phone = msg.from.replace(/[^0-9]/g, "");
   const donaturRow = await db.query.donatur.findFirst({
-    where: ilike(donatur.phone, `%${phone.slice(-10)}%`),
+    where: phoneMatches(donatur.phone, phone),
   });
   const donorName = donaturRow?.name || msg.profileName;
   const donorPhone = msg.from;
@@ -2099,11 +2141,13 @@ export async function processIncomingMessage(
   // ---- END FLOW INTERCEPTION ----
 
   // Download image early if available (before it expires)
+  // Referensi media dari webhook adalah input tak tepercaya: hanya boleh menuju
+  // origin GOWA (lihat lib/gowa-media.ts), tanpa redirect, dengan batas ukuran dan
+  // validasi magic bytes — kredensial GOWA tidak boleh pernah ikut ke host lain.
   let imageBuffer: Buffer | undefined;
-  let imageMimeType: string | undefined = msg.imageMimeType;
+  let imageMimeType: string | undefined;
   if (msg.imageUrl) {
     try {
-      // Get GOWA config for authenticated media downloads
       const waService = new WhatsAppService(db, envFrontendUrl);
       const gowaConfig = await waService.getConfig();
       const gowaAuth = btoa(`${gowaConfig.username}:${gowaConfig.password}`);
@@ -2112,60 +2156,39 @@ export async function processIncomingMessage(
         "X-Device-Id": gowaConfig.deviceId,
       };
 
-      if (msg.imageUrl.startsWith("__gowa_path__:")) {
-        // GOWA relative path — resolve with apiUrl base
-        const relativePath = msg.imageUrl.replace("__gowa_path__:", "");
-        const downloadUrl = `${gowaConfig.apiUrl}/${relativePath}`;
-        console.log("[WA AI] Downloading GOWA static media:", downloadUrl);
-        const imgRes = await fetch(downloadUrl, { headers: gowaHeaders });
-        if (imgRes.ok) {
-          imageBuffer = Buffer.from(await imgRes.arrayBuffer());
-          imageMimeType = imageMimeType || imgRes.headers.get("content-type") || "image/jpeg";
-          console.log("[WA AI] GOWA media downloaded:", imageBuffer.length, "bytes,", imageMimeType);
-        } else {
-          console.warn("[WA AI] GOWA media download failed:", imgRes.status, await imgRes.text().catch(() => ""));
+      const fetchGowaImage = async (url: string) => {
+        const res = await fetch(url, { headers: gowaHeaders, redirect: "error" });
+        if (!res.ok) {
+          console.warn("[WA AI] GOWA media download failed:", res.status);
+          return null;
         }
-      } else if (msg.imageUrl.startsWith("__gowa_media__:")) {
-        // GOWA media ID — download via GOWA API
-        const mediaId = msg.imageUrl.replace("__gowa_media__:", "");
-        const downloadUrl = `${gowaConfig.apiUrl}/media/download/${mediaId}`;
-        console.log("[WA AI] Downloading GOWA media by ID:", downloadUrl);
-        const imgRes = await fetch(downloadUrl, { headers: gowaHeaders });
-        if (imgRes.ok) {
-          imageBuffer = Buffer.from(await imgRes.arrayBuffer());
-          imageMimeType = imageMimeType || imgRes.headers.get("content-type") || "image/jpeg";
-          console.log("[WA AI] GOWA media downloaded:", imageBuffer.length, "bytes,", imageMimeType);
-        } else {
-          console.warn("[WA AI] GOWA media download failed:", imgRes.status, await imgRes.text().catch(() => ""));
+        const raw = await readBodyWithLimit(res, GOWA_MEDIA_MAX_BYTES);
+        if (!raw) {
+          console.warn("[WA AI] GOWA media ditolak: melebihi batas ukuran");
+          return null;
         }
-      } else if (msg.imageUrl.startsWith("http")) {
-        // Direct URL — try without auth first, then with GOWA auth
-        console.log("[WA AI] Downloading image from URL:", msg.imageUrl);
-        let imgRes = await fetch(msg.imageUrl);
-        if (!imgRes.ok && gowaConfig.apiUrl && msg.imageUrl.includes(new URL(gowaConfig.apiUrl).host)) {
-          // Retry with GOWA auth if same host
-          console.log("[WA AI] Retrying with GOWA auth...");
-          imgRes = await fetch(msg.imageUrl, { headers: gowaHeaders });
-        }
-        if (imgRes.ok) {
-          imageBuffer = Buffer.from(await imgRes.arrayBuffer());
-          imageMimeType = imageMimeType || imgRes.headers.get("content-type") || "image/jpeg";
-          console.log("[WA AI] Image downloaded:", imageBuffer.length, "bytes,", imageMimeType);
-        } else {
-          console.warn("[WA AI] Image download failed:", imgRes.status);
-          // Last resort: try GOWA media download endpoint with the URL as filename
-          const urlParts = msg.imageUrl.split("/");
-          const possibleMediaId = urlParts[urlParts.length - 1];
-          if (gowaConfig.apiUrl && possibleMediaId) {
-            const fallbackUrl = `${gowaConfig.apiUrl}/media/download/${possibleMediaId}`;
-            console.log("[WA AI] Trying GOWA media fallback:", fallbackUrl);
-            const fallbackRes = await fetch(fallbackUrl, { headers: gowaHeaders });
-            if (fallbackRes.ok) {
-              imageBuffer = Buffer.from(await fallbackRes.arrayBuffer());
-              imageMimeType = imageMimeType || fallbackRes.headers.get("content-type") || "image/jpeg";
-              console.log("[WA AI] GOWA fallback success:", imageBuffer.length, "bytes");
-            }
+        const accepted = acceptImageBuffer(raw);
+        if (!accepted) console.warn("[WA AI] GOWA media ditolak: bukan gambar yang dikenali");
+        return accepted;
+      };
+
+      const downloadUrl = gowaConfig.apiUrl ? resolveGowaMediaUrl(gowaConfig.apiUrl, msg.imageUrl) : null;
+      if (!downloadUrl) {
+        console.warn("[WA AI] Referensi media ditolak (bukan origin GOWA / format tidak aman)");
+      } else {
+        let accepted = await fetchGowaImage(downloadUrl);
+        // Fallback lama: URL absolut yang gagal dicoba lewat endpoint media GOWA dengan id dari segmen terakhir
+        if (!accepted && /^https?:\/\//i.test(msg.imageUrl)) {
+          const lastSegment = new URL(downloadUrl).pathname.split("/").pop() || "";
+          if (isSafeGowaMediaId(lastSegment)) {
+            const fallbackUrl = resolveGowaMediaUrl(gowaConfig.apiUrl, `__gowa_media__:${lastSegment}`);
+            if (fallbackUrl) accepted = await fetchGowaImage(fallbackUrl);
           }
+        }
+        if (accepted) {
+          imageBuffer = accepted.buffer;
+          imageMimeType = accepted.mimeType;
+          console.log("[WA AI] Gambar diterima:", imageBuffer.length, "bytes,", imageMimeType);
         }
       }
     } catch (err) {

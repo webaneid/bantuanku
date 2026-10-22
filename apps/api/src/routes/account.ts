@@ -8,14 +8,21 @@ import type { Env, Variables } from "../types";
 
 const account = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+// Query paginasi dari user: NaN / negatif / sangat besar tidak boleh sampai ke LIMIT/OFFSET
+function clampInt(raw: string | undefined, fallback: number, min: number, max: number): number {
+  const n = parseInt(raw ?? "", 10);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(Math.max(n, min), max);
+}
+
 account.use("*", authMiddleware);
 
 // Get all transactions for current user
 account.get("/donations", async (c) => {
   const db = c.get("db");
   const user = c.get("user");
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "10");
+  const page = clampInt(c.req.query("page"), 1, 1, 100000);
+  const limit = clampInt(c.req.query("limit"), 10, 1, 100);
   const offset = (page - 1) * limit;
 
   const userDetails = await db.query.users.findFirst({
@@ -134,8 +141,8 @@ account.get("/donations/:id", async (c) => {
   const isOwner =
     transaction.userId === user!.id ||
     transaction.donorEmail?.toLowerCase().trim() === userDetails.email?.toLowerCase().trim() ||
-    (transaction.donorPhone && normalizePhone(transaction.donorPhone) === normalizedPhone) ||
-    (transaction.donorPhone && normalizePhone(transaction.donorPhone) === normalizedWhatsapp);
+    (!!normalizedPhone && !!transaction.donorPhone && normalizePhone(transaction.donorPhone) === normalizedPhone) ||
+    (!!normalizedWhatsapp && !!transaction.donorPhone && normalizePhone(transaction.donorPhone) === normalizedWhatsapp);
 
   if (!isOwner) {
     return error(c, "Transaction not found", 404);
@@ -217,7 +224,7 @@ account.get("/stats", async (c) => {
 account.get("/zakat-history", async (c) => {
   const db = c.get("db");
   const user = c.get("user");
-  const limit = parseInt(c.req.query("limit") || "10");
+  const limit = clampInt(c.req.query("limit"), 10, 1, 100);
 
   const logs = await db.query.zakatCalculationLogs.findMany({
     where: eq(zakatCalculationLogs.userId, user!.id),
@@ -232,8 +239,8 @@ account.get("/zakat-history", async (c) => {
 account.get("/notifications", async (c) => {
   const db = c.get("db");
   const user = c.get("user");
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "20");
+  const page = clampInt(c.req.query("page"), 1, 1, 100000);
+  const limit = clampInt(c.req.query("limit"), 20, 1, 100);
   const offset = (page - 1) * limit;
 
   const [data, countResult, unreadCount] = await Promise.all([

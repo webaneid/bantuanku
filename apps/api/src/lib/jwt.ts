@@ -17,7 +17,8 @@ export async function signToken(
 ): Promise<string> {
   const secretKey = new TextEncoder().encode(secret);
 
-  return new jose.SignJWT({ ...payload } as jose.JWTPayload)
+  // `typ` membedakan access token dari refresh/unsubscribe token (cegah token confusion)
+  return new jose.SignJWT({ ...payload, typ: "access" } as jose.JWTPayload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(expiresIn)
@@ -31,6 +32,13 @@ export async function verifyToken(
   try {
     const secretKey = new TextEncoder().encode(secret);
     const { payload } = await jose.jwtVerify(token, secretKey);
+
+    // Tolak token yang bukan access token: token unsubscribe (`purpose`) atau refresh (`typ`).
+    // Access token lama (sebelum ada claim `typ`) tetap diterima selama punya `roles` array —
+    // masa berlakunya hanya 15 menit, jadi kelonggaran ini hilang dengan sendirinya.
+    if (payload.purpose) return null;
+    if (payload.typ !== undefined && payload.typ !== "access") return null;
+    if (!Array.isArray(payload.roles)) return null;
 
     return {
       sub: payload.sub as string,
@@ -52,7 +60,7 @@ export async function signRefreshToken(
 ): Promise<string> {
   const secretKey = new TextEncoder().encode(secret);
 
-  return new jose.SignJWT({ sub: userId })
+  return new jose.SignJWT({ sub: userId, typ: "refresh" })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
@@ -66,6 +74,14 @@ export async function verifyRefreshToken(
   try {
     const secretKey = new TextEncoder().encode(secret);
     const { payload } = await jose.jwtVerify(token, secretKey);
+    // Access token (15 menit) tidak boleh bisa ditukar menjadi sesi refresh 7 hari.
+    if (payload.purpose) return null;
+    if (payload.typ !== undefined) {
+      if (payload.typ !== "refresh") return null;
+    } else if (payload.roles !== undefined || payload.email !== undefined) {
+      // Refresh token lama (tanpa `typ`) hanya berisi `sub`; token berisi roles/email = access token
+      return null;
+    }
     return payload.sub as string;
   } catch {
     return null;

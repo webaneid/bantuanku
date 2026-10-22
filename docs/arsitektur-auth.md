@@ -11,8 +11,9 @@ Sistem auth berbasis **JWT stateless**. Token disimpan di `localStorage` — tid
 Detail otorisasi role, permission table, route guard, dan gap RBAC dicatat terpisah di `arsitektur-permission-rbac.md`.
 Threat model auth, token storage, secret, logging sensitif, dan prioritas hardening dicatat di `arsitektur-security.md`.
 
-- Access token: berlaku `15m` (default, bisa diubah via `JWT_EXPIRES_IN`)
-- Refresh token: berlaku `7d`, juga stateless JWT. Tidak ada tabel/session refresh token di DB.
+- Access token: berlaku `15m` (default, bisa diubah via `JWT_EXPIRES_IN`), membawa claim `typ: "access"`.
+- Refresh token: berlaku `7d`, juga stateless JWT, membawa `typ: "refresh"`. Tidak ada tabel/session refresh token di DB. Access token **ditolak** di `/auth/refresh`, dan refresh token ditolak sebagai Bearer (ADR-0009).
+- Token unsubscribe WA (`purpose: "wa-unsubscribe"`) ditolak oleh `verifyToken` dan `verifyRefreshToken`.
 - Algoritma: `HS256` via library `jose`
 - Secret: `JWT_SECRET` dari env API
 

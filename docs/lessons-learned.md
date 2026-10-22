@@ -351,3 +351,39 @@
 - Kalau user bilang "X tidak muncul di Y", jangan langsung asumsikan referensi salah/data corrupt. **Audit SEMUA data sejenis** (bukan cuma satu contoh), lalu untuk kasus yang gagal, telusuri satu-satu: apakah benar referensinya salah, atau justru target-nya ADA tapi **tidak dalam kondisi yang membuatnya terlihat** (status draft, soft-deleted, dll)? Kedua penyebab punya gejala permukaan yang identik ("tidak muncul") tapi solusinya beda total (validasi referensi vs mengubah status/visibilitas).
 - Audit lintas-tabel yang mengandalkan hanya API publik (tanpa akses admin ke lingkungan produksi) tetap bisa dilakukan dengan reasoning "by elimination": kumpulkan semua entity yang ADA dari sisi publik, lalu untuk tiap kandidat panggil endpoint scoped-nya (di sini: `/activity-reports/campaign/:id` untuk tiap campaign) dan kumpulkan ID yang "covered" — apa pun yang tidak masuk himpunan itu genuinely orphan, tanpa perlu tahu `referenceId` mana pun secara langsung (yang memang sengaja tidak diekspos publik).
 - Endpoint publik yang mengambil satu row by slug/id (`GET /:idOrSlug`) HARUS memfilter status yang layak dipublikasikan, bukan cuma endpoint LIST-nya. Filter status di list saja gampang dilewatkan orang yang review keamanan, karena "tidak muncul di listing" terasa cukup aman padahal detail page tetap bisa diakses langsung.
+
+### 2026-10-22 — Audit Subagent: Verifikasi Dulu, Termasuk Rekomendasinya
+
+**Konteks:** Subagent `security-auditor` (read-only) mengaudit `routes/wa.ts`, `routes/whatsapp.ts`, `routes/account.ts`. Temuan intinya benar (webhook tanpa signature, SSRF, tool bot tanpa cek kepemilikan, token confusion), tetapi sebagian detailnya keliru atau kurang.
+**Masalah:** (1) Rekomendasi "jangan naikkan `paidAmount` saat `processing`" salah untuk repo ini: alur upload bukti di web (`routes/transactions.ts`) memang menaikkan `paidAmount` saat upload dan menurunkannya saat ditolak — mengikuti rekomendasi akan membuat bot menyimpang dari pola itu. (2) `GET /wa/unsubscribe` ditandai rawan prefetch, padahal yang dipanggil adalah halaman `/berhenti` yang memanggil API lewat JS (link preview tidak menjalankan JS), dan link-nya bahkan belum dikirim. (3) `get_payment_link` dan `get_bank_details` punya celah kepemilikan yang sama dengan `check_transaction_status` tetapi tidak disebut. (4) Item "tidak bisa diverifikasi" (`wa_opt_out NOT NULL`) sebenarnya bisa dijawab dari migrasi.
+**Pelajaran:** Verifikasi temuan DAN rekomendasi subagent ke kode/pola yang ada sebelum bertindak. Setelah menemukan satu celah, cari semua fungsi sejenis (`grep` pola yang sama), jangan hanya yang disebut laporan.
+
+### 2026-10-22 — Bandingkan Host dengan `origin`, Bukan `includes()`
+
+**Konteks:** Unduhan media bukti transfer dari webhook WA menerima URL absolut dan mengulang request dengan kredensial GOWA bila `msg.imageUrl.includes(gowaHost)`.
+**Masalah:** `includes()` hanya mencocokkan substring: `http://evil.example/404?x=<host-gowa>` lolos, kredensial Basic auth terkirim ke host penyerang. Selain itu URL dari payload di-fetch tanpa batas (SSRF ke metadata cloud/localhost).
+**Pelajaran:** Input yang menentukan tujuan `fetch()` wajib divalidasi dengan `new URL(u).origin === new URL(allowed).origin` (plus tolak userinfo), kredensial internal hanya boleh menuju origin yang sudah di-allowlist, pakai `redirect: "error"`, batasi ukuran, dan validasi isi (magic bytes). Helper: `apps/api/src/lib/gowa-media.ts`.
+
+### 2026-10-22 — Argumen Tool LLM Tidak Tepercaya: Paksa Identitas dari Konteks
+
+**Konteks:** Tool bot WA (`check_transaction_status`, `send_qris`, `confirm_payment`, dst.) menerima `phone`/`transactionId` dari argumen yang dihasilkan LLM.
+**Masalah:** Pengguna sah bisa memakai prompt injection ("cek transaksi TRX-") untuk membaca `id` transaksi orang lain (pencarian `ilike '%…%'` tanpa filter pemilik), lalu meminta bot mengonfirmasi pembayaran atau mengirim QRIS ke nomor sembarang. Tidak ada error TypeScript atau runtime — semuanya "berfungsi".
+**Pelajaran:** Identitas pengirim harus selalu berasal dari konteks yang diautentikasi (`context.phone` dari webhook bertandatangan), bukan dari argumen tool. Resource by-id wajib dicek kepemilikannya (`findOwnedTransaction`). Jangan pakai `ilike '%input%'` untuk mencocokkan identitas; normalisasi lalu bandingkan persis (`phoneMatches`). Hapus parameter identitas dari skema tool agar LLM tidak diminta mengisinya.
+
+### 2026-10-22 — Token Berbeda Tujuan Harus Dibedakan Claim-nya
+
+**Konteks:** Access token, refresh token, dan token unsubscribe WA ditandatangani dengan `JWT_SECRET` yang sama.
+**Masalah:** `verifyRefreshToken` hanya mengambil `sub` dari token apa pun, jadi access token 15 menit dapat ditukar menjadi sesi refresh 7 hari. Token unsubscribe (30 hari) juga lolos `verifyToken`. Perbaikan yang langsung mewajibkan claim baru akan memutus semua refresh token yang sedang beredar.
+**Pelajaran:** Beri tiap jenis token claim pembeda (`typ`/`purpose`) dan cek di fungsi verify-nya. Untuk migrasi tanpa logout massal, terima token lama berdasarkan bentuknya (access lama punya `roles`, refresh lama hanya `sub`), dan jadwalkan penghapusan kelonggaran itu setelah masa berlaku terpanjang lewat. Lihat ADR-0009.
+
+### 2026-10-22 — `sed -i` BSD Menelan Argumen sebagai Ekstensi Backup
+
+**Konteks:** `sed -i 's/a/b/' file` di macOS.
+**Masalah:** BSD `sed` memperlakukan argumen setelah `-i` sebagai ekstensi backup, bukan script. Perintah gagal dengan error aneh (`-I or -i may not be used with stdin`), dan pada percobaan lain meninggalkan file kosong 0 byte berbentuk nama sebagian file sumber (`hatsapp-ai.ts`) di folder kode.
+**Pelajaran:** Di macOS pakai `sed -i '' '...' file` atau, lebih aman, `perl -i -pe '...' file` / skrip python. Setelah operasi edit massal, cek `git status` untuk file asing.
+
+### 2026-10-22 — Setelah Memperbaiki Satu Pola, Audit Ulang: Perbaikan Tidak Selesai Sampai Semua Jalur Sejenis Tertutup
+
+**Konteks:** Setelah tool bot WA dipaksa memakai `context.phone`, audit ulang menemukan `register_donatur` masih menerima `phone` dari argumen LLM dan mengembalikan nama + email donatur yang sudah ada.
+**Masalah:** Di fase perbaikan, daftar tool yang dicek diambil dari laporan auditor pertama (3 tool), lalu diperluas manual ke 2 tool lain — tetapi tidak sistematis terhadap SELURUH tool di `executeTool`. `register_donatur` terlewat, padahal dampaknya lebih besar (penyerobotan identitas: transaksi korban jatuh ke email penyerang, lalu terbaca lewat `/account/donations`).
+**Pelajaran:** Saat menutup satu kelas celah, enumerasi SEMUA tempat yang menerima input dari sumber yang sama (di sini: setiap `case` di `executeTool`) dan centang satu per satu, bukan hanya yang disebut laporan. Jalankan audit ulang dengan agent setelah perbaikan; ia menemukan celah yang tersisa di pola yang sama. Fungsi yang mengembalikan data "yang sudah ada" saat duplikat (nama/email) adalah jalur enumerasi — jawab generik.

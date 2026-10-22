@@ -57,6 +57,18 @@ Mount di `apps/api/src/index.ts` → `app.route("/v1/whatsapp", whatsappWebhookR
 }
 ```
 
+### Autentikasi Webhook (wajib)
+
+Sebelum filter apa pun, `POST /v1/whatsapp/webhook` memverifikasi `X-Hub-Signature-256: sha256=<hex>` = HMAC-SHA256(raw body, `WHATSAPP_WEBHOOK_SECRET`) dengan `timingSafeEqualString()`. Secret yang sama harus diset di GOWA (`--webhook-secret` / `WHATSAPP_WEBHOOK_SECRET`) dan di env API.
+
+| Kondisi | Respons |
+|---------|---------|
+| `WHATSAPP_WEBHOOK_SECRET` tidak diset di API | `503` (fail-closed, bot tidak memproses apa pun) |
+| Header hilang / signature tidak cocok | `401` |
+| Signature valid tapi body bukan JSON | `400` |
+
+Payload tidak dicetak ke log. Body dibatasi 1 MB (`bodyLimit`, `413`) sebelum dibaca, karena verifikasi HMAC memerlukan raw body penuh. Lihat ADR-0008.
+
 ### Filter di Webhook
 
 1. **Group chat** — `chat_id` berisi `@g.us` → return OK tanpa proses
@@ -71,7 +83,7 @@ Sebelum dikirim ke `processIncomingMessage`, URL gambar dikonversi:
 - Path relatif `statics/media/xxx.jpg` → `__gowa_path__:statics/media/xxx.jpg`
 - Object `{ url: "statics/..." }` → sama
 - Object `{ id: "media-id" }` → `__gowa_media__:media-id`
-- Full URL `https://...` → diteruskan as-is
+- Full URL `https://...` → diteruskan as-is ke `processIncomingMessage`, yang **menolaknya** kecuali origin-nya sama persis dengan `apiUrl` GOWA (lihat bagian G)
 
 ---
 
@@ -179,6 +191,17 @@ processIncomingMessage()
 | `send_qris` | Kirim QRIS PNG (dinamis dari EMV payload, atau fallback ke static) via GOWA |
 | `confirm_payment` | Konfirmasi pembayaran — **wajib ada `imageBuffer`** |
 | `respond_to_user` | Kirim teks biasa (shortcut tanpa masuk tool chain) |
+
+### Identitas & Kepemilikan (2026-10-22)
+
+Argumen tool berasal dari LLM sehingga tidak tepercaya. Aturan:
+- `executeTool` memakai `context.phone` (nomor pengirim dari webhook yang sudah tertandatangani) untuk `check_transaction_status`, `get_payment_link`, `get_bank_details`, `send_qris`, `confirm_payment`. Parameter `phone` dari LLM sudah dihapus dari skema tool dan diabaikan.
+- Transaksi by-id hanya bisa dibaca/diubah bila `transactions.donor_phone` cocok dengan pengirim (`findOwnedTransaction`); selain itu dijawab "tidak ditemukan".
+- Pencocokan nomor memakai `phoneMatches()`: persis pada 10 digit terakhir (`right(regexp_replace(col,'[^0-9]','','g'),10) = $n`), bukan `ilike '%…%'`; nomor < 8 digit tidak cocok apa pun.
+- `check_transaction_status` hanya menerima nomor transaksi `^[A-Z0-9-]{3,40}$`.
+- `confirm_payment`: nominal harus finite, > 0, dan ≤ `totalAmount + uniqueCode`. `paidAmount` tetap dinaikkan saat `processing` (pola yang sama dengan upload bukti di web, dan dikurangi saat admin menolak).
+- `send_qris` selalu mengirim ke nomor pengirim, bukan nomor dari argumen.
+- `register_donatur`: nomor SELALU `context.phone` (parameter `phone` dihapus dari skema); nama dibersihkan dari newline/kontrol dan dibatasi 100 karakter (nama masuk ke system prompt percakapan berikutnya); email divalidasi formatnya. Nomor atau email yang sudah terdaftar dijawab generik ("sudah terdaftar" / "sudah digunakan") tanpa mengembalikan nama atau email baris yang ada.
 
 ### Guard Rails
 
@@ -291,11 +314,14 @@ Entry: `createQurbanSavingsDepositFlowState()`. Mulai di `show_savings`.
 ### Download dari GOWA
 
 ```
-__gowa_path__:xxx       → GET {gowaApiUrl}/xxx (Basic Auth + X-Device-Id)
-__gowa_media__:ID       → GET {gowaApiUrl}/media/download/ID (Basic Auth)
-https://...             → fetch tanpa auth → jika gagal + hostname sama → retry GOWA auth
-                          → jika masih gagal → try {gowaApiUrl}/media/download/{filename}
+__gowa_path__:xxx       → GET {gowaApiUrl}/xxx          (path ^[A-Za-z0-9_\-./]+$, tanpa "..", "//")
+__gowa_media__:ID       → GET {gowaApiUrl}/media/download/ID   (ID ^[A-Za-z0-9_-]{1,128}$)
+https://...             → hanya jika URL.origin === origin apiUrl GOWA, tanpa userinfo;
+                          selain itu DITOLAK (tidak pernah di-fetch)
+                          → jika gagal → coba /media/download/{segmen terakhir} (harus lolos regex ID)
 ```
+
+Semua fetch memakai Basic Auth + `X-Device-Id` GOWA, `redirect: "error"`, batas 10 MB, dan hasil hanya diterima bila magic bytes adalah gambar (JPEG/PNG/GIF/WebP; mime type diambil dari isi file, bukan header). Implementasi: `apps/api/src/lib/gowa-media.ts`. Sebelum 2026-10-22, URL absolut di-fetch ke host mana pun dan kredensial GOWA dikirim bila `url.includes(gowaHost)` — SSRF + kebocoran kredensial.
 
 ### Saat Terima Gambar
 
@@ -399,6 +425,24 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | History 20 pesan tidak persistent | Jika API restart di tengah percakapan panjang, konteks hilang | Low |
 | Bot tidak handle sticker/voice/video/dokumen secara eksplisit | Dokumen → `"[Pengguna mengirim dokumen]"` (treated as no image) | Low |
 | Tidak ada rate limit per user | Donatur bisa spam bot tanpa throttle | Low |
+| `console.log` flow/AI masih mencetak nomor HP dan potongan teks | PII di log PM2 | Medium |
+| Link unsubscribe (`signUnsubscribeToken`) belum dipasang di template broadcast/birthday/re-engagement; hanya footer "Balas BERHENTI" | Opt-out via link tidak bisa dipakai donatur. Saat dipasang, buat `/berhenti` meminta klik konfirmasi (POST), jangan unsubscribe otomatis saat halaman dimuat | Medium |
+| `confirm_payment` tidak atomik: cek status lalu update terpisah; status `failed/expired/partial` bisa dihidupkan ke `processing`; `paymentDate` dari LLM tanpa validasi | Pesan bukti bersamaan bisa menggandakan baris payment dan `paidAmount` (admin tetap memverifikasi) | Medium |
+| `start_donation_flow` meneruskan `amount` dari LLM tanpa validasi minimum; `TransactionService.create` tidak memvalidasi `unit_price`/`quantity` | Transaksi bernilai negatif/Rp 1 lewat prompt injection (data kotor, tidak bisa menandai lunas) | Medium |
+| Path media GOWA hanya di-allowlist karakter (bukan prefiks `statics/media/` & `media/download/`); `readBodyWithLimit` memuat penuh sebelum cek ukuran bila tanpa `content-length`; fetch tanpa timeout | Hardening; payload hanya dikontrol GOWA dan webhook sudah bertandatangan | Low |
+| `get_campaign_detail` tidak memfilter status | Campaign draft terbaca jika ID diketahui | Low |
+| Kunci Gemini di query string URL, body error dilog utuh | Kunci bisa muncul di log/proxy; pindah ke header `x-goog-api-key` | Low |
+| Kode mati `createDonation`, `createZakatPayment`, `calculateZakat` di `whatsapp-ai.ts` menerima identitas dari argumen | Celah bila didaftarkan lagi ke dispatcher | Low |
+| `send_qris` belum diuji runtime (mengirim WA sungguhan) | Hanya diuji lewat helper kepemilikan yang sama dengan tool lain | Low |
+
+## Perbaikan
+
+| Tanggal | Perbaikan |
+|---------|-----------|
+| 2026-10-22 | Webhook wajib HMAC (fail-closed), payload tidak di-log, JSON rusak → 400, Map dedup/percakapan diberi batas |
+| 2026-10-22 | SSRF unduhan media ditutup: hanya origin GOWA, magic bytes, batas 10 MB, tanpa redirect |
+| 2026-10-22 | Kepemilikan tool bot: identitas dari konteks, `findOwnedTransaction`, `phoneMatches`, validasi nominal |
+| 2026-10-22 | `register_donatur` memakai nomor pengirim, tidak membocorkan data donatur lain; `bodyLimit` 1 MB di webhook |
 
 ---
 

@@ -70,7 +70,7 @@ Dokumen terkait:
 | Public endpoint tanpa auth | Campaign, settings publik, checkout, payment webhook, WhatsApp webhook, upload bukti transaksi by transaction id. |
 | Admin endpoint | Dijaga `authMiddleware` + `requireRole`. Permission table belum enforce runtime. |
 | External payment gateway ke API | Webhook diverifikasi oleh adapter gateway, tetapi sebagian log masih mencetak payload/signature. |
-| WhatsApp provider/bot ke API | Webhook menerima request tanpa signature verification runtime. |
+| WhatsApp provider/bot ke API | Webhook wajib HMAC-SHA256 (`X-Hub-Signature-256`, secret `WHATSAPP_WEBHOOK_SECRET`), fail-closed (503 tanpa secret, 401 jika signature salah). Lihat ADR-0008. |
 | File storage | GCS untuk sebagian flow; local `uploads/` untuk media fallback dan beberapa flow lain. |
 | Secrets | Env + tabel `settings`; enkripsi settings sensitif belum konsisten. |
 
@@ -90,7 +90,9 @@ Auth memakai JWT stateless:
 | Revocation | Tidak ada revocation list / refresh token table. |
 | Logout | Frontend menghapus local storage; API tidak punya endpoint logout. |
 
-JWT payload berisi `sub`, `email`, `name`, `phone`, `whatsappNumber`, `roles`, dan `isDeveloper`.
+JWT payload berisi `sub`, `email`, `name`, `phone`, `whatsappNumber`, `roles`, `isDeveloper`, dan `typ`.
+
+**Pemisahan jenis token (2026-10-22):** claim `typ` membedakan `access` / `refresh`; token unsubscribe WA memakai `purpose: "wa-unsubscribe"`. `verifyToken` menolak token ber-`purpose`, ber-`typ` selain `access`, atau tanpa `roles` array; `verifyRefreshToken` menolak access token, sehingga access token 15 menit tidak bisa ditukar menjadi sesi refresh 7 hari lewat `/auth/refresh`. Token lama tanpa `typ` tetap diterima selama bentuknya cocok (access lama punya `roles`; refresh lama hanya `sub`). Lihat ADR-0009.
 
 Konsekuensi:
 
@@ -297,12 +299,13 @@ Gap:
 
 `POST /v1/whatsapp/webhook` menerima event WhatsApp/bot.
 
-Gap kritis:
+**Perbaikan (2026-10-22):** signature HMAC-SHA256 atas raw body diverifikasi sebelum payload diproses (`timingSafeEqualString`), secret dari env `WHATSAPP_WEBHOOK_SECRET`. Tanpa secret → `503` (fail-closed); header hilang/salah → `401`; JSON rusak setelah signature valid → `400`. Payload tidak lagi dicetak ke log (hanya `event` + id). Map dedup (5.000 entri) dan percakapan in-memory (2.000 entri) diberi batas ukuran. Detail: `docs/decisions/adr-0008-whatsapp-webhook-signature-wajib.md`.
 
-1. Komentar kode menyebut `X-Hub-Signature-256`, tetapi implementasi tidak memverifikasi signature HMAC.
-2. Body webhook dicetak ke log.
-3. Dedup message hanya in-memory selama 60 detik.
-4. Endpoint ini dilewati oleh pengecekan form content-type khusus webhook.
+Sisa gap:
+
+1. Dedup message hanya in-memory selama 60 detik (hilang saat restart).
+2. Endpoint ini dilewati oleh pengecekan form content-type khusus webhook (sengaja, GOWA bisa mengirim content-type beragam; kini tetap dilindungi signature).
+3. `console.log` di `whatsapp-ai.ts` / `whatsapp-flow.ts` masih mencetak nomor HP dan potongan teks pesan (menunggu structured logger, RETROFIT-GAPS #11).
 
 ### Cron manual
 
@@ -451,7 +454,7 @@ Gap deployment lain:
 
 | Risiko | Bukti Implementasi | Rekomendasi |
 |--------|--------------------|-------------|
-| WhatsApp webhook tanpa signature verification | `apps/api/src/routes/whatsapp.ts` tidak memverifikasi `X-Hub-Signature-256`. | Wajib verifikasi HMAC raw body dengan secret khusus, reject 401 jika invalid. |
+| ~~WhatsApp webhook tanpa signature verification~~ ✅ Selesai 2026-10-22 | `routes/whatsapp.ts` kini memverifikasi HMAC-SHA256 raw body, fail-closed. | Pastikan `WHATSAPP_WEBHOOK_SECRET` identik di API dan GOWA saat deploy. |
 | ~~CORS terlalu permisif~~ ✅ Selesai 2026-09-13 | Sebelumnya fallback `return origin || "*"` dengan `credentials: true`; sekarang origin di luar allowlist ditolak (`return undefined`). | — |
 | Secret/PII bocor ke log (sebagian selesai) | Debug log JWT payload/header/role di `middleware/auth.ts` sudah dihapus (2026-09-13). Masih ada: Flip token dan body webhook WhatsApp dicetak. | Implement redaction logger dan hapus log sensitif sisanya. |
 | Env production bisa jatuh ke development | PM2 set `NODE_ENV`, bukan `ENVIRONMENT`; server default development. | Set `ENVIRONMENT=production` di PM2/env dan fail-fast jika env kritis kosong. |
@@ -502,7 +505,7 @@ Gap deployment lain:
 Urutan yang paling aman:
 
 1. Hardening immediate: CORS allowlist strict, matikan log sensitif, set `ENVIRONMENT=production`, ganti cron secret query.
-2. Webhook hardening: WhatsApp HMAC verification, payment replay protection, raw body signature support.
+2. Webhook hardening: ~~WhatsApp HMAC verification~~ ✅ (2026-10-22), payment replay protection, raw body signature support.
 3. Secret management: service settings tunggal, AES-GCM/KMS, masking admin UI/API, secret rotation.
 4. Auth/session hardening: refresh token store, revoke session, token versioning, role freshness.
 5. RBAC hardening: enforce permission table dan target-role allowlist.

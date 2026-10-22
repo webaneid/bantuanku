@@ -73,3 +73,24 @@ kentara dari nama-nama dokumen yang ada.
 | Hook secret-scan / dependency-audit / pre-commit-guard | ◐ lihat baris #9 |
 | Subagent `security-auditor` (read-only) + skill `bantuanku-security-review`, dijadikan Langkah 6b SOP | ✅ checklist diisi dengan pola bug nyata repo ini (sql.raw, ownership guest, webhook, cron, upload, WA opt-out, dst). Berada di `.claude/` (gitignored, lokal) |
 | CI minimal, konvensi commit/branch + branch protection, `PROGRESS.md`/`phases/` | ⏳ belum — kandidat fase berikutnya |
+
+## Temuan Audit `security-auditor` — WA & Account (2026-10-22)
+
+| # | Temuan | Status |
+|---|--------|--------|
+| D | Webhook WhatsApp tanpa verifikasi signature (Critical) | ✅ **Selesai** — HMAC-SHA256 wajib, fail-closed; diuji 7 kasus runtime (401/200/400/503). **Prasyarat deploy:** set `WHATSAPP_WEBHOOK_SECRET` di GOWA dan env API. ADR-0008 |
+| E | SSRF + kebocoran kredensial GOWA pada unduhan media (Critical) | ✅ **Selesai** — `lib/gowa-media.ts`; 31 kasus uji (host di query, userinfo, traversal, IP privat, non-gambar, batas ukuran) |
+| F | Tool bot tanpa pengecekan kepemilikan: `check_transaction_status`, `confirm_payment`, `send_qris` (High) + `get_payment_link`, `get_bank_details` (tidak disebut auditor, ditemukan saat verifikasi) | ✅ **Selesai** — 15 kasus uji dengan data dev. `send_qris` tidak diuji runtime (mengirim WA sungguhan) |
+| G | Log menulis payload webhook utuh | ◐ Payload webhook dihapus dari log. `console.log` di `whatsapp-ai.ts`/`whatsapp-flow.ts` masih memuat nomor HP + potongan teks → menunggu structured logger (#11) |
+| H | Token confusion: access token → refresh token; token unsubscribe lolos `verifyToken` (Medium; menurut verifikasi layak High) | ✅ **Selesai** — claim `typ`/`purpose`, kompatibel dengan token lama; 15 kasus uji + uji API. ADR-0009. Kelonggaran token tanpa `typ` dihapus setelah ≥7 hari sejak deploy |
+| I | `GET /wa/unsubscribe` mengubah state | ⏸ **Ditunda, risiko lebih kecil dari laporan**: dipanggil dari JS halaman `/berhenti`, link belum dikirim ke donatur. Saat link dipasang, ubah ke klik konfirmasi (POST) |
+| J | Map dedup dan percakapan tanpa batas | ✅ **Selesai** — 5.000 / 2.000 entri, buang yang tertua |
+| K | `limit` tanpa batas di `account.ts` | ✅ **Selesai** — `clampInt` (1–100); diuji `limit=100000/abc/0` |
+| M | (Re-audit) `register_donatur` menerima nomor dari argumen LLM + membocorkan nama/email donatur existing → penyerobotan identitas (High) | ✅ **Selesai** — nomor dari `context.phone`, jawaban generik, sanitasi nama, validasi email; 8 kasus uji dengan DB dev |
+| N | (Re-audit) Webhook membaca body tanpa batas sebelum verifikasi (Low) | ✅ **Selesai** — `bodyLimit` 1 MB (413); diuji 1,6 MB dengan/ tanpa signature |
+| O | (Re-audit) `account.ts` detail: `normalizedPhone` kosong cocok ke `donorPhone` tanpa digit (Low) | ✅ **Selesai** — guard `!!normalizedX` seperti endpoint list |
+| P | (Re-audit, High) **Kepemilikan transaksi di akun web berbasis klaim email/telepon yang tidak diverifikasi**: `POST /auth/register` menautkan seluruh transaksi guest ber-email/telepon sama ke akun baru, dan `account.ts` memakai klaim yang sama sebagai bukti kepemilikan. Siapa pun yang mendaftar dengan email/WA korban melihat transaksi korban (termasuk `donorPhone`) | ⏳ **Butuh keputusan desain** — perlu verifikasi email/WA (OTP) sebelum auto-link, atau kepemilikan murni via `transactions.userId`. Diverifikasi di kode (`auth.ts:138-154`) |
+| Q | (Re-audit, Medium) `confirm_payment` tidak atomik + `paidAmount` naik sebelum verifikasi; `amount`/`unit_price` dari LLM tanpa validasi di `start_donation_flow` & `TransactionService.create` | ⏳ **Belum** — daftar lengkap di `arsitektur-wa-bot.md` § Gap |
+| R | (Re-audit, Low) hardening media GOWA, `get_campaign_detail` tanpa filter status, kunci Gemini di query string, kode mati menerima identitas, `phoneMatches` hanya 10 digit terakhir (`sendSavingsDepositInfo` di `whatsapp-flow.ts` masih `ilike`) | ⏳ **Belum** — Low |
+| L | `signUnsubscribeToken` tanpa pemanggil — link unsubscribe tidak ada di pesan broadcast/birthday/re-engagement (gap kepatuhan, bukan kerentanan) | ⏳ **Belum** — butuh fitur: sisipkan `{unsubscribe_url}` ke template + `buildSharedVars` |
+

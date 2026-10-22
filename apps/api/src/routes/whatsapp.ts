@@ -1,7 +1,10 @@
+import { createHmac } from "crypto";
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { eq } from "drizzle-orm";
 import { settings } from "@bantuanku/db";
 import { WhatsAppService } from "../services/whatsapp";
+import { timingSafeEqualString } from "../lib/security";
 import type { Env, Variables } from "../types";
 
 const whatsappRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -9,6 +12,7 @@ const whatsappRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
 // Dedup: track processed message IDs to prevent double replies
 const processedMessages = new Map<string, number>();
 const DEDUP_TTL = 60_000; // 60 seconds
+const DEDUP_MAX_ENTRIES = 5_000; // batas memori, jaga-jaga kalau webhook dibanjiri
 
 function isDuplicate(messageId: string): boolean {
   const now = Date.now();
@@ -17,8 +21,24 @@ function isDuplicate(messageId: string): boolean {
     if (now - ts > DEDUP_TTL) processedMessages.delete(id);
   }
   if (processedMessages.has(messageId)) return true;
+  // Map menjaga urutan insert — buang yang tertua kalau melebihi batas
+  while (processedMessages.size >= DEDUP_MAX_ENTRIES) {
+    const oldest = processedMessages.keys().next().value;
+    if (oldest === undefined) break;
+    processedMessages.delete(oldest);
+  }
   processedMessages.set(messageId, now);
   return false;
+}
+
+// Verifikasi HMAC-SHA256 atas raw body. GOWA v8 mengirim header
+// `X-Hub-Signature-256: sha256=<hex>`; secret sama di sisi GOWA
+// (--webhook-secret / WHATSAPP_WEBHOOK_SECRET) dan di env API ini.
+function verifyWebhookSignature(secret: string, rawBody: string, header: string | undefined): boolean {
+  if (!header) return false;
+  const provided = header.trim().replace(/^sha256=/i, "").toLowerCase();
+  const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
+  return timingSafeEqualString(expected, provided);
 }
 
 // Helper: get single setting value
@@ -45,11 +65,37 @@ async function getSettingValue(db: any, key: string): Promise<string> {
 //     "timestamp": "2026-02-18T18:13:58Z"
 //   }
 // }
+// Batas body dipasang SEBELUM handler membaca teks — verifikasi HMAC butuh raw body penuh,
+// jadi tanpa batas ini request tak terautentikasi bisa memaksa server memuat body sebesar apa pun.
+const WEBHOOK_MAX_BODY = 1024 * 1024; // 1 MB
+
+whatsappRoute.use("/webhook", bodyLimit({ maxSize: WEBHOOK_MAX_BODY, onError: (c) => c.text("Payload too large", 413) }));
+
 whatsappRoute.post("/webhook", async (c) => {
   const db = c.get("db");
 
-  const body = await c.req.json();
-  console.log("[WA WEBHOOK] incoming:", JSON.stringify(body));
+  // Fail-closed: tanpa secret terkonfigurasi, endpoint publik ini tidak boleh memproses apa pun
+  const webhookSecret = process.env.WHATSAPP_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    console.error("[WA WEBHOOK] WHATSAPP_WEBHOOK_SECRET belum di-set — request ditolak");
+    return c.text("Webhook not configured", 503);
+  }
+
+  // Signature dihitung atas raw body, jadi baca teks dulu, verifikasi, baru parse
+  const rawBody = await c.req.text();
+  if (!verifyWebhookSignature(webhookSecret, rawBody, c.req.header("x-hub-signature-256"))) {
+    console.warn("[WA WEBHOOK] signature tidak valid — request ditolak");
+    return c.text("Unauthorized", 401);
+  }
+
+  let body: any;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return c.text("Bad Request", 400);
+  }
+  // Jangan log payload (berisi nomor HP, nama, isi pesan) — cukup event + id
+  console.log("[WA WEBHOOK] incoming:", body?.event, body?.payload?.id || "");
 
   // Only process message events
   if (body.event !== "message") {
@@ -87,7 +133,6 @@ whatsappRoute.post("/webhook", async (c) => {
   let imageUrl: string | undefined;
   let imageMimeType: string | undefined;
   if (payload.image) {
-    console.log("[WA WEBHOOK] image payload:", JSON.stringify(payload.image));
     if (typeof payload.image === "string") {
       // GOWA sends relative path like "statics/media/xxx.jpeg"
       imageUrl = payload.image.startsWith("http") ? payload.image : `__gowa_path__:${payload.image}`;
@@ -99,7 +144,6 @@ whatsappRoute.post("/webhook", async (c) => {
       imageUrl = `__gowa_media__:${payload.image.id}`;
       imageMimeType = payload.image.mimetype || payload.image.mime_type;
     }
-    console.log("[WA WEBHOOK] extracted imageUrl:", imageUrl, "mimeType:", imageMimeType);
   }
 
   // Determine message text — if image/document without text, generate a placeholder
