@@ -49,6 +49,7 @@ avatar          text
 -- Statistik (denormalized)
 totalDonations  bigint DEFAULT 0        -- jumlah transaksi
 totalAmount     bigint DEFAULT 0        -- total rupiah
+-- CATATAN: totalDonations/totalAmount TIDAK PERNAH diperbarui kode manapun (selalu 0). Jangan dipakai sebagai sumber angka; hitung dari transactions (payment_status='paid', donatur_id). Export donatur sudah memakai hitungan nyata.
 
 -- Verifikasi
 emailVerifiedAt     timestamptz
@@ -123,7 +124,7 @@ Path: `GET /v1/admin/statistics/donatur/export`
 Role: `super_admin`, `admin_finance`, `admin_campaign`
 Filter: `startDate`, `endDate`
 
-Kolom yang diekspor: name, email, phone, whatsappNumber, nik, npwp, gender, birthPlace, birthDate, jobTitleName, jobCategoryName, incomeRangeLabel, provinceName, regencyName, districtName, villageName, detailAddress, totalDonations, totalAmount, isActive, hasAccount (punya akun login), lastLoginAt, createdAt.
+Kolom yang diekspor: name, email, phone, whatsappNumber, nik, npwp, gender, birthPlace, birthDate, jobTitleName, jobCategoryName, incomeRangeLabel, provinceName, regencyName, districtName, villageName, detailAddress, **riwayat donasi** (`Riwayat Donasi`: transaksi `paid` per donatur), totalDonations, totalAmount (keduanya dihitung dari transaksi `paid`, bukan dari kolom DB), isActive, hasAccount (punya akun login), lastLoginAt, createdAt.
 
 ---
 

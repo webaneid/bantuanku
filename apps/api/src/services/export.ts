@@ -6,6 +6,16 @@ interface ExportColumn {
   format?: (value: unknown) => string;
 }
 
+// Mitigasi CSV/formula injection: sel teks yang diawali = + - @ (atau TAB/CR) dieksekusi sebagai rumus oleh
+// Excel/Sheets. Nilai seperti nama donatur, alamat, atau judul campaign berasal dari input pengguna, jadi
+// diberi awalan apostrof agar dibaca sebagai teks. Angka/nomor telepon murni ("+628123", "-500") dan
+// penanda kosong "-" dibiarkan karena bukan rumus.
+export function neutralizeFormula(value: string): string {
+  if (!/^[=+\-@\t\r]/.test(value)) return value;
+  if (/^[+-]?\d+(?:[.,]\d+)*$/.test(value) || value === "-") return value;
+  return `'${value}`;
+}
+
 export function generateCSV(data: unknown[], columns: ExportColumn[]): string {
   const headers = columns.map((col) => `"${col.header}"`).join(",");
 
@@ -13,7 +23,7 @@ export function generateCSV(data: unknown[], columns: ExportColumn[]): string {
     return columns
       .map((col) => {
         const value = (row as Record<string, unknown>)[col.key];
-        const formatted = col.format ? col.format(value) : String(value ?? "");
+        const formatted = neutralizeFormula(col.format ? col.format(value) : String(value ?? ""));
         return `"${formatted.replace(/"/g, '""')}"`;
       })
       .join(",");

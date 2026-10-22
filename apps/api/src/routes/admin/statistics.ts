@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 import { eq, and, gte, lte, desc, sql, count, inArray } from "drizzle-orm";
-import { donatur, fundraisers, jobTitles, jobCategories, incomeRanges, indonesiaProvinces, indonesiaRegencies, indonesiaDistricts, indonesiaVillages, mustahiqs, entityBankAccounts } from "@bantuanku/db";
+import { donatur, transactions, fundraisers, jobTitles, jobCategories, incomeRanges, indonesiaProvinces, indonesiaRegencies, indonesiaDistricts, indonesiaVillages, mustahiqs, entityBankAccounts } from "@bantuanku/db";
 import { requireRole } from "../../middleware/auth";
-import { success } from "../../lib/response";
+import { success, error } from "../../lib/response";
 import { generateCSV, formatDate, formatCurrency } from "../../services/export";
+import { formatWIB, startOfDayWIB, endOfDayWIB } from "../../utils/timezone";
 import type { Env, Variables } from "../../types";
 
 const statistics = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -149,16 +150,19 @@ statistics.get("/donatur/export", requireRole("super_admin", "admin_finance", "a
   const startDate = c.req.query("startDate");
   const endDate = c.req.query("endDate");
 
+  // Hanya YYYY-MM-DD: tanggal asal-asalan sebelumnya menghasilkan 500, dan nilainya ikut ke nama file
+  const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+  if ((startDate && !DATE_ONLY.test(startDate)) || (endDate && !DATE_ONLY.test(endDate))) {
+    return error(c, "startDate/endDate harus berformat YYYY-MM-DD", 400);
+  }
+
   const conditions = [];
 
   if (startDate) {
-    conditions.push(gte(donatur.createdAt, new Date(startDate)));
+    conditions.push(gte(donatur.createdAt, startOfDayWIB(startDate)));
   }
   if (endDate) {
-    // End of day
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-    conditions.push(lte(donatur.createdAt, end));
+    conditions.push(lte(donatur.createdAt, endOfDayWIB(endDate)));
   }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -183,8 +187,6 @@ statistics.get("/donatur/export", requireRole("super_admin", "admin_finance", "a
       districtName: indonesiaDistricts.name,
       villageName: indonesiaVillages.name,
       detailAddress: donatur.detailAddress,
-      totalDonations: donatur.totalDonations,
-      totalAmount: donatur.totalAmount,
       isActive: donatur.isActive,
       lastLoginAt: donatur.lastLoginAt,
       hasAccount: sql<boolean>`(${donatur.userId} IS NOT NULL)`,
@@ -200,6 +202,53 @@ statistics.get("/donatur/export", requireRole("super_admin", "admin_finance", "a
     .leftJoin(indonesiaVillages, eq(donatur.villageCode, indonesiaVillages.code))
     .where(whereClause)
     .orderBy(desc(donatur.createdAt));
+
+  // Riwayat donasi per donatur: transaksi `paid` bertaut lewat donatur_id. Kolom denormalisasi
+  // donatur.total_donations/total_amount tidak pernah diperbarui (selalu 0), jadi totalnya dihitung di sini.
+  const paidTransactions = await db
+    .select({
+      donaturId: transactions.donaturId,
+      productType: transactions.productType,
+      productName: transactions.productName,
+      totalAmount: transactions.totalAmount,
+      paidAt: transactions.paidAt,
+      createdAt: transactions.createdAt,
+    })
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.paymentStatus, "paid"),
+        inArray(transactions.donaturId, db.select({ id: donatur.id }).from(donatur).where(whereClause))
+      )
+    )
+    .orderBy(desc(sql`COALESCE(${transactions.paidAt}, ${transactions.createdAt})`));
+
+  const MAX_HISTORY_ITEMS = 50; // batas sel Excel 32.767 karakter; total tetap dihitung dari semua transaksi
+  const productTypeLabel: Record<string, string> = { campaign: "Campaign", zakat: "Zakat", qurban: "Qurban", wakaf: "Wakaf" };
+  const historyByDonatur = new Map<string, { count: number; amount: number; items: string[] }>();
+  for (const t of paidTransactions) {
+    if (!t.donaturId) continue;
+    const entry = historyByDonatur.get(t.donaturId) ?? { count: 0, amount: 0, items: [] };
+    entry.count += 1;
+    entry.amount += Number(t.totalAmount) || 0;
+    if (entry.items.length < MAX_HISTORY_ITEMS) {
+      const label = productTypeLabel[t.productType] ?? t.productType;
+      const date = formatWIB(t.paidAt ?? t.createdAt, "dd-MM-yyyy");
+      entry.items.push(`${date} - ${label}: ${t.productName} - ${formatCurrency(Number(t.totalAmount) || 0)}`);
+    }
+    historyByDonatur.set(t.donaturId, entry);
+  }
+
+  const rows = data.map((row) => {
+    const history = historyByDonatur.get(row.id);
+    const more = history && history.count > history.items.length ? ` | (+${history.count - history.items.length} donasi lainnya)` : "";
+    return {
+      ...row,
+      totalDonations: history?.count ?? 0,
+      totalAmount: history?.amount ?? 0,
+      donationHistory: history ? history.items.join(" | ") + more : "",
+    };
+  });
 
   const columns = [
     { header: "Nama", key: "name" },
@@ -221,13 +270,14 @@ statistics.get("/donatur/export", requireRole("super_admin", "admin_finance", "a
     { header: "Alamat Detail", key: "detailAddress" },
     { header: "Total Donasi", key: "totalDonations" },
     { header: "Total Nominal", key: "totalAmount", format: formatCurrency },
+    { header: "Riwayat Donasi", key: "donationHistory" },
     { header: "Status", key: "isActive", format: (v: unknown) => v ? "Aktif" : "Nonaktif" },
     { header: "Punya Akun Login", key: "hasAccount", format: (v: unknown) => v ? "Ya" : "Tidak" },
     { header: "Login Terakhir", key: "lastLoginAt", format: formatDate },
     { header: "Terdaftar", key: "createdAt", format: formatDate },
   ];
 
-  const csv = generateCSV(data, columns);
+  const csv = generateCSV(rows, columns);
 
   const filename = startDate && endDate
     ? `donatur-${startDate}-to-${endDate}.csv`

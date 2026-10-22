@@ -251,8 +251,9 @@ Kolom CSV:
 | Pekerjaan | `jobTitles.name` |
 | Kategori Pekerjaan | `jobCategories.name` |
 | Penghasilan | `incomeRanges.label` |
-| Total Donasi | `donatur.totalDonations` |
-| Total Nominal | `donatur.totalAmount`, format currency |
+| Total Donasi | Jumlah transaksi `paid` donatur (bukan `donatur.totalDonations`, yang tidak pernah diperbarui) |
+| Total Nominal | Jumlah `transactions.total_amount` transaksi `paid`, format currency |
+| Riwayat Donasi | Daftar transaksi `paid`: tanggal WIB, jenis, nama produk, nominal (maks 50 item) |
 | Terdaftar | `donatur.createdAt`, format date |
 
 ### Mustahiq Export
@@ -327,7 +328,8 @@ Mustahiq penerima manfaat dihitung dari tabel `zakat_distributions`, bukan dari 
 | `influencerInactive` hanya menghitung active fundraiser yang tidak pernah punya referral | Label UI “Influencer Tidak Aktif” tidak sesuai definisi 20 hari | Ubah metric menjadi `totalInfluencer - influencerActive`, atau rename label menjadi “Belum Pernah Referral” |
 | `donaturAsInfluencer` tidak memfilter status fundraiser | Donatur yang pernah linked ke fundraiser nonaktif tetap dihitung | Tambahkan status filter jika metric harus aktif saja |
 | Boundary 30/20 hari memakai `new Date()` runtime | Bisa tidak selaras WIB | Pakai helper dari `docs/arsitektur-timezone.md` |
-| Export filter memakai `new Date("yyyy-MM-dd")` | Boundary tanggal export bisa UTC, bukan tanggal bisnis WIB | Parse date input sebagai WIB |
+| Export filter memakai `new Date("yyyy-MM-dd")` | Donatur export sudah diperbaiki 2026-10-23 (validasi + batas WIB); mustahiq export belum | Samakan mustahiq export |
+| `donaturEverDonated` memakai `donatur.totalDonations > 0` yang selalu 0 | Metric (tidak dikembalikan ke UI) akan salah bila dipakai | Hitung dari `transactions` bila di-expose |
 | Chart summary tidak ikut filter tanggal export | User bisa mengira filter export memfilter chart | Pisahkan UI copy atau tambahkan filter chart |
 | Statistik job/income/province memakai inner join | Donatur/mustahiq tanpa FK tidak masuk chart distribusi | Tambahkan bucket “Tidak diketahui” dengan left join jika perlu akurat |
 | `asnafStats` tidak filter null/kosong | Pie asnaf bisa punya label kosong/null | Tambahkan filter atau bucket eksplisit |

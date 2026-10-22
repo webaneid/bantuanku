@@ -130,9 +130,10 @@ Endpoint:
 
 Perilaku filter:
 
-- `startDate` diparse dengan `new Date(startDate)`.
-- `endDate` diparse dengan `new Date(endDate)` lalu `setHours(23, 59, 59, 999)`.
+- **Donatur export** (sejak 2026-10-23): `startDate`/`endDate` wajib `YYYY-MM-DD` (selain itu `400`) dan memakai batas hari WIB (`startOfDayWIB`/`endOfDayWIB`). Sebelumnya `new Date(...)` tanpa validasi: input aneh menghasilkan `500` dan nilai mentah ikut ke nama file. **Mustahiq export belum** diperbaiki (masih `new Date(...)`, lihat Gap).
 - Jika tanggal kosong, export semua data.
+
+Kolom donatur export bertambah **"Riwayat Donasi"**: transaksi `paid` bertaut `donatur_id`, urut terbaru, format `dd-MM-yyyy (WIB) - Jenis: Nama produk - Rp nominal`, dipisah ` | `, maksimal 50 item per donatur (sisanya "(+N donasi lainnya)"). Nominal = `transactions.total_amount`. "Total Donasi"/"Total Nominal" kini dihitung dari transaksi `paid`, bukan dari kolom denormalisasi `donatur.total_donations/total_amount` (tidak pernah diperbarui, selalu 0).
 
 Admin UI:
 
@@ -363,7 +364,7 @@ Gap: export client-side tidak punya endpoint export khusus, sehingga audit akses
 
 CSV tidak menambahkan BOM UTF-8. Untuk beberapa versi Excel di Windows, karakter Indonesia bisa bermasalah jika Excel salah mendeteksi encoding.
 
-CSV escaping sudah menangani tanda kutip, tetapi belum secara eksplisit menangani mitigasi CSV injection untuk nilai yang diawali `=`, `+`, `-`, atau `@`.
+CSV escaping menangani tanda kutip, dan sejak 2026-10-23 `generateCSV` memitigasi CSV/formula injection lewat `neutralizeFormula()` (`services/export.ts`): sel teks yang diawali `=`, `+`, `-`, `@`, TAB, atau CR diberi awalan apostrof. Angka/nomor telepon murni (`+628123`, `-500`) dan penanda `-` tidak diubah. Berlaku untuk semua export yang memakai `generateCSV`.
 
 ## Gap Implementasi
 
@@ -374,7 +375,8 @@ CSV escaping sudah menangani tanda kutip, tetapi belum secara eksplisit menangan
 | Filter `startDate/endDate` memakai `new Date("yyyy-MM-dd")` | Boundary bisa UTC dan tidak sesuai tanggal bisnis WIB | Parse sebagai date input WIB |
 | `formatDate` backend CSV tidak set `timeZone` | Tampilan tanggal bergantung timezone runtime | Format eksplisit `Asia/Jakarta` |
 | CSV tidak menambah BOM UTF-8 | Excel Windows bisa salah baca karakter | Pertimbangkan prefix `\uFEFF` untuk CSV yang ditujukan ke Excel |
-| CSV belum mitigasi formula injection | Nilai user seperti `=HYPERLINK(...)` bisa dieksekusi Excel | Escape cell yang diawali `=`, `+`, `-`, `@` |
+| ~~CSV belum mitigasi formula injection~~ | ✅ Selesai 2026-10-23 (`neutralizeFormula`) | — |
+| `GET /admin/statistics/mustahiq/export` masih `new Date(startDate)` tanpa validasi; nama file kedua export statistik memakai tanggal UTC | Input aneh → `500`; tanggal file bisa mundur sehari di dini hari WIB | Samakan dengan donatur export (regex + helper WIB) |
 | `formatCurrency` backend hanya menerima number | Numeric string/decimal dari DB bisa jadi `Rp 0` | Normalisasi `Number(value || 0)` dengan handling NaN |
 | Excel `currency` tidak diberi number format | User melihat angka mentah, bukan format rupiah Excel | Set cell style/number format jika tetap memakai XLSX |
 | Excel `date` string dikembalikan apa adanya | Format tanggal tidak konsisten antar halaman | Normalisasi tanggal di helper atau gunakan `formatDateWIB` |
