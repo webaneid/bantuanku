@@ -14,6 +14,7 @@ Threat model auth, token storage, secret, logging sensitif, dan prioritas harden
 - Access token: berlaku `15m` (default, bisa diubah via `JWT_EXPIRES_IN`), membawa claim `typ: "access"`.
 - Refresh token: berlaku `7d`, juga stateless JWT, membawa `typ: "refresh"`. Tidak ada tabel/session refresh token di DB. Access token **ditolak** di `/auth/refresh`, dan refresh token ditolak sebagai Bearer (ADR-0009).
 - Token unsubscribe WA (`purpose: "wa-unsubscribe"`) ditolak oleh `verifyToken` dan `verifyRefreshToken`.
+- Login password dan penukaran kode Google memakai penerbit sesi yang sama: `services/session.ts` (`buildSession`).
 - Algoritma: `HS256` via library `jose`
 - Secret: `JWT_SECRET` dari env API
 
@@ -41,8 +42,8 @@ Roles di-embed langsung ke dalam token — tidak di-fetch dari DB per request.
 
 | Method | Path | Fungsi |
 |--------|------|--------|
-| `POST` | `/auth/register` | Daftar akun baru (donatur). Tidak mengembalikan token dan **tidak lagi mengambil alih** record donatur lama; mengirim link verifikasi. Respons: `emailVerificationRequired`, `verificationEmail` (`sent`/`cooldown`/`failed`) |
-| `POST` | `/auth/email/verify` | Konsumsi token verifikasi (sekali pakai, 24 jam), set `email_verified_at`, tautkan record donatur + transaksi guest yang emailnya sama |
+| `POST` | `/auth/register` | Daftar akun baru (donatur). Email disimpan huruf kecil; lookup case-insensitive. Tidak mengembalikan token dan **tidak mengambil alih** record donatur lama; mengirim link verifikasi. Email yang sudah **terverifikasi** → 400. Email yang ada tapi **belum terverifikasi** → **daftar ulang** (password/nama/telepon/WA ditimpa, sesi dicabut, link baru). Respons: `emailVerificationRequired`, `verificationEmail` (`sent`/`cooldown`/`failed`). WA selamat datang tidak lagi dikirim di sini |
+| `POST` | `/auth/email/verify` | Body `{token, password}`. **Dua bukti** (ADR-0011): token dari mailbox + password akun; token dicek (`peek`), password diperiksa, baru token dihanguskan (salah password tidak membakar link; kode `INVALID_PASSWORD` vs `INVALID_TOKEN`). Sukses → `email_verified_at`, tautkan donatur + transaksi guest, WA selamat datang (background), dan **sesi langsung** (`accessToken`, `refreshToken`, `user`) |
 | `POST` | `/auth/email/resend` | Kirim ulang link verifikasi; respons generik (tidak membocorkan apakah email terdaftar), cooldown 60 dtk |
 | `POST` | `/auth/login` | Login, return `accessToken` + `refreshToken` |
 | `POST` | `/auth/refresh` | Perbarui access token dengan refresh token |
@@ -57,8 +58,24 @@ Roles di-embed langsung ke dalam token — tidak di-fetch dari DB per request.
 | `POST` | `/auth/forgot-password/request-otp` | Kirim OTP via WhatsApp |
 | `POST` | `/auth/forgot-password/reset` | Reset password dengan OTP |
 
+### Pencabutan sesi (ADR-0011, migrasi 122)
+`users.sessions_valid_after` diisi saat reset password (email dan OTP WA), ganti password (`PATCH /auth/me/password`), daftar ulang akun belum terverifikasi, dan klaim Google. `POST /auth/refresh` menolak refresh token yang `iat`-nya (detik) lebih lama dari nilai itu (jadi token yang terbit di detik yang sama dengan reset masih sah), dan menolak akun yang belum terverifikasi. Access token (15 menit) tidak dicek ke DB sehingga berlaku sampai kedaluwarsa. Web saat ini hanya menyimpan access token.
+
 ### Login: gate verifikasi email
 `POST /auth/login` menolak akun dengan `email_verified_at IS NULL` dengan `403 {code: "EMAIL_NOT_VERIFIED"}` setelah password terbukti benar, dan mengirim ulang link verifikasi. Akun yang dibuat admin (users, employees, donatur, mitra ×2) dan akun seed diberi `email_verified_at` saat dibuat; migrasi 121 mem-backfill semua user ber-peran selain `user`.
+
+### Login/daftar Google (Fase 3)
+Aktif hanya bila `GOOGLE_CLIENT_ID` dan `GOOGLE_CLIENT_SECRET` terisi (`GET /auth/methods` → `{google: boolean}`; tombol web tersembunyi bila `false`). Redirect URI yang didaftarkan di Google Cloud Console: `{API_URL}/v1/auth/google/callback` (override `GOOGLE_REDIRECT_URI`).
+
+| Langkah | Endpoint | Keterangan |
+|---------|----------|------------|
+| 1 | `GET /auth/google/start?returnTo=/path` | Buat `state`, `nonce`, PKCE `verifier`; simpan di cookie `g_oauth` (JWT HS256 10 menit, httpOnly, SameSite=Lax, Secure di production); redirect 302 ke Google (`openid email profile`, `code_challenge` S256). `returnTo` hanya path relatif (`//host`, `\`, URL absolut dinetralkan ke `/account`) |
+| 2 | `GET /auth/google/callback` | Cek `state` (timing-safe) terhadap cookie lalu hapus cookie; tukar `code` + `code_verifier`; verifikasi ID token (JWKS Google, RS256 saja, `iss`, `aud`, `exp`, `nonce`, `email_verified === true`); tentukan akun; redirect ke `{FRONTEND_URL}/auth/google?code=<kode 60 dtk>&next=<path>`. Gagal → `/login?error=google_*` |
+| 3 | `POST /auth/google/exchange` | Tukar kode sekali pakai (`auth_email_tokens.purpose='google_exchange'`, 60 detik) dengan sesi (`buildSession`, sama seperti login). Token sesi tidak pernah ada di URL |
+
+Aturan akun (`services/google-account.ts`, diperketat ADR-0011): cocokkan lewat `sub` Google, lalu lewat email. Akun lokal yang sudah terverifikasi **ditautkan**. Akun lokal yang **belum terverifikasi di-KLAIM** oleh pemilik email (Google membuktikan kepemilikan): `password_hash` dihapus (mungkin ditanam penyerang yang mendaftar dengan email korban), email ditandai terverifikasi, token tertunda dihanguskan, `sessions_valid_after` diisi, lalu ditautkan. Akun ber-peran selain `user` ditolak (`google_staff`), akun nonaktif ditolak (`google_inactive`). Email tak dikenal → akun baru: terverifikasi, tanpa password, peran `user`, record donatur dibuat/ditautkan, `whatsappNumber` kosong (web mengarahkan ke `/account/profile`; tidak ada flag `needsProfileCompletion`). Foto profil Google tidak disimpan.
+
+Env uji: `GOOGLE_OAUTH_AUTH_URL`, `GOOGLE_OAUTH_TOKEN_URL`, `GOOGLE_OAUTH_JWKS_URL` meng-override endpoint Google **hanya** untuk uji dengan server tiruan; jangan diset di produksi.
 
 ### Reset password via email
 Token `reset_password` (1 jam) tidak bisa dipakai untuk verifikasi, dan sebaliknya (kolom `purpose` ikut dicek saat konsumsi). Permintaan baru menghanguskan token lama. Reset mengganti `users.password_hash` dan `donatur.password_hash` (donatur dengan `user_id` akun itu). **Gap yang diketahui:** refresh token yang sudah terbit tetap berlaku sampai kedaluwarsa (7 hari) karena tidak ada revocation (lihat `arsitektur-security.md`); reset password tidak mencabut sesi yang ada.
@@ -234,14 +251,14 @@ TTL: 5 menit. Max attempts: 5 (setelah itu OTP hangus).
 
 ## Rencana: Verifikasi Email, Reset Email, dan Login Google (ADR-0010)
 
-> Status: **direncanakan** (2026-10-22). Dokumen ini diperbarui per fase saat kode selesai; bagian yang belum berstatus ✅ belum ada di kode.
+> Status: **diimplementasikan** (2026-10-22) dan diperketat oleh ADR-0011 setelah audit `security-auditor`. Belum deployed.
 
 | Fase | Isi | Status |
 |------|-----|--------|
 | 1 | Verifikasi email (tabel token, kirim/verifikasi/kirim-ulang, gate login, perketat register, tutup `check-registration`, kepemilikan transaksi via email terverifikasi) | ✅ API + web (halaman `/verifikasi-email`, panel cek email di register/login) — diuji 28 kasus API + alur browser |
 | 2 | Lupa password via email (link 1 jam) | ✅ API + web (`/forgot-password` tab Via Email default, `/reset-password`) — 20 kasus API + alur browser |
-| 3 | Login/daftar Google (`/auth/methods`, `/auth/google/start|callback|exchange`, `user_oauth_accounts`) | ⏳ |
-| 4 | Frontend web: `/verifikasi-email` + panel cek email ✅ (Fase 1); `/forgot-password` via email, tombol Google, lengkapi data WA ⏳. Halaman aksi auth (`/login`, `/register`, `/verifikasi-email`) sengaja tidak masuk `url-registry` (bukan tujuan tautan) | ◐ |
+| 3 | Login/daftar Google (`/auth/methods`, `/auth/google/start|callback|exchange`, `user_oauth_accounts`) | ✅ API + web — E2E terhadap Google tiruan 47 kasus (`apps/api/scripts/e2e-google-oauth.ts`) + alur browser |
+| 4 | Frontend web: `/verifikasi-email`, panel cek email, `/forgot-password` (tab email), `/reset-password`, tombol Google di login/register, halaman `/auth/google`, pesan error Google, nomor WA masuk daftar "Lengkapi Data Wajib" di profil. Halaman aksi auth sengaja tidak masuk `url-registry` (bukan tujuan tautan) | ✅ |
 
 ### Skema baru (migrasi 121)
 ```

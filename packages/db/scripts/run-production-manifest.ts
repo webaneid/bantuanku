@@ -211,6 +211,9 @@ const CORE_EXISTING: MigrationEntry[] = [
   {
     file: "packages/db/migrations/121_auth_email_tokens_and_oauth.sql",
   },
+  {
+    file: "packages/db/migrations/122_users_sessions_valid_after.sql",
+  },
 ];
 
 const args = process.argv.slice(2);

@@ -1,13 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { Input, Button, Label } from "@/components/atoms";
-import { VerifyEmailNotice } from "@/components/molecules";
+import { VerifyEmailNotice, GoogleSignInButton } from "@/components/molecules";
 import toast from "@/lib/feedback-toast";
 import { useI18n } from "@/lib/i18n/provider";
+
+const GOOGLE_ERROR_CODES = ["google_unverified", "google_staff", "google_inactive", "google_cancelled", "google_disabled", "google_failed"];
+
+// Menampilkan pesan bila API mengembalikan pengguna ke /login?error=google_* setelah alur Google gagal
+function GoogleErrorNotice() {
+  const { t } = useI18n();
+  const searchParams = useSearchParams();
+  const errorCode = searchParams.get("error");
+
+  useEffect(() => {
+    if (!errorCode || !errorCode.startsWith("google_")) return;
+    const code = GOOGLE_ERROR_CODES.includes(errorCode) ? errorCode : "google_failed";
+    toast.error(t(`auth.google.errors.${code}`));
+  }, [errorCode, t]);
+
+  return null;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -66,6 +83,10 @@ export default function LoginPage() {
           <p className="text-gray-600 mt-2">{t("auth.login.subtitle")}</p>
         </div>
 
+        <Suspense fallback={null}>
+          <GoogleErrorNotice />
+        </Suspense>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <Label htmlFor="email">{t("auth.login.email")}</Label>
@@ -107,6 +128,10 @@ export default function LoginPage() {
             {isLoading ? t("auth.login.processing") : t("auth.login.submit")}
           </Button>
         </form>
+
+        <div className="mt-6">
+          <GoogleSignInButton />
+        </div>
 
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>

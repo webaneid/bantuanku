@@ -95,3 +95,30 @@ kentara dari nama-nama dokumen yang ada.
 | L | `signUnsubscribeToken` tanpa pemanggil — link unsubscribe tidak ada di pesan broadcast/birthday/re-engagement (gap kepatuhan, bukan kerentanan) | ⏳ **Belum** — butuh fitur: sisipkan `{unsubscribe_url}` ke template + `buildSharedVars` |
 
 > Seluruh perbaikan D–O (kecuali P–R dan L yang masih terbuka) di-deploy ke VPS pada 2026-10-22 (commit `fe15011`); bot WA diverifikasi normal setelah `WHATSAPP_WEBHOOK_SECRET` dipasang di GOWA dan API.
+
+## Auth: Verifikasi Email, Reset Email, Login Google (ADR-0010, 2026-10-22)
+
+| # | Item | Status |
+|---|------|--------|
+| S | **Rate limit bisa dilewati dengan memalsukan `X-Forwarded-For`** (brute force `/auth/login`, OTP, reset). Terbukti: 30/30 percobaan lolos dengan header berbeda | ◐ Kode siap, **opt-in**: set env `TRUSTED_PROXY_HOPS` di VPS setelah memeriksa konfigurasi Nginx/Cloudflare (Nginx saja = 1, Cloudflare + Nginx = 2). Diuji: dengan nilai 1, pemalsuan sisi kiri tidak lagi lolos dan klien lain tidak ikut terkunci. **Perlu keputusan/konfirmasi topologi proxy** |
+| T | Verifikasi email (Fase 1), lupa password via email (Fase 2), login/daftar Google (Fase 3), frontend (Fase 4) | ✅ di kode; belum deployed. Prasyarat deploy: migrasi 121 → env Resend → env Google (opsional) |
+| U | Refresh token tidak dicabut saat reset password (tidak ada revocation) | ⏳ Gap lama (token 7 hari), kini lebih relevan karena ada reset via email; kandidat: tabel sesi/token version |
+
+## Audit `security-auditor` atas ADR-0010 (2026-10-22) — diperbaiki di ADR-0011
+
+| # | Temuan audit | Status |
+|---|--------------|--------|
+| V | **(High)** `GET /v1/donatur/search` publik membuka nama, email, telepon, WA donatur (autofill checkout) | ◐ `userId` diganti `hasAccount` + rate limit 30/15 menit. **PII-nya masih terbuka — butuh keputusan produk:** hanya `exists` tanpa autofill, atau autofill setelah OTP/login, atau masking |
+| W | **(High)** Pre-registration hijack belum tertutup: link verifikasi yang diklik pemilik email mengesahkan akun ber-password penyerang | ✅ Verifikasi butuh token + password; daftar ulang akun belum terverifikasi menimpa password; Google meng-klaim akun (hapus password). 54 + 53 kasus uji |
+| X | **(Medium)** Tidak ada pencabutan sesi; `/refresh` tidak cek verifikasi | ✅ `users.sessions_valid_after` (migrasi 122) + cek verifikasi. Gap #U selesai |
+| Y | **(Medium)** Admin bisa memberi peran staf ke user belum terverifikasi (`admin/employees.ts`, 2 jalur) | ✅ Ditolak bila `email_verified_at` NULL. Tidak diuji runtime (butuh fixture admin+employee), terverifikasi lewat tsc dan baca kode |
+| Z | **(Medium)** Nama pendaftar tak di-escape di HTML email | ✅ `esc()` di semua template `email.ts` (termasuk donasi/campaign/penyaluran) |
+| AA | **(Medium)** Open redirect `returnTo`/`next` lewat TAB | ✅ Validasi `new URL()` + tolak karakter kontrol, API dan web |
+| AB | **(Low)** Enumerasi akun (`register` 400, `check-registration`, waktu login) | ◐ Sebagian: tetap ada (diterima, rate limit). Dummy bcrypt untuk email tak dikenal belum dibuat |
+| AC | **(Low)** Email tak dinormalisasi lowercase | ◐ Lookup case-insensitive + simpan lowercase. **Belum** ada unique index `lower(email)`: cek data duplikat produksi dulu |
+| AD | **(Low)** WA selamat datang ke nomor tak terverifikasi | ✅ Dikirim setelah email terverifikasi. `POST /v1/donatur` publik masih membuat record dengan nomor/nama sembarang (belum ditangani) |
+| AE | **(Low)** Override URL OAuth lewat env di production | ✅ Diabaikan bila `ENVIRONMENT=production` |
+| AF | **(Medium)** Rate limit via XFF palsu → email-bombing/brute force | ⏳ = item S: set `TRUSTED_PROXY_HOPS` di VPS. Limiter per-akun belum ada |
+
+> **Prasyarat deploy bertambah:** jalankan migrasi **121 dan 122** sebelum restart API.
+

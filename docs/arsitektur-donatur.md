@@ -112,7 +112,7 @@ Semua endpoint profil donatur ada di prefix `/v1/auth/me` dan `/v1/account/`.
 
 | Method | Path | Fungsi |
 |--------|------|--------|
-| `GET` | `/v1/donatur/search` | Cari donatur by email/phone untuk guest checkout |
+| `GET` | `/v1/donatur/search` | Cari donatur by email/phone untuk guest checkout. Publik, rate limit 30/15 menit/IP, respons `hasAccount` (bukan `userId`). **Masih membuka nama/email/telepon/WA** ke siapa pun yang tahu salah satunya — perlu keputusan produk (RETROFIT-GAPS V) |
 | `POST` | `/v1/donatur` | Buat donatur baru (guest checkout) |
 
 ---

@@ -411,3 +411,31 @@
 **Konteks:** `forgot-password/email/request` dan `email/resend` membalas pesan generik yang identik untuk email terdaftar maupun tidak.
 **Masalah:** Pesan identik belum cukup: pengiriman email (ratusan ms ke Resend) hanya terjadi untuk akun yang ada, jadi penyerang bisa membedakan keduanya dari waktu respons dan mengenumerasi email donatur. Ditemukan saat security review inline, bukan lewat test fungsional (semua kasus fungsional sudah lolos).
 **Pelajaran:** Untuk endpoint publik yang memicu efek samping mahal hanya pada akun yang ada, jalankan efek samping itu di background (`void fn().catch(log)`) dan balas segera. Berlaku untuk reset password, kirim ulang verifikasi, dan jalur serupa. Pada jalur login (setelah password terbukti benar), menunggu pengiriman tidak masalah karena pemanggil sudah terautentikasi sebagian.
+
+### 2026-10-22 — Rate Limit Berbasis `X-Forwarded-For` Mentah Bisa Dilewati
+
+**Konteks:** Menguji endpoint auth baru memicu 429 karena memanggil satu path > 20 kali; membaca `ratelimit.ts` menunjukkan kunci = seluruh nilai header `x-forwarded-for` dari klien.
+**Masalah:** Header itu dikontrol penyerang. Setiap nilai berbeda = kunci baru, jadi batas 20 percobaan/15 menit pada `/auth/login`, OTP, dan reset tidak pernah tercapai. Terbukti dengan 30 percobaan login beruntun yang semuanya lolos. Tidak ada error atau gejala pada pemakaian normal; baru terlihat saat membaca kode dan mengujinya dengan header palsu.
+**Pelajaran:** Identitas klien untuk rate limit harus berasal dari bagian header yang ditambahkan proxy tepercaya (entri ke-N dari kanan), bukan nilai mentah. Jumlah hop bergantung topologi (Nginx saja vs Cloudflare + Nginx) dan tidak bisa ditebak dari repo, jadi jadikan konfigurasi eksplisit (`TRUSTED_PROXY_HOPS`) dan uji dengan header palsu. Nilai yang salah bisa mengunci pengguna sah secara massal, itu sebabnya perbaikan dibuat opt-in sampai topologi dikonfirmasi.
+
+### 2026-10-22 — Uji OAuth Tanpa Google: Server Tiruan dengan Validasi Nyata
+
+**Konteks:** Login Google tidak bisa diuji otomatis terhadap Google sungguhan (butuh akun, konsol, dan jaringan).
+**Pelajaran:** Buat server Google tiruan yang menerapkan aturan yang sama dengan aslinya (token endpoint memeriksa PKCE S256 + client secret + kode sekali pakai; JWKS dengan kunci uji; ID token RS256) dan jadikan URL endpoint dapat di-override lewat env khusus uji. Dengan begitu serangan (state salah, nonce salah, `aud`/`iss` salah, tanda tangan kunci lain, `alg` HS256, token kedaluwarsa, replay kode) benar-benar menjalankan jalur kode produksi. Skrip disimpan di `apps/api/scripts/e2e-google-oauth.ts`. Jangan set override itu di produksi.
+
+### 2026-10-22 — Link Verifikasi Email Bukan Bukti Bahwa Pengklik Adalah Pendaftar
+
+**Konteks:** ADR-0010 mewajibkan verifikasi email via link agar pendaftar tidak bisa mengambil alih data orang lain. Audit atas implementasinya menemukan lubang pada desain itu sendiri.
+**Masalah:** Penyerang mendaftar dengan email korban + password penyerang. Akun tetap belum terverifikasi, tetapi link verifikasi dikirim ke korban (saat register, saat login, bahkan saat korban mencoba Google). Bila korban mengkliknya, akun menjadi terverifikasi dengan password penyerang masih berlaku, data donatur korban tertaut, dan penyerang masuk. Link membuktikan akses ke MAILBOX, bukan bahwa pengklik adalah orang yang membuat akun.
+**Pelajaran:** Verifikasi email harus mengikat dua pihak yang sama: bukti mailbox (token) DAN bukti pembuat akun (password yang hanya diketahui pendaftar), atau password dibuat saat verifikasi. Jalur lain yang sudah membuktikan kepemilikan email (Google, reset via email) harus MENGGANTI kredensial lama, bukan sekadar menandai terverifikasi. Periksa ulang desain keamanan dengan memikirkan siapa yang menerima email, bukan hanya siapa yang mengirim formulir. Lihat ADR-0011.
+
+### 2026-10-22 — Uji Otomatis Bisa Mengirim Pesan ke Dunia Nyata: Cek Setting Gateway Sebelum Menjalankan
+
+**Konteks:** Fitur register mengirim WA selamat datang. DB dev menyimpan `whatsapp_enabled=true` dengan URL gateway GOWA yang nyata.
+**Masalah:** Uji-uji saya mendaftarkan puluhan akun dengan nomor karangan (`08120000xxxx`) dan memicu 13 percobaan kirim WA lewat gateway organisasi. Semua `send result: false` di log (tidak terkirim), tetapi percobaannya nyata dan nomor karangan bisa saja milik orang sungguhan. Ketahuan hanya karena membaca setting DB saat menyelidiki hal lain; tidak ada error. Saya sudah waspada untuk `send_qris` tetapi tidak memeriksa jalur lain yang memicu WA.
+**Pelajaran:** Sebelum menjalankan uji yang membuat entitas, telusuri efek sampingnya ke luar (WA, email, payment gateway) dengan `grep` pada jalur yang dipanggil, dan periksa setting yang mengaktifkannya (`whatsapp_enabled`, `RESEND_API_KEY`). Skrip uji wajib: menolak jalan bila `DATABASE_URL` bukan localhost, mematikan integrasi eksternal selama uji dan mengembalikannya sesudahnya (di `scripts/e2e-*.ts`). Pindahkan pemicu notifikasi ke setelah bukti kepemilikan (WA selamat datang kini dikirim setelah email terverifikasi).
+
+### 2026-10-22 — Regresi Uji: Simpan Skrip, Bukan Hanya Hasilnya
+
+**Konteks:** Skrip uji Fase 1 dan 2 saya hapus setelah lolos. Ketika desain berubah (ADR-0011), seluruh skenario harus ditulis ulang dari nol.
+**Pelajaran:** Skenario uji keamanan (pre-hijack, token silang, replay, kedaluwarsa) adalah aset. Simpan sebagai skrip di `apps/api/scripts/e2e-*.ts` dengan pengaman (DB lokal, integrasi eksternal dimatikan) agar bisa dijalankan ulang setiap kali auth disentuh: `e2e-auth-email.ts` (54 kasus) dan `e2e-google-oauth.ts` (53 kasus).

@@ -55,7 +55,7 @@ interface Donatur {
   email: string;
   phone: string | null;
   whatsappNumber: string | null;
-  userId: string | null;
+  hasAccount: boolean;
 }
 
 interface CheckoutFormData {
@@ -189,7 +189,7 @@ export default function CheckoutPage() {
             toast.success(t('checkout.main.toasts.donorFound'));
 
             // Show register popup if donatur exists but has no user account
-            if (!donatur.userId) {
+            if (!donatur.hasAccount) {
               setShowRegisterPopup(true);
             }
           }

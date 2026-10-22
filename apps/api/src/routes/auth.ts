@@ -11,9 +11,28 @@ import { normalizePhone } from "../lib/contact-helpers";
 import { authMiddleware } from "../middleware/auth";
 import { authRateLimit } from "../middleware/ratelimit";
 import { WhatsAppService } from "../services/whatsapp";
-import { sendVerificationEmail, sendPasswordResetEmail } from "../services/auth-email";
+import { sendVerificationEmail, sendPasswordResetEmail, getFrontendBase } from "../services/auth-email";
+import { buildSession } from "../services/session";
+import { resolveGoogleUser } from "../services/google-account";
+import { setCookie, getCookie, deleteCookie } from "hono/cookie";
+import {
+  getGoogleConfig,
+  generatePkce,
+  randomToken,
+  sanitizeReturnTo,
+  signOAuthState,
+  verifyOAuthState,
+  safeEqual,
+  buildAuthUrl,
+  exchangeCodeForIdToken,
+  verifyGoogleIdToken,
+  GOOGLE_STATE_COOKIE,
+  GOOGLE_STATE_TTL_SECONDS,
+} from "../lib/google-oauth";
+import { issueEmailToken } from "../lib/email-tokens";
 import { linkVerifiedAccountData, markEmailVerified } from "../services/account-linking";
-import { consumeEmailToken } from "../lib/email-tokens";
+import { consumeEmailToken, peekEmailToken } from "../lib/email-tokens";
+import { findUserByEmail, normalizeEmail } from "../lib/user-lookup";
 import type { Env, Variables } from "../types";
 
 const auth = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -72,18 +91,42 @@ function formatOtpExpiry(date: Date): string {
 }
 
 auth.post("/register", authRateLimit, zValidator("json", registerSchema), async (c) => {
-  const { email, password, name, phone, whatsappNumber } = c.req.valid("json");
+  const { password, name, phone, whatsappNumber } = c.req.valid("json");
+  const email = normalizeEmail(c.req.valid("json").email);
   const db = c.get("db");
 
-  const existingUser = await db.query.users.findFirst({
-    where: eq(users.email, email),
-  });
+  const existingUser = await findUserByEmail(db, email);
+  const passwordHash = await hashPassword(password);
 
   if (existingUser) {
-    return error(c, "Email already registered", 400);
+    const existingRoles = await db.query.userRoles.findMany({ where: eq(userRoles.userId, existingUser.id), with: { role: true } });
+    const hasStaffRole = existingRoles.some((ur) => (ur as any).role?.slug && (ur as any).role.slug !== "user");
+    if (existingUser.emailVerifiedAt || hasStaffRole) {
+      return error(c, "Email already registered", 400);
+    }
+
+    // Akun BELUM terverifikasi = belum ada yang membuktikan memiliki email ini: daftar ulang menimpa
+    // password/data dan mencabut sesi. Aman karena verifikasi butuh mailbox DAN password terbaru
+    // (ADR-0011); pihak lain yang menimpa tidak bisa memverifikasi tanpa mailbox pemilik.
+    const now = new Date();
+    await db
+      .update(users)
+      .set({ passwordHash, name, phone, whatsappNumber, sessionsValidAfter: now, updatedAt: now })
+      .where(eq(users.id, existingUser.id));
+    await db
+      .update(donaturTable)
+      .set({ passwordHash, name, phone, whatsappNumber, updatedAt: now })
+      .where(eq(donaturTable.userId, existingUser.id));
+
+    const verificationEmail = await sendVerificationEmail(db, c.env, { id: existingUser.id, email: existingUser.email, name });
+    return success(
+      c,
+      { id: existingUser.id, email: existingUser.email, name, emailVerificationRequired: true, verificationEmail },
+      "Registration successful",
+      201
+    );
   }
 
-  const passwordHash = await hashPassword(password);
   const userId = createId();
 
   await db.insert(users).values({
@@ -109,16 +152,14 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
   // Record donatur dibuat HANYA bila belum ada donatur dengan email ini. Donatur yang sudah ada
   // (mis. dari donasi guest) TIDAK diambil alih di sini: email belum terbukti milik pendaftar.
   // Penautan data lama terjadi saat email diverifikasi (linkVerifiedAccountData).
-  const { donatur } = await import("@bantuanku/db");
-  const normalizedEmail = email.toLowerCase().trim();
   const existingDonatur = await db.query.donatur.findFirst({
-    where: eq(donatur.email, normalizedEmail),
+    where: eq(donaturTable.email, email),
   });
 
   if (!existingDonatur) {
-    await db.insert(donatur).values({
+    await db.insert(donaturTable).values({
       id: createId(),
-      email: normalizedEmail,
+      email,
       passwordHash,
       name,
       phone,
@@ -127,26 +168,9 @@ auth.post("/register", authRateLimit, zValidator("json", registerSchema), async 
     });
   }
 
-  // Kirim link verifikasi; kegagalan tidak menggagalkan pendaftaran (pengguna bisa kirim ulang)
+  // Kirim link verifikasi; kegagalan tidak menggagalkan pendaftaran (pengguna bisa kirim ulang).
+  // WA selamat datang dikirim SETELAH email terverifikasi (lihat /email/verify), bukan ke nomor tak terverifikasi.
   const verificationEmail = await sendVerificationEmail(db, c.env, { id: userId, email, name });
-
-  // WhatsApp notification: selamat datang
-  if (whatsappNumber) {
-    try {
-      const wa = new WhatsAppService(db, c.env.FRONTEND_URL);
-      const waResult = await wa.send({
-        phone: whatsappNumber,
-        templateKey: "wa_tpl_register_welcome",
-        variables: {
-          customer_name: name,
-          customer_email: email,
-          customer_phone: phone || whatsappNumber,
-        },
-      });
-    } catch (err) {
-      console.error("[WA] welcome notification error:", err);
-    }
-  }
 
   return success(c, { id: userId, email, name, emailVerificationRequired: true, verificationEmail }, "Registration successful", 201);
 });
@@ -155,9 +179,7 @@ auth.post("/login", authRateLimit, zValidator("json", loginSchema), async (c) =>
   const { email, password } = c.req.valid("json");
   const db = c.get("db");
 
-  const user = await db.query.users.findFirst({
-    where: eq(users.email, email),
-  });
+  const user = await findUserByEmail(db, email);
 
   if (!user || !user.passwordHash) {
     return error(c, "Invalid email or password", 401);
@@ -188,75 +210,58 @@ auth.post("/login", authRateLimit, zValidator("json", loginSchema), async (c) =>
     );
   }
 
-  const userRolesList = await db.query.userRoles.findMany({
-    where: eq(userRoles.userId, user.id),
-    with: {
-      role: true,
-    },
-  });
-
-  const rolesSlugs = userRolesList.map((ur) => (ur as any).role?.slug).filter(Boolean);
-
-  const accessToken = await signToken(
-    {
-      sub: user.id,
-      email: user.email,
-      name: user.name,
-      phone: user.phone,
-      whatsappNumber: user.whatsappNumber,
-      roles: rolesSlugs,
-      isDeveloper: Boolean(user.isDeveloper),
-    },
-    c.env.JWT_SECRET,
-    c.env.JWT_EXPIRES_IN || "15m"
-  );
-
-  const refreshToken = await signRefreshToken(user.id, c.env.JWT_SECRET);
-
-  await db
-    .update(users)
-    .set({ lastLoginAt: new Date() })
-    .where(eq(users.id, user.id));
-
-  return success(c, {
-    accessToken,
-    refreshToken,
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      phone: user.phone,
-      whatsappNumber: user.whatsappNumber,
-      roles: rolesSlugs,
-      isDeveloper: Boolean(user.isDeveloper),
-    },
-  });
+  return success(c, await buildSession(db, c.env, user));
 });
 
-const emailVerifySchema = z.object({ token: z.string().min(20).max(200) });
+const emailVerifySchema = z.object({ token: z.string().min(20).max(200), password: z.string().max(128).optional() });
 const emailResendSchema = z.object({ email: z.string().email().max(255) });
 
 // Dipanggil oleh halaman web /verifikasi-email (POST, bukan GET yang mengubah state, agar link
 // tidak terkonsumsi oleh prefetch/scanner email).
+//
+// Verifikasi butuh DUA bukti (ADR-0011): token dari kotak surat DAN password akun. Tanpa bukti kedua,
+// orang yang mendaftar dengan email korban + password sendiri bisa membuat korban "memverifikasi"
+// akun milik penyerang hanya dengan mengklik link di emailnya. Token baru dihanguskan setelah password benar,
+// jadi salah password tidak membakar link.
 auth.post("/email/verify", authRateLimit, zValidator("json", emailVerifySchema), async (c) => {
-  const { token } = c.req.valid("json");
+  const { token, password } = c.req.valid("json");
   const db = c.get("db");
+  const invalid = (message = "Tautan verifikasi tidak valid atau sudah kedaluwarsa") =>
+    c.json({ success: false, message, code: "INVALID_TOKEN" }, 400);
+
+  const peek = await peekEmailToken(db, token, "verify_email");
+  if (!peek) return invalid();
+
+  const user = await db.query.users.findFirst({ where: eq(users.id, peek.userId) });
+  // Token diterbitkan untuk email tertentu; bila email akun sudah berubah, tautan tidak berlaku
+  if (!user || user.email !== peek.email || !user.isActive) return invalid();
+
+  if (user.passwordHash) {
+    if (!password || !(await verifyPassword(password, user.passwordHash))) {
+      return c.json({ success: false, message: "Password salah", code: "INVALID_PASSWORD" }, 400);
+    }
+  }
 
   const row = await consumeEmailToken(db, token, "verify_email");
-  if (!row) {
-    return error(c, "Tautan verifikasi tidak valid atau sudah kedaluwarsa", 400);
-  }
-
-  const user = await db.query.users.findFirst({ where: eq(users.id, row.userId) });
-  // Token diterbitkan untuk email tertentu; bila email akun sudah berubah, tautan tidak berlaku
-  if (!user || user.email !== row.email) {
-    return error(c, "Tautan verifikasi tidak valid atau sudah kedaluwarsa", 400);
-  }
+  if (!row) return invalid();
 
   await markEmailVerified(db, user.id);
   const linked = await linkVerifiedAccountData(db, { id: user.id, email: user.email, passwordHash: user.passwordHash });
 
-  return success(c, { verified: true, email: user.email, linked }, "Email berhasil diverifikasi");
+  // WA selamat datang hanya setelah email terbukti (bukan saat register ke nomor tak terverifikasi)
+  if (user.whatsappNumber) {
+    void new WhatsAppService(db, c.env.FRONTEND_URL)
+      .send({
+        phone: user.whatsappNumber,
+        templateKey: "wa_tpl_register_welcome",
+        variables: { customer_name: user.name, customer_email: user.email, customer_phone: user.phone || user.whatsappNumber },
+      })
+      .catch((err) => console.error("[WA] welcome notification error:", err));
+  }
+
+  // Pemakai baru saja membuktikan mailbox + password: terbitkan sesi langsung (tanpa login ulang)
+  const fresh = (await db.query.users.findFirst({ where: eq(users.id, user.id) }))!;
+  return success(c, { verified: true, email: user.email, linked, ...(await buildSession(db, c.env, fresh)) }, "Email berhasil diverifikasi");
 });
 
 auth.post("/email/resend", authRateLimit, zValidator("json", emailResendSchema), async (c) => {
@@ -264,9 +269,7 @@ auth.post("/email/resend", authRateLimit, zValidator("json", emailResendSchema),
   const db = c.get("db");
   const generic = "Jika email terdaftar dan belum terverifikasi, tautan verifikasi baru telah dikirim.";
 
-  const user =
-    (await db.query.users.findFirst({ where: eq(users.email, email) })) ||
-    (await db.query.users.findFirst({ where: eq(users.email, email.toLowerCase().trim()) }));
+  const user = await findUserByEmail(db, email);
 
   // Di background (lihat catatan di forgot-password/email/request): cegah enumerasi lewat waktu respons
   if (user && user.isActive && !user.emailVerifiedAt) {
@@ -440,6 +443,7 @@ auth.post(
       .update(users)
       .set({
         passwordHash: newPasswordHash,
+        sessionsValidAfter: new Date(),
         updatedAt: new Date(),
       })
       .where(eq(users.id, user.id));
@@ -480,9 +484,7 @@ auth.post(
     const db = c.get("db");
     const generic = "Jika email terdaftar, tautan untuk mengatur ulang password telah dikirim.";
 
-    const user =
-      (await db.query.users.findFirst({ where: eq(users.email, email) })) ||
-      (await db.query.users.findFirst({ where: eq(users.email, email.toLowerCase().trim()) }));
+    const user = await findUserByEmail(db, email);
 
     // Kirim di background: waktu respons tidak boleh membedakan email terdaftar dari yang tidak
     // (pengiriman via Resend memakan ratusan ms, hanya terjadi untuk akun yang ada).
@@ -511,7 +513,8 @@ auth.post(
     if (!user || user.email !== row.email || !user.isActive) return error(c, invalid, 400);
 
     const newPasswordHash = await hashPassword(newPassword);
-    await db.update(users).set({ passwordHash: newPasswordHash, updatedAt: new Date() }).where(eq(users.id, user.id));
+    // sessionsValidAfter: refresh token lama (mungkin milik pihak yang menguasai akun) tidak berlaku lagi
+    await db.update(users).set({ passwordHash: newPasswordHash, sessionsValidAfter: new Date(), updatedAt: new Date() }).where(eq(users.id, user.id));
     await db
       .update(donaturTable)
       .set({ passwordHash: newPasswordHash, updatedAt: new Date() })
@@ -526,6 +529,85 @@ auth.post(
   }
 );
 
+// Metode login yang tersedia (publik): frontend menyembunyikan tombol Google bila tidak dikonfigurasi
+auth.get("/methods", async (c) => {
+  return success(c, { google: !!getGoogleConfig(c.env) });
+});
+
+// Mulai login Google: simpan state/nonce/PKCE verifier di cookie httpOnly bertanda tangan lalu redirect ke Google
+auth.get("/google/start", authRateLimit, async (c) => {
+  const db = c.get("db");
+  const front = await getFrontendBase(db, c.env);
+  const cfg = getGoogleConfig(c.env);
+  if (!cfg) return c.redirect(`${front}/login?error=google_disabled`, 302);
+
+  const { verifier, challenge } = generatePkce();
+  const state = randomToken();
+  const nonce = randomToken();
+  const returnTo = sanitizeReturnTo(c.req.query("returnTo"));
+
+  setCookie(c, GOOGLE_STATE_COOKIE, await signOAuthState({ state, nonce, verifier, returnTo }, c.env.JWT_SECRET), {
+    httpOnly: true,
+    secure: c.env.ENVIRONMENT === "production",
+    sameSite: "Lax", // callback adalah navigasi top-level dari Google
+    path: "/",
+    maxAge: GOOGLE_STATE_TTL_SECONDS,
+  });
+  return c.redirect(buildAuthUrl(cfg, { state, nonce, challenge }), 302);
+});
+
+// Callback Google: verifikasi state, tukar code, verifikasi ID token, tentukan akun, lalu redirect ke web
+// dengan kode tukar sekali pakai (token sesi TIDAK pernah muncul di URL).
+auth.get("/google/callback", authRateLimit, async (c) => {
+  const db = c.get("db");
+  const front = await getFrontendBase(db, c.env);
+  const fail = (code: string) => c.redirect(`${front}/login?error=${code}`, 302);
+
+  const cfg = getGoogleConfig(c.env);
+  if (!cfg) return fail("google_disabled");
+
+  const stateCookie = getCookie(c, GOOGLE_STATE_COOKIE);
+  deleteCookie(c, GOOGLE_STATE_COOKIE, { path: "/" }); // sekali pakai, apa pun hasilnya
+
+  const q = c.req.query();
+  if (q.error) return fail(q.error === "access_denied" ? "google_cancelled" : "google_failed");
+
+  const saved = await verifyOAuthState(stateCookie, c.env.JWT_SECRET);
+  if (!saved || !q.state || !q.code || !safeEqual(q.state, saved.state)) return fail("google_failed");
+
+  let claims;
+  try {
+    const idToken = await exchangeCodeForIdToken(cfg, q.code, saved.verifier);
+    claims = idToken ? await verifyGoogleIdToken(idToken, cfg, saved.nonce) : null;
+  } catch (err) {
+    console.error("[google-oauth] error:", (err as Error)?.message);
+    return fail("google_failed");
+  }
+  if (!claims) return fail("google_failed");
+
+  const resolution = await resolveGoogleUser(db, claims);
+  if (!resolution.ok) return fail(`google_${resolution.code}`);
+
+  const code = await issueEmailToken(db, { userId: resolution.user.id, email: resolution.user.email, purpose: "google_exchange" });
+  return c.redirect(`${front}/auth/google?code=${encodeURIComponent(code)}&next=${encodeURIComponent(saved.returnTo)}`, 302);
+});
+
+const googleExchangeSchema = z.object({ code: z.string().min(20).max(200) });
+
+// Tukar kode sekali pakai (60 detik) dengan sesi — dipanggil halaman web /auth/google
+auth.post("/google/exchange", authRateLimit, zValidator("json", googleExchangeSchema), async (c) => {
+  const { code } = c.req.valid("json");
+  const db = c.get("db");
+
+  const row = await consumeEmailToken(db, code, "google_exchange");
+  if (!row) return error(c, "Kode login tidak valid atau sudah kedaluwarsa", 400);
+
+  const user = await db.query.users.findFirst({ where: eq(users.id, row.userId) });
+  if (!user || !user.isActive) return error(c, "Kode login tidak valid atau sudah kedaluwarsa", 400);
+
+  return success(c, await buildSession(db, c.env, user));
+});
+
 auth.post("/refresh", authRateLimit, async (c) => {
   const body = await c.req.json();
   const { refreshToken } = body;
@@ -534,19 +616,29 @@ auth.post("/refresh", authRateLimit, async (c) => {
     return error(c, "Refresh token required", 400);
   }
 
-  const userId = await verifyRefreshToken(refreshToken, c.env.JWT_SECRET);
+  const verified = await verifyRefreshToken(refreshToken, c.env.JWT_SECRET);
 
-  if (!userId) {
+  if (!verified) {
     return error(c, "Invalid refresh token", 401);
   }
 
   const db = c.get("db");
   const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
+    where: eq(users.id, verified.userId),
   });
 
   if (!user || !user.isActive) {
     return error(c, "User not found or disabled", 401);
+  }
+
+  // Sesi lama tidak boleh hidup melewati kewajiban verifikasi email (ADR-0010) maupun pencabutan
+  // sesi (reset/ganti password, daftar ulang, klaim Google — ADR-0011). iat dalam detik, jadi
+  // dibandingkan pada granularitas detik agar token yang terbit sesudah reset di detik yang sama tetap sah.
+  if (!user.emailVerifiedAt) {
+    return error(c, "Email belum diverifikasi", 401);
+  }
+  if (user.sessionsValidAfter && verified.issuedAt < Math.floor(user.sessionsValidAfter.getTime() / 1000)) {
+    return error(c, "Sesi telah dicabut, silakan login kembali", 401);
   }
 
   const userRolesList = await db.query.userRoles.findMany({
@@ -1237,8 +1329,12 @@ auth.patch("/me/password", authMiddleware, async (c) => {
     where: eq(users.id, currentUser!.id),
   });
 
-  if (!user || !user.passwordHash) {
+  if (!user) {
     return error(c, "User not found", 404);
+  }
+  if (!user.passwordHash) {
+    // Akun Google tanpa password: password pertama dibuat lewat "Lupa password" (tautan email)
+    return error(c, "Akun ini belum memiliki password. Gunakan 'Lupa password' untuk membuatnya.", 400);
   }
 
   const isValid = await verifyPassword(currentPassword, user.passwordHash);
@@ -1253,6 +1349,7 @@ auth.patch("/me/password", authMiddleware, async (c) => {
     .update(users)
     .set({
       passwordHash: newPasswordHash,
+      sessionsValidAfter: new Date(),
       updatedAt: new Date(),
     })
     .where(eq(users.id, currentUser!.id));

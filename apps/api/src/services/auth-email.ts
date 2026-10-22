@@ -12,7 +12,7 @@ async function getBrandName(db: Database): Promise<string> {
   return map["site_name"] || map["organization_name"] || "";
 }
 
-async function getFrontendBase(db: Database, env: Env): Promise<string> {
+export async function getFrontendBase(db: Database, env: Env): Promise<string> {
   if (env.FRONTEND_URL) return env.FRONTEND_URL.replace(/\/+$/, "");
   const row = await db.query.settings.findFirst({ where: eq(settings.key, "frontend_url") });
   return (row?.value || "").replace(/\/+$/, "");

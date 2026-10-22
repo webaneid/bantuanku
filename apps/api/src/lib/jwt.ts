@@ -70,7 +70,7 @@ export async function signRefreshToken(
 export async function verifyRefreshToken(
   token: string,
   secret: string
-): Promise<string | null> {
+): Promise<{ userId: string; issuedAt: number } | null> {
   try {
     const secretKey = new TextEncoder().encode(secret);
     const { payload } = await jose.jwtVerify(token, secretKey);
@@ -82,7 +82,8 @@ export async function verifyRefreshToken(
       // Refresh token lama (tanpa `typ`) hanya berisi `sub`; token berisi roles/email = access token
       return null;
     }
-    return payload.sub as string;
+    if (typeof payload.sub !== "string") return null;
+    return { userId: payload.sub, issuedAt: (payload.iat as number) ?? 0 };
   } catch {
     return null;
   }

@@ -30,6 +30,18 @@ export interface DisbursementEmailParams {
   disbursementId: number;
 }
 
+// HTML-escape nilai dinamis yang masuk ke badan email. Nama pendaftar bebas diisi siapa pun (termasuk orang yang
+// mendaftar dengan email korban), jadi tanpa ini ia bisa menyuntikkan tautan/markup ke email yang dikirim dari
+// domain pengirim platform (ADR-0011).
+export function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export class EmailService {
   private apiKey: string;
   private fromEmail: string;
@@ -97,12 +109,12 @@ export class EmailService {
             <div class="header"><h1>${params.heading}</h1></div>
             <div class="content">
               ${params.intro}
-              <p style="text-align: center;"><a href="${params.url}" class="button">${params.buttonLabel}</a></p>
-              <p class="small">Jika tombol tidak berfungsi, salin tautan ini ke browser:<br>${params.url}</p>
+              <p style="text-align: center;"><a href="${esc(params.url)}" class="button">${params.buttonLabel}</a></p>
+              <p class="small">Jika tombol tidak berfungsi, salin tautan ini ke browser:<br>${esc(params.url)}</p>
               <p>${params.note}</p>
             </div>
             <div class="footer">
-              <p>${brand}</p>
+              <p>${esc(brand)}</p>
               <p>Email ini dikirim secara otomatis, mohon tidak membalas email ini.</p>
             </div>
           </div>
@@ -117,7 +129,7 @@ export class EmailService {
       subject: `Verifikasi email Anda${this.fromName ? ` - ${this.fromName}` : ""}`,
       html: this.accountEmailHtml({
         heading: "Verifikasi Email",
-        intro: `<p>Halo ${params.name},</p><p>Terima kasih telah mendaftar. Klik tombol di bawah untuk memverifikasi alamat email Anda dan mengaktifkan akun.</p>`,
+        intro: `<p>Halo ${esc(params.name)},</p><p>Terima kasih telah mendaftar. Klik tombol di bawah untuk memverifikasi alamat email Anda dan mengaktifkan akun.</p>`,
         buttonLabel: "Verifikasi Email",
         url: params.url,
         note: "Tautan ini berlaku 24 jam dan hanya bisa dipakai sekali. Jika Anda tidak merasa mendaftar, abaikan email ini.",
@@ -131,7 +143,7 @@ export class EmailService {
       subject: `Atur ulang password${this.fromName ? ` - ${this.fromName}` : ""}`,
       html: this.accountEmailHtml({
         heading: "Atur Ulang Password",
-        intro: `<p>Halo ${params.name},</p><p>Kami menerima permintaan untuk mengatur ulang password akun Anda. Klik tombol di bawah untuk membuat password baru.</p>`,
+        intro: `<p>Halo ${esc(params.name)},</p><p>Kami menerima permintaan untuk mengatur ulang password akun Anda. Klik tombol di bawah untuk membuat password baru.</p>`,
         buttonLabel: "Atur Password Baru",
         url: params.url,
         note: "Tautan ini berlaku 1 jam dan hanya bisa dipakai sekali. Jika Anda tidak meminta ini, abaikan email ini; password Anda tetap aman.",
@@ -163,18 +175,18 @@ export class EmailService {
               <h1>Terima Kasih atas Donasi Anda!</h1>
             </div>
             <div class="content">
-              <p>Halo ${params.donorName},</p>
-              <p>Terima kasih telah berdonasi melalui ${this.fromName}. Donasi Anda akan sangat membantu.</p>
+              <p>Halo ${esc(params.donorName)},</p>
+              <p>Terima kasih telah berdonasi melalui ${esc(this.fromName)}. Donasi Anda akan sangat membantu.</p>
 
               <div class="details">
                 <h3>Detail Donasi</h3>
                 <div class="detail-row">
                   <span class="detail-label">Nomor Invoice:</span>
-                  <span>${params.invoiceNumber}</span>
+                  <span>${esc(params.invoiceNumber)}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">Campaign:</span>
-                  <span>${params.campaignTitle}</span>
+                  <span>${esc(params.campaignTitle)}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">Jumlah Donasi:</span>
@@ -182,7 +194,7 @@ export class EmailService {
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">Metode Pembayaran:</span>
-                  <span>${params.paymentMethod}</span>
+                  <span>${esc(params.paymentMethod)}</span>
                 </div>
               </div>
 
@@ -193,7 +205,7 @@ export class EmailService {
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2026 ${this.fromName}. All rights reserved.</p>
+              <p>&copy; 2026 ${esc(this.fromName)}. All rights reserved.</p>
               <p>Email ini dikirim secara otomatis, mohon tidak membalas email ini.</p>
             </div>
           </div>
@@ -234,18 +246,18 @@ export class EmailService {
               <h1>Pembayaran Berhasil!</h1>
             </div>
             <div class="content">
-              <p>Halo ${params.donorName},</p>
+              <p>Halo ${esc(params.donorName)},</p>
               <p>Pembayaran donasi Anda telah berhasil dikonfirmasi. Terima kasih atas kepercayaan Anda!</p>
 
               <div class="details">
                 <h3>Detail Pembayaran</h3>
                 <div class="detail-row">
                   <span class="detail-label">Nomor Invoice:</span>
-                  <span>${params.invoiceNumber}</span>
+                  <span>${esc(params.invoiceNumber)}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">Campaign:</span>
-                  <span>${params.campaignTitle}</span>
+                  <span>${esc(params.campaignTitle)}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">Jumlah:</span>
@@ -253,19 +265,19 @@ export class EmailService {
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">Metode Pembayaran:</span>
-                  <span>${params.paymentMethod}</span>
+                  <span>${esc(params.paymentMethod)}</span>
                 </div>
               </div>
 
               <p>Donasi Anda akan segera disalurkan kepada yang membutuhkan.</p>
 
               <p style="text-align: center;">
-                ${params.receiptUrl ? `<a href="${params.receiptUrl}" class="button">Download Bukti Donasi</a>` : ""}
+                ${params.receiptUrl ? `<a href="${esc(params.receiptUrl)}" class="button">Download Bukti Donasi</a>` : ""}
                 <a href="${this.frontendUrl}/account/donations" class="button">Lihat Riwayat Donasi</a>
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2026 ${this.fromName}. All rights reserved.</p>
+              <p>&copy; 2026 ${esc(this.fromName)}. All rights reserved.</p>
               <p>Email ini dikirim secara otomatis, mohon tidak membalas email ini.</p>
             </div>
           </div>
@@ -311,16 +323,16 @@ export class EmailService {
             </div>
             <div class="content">
               <p>Halo,</p>
-              <p>Status campaign <strong>${params.campaignTitle}</strong> telah diubah menjadi: <strong>${statusText}</strong></p>
+              <p>Status campaign <strong>${esc(params.campaignTitle)}</strong> telah diubah menjadi: <strong>${statusText}</strong></p>
 
-              ${params.reason ? `<div class="info-box"><p><strong>Alasan:</strong></p><p>${params.reason}</p></div>` : ""}
+              ${params.reason ? `<div class="info-box"><p><strong>Alasan:</strong></p><p>${esc(params.reason)}</p></div>` : ""}
 
               <p style="text-align: center;">
                 <a href="${this.adminUrl}/dashboard/campaigns" class="button">Lihat Campaign</a>
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2026 ${this.fromName}. All rights reserved.</p>
+              <p>&copy; 2026 ${esc(this.fromName)}. All rights reserved.</p>
             </div>
           </div>
         </body>
@@ -359,7 +371,7 @@ export class EmailService {
             </div>
             <div class="content">
               <p>Halo,</p>
-              <p>Dana untuk campaign <strong>${params.campaignTitle}</strong> telah disalurkan.</p>
+              <p>Dana untuk campaign <strong>${esc(params.campaignTitle)}</strong> telah disalurkan.</p>
 
               <div class="details">
                 <h3>Detail Penyaluran</h3>
@@ -369,7 +381,7 @@ export class EmailService {
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">Campaign:</span>
-                  <span>${params.campaignTitle}</span>
+                  <span>${esc(params.campaignTitle)}</span>
                 </div>
                 <div class="detail-row">
                   <span class="detail-label">Jumlah:</span>
@@ -382,7 +394,7 @@ export class EmailService {
               </p>
             </div>
             <div class="footer">
-              <p>&copy; 2026 ${this.fromName}. All rights reserved.</p>
+              <p>&copy; 2026 ${esc(this.fromName)}. All rights reserved.</p>
             </div>
           </div>
         </body>

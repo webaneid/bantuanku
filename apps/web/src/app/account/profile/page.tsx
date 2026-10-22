@@ -372,6 +372,7 @@ export default function ProfilePage() {
   if (!profileData.incomeRangeId) missingFields.push("Penghasilan Bulanan");
   if (!profileData.gender) missingFields.push("Jenis Kelamin");
   if (!profileData.provinceCode) missingFields.push("Provinsi");
+  if (!profileData.whatsappNumber) missingFields.push("Nomor WhatsApp");
 
   const hasIncompleteRequired = !isLoading && missingFields.length > 0;
 

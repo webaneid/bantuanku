@@ -198,6 +198,9 @@ Validasi input utama dilakukan per route dengan kombinasi manual check dan `zod`
 
 ## Rate Limiting dan Abuse Control
 
+> **Temuan 2026-10-22 (terbukti):** kunci rate limit memakai seluruh nilai header `x-forwarded-for` yang dikirim klien, sehingga mengganti header di tiap request memberi kunci baru dan batas tidak pernah tercapai (30 percobaan login beruntun dengan header berbeda: 30 lolos; tanpa header: diblokir setelah 20). Perbaikan **opt-in**: env `TRUSTED_PROXY_HOPS` (integer ≥ 1) memakai entri ke-N dari kanan `x-forwarded-for` (hanya itu yang ditambahkan proxy tepercaya; Nginx saja = 1, Cloudflare + Nginx = 2). Tanpa env perilaku lama dipertahankan karena topologi proxy produksi belum dikonfirmasi (nilai yang salah bisa mengunci banyak pengguna sekaligus). Lihat `middleware/ratelimit.ts` `getClientIdentifier`.
+
+
 Rate limit saat ini in-memory:
 
 | Middleware | Limit |

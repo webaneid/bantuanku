@@ -39,7 +39,7 @@ account.get("/donations", async (c) => {
     transactionConditions.push(eq(transactions.userId, userDetails.id));
   }
   if (userDetails.email && userDetails.emailVerifiedAt) {
-    transactionConditions.push(eq(transactions.donorEmail, userDetails.email.toLowerCase().trim()));
+    transactionConditions.push(sql`lower(${transactions.donorEmail}) = ${userDetails.email.toLowerCase().trim()}`);
   }
 
   const whereClause = transactionConditions.length > 0 ? or(...transactionConditions) : undefined;

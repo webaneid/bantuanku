@@ -32,6 +32,8 @@ interface AuthState {
     whatsappNumber: string;
     password: string;
   }) => Promise<RegisterResult>;
+  /** Menyimpan sesi hasil penukaran kode Google (token + user), sama seperti login password. */
+  setSession: (user: User, accessToken: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
   setHydrated: () => void;
@@ -77,6 +79,14 @@ export const useAuth = create<AuthState>()(
           set({ isLoading: false });
           throw error;
         }
+      },
+
+      setSession: async (user, accessToken) => {
+        localStorage.setItem("token", accessToken);
+        localStorage.setItem("user", JSON.stringify(user));
+        set({ user, token: accessToken, isLoading: false });
+        // Beri waktu localStorage tertulis sebelum navigasi (sama seperti login)
+        await new Promise((resolve) => setTimeout(resolve, 50));
       },
 
       logout: () => {

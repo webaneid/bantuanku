@@ -32,3 +32,7 @@ export type { VerifyEmailNoticeProps } from './VerifyEmailNotice';
 
 // Forgot Password (email)
 export { ForgotPasswordEmail } from './ForgotPasswordEmail';
+
+// Google Sign-In Button
+export { GoogleSignInButton } from './GoogleSignInButton';
+export type { GoogleSignInButtonProps } from './GoogleSignInButton';

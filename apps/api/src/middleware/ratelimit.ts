@@ -6,6 +6,32 @@ interface RateLimitConfig {
   maxRequests: number;
 }
 
+// Identitas klien untuk rate limit.
+//
+// `x-forwarded-for` yang dikirim KLIEN bisa dipalsukan: bila seluruh nilainya dipakai sebagai kunci,
+// mengganti header di tiap request memberi kunci baru dan batas tidak pernah tercapai (brute force
+// login/OTP lolos). Reverse proxy hanya MENAMBAHKAN alamat yang ia lihat di sisi KANAN header, jadi
+// entri ke-N dari kanan (N = jumlah proxy tepercaya di depan API) adalah satu-satunya yang tidak bisa
+// dipalsukan klien.
+//
+// Env `TRUSTED_PROXY_HOPS` (bilangan bulat >= 1) mengaktifkan perilaku aman itu:
+//   - Nginx saja di depan API              -> 1
+//   - Cloudflare + Nginx di depan API      -> 2 (tepat satu entri Cloudflare di kanan)
+// Tanpa env ini perilaku lama dipertahankan (rentan dipalsukan) agar pengguna di balik proxy bersama
+// tidak terkunci massal sebelum topologi proxy produksi dikonfirmasi.
+function getClientIdentifier(c: Context): string {
+  const xff = c.req.header("x-forwarded-for");
+  const hops = Number.parseInt(process.env.TRUSTED_PROXY_HOPS || "", 10);
+
+  if (Number.isInteger(hops) && hops >= 1) {
+    const parts = (xff || "").split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length > 0) return parts[Math.max(0, parts.length - hops)];
+    return c.req.header("x-real-ip") || "127.0.0.1";
+  }
+
+  return xff || c.req.header("x-real-ip") || "127.0.0.1";
+}
+
 export function rateLimit(config: RateLimitConfig) {
   // Store per-instance (bukan module-level shared) — kalau beberapa rate limiter
   // dipasang di rute yang sama (mis. `apiRateLimit` global + `authRateLimit`
@@ -28,7 +54,7 @@ export function rateLimit(config: RateLimitConfig) {
   return async (c: Context<{ Bindings: Env; Variables: Variables }>, next: Next) => {
     cleanupExpiredEntries();
 
-    const identifier = c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "127.0.0.1";
+    const identifier = getClientIdentifier(c);
     const key = `${identifier}:${c.req.path}`;
     const now = Date.now();
 
@@ -65,6 +91,12 @@ export function rateLimit(config: RateLimitConfig) {
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   maxRequests: 20,
+});
+
+// Pencarian identitas publik (autofill checkout): ketat per IP karena mengembalikan data pribadi
+export const lookupRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 30,
 });
 
 export const apiRateLimit = rateLimit({

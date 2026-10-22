@@ -276,8 +276,11 @@ app.post("/from-donatur", requireRoles("super_admin", "admin_campaign"), async (
       })
       .returning();
 
-    // 4. If donatur has userId, assign employee role
-    if (donaturRecord.userId) {
+    // 4. If donatur has userId, assign employee role (hanya bila akun itu terverifikasi: ADR-0011)
+    const donaturUser = donaturRecord.userId
+      ? await db.query.users.findFirst({ where: eq(users.id, donaturRecord.userId), columns: { emailVerifiedAt: true } })
+      : null;
+    if (donaturRecord.userId && donaturUser?.emailVerifiedAt) {
       const employeeRole = await db.query.roles.findFirst({
         where: eq(roles.slug, "employee"),
       });
@@ -838,6 +841,13 @@ app.post("/:id/activate-user", requireRoles("super_admin"), async (c) => {
     });
 
     if (existingUser) {
+      // Peran staf hanya untuk akun yang emailnya sudah terbukti dimiliki penggunanya. Akun belum
+      // terverifikasi bisa saja hasil pre-registration pihak lain (password di tangan penyerang) yang
+      // menjadi staf begitu pemilik email asli mengklik link verifikasi (ADR-0011).
+      if (!existingUser.emailVerifiedAt) {
+        return c.json({ error: "Akun dengan email ini belum memverifikasi email. Minta pengguna memverifikasi emailnya dulu sebelum diberi peran." }, 400);
+      }
+
       // Email exists → link to existing user, just assign role
       const role = await db.query.roles.findFirst({
         where: eq(roles.slug, roleSlug),

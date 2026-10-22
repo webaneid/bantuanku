@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { Input, Button, Label } from "@/components/atoms";
-import { VerifyEmailNotice } from "@/components/molecules";
+import { VerifyEmailNotice, GoogleSignInButton } from "@/components/molecules";
 import toast from "@/lib/feedback-toast";
 import * as fbPixel from "@/lib/fbPixel";
 import { useI18n } from "@/lib/i18n/provider";
@@ -350,6 +350,10 @@ export default function RegisterPage() {
             {isLoading ? t("auth.register.processing") : t("auth.register.submit")}
           </Button>
         </form>
+
+        <div className="mt-6">
+          <GoogleSignInButton label={t("auth.google.register")} />
+        </div>
 
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>

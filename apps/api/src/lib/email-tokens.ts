@@ -83,3 +83,32 @@ export async function consumeEmailToken(db: Database, token: string, purpose: Em
     .returning();
   return rows[0] ?? null;
 }
+
+// Cek token tanpa menghanguskannya (valid, belum dipakai, belum kedaluwarsa). Dipakai saat ada bukti
+// tambahan yang harus diperiksa SEBELUM token dikonsumsi (mis. password saat verifikasi email), supaya
+// salah password tidak membakar token.
+export async function peekEmailToken(db: Database, token: string, purpose: EmailTokenPurpose) {
+  if (!token || token.length > 200) return null;
+  const [row] = await db
+    .select()
+    .from(authEmailTokens)
+    .where(
+      and(
+        eq(authEmailTokens.tokenHash, hashEmailToken(token)),
+        eq(authEmailTokens.purpose, purpose),
+        isNull(authEmailTokens.consumedAt),
+        gt(authEmailTokens.expiresAt, sql`now()`)
+      )
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+// Hanguskan SEMUA token tertunda milik user (semua tujuan). Dipakai saat kepemilikan akun berpindah
+// (klaim Google) supaya link lama yang masih beredar tidak bisa dipakai lagi.
+export async function revokePendingTokens(db: Database, userId: string): Promise<void> {
+  await db
+    .update(authEmailTokens)
+    .set({ consumedAt: new Date() })
+    .where(and(eq(authEmailTokens.userId, userId), isNull(authEmailTokens.consumedAt)));
+}
