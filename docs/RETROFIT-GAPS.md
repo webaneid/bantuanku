@@ -71,4 +71,5 @@ kentara dari nama-nama dokumen yang ada.
 | ADR (`docs/decisions/`, template + `scripts/next-adr-number.sh`, hook `adr-guard`) | ✅ 7 ADR awal ditulis dari keputusan yang sebelumnya terkubur di lesson learned |
 | Lesson learned dipindah dari `CLAUDE.md` (gitignored) ke `docs/lessons-learned.md` (tracked) | ✅ |
 | Hook secret-scan / dependency-audit / pre-commit-guard | ◐ lihat baris #9 |
-| Subagent `security-auditor`, CI minimal, konvensi commit/branch + branch protection, `PROGRESS.md`/`phases/` | ⏳ belum — kandidat fase berikutnya |
+| Subagent `security-auditor` (read-only) + skill `bantuanku-security-review`, dijadikan Langkah 6b SOP | ✅ checklist diisi dengan pola bug nyata repo ini (sql.raw, ownership guest, webhook, cron, upload, WA opt-out, dst). Berada di `.claude/` (gitignored, lokal) |
+| CI minimal, konvensi commit/branch + branch protection, `PROGRESS.md`/`phases/` | ⏳ belum — kandidat fase berikutnya |
