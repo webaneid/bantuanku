@@ -257,7 +257,7 @@ Behavior:
 - item bisa dihapus per baris
 - cart bisa dikosongkan total
 - tombol checkout berlabel **"Verifikasi Donatur"** (`keranjang.summary.checkout`; en "Verify Donor") karena langkah berikutnya di `/checkout` adalah verifikasi email/HP donatur, lalu redirect ke `/checkout`
-- **Tampilan mobile (2026-10-24, seragam dengan checkout)**: blok ringkasan di atas (`CartSummaryCard`: gradasi primary, radius 24px, teks putih, total besar); kartu item penuh sampai tepi layar, tanpa border, teks 15px, tombol hapus (X) di baris badge supaya isi memakai lebar penuh; grid `grid-cols-1 lg:grid-cols-3` (tanpa kolom dasar halaman overflow); sidebar ringkasan hanya di desktop
+- **Tampilan mobile (2026-10-24)**: seluruh isi keranjang ada di **satu blok primary** (`CartSummaryCard` mode `edit`: gradasi primary, radius 24px, teks putih). Di dalamnya: judul + jumlah item, tiap item (judul, jenis, tombol hapus; campaign = kolom nominal yang bisa diedit; zakat = rincian jumlah x harga; qurban = periode, jenis, jumlah, harga, biaya admin, subtotal), total besar, teks info, dan tautan "Kosongkan Keranjang". Daftar kartu item terpisah hanya ada di desktop (`hidden lg:block`). Grid `grid-cols-1 lg:grid-cols-3` (tanpa kolom dasar halaman overflow); sidebar ringkasan hanya desktop
 - bar bawah mobile (`createPortal(document.body)`): tombol utama "Verifikasi Donatur", di bawahnya tautan teks "Tambah Program Lain" tanpa border; spacer `h-28 lg:hidden` setelah `<Footer />`. Desktop tidak berubah (tombol "Tambah Program Lain" tetap outline di sidebar)
 
 ### Tampilan Item

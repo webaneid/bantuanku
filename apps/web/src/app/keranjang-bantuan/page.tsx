@@ -53,9 +53,8 @@ export default function KeranjangBantuanPage() {
     );
   }
 
-  // Kartu item: mobile penuh sampai tepi layar (menembus padding container), md ke atas kartu biasa
-  const itemCardClass =
-    'bg-white shadow-sm -mx-4 sm:-mx-6 md:mx-0 rounded-none md:rounded-lg px-[15px] py-5 md:p-6 md:border md:border-gray-100';
+  // Kartu item (desktop)
+  const itemCardClass = 'bg-white rounded-lg shadow-sm p-6 border border-gray-100';
 
   const removeButton = (cartItemId: string) => (
     <button
@@ -93,11 +92,16 @@ export default function KeranjangBantuanPage() {
             totalLabel={t('keranjang.summary.totalLabel')}
             infoText={t('keranjang.summary.infoText')}
             formatAmount={formatRupiahFull}
+            edit={{
+              onAmountChange: (cartItemId, amount) => updateCartItem(cartItemId, { amount }),
+              onRemove: removeFromCart,
+              onClear: clearCart,
+            }}
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
-            {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-2 md:space-y-4">
+            {/* Cart Items — desktop saja (di mobile seluruh isi keranjang ada di blok primary di atas) */}
+            <div className="hidden lg:block lg:col-span-2 space-y-4">
               {items.map((item) => (
                 <div key={item.cartItemId} className={itemCardClass}>
                   {item.itemType === 'qurban' && item.qurbanData ? (
@@ -238,7 +242,7 @@ export default function KeranjangBantuanPage() {
               {/* Clear Cart Button */}
               <button
                 onClick={clearCart}
-                className="text-sm text-red-600 hover:text-red-700 font-medium mt-2 md:mt-4"
+                className="text-sm text-red-600 hover:text-red-700 font-medium mt-4"
               >
                 {t('keranjang.clearCart')}
               </button>

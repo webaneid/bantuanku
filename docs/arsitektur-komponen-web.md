@@ -211,7 +211,7 @@ Props: `id, slug, title, description, image, categoryName, currentAmount, target
 
 ### CartSummaryCard
 
-`molecules/CartSummaryCard` (client): blok ringkasan mobile untuk `/keranjang-bantuan` dan `/checkout` — gradasi `primary-600 → primary-800`, radius 24px, teks putih: judul + subjudul, daftar item (judul, jenis, nominal, rincian zakat), total dalam angka besar, teks info. Props: `items`, `total`, `title`, `subtitle`, `summaryTitle`, `totalLabel`, `infoText`, `formatAmount`, `className` (pemanggil memberi `lg:hidden`; desktop memakai sidebar sendiri).
+`molecules/CartSummaryCard` (client): blok ringkasan mobile untuk `/keranjang-bantuan` dan `/checkout` — gradasi `primary-600 → primary-800`, radius 24px, teks putih: judul + subjudul, daftar item (judul, jenis, nominal, rincian zakat), total dalam angka besar, teks info. Props: `items`, `total`, `title`, `subtitle`, `summaryTitle`, `totalLabel`, `infoText`, `formatAmount`, `className` (pemanggil memberi `lg:hidden`; desktop memakai sidebar sendiri), dan opsional `edit` (`onAmountChange`, `onRemove`, `onClear`). Tanpa `edit` = ringkasan baca-saja (`/checkout`); dengan `edit` = isi keranjang lengkap (`/keranjang-bantuan`): nominal campaign bisa diedit, tombol hapus per item, rincian zakat/qurban, tautan "Kosongkan Keranjang".
 
 ### ReportCard dan RelatedReports
 
