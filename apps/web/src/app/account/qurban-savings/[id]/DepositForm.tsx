@@ -51,36 +51,40 @@ export default function DepositForm({
     }
   };
 
+  const inputClass =
+    'w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-base text-gray-900 focus:border-primary-500 focus:outline-none transition-colors';
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="mb-2 block text-sm font-medium text-gray-700">
           {t('account.qurbanSavingsDetail.form.amount')}
         </label>
         <input
           type="number"
+          inputMode="numeric"
           value={amount}
           onChange={(e) => setAmount(Number(e.target.value))}
-          className="w-full border rounded-lg px-4 py-2"
+          className={inputClass}
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="mb-2 block text-sm font-medium text-gray-700">
           {t('account.qurbanSavingsDetail.form.notes')}
         </label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="w-full border rounded-lg px-4 py-2"
+          className={inputClass}
           rows={3}
         />
       </div>
 
       <button
         type="submit"
-        className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
+        className="h-12 w-full rounded-lg bg-primary-500 font-semibold text-white transition-colors hover:bg-primary-600"
       >
         {t('account.qurbanSavingsDetail.form.submit')}
       </button>

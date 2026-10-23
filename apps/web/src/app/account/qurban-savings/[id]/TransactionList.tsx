@@ -9,12 +9,12 @@ export default function TransactionList({ transactions }: { transactions: Saving
   const { t, locale } = useI18n();
   const localeTag = locale === 'id' ? 'id-ID' : 'en-US';
   const statusColors: Record<SavingsTransaction['status'], string> = {
-    draft: 'bg-gray-100 text-gray-700',
-    processing: 'bg-blue-100 text-blue-800',
-    paid: 'bg-green-100 text-green-800',
-    pending: 'bg-yellow-100 text-yellow-800',
-    verified: 'bg-green-100 text-green-800',
-    rejected: 'bg-red-100 text-red-800',
+    draft: 'bg-gray-100 text-gray-700 border-gray-200',
+    processing: 'bg-blue-50 text-blue-700 border-blue-200',
+    paid: 'bg-success-50 text-success-700 border-success-200',
+    pending: 'bg-warning-50 text-warning-700 border-warning-200',
+    verified: 'bg-success-50 text-success-700 border-success-200',
+    rejected: 'bg-danger-50 text-danger-700 border-danger-200',
   };
 
   const statusLabels: Record<SavingsTransaction['status'], string> = {
@@ -38,46 +38,44 @@ export default function TransactionList({ transactions }: { transactions: Saving
 
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="rounded-2xl bg-white py-8 text-center text-sm text-gray-500 shadow-sm">
         {t('account.qurbanSavingsDetail.noTransactions')}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <ul className="m-0 list-none space-y-3 p-0">
       {transactions.map((tx) => (
-        <div key={tx.id} className="border rounded-lg p-4">
-          <div className="flex justify-between items-start mb-2">
-            <div>
-              <p className="text-xs text-gray-500">{tx.transactionNumber}</p>
-              <p className="font-semibold text-lg">{formatCurrency(tx.amount)}</p>
+        <li key={tx.id} className="rounded-2xl bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-xs text-gray-500">{tx.transactionNumber}</p>
+              <p className="text-lg font-bold text-gray-900">{formatCurrency(tx.amount)}</p>
             </div>
-            <span className={`text-xs px-2 py-1 rounded ${statusColors[tx.status]}`}>
+            <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${statusColors[tx.status]}`}>
               {statusLabels[tx.status]}
             </span>
           </div>
-          <p className="text-xs text-gray-500">{formatDateByLocale(tx.createdAt)}</p>
-          {tx.notes && (
-            <p className="text-sm text-gray-600 mt-2">{tx.notes}</p>
-          )}
+          <p className="mt-1 text-xs text-gray-500">{formatDateByLocale(tx.createdAt)}</p>
+          {tx.notes && <p className="mt-2 text-sm text-gray-600">{tx.notes}</p>}
           {tx.verifiedAt && (
-            <p className="text-xs text-green-600 mt-2">
+            <p className="mt-2 text-xs text-success-700">
               {t('account.qurbanSavingsDetail.verifiedAt', { date: formatDateByLocale(tx.verifiedAt) })}
             </p>
           )}
           {tx.transactionId && (
-            <div className="mt-3">
+            <div className="mt-3 border-t border-gray-100 pt-3">
               <Link
                 href={`/invoice/${tx.transactionId}`}
-                className="text-sm text-primary-600 hover:text-primary-700 underline"
+                className="text-sm font-medium text-primary-600 hover:text-primary-700"
               >
                 {t('account.qurbanSavingsDetail.viewReceipt')}
               </Link>
             </div>
           )}
-        </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

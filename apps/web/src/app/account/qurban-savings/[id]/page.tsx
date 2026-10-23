@@ -8,6 +8,7 @@ import TransactionList from './TransactionList';
 import ProgressBar from './ProgressBar';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n/provider';
+import { AccountPageHeader } from '@/components/account/AccountPageHeader';
 
 export default function SavingsDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -77,12 +78,12 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
 
   if (error || !savings) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <p className="text-red-800">{error || t('account.qurbanSavingsDetail.notFound')}</p>
+      <div className="max-w-5xl mx-auto px-[15px] lg:px-0 pt-5 lg:pt-0">
+        <div className="rounded-2xl bg-danger-50 p-6">
+          <p className="text-danger-700">{error || t('account.qurbanSavingsDetail.notFound')}</p>
           <button
             onClick={() => router.push('/account/qurban-savings')}
-            className="mt-4 text-red-600 hover:text-red-700 underline"
+            className="mt-4 text-danger-600 hover:text-danger-700 underline"
           >
             {t('account.qurbanSavingsDetail.backToList')}
           </button>
@@ -92,30 +93,33 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('account.qurbanSavingsDetail.title')}</h1>
-        <p className="text-sm text-gray-600 mt-1">{savings.savingsNumber}</p>
-      </div>
-
-      <ProgressBar
-        current={savings.currentAmount}
-        target={savings.targetAmount}
+    <div className="max-w-5xl mx-auto">
+      <AccountPageHeader
+        title={t('account.qurbanSavingsDetail.title')}
+        subtitle={savings.savingsNumber}
+        backHref="/account/qurban-savings"
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h2 className="text-lg font-semibold mb-4">{t('account.qurbanSavingsDetail.historyTitle')}</h2>
-          <TransactionList transactions={transactions} />
-        </div>
+      <div className="mt-5 lg:mt-0 px-[15px] lg:px-0 space-y-5">
+        <ProgressBar current={savings.currentAmount} target={savings.targetAmount} />
 
-        <div>
-          <h2 className="text-lg font-semibold mb-4">{t('account.qurbanSavingsDetail.depositTitle')}</h2>
-          <DepositForm
-            savingsId={savings.id}
-            defaultAmount={Number(savings.installmentAmount || 0)}
-            onSuccess={loadData}
-          />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-6">
+          {/* Mobile: setor dulu (aksi utama), riwayat di bawah; desktop: riwayat kiri, setor kanan */}
+          <section className="order-2 lg:order-1">
+            <h2 className="mb-3 text-base font-bold text-gray-900">{t('account.qurbanSavingsDetail.historyTitle')}</h2>
+            <TransactionList transactions={transactions} />
+          </section>
+
+          <section className="order-1 lg:order-2">
+            <h2 className="mb-3 text-base font-bold text-gray-900">{t('account.qurbanSavingsDetail.depositTitle')}</h2>
+            <div className="rounded-2xl bg-white p-4 shadow-sm lg:p-5">
+              <DepositForm
+                savingsId={savings.id}
+                defaultAmount={Number(savings.installmentAmount || 0)}
+                onSuccess={loadData}
+              />
+            </div>
+          </section>
         </div>
       </div>
     </div>

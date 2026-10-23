@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import { formatRupiahFull } from '@/lib/format';
 import { cn } from '@/lib/cn';
 import { useI18n } from '@/lib/i18n/provider';
+import { AccountPageHeader } from '@/components/account/AccountPageHeader';
 
 interface Transaction {
   id: string;
@@ -91,212 +92,166 @@ export default function TransactionsPage() {
     );
   }
 
+  const filters = [
+    { key: 'all', label: t('account.transactions.filter.all') },
+    { key: 'pending', label: t('account.transactions.filter.pending') },
+    { key: 'processing', label: t('account.transactions.filter.processing') },
+    { key: 'paid', label: t('account.transactions.filter.paid') },
+  ];
+
+  const formatDate = (value: string) =>
+    new Intl.DateTimeFormat(localeTag, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).format(new Date(value));
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('account.transactions.title')}</h1>
-          <p className="text-gray-600 mt-1">{t('account.transactions.subtitle')}</p>
+    <div className="max-w-7xl mx-auto">
+      <AccountPageHeader title={t('account.transactions.title')} subtitle={t('account.transactions.subtitle')} />
+
+      <div className="mt-5 lg:mt-0 px-[15px] lg:px-0 space-y-5">
+        {/* Filter: pil bergulir horizontal */}
+        <div className="-mx-[15px] lg:mx-0 px-[15px] lg:px-0 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {filters.map((item) => (
+            <button
+              key={item.key}
+              onClick={() => setFilter(item.key)}
+              className={cn(
+                'flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap',
+                filter === item.key
+                  ? 'bg-primary-600 text-white shadow-sm'
+                  : 'bg-white text-gray-700 shadow-sm hover:bg-gray-50'
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
-      </div>
 
-      {/* Filter */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        <button
-          onClick={() => setFilter('all')}
-          className={cn(
-            'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
-            filter === 'all'
-              ? 'bg-primary-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-          )}
-        >
-          {t('account.transactions.filter.all')}
-        </button>
-        <button
-          onClick={() => setFilter('pending')}
-          className={cn(
-            'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
-            filter === 'pending'
-              ? 'bg-primary-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-          )}
-        >
-          {t('account.transactions.filter.pending')}
-        </button>
-        <button
-          onClick={() => setFilter('processing')}
-          className={cn(
-            'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
-            filter === 'processing'
-              ? 'bg-primary-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-          )}
-        >
-          {t('account.transactions.filter.processing')}
-        </button>
-        <button
-          onClick={() => setFilter('paid')}
-          className={cn(
-            'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap',
-            filter === 'paid'
-              ? 'bg-primary-600 text-white'
-              : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-          )}
-        >
-          {t('account.transactions.filter.paid')}
-        </button>
-      </div>
-
-      {/* Transactions List */}
-      {transactions.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
+        {/* Transactions List */}
+        {transactions.length === 0 ? (
+          <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 className="text-base font-semibold text-gray-900 mb-1">{t('account.transactions.empty.title')}</h3>
+            <p className="text-sm text-gray-500 mb-5">
+              {filter === 'all' ? t('account.transactions.empty.allDesc') : t('account.transactions.empty.filteredDesc')}
+            </p>
+            {filter === 'all' && (
+              <Link href="/program">
+                <button className="rounded-lg bg-primary-600 px-6 py-2.5 font-semibold text-white hover:bg-primary-700">
+                  {t('account.transactions.empty.startDonating')}
+                </button>
+              </Link>
+            )}
           </div>
-          <h3 className="text-base font-medium text-gray-900 mb-2">{t('account.transactions.empty.title')}</h3>
-          <p className="text-sm text-gray-500 mb-6">
-            {filter === 'all' ? t('account.transactions.empty.allDesc') : t('account.transactions.empty.filteredDesc')}
-          </p>
-          {filter === 'all' && (
-            <Link href="/">
-              <button className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
-                {t('account.transactions.empty.startDonating')}
-              </button>
-            </Link>
-          )}
-        </div>
-      ) : (
-        <>
-          {/* Desktop Table */}
-          <div className="table-container">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t('account.transactions.table.transactionNumber')}</th>
-                  <th>{t('account.transactions.table.product')}</th>
-                  <th>{t('account.transactions.table.type')}</th>
-                  <th>{t('account.transactions.table.amount')}</th>
-                  <th>{t('account.transactions.table.status')}</th>
-                  <th>{t('account.transactions.table.date')}</th>
-                  <th>{t('account.transactions.table.action')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map((transaction) => {
-                  const status = statusConfig[transaction.paymentStatus as keyof typeof statusConfig] || statusConfig.pending;
-                  const productLabel = productTypeLabel[transaction.productType as keyof typeof productTypeLabel] || transaction.productType;
+        ) : (
+          <>
+            {/* Desktop Table (tabel baku tidak diubah) */}
+            <div className="hidden lg:block">
+              <div className="table-container">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>{t('account.transactions.table.transactionNumber')}</th>
+                      <th>{t('account.transactions.table.product')}</th>
+                      <th>{t('account.transactions.table.type')}</th>
+                      <th>{t('account.transactions.table.amount')}</th>
+                      <th>{t('account.transactions.table.status')}</th>
+                      <th>{t('account.transactions.table.date')}</th>
+                      <th>{t('account.transactions.table.action')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map((transaction) => {
+                      const status = statusConfig[transaction.paymentStatus as keyof typeof statusConfig] || statusConfig.pending;
+                      const productLabel = productTypeLabel[transaction.productType as keyof typeof productTypeLabel] || transaction.productType;
 
-                  return (
-                    <tr key={transaction.id}>
-                      <td>
-                        <div className="font-medium text-gray-900">{transaction.transactionNumber}</div>
-                      </td>
-                      <td>
-                        <div className="text-sm text-gray-900">{transaction.productName}</div>
-                      </td>
-                      <td>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                          {productLabel}
-                        </span>
-                      </td>
-                      <td className="mono text-sm">
-                        {formatRupiahFull(transaction.totalAmount)}
-                      </td>
-                      <td>
-                        <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border', status.color)}>
+                      return (
+                        <tr key={transaction.id}>
+                          <td>
+                            <div className="font-medium text-gray-900">{transaction.transactionNumber}</div>
+                          </td>
+                          <td>
+                            <div className="text-sm text-gray-900">{transaction.productName}</div>
+                          </td>
+                          <td>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                              {productLabel}
+                            </span>
+                          </td>
+                          <td className="mono text-sm">{formatRupiahFull(transaction.totalAmount)}</td>
+                          <td>
+                            <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border', status.color)}>
+                              {status.label}
+                            </span>
+                          </td>
+                          <td className="text-gray-600 text-sm">{formatDate(transaction.createdAt)}</td>
+                          <td>
+                            <div className="table-actions">
+                              <Link href={`/invoice/${transaction.id}`}>
+                                <button className="action-btn action-view" title={t('account.transactions.table.viewDetail')}>
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                </button>
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile: kartu */}
+            <ul className="m-0 list-none space-y-3 p-0 lg:hidden">
+              {transactions.map((transaction) => {
+                const status = statusConfig[transaction.paymentStatus as keyof typeof statusConfig] || statusConfig.pending;
+                const productLabel = productTypeLabel[transaction.productType as keyof typeof productTypeLabel] || transaction.productType;
+
+                return (
+                  <li key={transaction.id}>
+                    <Link
+                      href={`/invoice/${transaction.id}`}
+                      className="block rounded-2xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+                            {productLabel}
+                          </span>
+                          <p className="mt-2 text-sm font-semibold leading-snug text-gray-900 line-clamp-2">{transaction.productName}</p>
+                        </div>
+                        <span className={cn('flex-shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium', status.color)}>
                           {status.label}
                         </span>
-                      </td>
-                      <td className="text-gray-600 text-sm">
-                        {new Intl.DateTimeFormat(localeTag, {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: false,
-                        }).format(new Date(transaction.createdAt))}
-                      </td>
-                      <td>
-                        <div className="table-actions">
-                          <Link href={`/invoice/${transaction.id}`}>
-                            <button className="action-btn action-view" title={t('account.transactions.table.viewDetail')}>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                          </Link>
+                      </div>
+                      <div className="mt-3 flex items-end justify-between gap-3 border-t border-gray-100 pt-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-xs text-gray-500">{transaction.transactionNumber}</p>
+                          <p className="text-xs text-gray-500">{formatDate(transaction.createdAt)}</p>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="table-mobile-cards">
-            {transactions.map((transaction) => {
-              const status = statusConfig[transaction.paymentStatus as keyof typeof statusConfig] || statusConfig.pending;
-              const productLabel = productTypeLabel[transaction.productType as keyof typeof productTypeLabel] || transaction.productType;
-
-              return (
-                <div key={transaction.id} className="table-card">
-                  <div className="table-card-header">
-                    <div className="table-card-header-left">
-                      <div className="table-card-header-title">{transaction.transactionNumber}</div>
-                      <div className="table-card-header-subtitle">{transaction.productName}</div>
-                    </div>
-                    <span className={cn('table-card-header-badge', status.color)}>
-                      {status.label}
-                    </span>
-                  </div>
-
-                  <div className="table-card-row">
-                    <span className="table-card-row-label">{t('account.transactions.table.typeLabel')}</span>
-                    <span className="table-card-row-value">{productLabel}</span>
-                  </div>
-
-                  <div className="table-card-row">
-                    <span className="table-card-row-label">{t('account.transactions.table.amountLabel')}</span>
-                    <span className="table-card-row-value mono">{formatRupiahFull(transaction.totalAmount)}</span>
-                  </div>
-
-                  <div className="table-card-row">
-                    <span className="table-card-row-label">{t('account.transactions.table.dateLabel')}</span>
-                    <span className="table-card-row-value">
-                      {new Intl.DateTimeFormat(localeTag, {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false,
-                      }).format(new Date(transaction.createdAt))}
-                    </span>
-                  </div>
-
-                  <div className="table-card-footer">
-                    <Link href={`/invoice/${transaction.id}`}>
-                      <button className="action-btn action-view" title={t('account.transactions.table.viewDetail')}>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </button>
+                        <p className="flex-shrink-0 text-base font-bold text-gray-900">{formatRupiahFull(transaction.totalAmount)}</p>
+                      </div>
                     </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+      </div>
     </div>
   );
 }
