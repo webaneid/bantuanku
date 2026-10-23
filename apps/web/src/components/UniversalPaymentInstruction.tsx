@@ -125,6 +125,24 @@ export default function UniversalPaymentInstruction({ transactionId }: { transac
       .catch(error => console.error('Error generating QR:', error));
   }, [kind, payment?.qrCode]);
 
+  // Unduh QRIS sebagai gambar (resolusi tinggi + margin lebar) supaya mudah disimpan lalu dipindai/diunggah dari galeri
+  const handleDownloadQr = async () => {
+    if (!payment?.qrCode) return;
+    try {
+      const dataUrl = await QRCode.toDataURL(payment.qrCode, { width: 800, margin: 4 });
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `QRIS-${payment.amount}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success(t('payment.instruction.qrDownloaded'));
+    } catch (error) {
+      console.error('Error downloading QR:', error);
+      toast.error(t('payment.instruction.qrDownloadFailed'));
+    }
+  };
+
   const copy = (value: string) => {
     navigator.clipboard.writeText(value);
     toast.success(t('payment.instruction.copied'));
@@ -172,74 +190,98 @@ export default function UniversalPaymentInstruction({ transactionId }: { transac
       })
     : '';
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('payment.instruction.title')}</h1>
+  // Kartu putih: mobile penuh sampai tepi layar (menembus padding container), md ke atas kartu biasa
+  const cardClass =
+    'bg-white shadow-sm -mx-4 sm:-mx-6 md:mx-0 rounded-none md:rounded-lg px-[15px] py-5 md:p-6 md:border md:border-gray-100';
+  const textLinkClass = 'block w-full py-2.5 text-center text-sm text-gray-500 hover:text-gray-700 transition-colors';
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              {channelInfo?.logo && (
-                <img src={channelInfo.logo} alt={channelName} className="w-12 h-12 object-contain rounded-lg bg-gray-50 p-1" />
-              )}
-              <div className="min-w-0">
-                <p className="text-sm text-gray-500">{t('payment.instruction.totalLabel')}</p>
-                <p className="text-2xl font-bold text-gray-900">{formatRupiahFull(payment.amount)}</p>
-              </div>
-            </div>
-            {!isExpired && expiresAt !== null && (
-              <div className="text-right flex-shrink-0">
-                <p className="font-mono text-lg font-semibold text-primary-600">{formatCountdown(expiresAt - now)}</p>
-                <p className="text-xs text-gray-500">{t('payment.instruction.payBefore', { time: expiryLabel })}</p>
-              </div>
+  return (
+    <div className="container mx-auto px-[15px] md:px-4 py-4 md:py-8">
+      <div className="max-w-2xl mx-auto space-y-2 md:space-y-4">
+        {/* Ringkasan: latar primary, teks putih (seragam dengan keranjang dan checkout) */}
+        <section className="rounded-[24px] bg-gradient-to-br from-primary-600 to-primary-800 text-white shadow-sm px-5 py-5">
+          <h1 className="text-xl font-bold leading-tight">{t('payment.instruction.title')}</h1>
+
+          <div className="mt-4 flex items-center gap-3">
+            {channelInfo?.logo && (
+              <img src={channelInfo.logo} alt={channelName} className="w-11 h-11 flex-shrink-0 object-contain rounded-lg bg-white p-1" />
             )}
+            <p className="text-sm text-white/80 min-w-0 truncate">{channelName}</p>
           </div>
 
+          <div className="mt-5 pt-4 border-t border-white/20">
+            <p className="text-sm text-white/80">{t('payment.instruction.totalLabel')}</p>
+            <p className="text-3xl font-bold tracking-tight mt-1">{formatRupiahFull(payment.amount)}</p>
+          </div>
+
+          {!isExpired && expiresAt !== null && (
+            <div className="mt-4 pt-4 border-t border-white/20 flex items-end justify-between gap-3">
+              <p className="text-xs text-white/70 leading-snug min-w-0">
+                {t('payment.instruction.payBefore', { time: expiryLabel })}
+              </p>
+              <p className="font-mono text-xl font-semibold flex-shrink-0">{formatCountdown(expiresAt - now)}</p>
+            </div>
+          )}
+        </section>
+
+        {/* Instruksi pembayaran */}
+        <div className={cardClass}>
           {isExpired ? (
-            <div className="rounded-lg bg-red-50 border border-red-200 p-4 space-y-3">
+            <div className="space-y-3">
               <p className="font-semibold text-red-700">{t('payment.instruction.expired')}</p>
-              <p className="text-sm text-red-600">{t('payment.instruction.expiredHint')}</p>
-              <Link href={`/invoice/${transactionId}/payment-method`} className="inline-block px-5 py-2.5 rounded-lg bg-primary-600 text-white font-medium hover:bg-primary-700">
+              <p className="text-sm text-gray-600">{t('payment.instruction.expiredHint')}</p>
+              <Link
+                href={`/invoice/${transactionId}/payment-method`}
+                className="flex w-full h-12 items-center justify-center rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600 transition-colors"
+              >
                 {t('payment.instruction.changeMethod')}
               </Link>
             </div>
           ) : (
-            <>
+            <div className="space-y-5">
               {(kind === 'va' || kind === 'cstore') && payment.paymentCode && (
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div>
                   <p className="text-sm text-gray-600 mb-2">
                     {kind === 'va'
                       ? t('payment.instruction.vaNumber', { channel: channelName })
                       : t('payment.instruction.payCode')}
                   </p>
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-mono text-2xl font-bold text-gray-900 break-all">{payment.paymentCode}</p>
-                    <button
-                      onClick={() => copy(payment.paymentCode!)}
-                      className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm hover:bg-primary-700 transition-colors flex-shrink-0"
-                    >
-                      {t('payment.instruction.copy')}
-                    </button>
-                  </div>
+                  <p className="font-mono text-2xl font-bold text-gray-900 break-all">{payment.paymentCode}</p>
+                  <button
+                    onClick={() => copy(payment.paymentCode!)}
+                    className="mt-3 w-full h-12 rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600 transition-colors"
+                  >
+                    {t('payment.instruction.copy')}
+                  </button>
                 </div>
               )}
 
               {kind === 'qris' && (
-                <div className="text-center space-y-3">
+                <div className="text-center">
                   {qrDataUrl ? (
-                    <img src={qrDataUrl} alt="QRIS" className="mx-auto w-64 h-64" />
+                    <img src={qrDataUrl} alt="QRIS" className="mx-auto w-64 h-64 max-w-full" />
                   ) : (
-                    <div className="mx-auto w-64 h-64 bg-gray-100 rounded-lg animate-pulse" />
+                    <div className="mx-auto w-64 h-64 max-w-full bg-gray-100 rounded-lg animate-pulse" />
                   )}
-                  <p className="text-sm text-gray-600">{t('payment.instruction.scanQr')}</p>
+                  <p className="mt-3 text-sm text-gray-600">{t('payment.instruction.scanQr')}</p>
+                  <button
+                    onClick={handleDownloadQr}
+                    disabled={!qrDataUrl}
+                    className="mt-4 w-full h-12 rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+                    </svg>
+                    {t('payment.instruction.downloadQr')}
+                  </button>
+                  <p className="mt-2 text-xs text-gray-500">{t('payment.instruction.qrSaveHint')}</p>
                 </div>
               )}
 
               {kind === 'ewallet' && (
                 <div className="space-y-3">
                   {payment.paymentCode && (
-                    <div className="bg-gray-50 rounded-lg p-4">
+                    <div>
                       <p className="text-sm text-gray-600 mb-1">{t('payment.instruction.paymentNumber')}</p>
                       <p className="font-mono text-lg font-bold text-gray-900">{payment.paymentCode}</p>
                     </div>
@@ -249,7 +291,7 @@ export default function UniversalPaymentInstruction({ transactionId }: { transac
                       href={payment.paymentUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block w-full py-3 px-4 rounded-lg bg-primary-600 text-white text-center font-medium hover:bg-primary-700 transition-colors"
+                      className="flex w-full h-12 items-center justify-center rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600 transition-colors"
                     >
                       {t('payment.instruction.openPayment')}
                     </a>
@@ -261,13 +303,13 @@ export default function UniversalPaymentInstruction({ transactionId }: { transac
                 <span className="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></span>
                 {isPaid ? t('payment.instruction.paid') : t('payment.instruction.waiting')}
               </div>
-            </>
+            </div>
           )}
         </div>
 
         {!isExpired && steps.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('payment.instruction.guideTitle')}</h2>
+          <div className={cardClass}>
+            <h2 className="text-base font-semibold text-gray-900 mb-4">{t('payment.instruction.guideTitle')}</h2>
             <ol className="space-y-3">
               {steps.map((step, index) => (
                 <li key={index} className="flex gap-3">
@@ -281,13 +323,14 @@ export default function UniversalPaymentInstruction({ transactionId }: { transac
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        {/* Tautan teks (tanpa border) */}
+        <div className="pt-2">
           {!isExpired && (
-            <Link href={`/invoice/${transactionId}/payment-method`} className="flex-1 text-center px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
+            <Link href={`/invoice/${transactionId}/payment-method`} className={textLinkClass}>
               {t('payment.instruction.changeMethod')}
             </Link>
           )}
-          <Link href={`/invoice/${transactionId}`} className="flex-1 text-center px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
+          <Link href={`/invoice/${transactionId}`} className={textLinkClass}>
             {t('payment.instruction.viewInvoice')}
           </Link>
         </div>
