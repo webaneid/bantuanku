@@ -1,6 +1,6 @@
 # Status Redesign Front-End Web Publik (redesign-1)
 
-Terakhir diperbarui: 2026-10-23 (sesi lanjutan: laporan kegiatan). Referensi desain asli (`docs/redesign-1/`: DESIGN.md, code.html,
+Terakhir diperbarui: 2026-10-24 (sesi lanjutan: laporan kegiatan, checkout, keranjang). Referensi desain asli (`docs/redesign-1/`: DESIGN.md, code.html,
 screen.png) sudah DIHAPUS dari repo atas permintaan user supaya tidak ikut git; salinannya ada di
 tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-komponen-web.md`.
 
@@ -26,6 +26,9 @@ tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-k
 | Arsip `/laporan` | mobile: daftar ringkas (thumbnail persegi, judul, tanggal singkat · kabupaten); paginasi diperbaiki (redirect di luar jangkauan, style `.pagination`, "Halaman X dari N" di mobile) | d8e0ae5 |
 | Laporan terkait di `/laporan/[slug]` | "Laporan Terkait" (referensi sama) / "Laporan Lain"; API `GET /activity-reports/by-slug/:slug/related`; `ReportCard` + `RelatedReports` | 8d73123 |
 | Tab "Kabar Terbaru" di `/program/[slug]` | daftar saja (timeline desktop tanpa konten, mobile = `ReportCard`), kartu klik ke detail laporan; payload API campaign diringkas | b0c6d96 |
+| Halaman pilih metode bayar `/invoice/[id]/payment-method` | semua metode tampil sekaligus (kartu manual + channel iPaymu), logo lembaga di atas judul; halaman instruksi bayar baru `/invoice/[id]/payment-instruction` | 4793520, c061a7d |
+| `/checkout` mobile | tanpa overflow (grid `grid-cols-1`), kartu penuh tanpa border teks 15px, bar bawah tombol utama + tautan teks, blok ringkasan primary di atas (`CartSummaryCard`); alur satu isian email/HP + tombol Lanjutkan (terdaftar → tanpa isian identitas; belum → form lengkap) | 8c0f01e, 27d8235 |
+| `/keranjang-bantuan` mobile | seluruh isi keranjang di satu blok primary (`CartSummaryCard` mode `edit`: nominal, hapus, rincian zakat/qurban, kosongkan); tombol "Verifikasi Donatur" + tautan teks "Tambah Program Lain"; daftar kartu hanya desktop | 263e598, 2a7dbe0, ca1bbfb |
 
 ## Belum dikerjakan / keputusan terbuka
 - `FeaturedCarousel` ("Program Unggulan & Mendesak") masih tampilan lama; qurban section, "Why Choose Us", Header, Footer belum di-redesign. User akan menyebut bagian berikutnya.
@@ -33,8 +36,14 @@ tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-k
 - Halaman arsip `/program`: filter dan teks "Memuat program..." masih hardcode/tampilan lama.
 - `/qurban/[id]` mobile shell belum diuji visual (DB lokal tidak punya tabel `qurban_discounts`); uji di staging/produksi, begitu juga menu top bar saat login.
 - Caption kecil "DONASI SEKARANG" di bar ringkas masih ada (hanya keterangan); bisa diganti "Pilih nominal donasi" bila dirasa dobel.
-- Alur bayar (keranjang, invoice) sengaja belum memakai top bar; bar bawahnya masih gaya lama. `/checkout` mobile sudah dirapikan (overflow, padding 15px, bar bawah baru, blok ringkasan primary di atas, satu isian email/HP + tombol Lanjutkan). `/keranjang-bantuan` mobile: seluruh isi keranjang ada di satu blok primary (`CartSummaryCard` mode `edit`), daftar kartu hanya desktop; bar bawah "Verifikasi Donatur" + tautan teks.
+- Alur bayar (keranjang, checkout, invoice) sengaja tidak memakai top bar mobile. Bar bawah keranjang dan checkout sudah gaya baru; bar bawah halaman invoice/akun belum diubah.
 
 ## Gotcha lokal
 - Font tiba-tiba serif di dev = cache `apps/web/.next` basi (kelas `__variable_xxx` di HTML tidak cocok dengan CSS). Perbaiki: hentikan dev server, `rm -rf apps/web/.next`, jalankan ulang. Bukan perubahan kode font.
 - Web dev di port 3002, API 50245; admin dev port 3001 (lihat skill run-web/run-api).
+
+## Catatan sesi 2026-10-24 (belum selesai / akan berubah)
+- Pemilik produk menyebut UI checkout dan keranjang "sementara ok, akan berubah lagi"; jangan menganggap final.
+- Belum teruji di perangkat mobile sungguhan: checkout/keranjang/instruksi bayar (diuji lewat iframe 390px), dan alur checkout dengan user login.
+- Thumbnail program di blok ringkasan (seperti referensi desain) belum ada karena `CartItem` tidak menyimpan gambar.
+- Tombol "Tambah Program Lain" di sidebar desktop keranjang tetap outline (hanya mobile yang jadi tautan teks).
