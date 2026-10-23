@@ -6,6 +6,7 @@ import toast from '@/lib/feedback-toast';
 import api from '@/lib/api';
 import * as fbPixel from '@/lib/fbPixel';
 import { useI18n } from '@/lib/i18n/provider';
+import { useSettings } from '@/hooks/useSettings';
 
 interface PaymentMethod {
   id: string;
@@ -38,6 +39,7 @@ export default function UniversalPaymentMethodSelector({
 }: UniversalPaymentMethodSelectorProps) {
   const router = useRouter();
   const { t } = useI18n();
+  const { settings } = useSettings();
   const [filteredMethods, setFilteredMethods] = useState<PaymentMethod[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -215,6 +217,12 @@ export default function UniversalPaymentMethodSelector({
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
+          {/* Logo lembaga untuk rasa percaya; lebar 25% kolom, 110-150px (mendekati ukuran logo header) */}
+          <img
+            src={settings.organization_logo || '/logo.svg'}
+            alt={settings.site_name || ''}
+            className="w-1/4 min-w-[110px] max-w-[150px] h-auto object-contain mb-4"
+          />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             {t('payment.chooseMethodTitle')}
           </h1>
