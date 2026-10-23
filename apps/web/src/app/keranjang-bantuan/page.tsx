@@ -83,7 +83,7 @@ export default function KeranjangBantuanPage() {
 
           {/* Mobile: ringkasan di atas, latar primary, teks putih (sama dengan checkout) */}
           <CartSummaryCard
-            className="lg:hidden mb-4"
+            className="lg:hidden"
             items={items}
             total={getCartTotal()}
             title={t('keranjang.title')}
@@ -99,7 +99,8 @@ export default function KeranjangBantuanPage() {
             }}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
+          {/* Desktop saja: di mobile seluruh keranjang ada di blok primary di atas, jadi grid tidak dirender */}
+          <div className="hidden lg:grid grid-cols-3 gap-8">
             {/* Cart Items — desktop saja (di mobile seluruh isi keranjang ada di blok primary di atas) */}
             <div className="hidden lg:block lg:col-span-2 space-y-4">
               {items.map((item) => (
