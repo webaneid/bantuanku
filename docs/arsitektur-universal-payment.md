@@ -51,6 +51,7 @@ Dokumen terkait:
 | Invoice route | `apps/web/src/app/invoice/[id]/page.tsx` |
 | Payment method route | `apps/web/src/app/invoice/[id]/payment-method/page.tsx` |
 | Payment detail route | `apps/web/src/app/invoice/[id]/payment-detail/page.tsx` |
+| Payment instruction route (gateway channel) | `apps/web/src/app/invoice/[id]/payment-instruction/page.tsx` → `apps/web/src/components/UniversalPaymentInstruction.tsx` |
 | Universal invoice | `apps/web/src/components/UniversalInvoice.tsx` |
 | Payment method selector | `apps/web/src/components/UniversalPaymentMethodSelector.tsx` |
 | Payment detail selector | `apps/web/src/components/UniversalPaymentDetailSelector.tsx` |
@@ -381,7 +382,7 @@ Type yang dirender:
 |------|----------|
 | `bank_transfer` | simpan type, redirect ke `/invoice/:id/payment-detail` |
 | `qris` | simpan type, redirect ke `/invoice/:id/payment-detail` |
-| `payment_gateway` | jika satu gateway langsung create payment; jika banyak redirect ke detail |
+| `payment_gateway` | **diubah 2026-10-23**: tidak ada lagi langkah "pilih payment gateway". Semua metode tampil di satu halaman (kartu manual + channel gateway). Gateway dengan `details.channelGroups` (iPaymu) → tiap channel satu kartu; klik → create payment dengan `channel` → `/invoice/[id]/payment-instruction`. Gateway tanpa channel (Xendit, Flip) → satu kartu, create tanpa channel, redirect `paymentUrl` |
 | `cash` | belum dirender |
 
 ### Program Detection

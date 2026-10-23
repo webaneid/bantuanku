@@ -1,6 +1,6 @@
 # Arsitektur Payment Gateway iPaymu
 
-> Terakhir di-sync: 2026-10-23 (perbaikan dekripsi secret + uji sandbox; sisanya masih audit 2026-07-02)
+> Terakhir di-sync: 2026-10-23. Bagian "Alur Pembayaran Terkini" di bawah menggantikan deskripsi flow legacy/gap lama yang bertentangan dengannya (checkout lama `/checkout/ipaymu-channels` tetap legacy dan tidak dipakai).
 
 ---
 
@@ -662,6 +662,26 @@ Detail umum ada di `arsitektur-observability-logging.md`.
 | `notifyUrl`, `returnUrl`, `cancelUrl` | notifyUrl ke route callback nyata, plus return/cancel URL | notifyUrl ke `/v1/webhooks/ipaymu` (route tidak ada), tanpa return/cancel URL |
 
 Artinya: **pembuatan pembayaran sudah jalan, tetapi konfirmasi pembayaran otomatis (webhook) iPaymu belum akan bekerja** sampai handler callback diselaraskan dengan format di atas. Di lokal ini juga tidak terjangkau iPaymu (butuh tunnel publik). Pekerjaan lanjutan ini belum dikerjakan.
+
+---
+
+## Alur Pembayaran Terkini (2026-10-23)
+
+Halaman `/invoice/[id]/payment-method` menampilkan **semua metode sekaligus** (satu klik): kartu manual (Transfer Bank, QRIS) dan channel iPaymu per kelompok (Virtual Account, QRIS, E-Wallet, Minimarket), dengan satu komponen kartu (`MethodCard`). Klik channel iPaymu → `POST /v1/payments/create { transactionId, methodId: "ipaymu", channel: "va:bni" }` → halaman `/invoice/[id]/payment-instruction`.
+
+| Bagian | Detail |
+|---|---|
+| Daftar channel | `GET /v1/payments/methods`: item iPaymu memuat `details.channelGroups` (`[{ code, name, channels: [{ id, code, name, logo }] }]`). Sumber: `GET {base}/payment-channels` (signature memakai hash body `"{}"`; body kosong ditolak), difilter ke kelompok `va`, `qris`, `ewallet`, `cstore`, diurutkan itu. Cache memori 10 menit; gagal/lambat (8 detik) → daftar bawaan di `ipaymu.ts` (cache 1 menit). `id` channel = `paymentMethod:paymentChannel` (QRIS selalu `qris:qris` karena itu yang terbukti di Direct Payment). |
+| Create payment | Direct Payment `POST /payment/direct`, header `signature`, `va`, `timestamp` (`YYYYMMDDHHmmss`), `Accept`. `notifyUrl` = `${API_URL}/v1/payments/ipaymu/webhook`. Respons dipetakan ke `transaction_payments`: `paymentCode` = `PaymentNo` (nomor VA / kode minimarket / string QRIS), `qrCode` = `QrString`, `paymentUrl` = `Url` (hanya e-wallet), `expiredAt` dari `Expired` (string WIB tanpa zona, diparse sebagai +07:00), `externalId` = `ReferenceId`. Fee ditanggung merchant (Total = nominal). |
+| Instruksi bayar | `GET /v1/payments/gateway-payment/:transactionId` (publik, id transaksi tak tertebak, hanya field yang dibutuhkan UI): pembayaran gateway terakhir + `transactionPaymentStatus`. Halaman instruksi menampilkan VA/QR (dibuat di browser dari string QRIS dengan `qrcode`)/kode/tombol e-wallet, hitung mundur, poll 5 detik; lunas → redirect ke `/invoice/[id]`. |
+| Webhook | `POST /v1/payments/ipaymu/webhook`: body `application/x-www-form-urlencoded` (default iPaymu) atau JSON. Header `X-Signature` = HMAC-SHA256 hex atas JSON yang key-nya diurutkan dan tipenya dinormalisasi (`trx_id`, `status_code`, `transaction_status_code`, `paid_off` integer; `is_escrow` boolean; `additional_info` array), **kunci = nomor VA**. Dokumen iPaymu tidak menyebut escape `/` dan unicode ala PHP, jadi tiga varian serialisasi dicoba. Signature tidak cocok → `confirmWebhook`: callback sukses hanya dipercaya jika `POST /transaction { transactionId }` menyatakan `Data.Status` 1/6 **dan** `ReferenceId` sama; selain itu 401. Idempoten (payment `verified` diabaikan). Pemetaan: `status_code` 1 → paid, -2 → expired (transaksi cancelled), lainnya → tetap pending. |
+| Base URL | sandbox `https://sandbox.ipaymu.com/api/v2`; production `https://my.ipaymu.com/api/v2` (mengikuti koleksi resmi dan webane-admin; **belum diuji ke production**). |
+
+**Terverifikasi (sandbox, 2026-10-23):** daftar channel; create VA BNI, QRIS, DANA, Indomaret; halaman instruksi (VA dan QR) di browser; callback form-urlencoded dengan signature valid → transaksi `paid`, campaign terhitung sekali (callback duplikat tidak menambah); signature salah → 401; unit validasi signature (varian plain, `\/`, unicode; data diubah, kunci salah, tanpa signature → ditolak); `POST /transaction` untuk transaksi pending/fiktif → tidak dipercaya.
+
+**Belum terverifikasi:** callback **nyata** dari iPaymu (butuh URL publik; lokal tidak terjangkau) — terutama varian serialisasi mana yang dipakai iPaymu dan jalur `confirmWebhook` untuk transaksi yang benar-benar sukses; VA BCA di sandbox tidak merespons (masalah sisi iPaymu, kini timeout 30 detik); production.
+
+**Gap yang tersisa:** (1) nominal gateway = `totalAmount + uniqueCode` (kode unik untuk transfer manual ikut terkirim ke gateway); (2) race callback paralel (cek `verified` di luar transaksi DB) bisa menghitung campaign dua kali — gap lama pada handler webhook umum; (3) `webhookPayload` menyimpan seluruh body callback; (4) halaman legacy `/checkout/ipaymu-channels` dan `/checkout/payment-gateway` masih ada dan tidak dipakai alur baru; (5) kelompok channel `cc`, `debitonline`, `paylater` sengaja belum ditampilkan.
 
 ---
 

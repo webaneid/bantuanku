@@ -358,12 +358,13 @@ Webhook aktual:
 
 | Method | Path | Fungsi |
 |--------|------|--------|
+| `GET` | `/v1/payments/gateway-payment/:transactionId` | Pembayaran gateway terakhir sebuah transaksi + status pembayaran transaksi (publik; untuk halaman instruksi bayar). |
 | `POST` | `/v1/payments/:gateway/webhook` | Payment gateway webhook untuk `ipaymu`, `flip`, `xendit`, dan adapter lain yang didukung route. |
 | `POST` | `/v1/whatsapp/webhook` | GOWA WhatsApp incoming message webhook. |
 
 Content-type middleware memberi pengecualian untuk path yang mengandung `/webhook`, termasuk form-urlencoded Flip.
 
-Gap: service adapter iPaymu masih memiliki contoh notify URL lama `/v1/webhooks/ipaymu`, sedangkan route aktual adalah `/v1/payments/:gateway/webhook`.
+Catatan: `notifyUrl` adapter iPaymu sudah diselaraskan ke `/v1/payments/ipaymu/webhook` (2026-10-23). Webhook iPaymu menerima form-urlencoded atau JSON; lihat `arsitektur-payment-gateway-ipaymu.md`.
 Detail iPaymu ada di `docs/arsitektur-payment-gateway-ipaymu.md`.
 Detail Flip, termasuk form-urlencoded callback dan risiko ID 19 digit, ada di `docs/arsitektur-payment-gateway-flip.md`.
 Detail Xendit, termasuk gap frontend route dan webhook Payments API v3, ada di `docs/arsitektur-payment-gateway-xendit.md`.

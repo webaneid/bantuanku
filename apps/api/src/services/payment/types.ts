@@ -26,6 +26,11 @@ export interface PaymentGatewayAdapter {
   code: string;
   createPayment(request: PaymentRequest): Promise<PaymentResponse>;
   verifyWebhook(payload: WebhookPayload, signature?: string): Promise<boolean>;
+  /**
+   * Opsional: konfirmasi server-to-server ke provider bila signature webhook tidak valid/tidak ada.
+   * true = provider sendiri membenarkan pembayaran sukses.
+   */
+  confirmWebhook?(payload: WebhookPayload): Promise<boolean>;
   parseWebhook(payload: WebhookPayload): {
     externalId: string;
     status: "success" | "failed" | "expired";

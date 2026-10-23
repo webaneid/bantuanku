@@ -15,6 +15,7 @@ import {
   createId,
 } from "@bantuanku/db";
 import { createPaymentAdapter } from "../services/payment";
+import { IPaymuAdapter, type IpaymuChannelGroup } from "../services/payment/ipaymu";
 import { createEmailService } from "../services/email";
 import { success, error } from "../lib/response";
 import { paymentRateLimit } from "../middleware/ratelimit";
@@ -89,6 +90,20 @@ const syncQurbanSavingsBalance = async (db: any, savingsId: string) => {
     })
     .where(eq(qurbanSavings.id, savingsId));
 };
+
+
+/**
+ * Konfigurasi iPaymu dari settings. API key tersimpan terenkripsi (lihat decrypt() di bawah);
+ * mode dibaca dari `payment_ipaymu_environment` (key yang disimpan admin).
+ */
+function getIpaymuConfig(paymentSettings: any[]) {
+  const find = (...keys: string[]) => paymentSettings.find((s: any) => keys.includes(s.key))?.value;
+  return {
+    va: find("payment_ipaymu_va", "ipaymu_va") as string | undefined,
+    apiKey: decrypt(find("payment_ipaymu_api_key", "ipaymu_api_key") || ""),
+    isProduction: (find("payment_ipaymu_environment", "payment_ipaymu_mode", "ipaymu_mode") || "sandbox") === "production",
+  };
+}
 
 // Payment methods endpoint - ambil dari settings, bukan dari hardcoded table
 paymentsRoute.get("/methods", async (c) => {
@@ -216,11 +231,18 @@ paymentsRoute.get("/methods", async (c) => {
 
   // iPaymu
   if (iPaymuEnabled) {
+    // Channel (VA, QRIS, e-wallet, minimarket) ikut dikirim agar halaman bayar menampilkannya langsung
+    let channelGroups: IpaymuChannelGroup[] = [];
+    const { va, apiKey, isProduction: ipaymuProduction } = getIpaymuConfig(paymentSettings);
+    if (va && apiKey) {
+      channelGroups = await new IPaymuAdapter({ merchantId: va, secretKey: apiKey }, ipaymuProduction).getChannels();
+    }
     methods.push({
       id: "ipaymu",
       code: "ipaymu",
       name: "iPaymu",
       type: "payment_gateway",
+      details: { channelGroups },
       programs: ["general"],
     });
   }
@@ -328,10 +350,7 @@ paymentsRoute.post("/create", paymentRateLimit, zValidator("json", createPayment
     // Secret (*_api_key, *_secret_*) tersimpan TERENKRIPSI lewat PUT /admin/settings/batch — wajib decrypt()
     // (mengembalikan input apa adanya bila belum terenkripsi). Tanpa ini gateway menerima ciphertext.
     if (methodId === "ipaymu") {
-      // Try both with and without payment_ prefix
-      const va = paymentSettings.find((s: any) => s.key === "payment_ipaymu_va" || s.key === "ipaymu_va")?.value;
-      const apiKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_ipaymu_api_key" || s.key === "ipaymu_api_key")?.value || "");
-      const mode = paymentSettings.find((s: any) => s.key === "payment_ipaymu_environment" || s.key === "payment_ipaymu_mode" || s.key === "ipaymu_mode")?.value || "sandbox";
+      const { va, apiKey, isProduction: ipaymuProduction } = getIpaymuConfig(paymentSettings);
 
       if (!va || !apiKey) {
         console.error("iPaymu credentials check:", { va: !!va, apiKey: !!apiKey });
@@ -343,7 +362,7 @@ paymentsRoute.post("/create", paymentRateLimit, zValidator("json", createPayment
         merchantId: va,
         secretKey: apiKey,
       };
-      isProduction = mode === "production";
+      isProduction = ipaymuProduction;
     } else if (methodId === "xendit") {
       const secretKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_xendit_secret_key" || s.key === "xendit_secret_key")?.value || "");
       const callbackToken = paymentSettings.find((s: any) => s.key === "payment_xendit_callback_token" || s.key === "xendit_callback_token")?.value;
@@ -435,6 +454,45 @@ paymentsRoute.post("/create", paymentRateLimit, zValidator("json", createPayment
   });
 });
 
+// GET /payments/gateway-payment/:transactionId - pembayaran gateway terakhir sebuah transaksi (publik,
+// dipakai halaman instruksi bayar: nomor VA/QR, batas waktu, dan polling status). transactionId = id tak
+// tertebak yang sama dengan yang dipakai halaman invoice publik; hanya field yang dibutuhkan UI yang dikirim.
+paymentsRoute.get("/gateway-payment/:transactionId", async (c) => {
+  const db = c.get("db");
+  const transactionId = c.req.param("transactionId");
+
+  const txn = await db.query.transactions.findFirst({
+    where: eq(transactions.id, transactionId),
+  });
+
+  if (!txn) {
+    return error(c, "Transaction not found", 404);
+  }
+
+  const [payment] = await db
+    .select({
+      id: transactionPayments.id,
+      amount: transactionPayments.amount,
+      gatewayCode: transactionPayments.gatewayCode,
+      paymentChannel: transactionPayments.paymentChannel,
+      paymentCode: transactionPayments.paymentCode,
+      paymentUrl: transactionPayments.paymentUrl,
+      qrCode: transactionPayments.qrCode,
+      expiredAt: transactionPayments.expiredAt,
+      status: transactionPayments.status,
+      createdAt: transactionPayments.createdAt,
+    })
+    .from(transactionPayments)
+    .where(and(eq(transactionPayments.transactionId, transactionId), sql`${transactionPayments.gatewayCode} IS NOT NULL`))
+    .orderBy(sql`${transactionPayments.createdAt} DESC`)
+    .limit(1);
+
+  return success(c, {
+    transactionPaymentStatus: txn.paymentStatus,
+    payment: payment || null,
+  });
+});
+
 paymentsRoute.post("/:gateway/webhook", async (c) => {
   const gatewayCode = c.req.param("gateway");
   const db = c.get("db");
@@ -459,9 +517,7 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
     const paymentSettings = allSettings.filter((s: any) => s.category === "payment");
 
     if (gatewayCode === "ipaymu") {
-      const va = paymentSettings.find((s: any) => s.key === "payment_ipaymu_va" || s.key === "ipaymu_va")?.value;
-      const apiKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_ipaymu_api_key" || s.key === "ipaymu_api_key")?.value || "");
-      const mode = paymentSettings.find((s: any) => s.key === "payment_ipaymu_environment" || s.key === "payment_ipaymu_mode" || s.key === "ipaymu_mode")?.value || "sandbox";
+      const { va, apiKey, isProduction: ipaymuProduction } = getIpaymuConfig(paymentSettings);
 
       if (!va || !apiKey) {
         return error(c, "iPaymu credentials not configured", 500);
@@ -471,7 +527,7 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
         merchantId: va,
         secretKey: apiKey,
       };
-      isProduction = mode === "production";
+      isProduction = ipaymuProduction;
     } else if (gatewayCode === "flip") {
       // Phase 1: Fixed key mismatch — match admin UI keys
       const secretKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_flip_api_key" || s.key === "payment_flip_secret_key")?.value || "");
@@ -533,6 +589,12 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
     signature = token;
     console.log("[Flip Webhook] payload:", JSON.stringify(payload));
     console.log("[Flip Webhook] token:", token);
+  } else if (gatewayCode === "ipaymu") {
+    // Callback iPaymu default form-urlencoded (bisa JSON bila diubah di dashboard iPaymu)
+    const contentType = c.req.header("content-type") || "";
+    // parseBody() mengembalikan objek tanpa prototype; disalin agar bisa disimpan Drizzle ke webhookPayload
+    payload = contentType.includes("application/json") ? await c.req.json() : { ...(await c.req.parseBody()) };
+    signature = c.req.header("X-Signature");
   } else {
     payload = await c.req.json();
     signature = c.req.header("X-Callback-Token") || c.req.header("X-Signature") || c.req.header("X-Ipaymu-Signature");
@@ -540,7 +602,11 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
 
   const adapter = createPaymentAdapter(gateway.code, credentials, isProduction);
 
-  const isValid = await adapter.verifyWebhook(payload, signature);
+  let isValid = await adapter.verifyWebhook(payload, signature);
+  if (!isValid && adapter.confirmWebhook) {
+    // Signature tidak cocok: percaya callback hanya jika provider sendiri membenarkannya
+    isValid = await adapter.confirmWebhook(payload);
+  }
   if (!isValid) {
     return error(c, "Invalid signature", 401);
   }
