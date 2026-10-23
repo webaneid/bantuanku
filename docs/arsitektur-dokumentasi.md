@@ -108,6 +108,8 @@
 | Dokumen | File Target | Status | File Lama |
 |---------|-------------|--------|-----------|
 | Komponen web: atom/molecule/organism | `arsitektur-komponen-web.md` | 🟢 Selesai | — |
+| Mobile single shell (top bar, bar donasi naik-turun) | `arsitektur-mobile-single-shell.md` | 🟢 Selesai (qurban belum diuji visual) | — |
+| Status redesign front-end (redesign-1) | `redesign-frontend-status.md` | 🟡 Berjalan | bagian berikutnya menunggu user |
 | Komponen admin: Sidebar, Modal, Form, dll. | `arsitektur-komponen-admin.md` | 🟢 Selesai | `SOP-notifikasi.md` ✅ Dihapus |
 | Frontend UX quality (feedback, responsive, inline style, a11y gap) | `arsitektur-frontend-ux-quality.md` | 🟢 Selesai | `dokumentasi-front-end.md`, `apps/admin/docs/00-blueprint-front-end.md`, `00-frontend-developement.md`, `hardcode-front-end.md`, `hardcode-audit-frontend.md`, `hardcode-status-checklist.md` ✅ Dihapus |
 | Alamat Indonesia (provinsi/kab/kec/kel) | `arsitektur-alamat.md` | 🟢 Selesai | `00-helper-alamat.md` ✅ Dihapus, `00-helper-address-system.md` ✅ Dihapus |

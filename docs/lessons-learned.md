@@ -485,3 +485,8 @@
 **Masalah:** (1) Collapsed sheet `max-h-24` lebih tinggi dari bar sebenarnya (64px), sehingga awal isi sheet "mengintip" di bawah bar. (2) Footer dirender setelah `<main>`, jadi spacer atau `pb-*` di dalam main menaruh jarak kosong di tengah dan footer tetap tertutup bar. (3) Beberapa halaman zakat dirender oleh komponen kalkulator yang membawa `<Header />` sendiri, sehingga mengubah `zakat/[slug]/page.tsx` saja tidak cukup.
 **Pelajaran:** tinggi collapsed = tinggi bar (h-16 + safe-area), spacer `h-20 lg:hidden` diletakkan SETELAH `<Footer />`; setelah mengubah header satu halaman, cek juga komponen yang di-render halaman itu. Sheet wajib collapse (`collapseSignal`) sebelum modal lain dibuka. Qurban detail tidak bisa diuji visual di DB lokal (tabel `qurban_discounts` belum ada) — uji di staging/produksi.
 
+### [2026-10-23] Font dev jadi serif karena cache .next basi
+**Konteks:** setelah banyak edit komponen web, font di dev tiba-tiba serif.
+**Masalah:** HTML memakai kelas `__variable_d8ebd1` sedangkan CSS mendefinisikan `__variable_f367f3`; `--font-inter` tidak terdefinisi sehingga aturan `font-family` dibuang browser. Penyebab: `apps/web/.next` basi, bukan kode.
+**Pelajaran:** gejala "font berubah" → bandingkan kelas variabel di HTML vs CSS yang disajikan; perbaiki dengan `rm -rf apps/web/.next` lalu restart dev. Jangan menyalahkan perubahan kode tanpa membuktikan lewat `git diff`.
+
