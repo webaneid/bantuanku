@@ -19,7 +19,8 @@ Desktop (`lg` ke atas) **tidak berubah**.
 | `/program/[slug]` | ya (overlay di atas gambar) | ya (nominal donasi) |
 | `/qurban/[id]` | ya (overlay di atas gambar) | ya (paket/jumlah/voucher + ringkasan) |
 | `/zakat/[slug]` | ya (overlay bila ada gambar, selain itu solid) | tidak (kalkulator) |
-| `/laporan/[slug]`, `/page/[slug]`, `/mitra/[slug]` | ya (solid) | tidak |
+| `/laporan/[slug]`, `/page/[slug]` | ya (overlay di atas gambar bila ada gambar, selain itu solid) + blok judul seperti campaign; **tanpa** tombol donasi, `ShareBar`: bar statis di bawah layar (mobile, seperti bar donasi; butuh spacer `h-20 lg:hidden` setelah Footer) / kartu di bawah konten (desktop) | tidak |
+| `/mitra/[slug]` | ya (solid) | tidak |
 | Checkout, keranjang bantuan, invoice, akun | **tidak** (header penuh, alur bayar/utilitas) | bar milik halaman sendiri, tidak diubah |
 
 ## Komponen
@@ -30,6 +31,7 @@ Desktop (`lg` ke atas) **tidak berubah**.
 | `MobileTopBar` | `organisms/MobileTopBar` | back (kiri) + titik tiga (kanan) yang membuka panel menu. Mode `overlay` (transparan di atas gambar, sembunyi saat scroll turun, muncul saat scroll naik) atau solid (bar putih + spacer) |
 | `MobileMenuPanel` | `organisms/MobileMenuPanel` | isi menu mobile (menu, bahasa, login/logout, akun). **Satu sumber** untuk Header dan `MobileTopBar` |
 | `useHeaderMenuItems` | `hooks/useHeaderMenu.ts` | parse `frontend_header_menu` (dipakai Header dan panel) |
+| `ShareBar` | `molecules/ShareBar` | "Bagikan" + ikon sosmed (membungkus `ShareButtons`); mobile = bar `fixed bottom-0` z-1030, desktop = kartu; untuk halaman konten tanpa bar donasi |
 | `MobileActionSheet` | `molecules/MobileActionSheet` | bar ringkas selalu tampil di bawah; ketuk untuk membuka sheet (animasi `max-height`); isi tidak di-unmount; prop `collapseSignal` |
 
 ## Aturan wajib

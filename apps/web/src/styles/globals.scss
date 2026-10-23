@@ -29,6 +29,20 @@
 @import './components/programs-grid';
 @import './components/testimonial';
 
+// Konten halaman (page, laporan): di mobile (< md) kartu tanpa padding samping selain 15px, dan gambar
+// dari editor menembus padding itu supaya full-width. Padding 15px harus sama dengan kartu di pemanggilnya.
+@media (max-width: 767px) {
+  .prose-bleed img {
+    display: block;
+    max-width: none !important;
+    width: calc(100% + 30px) !important;
+    height: auto !important;
+    margin-left: -15px;
+    margin-right: -15px;
+    border-radius: 0 !important;
+  }
+}
+
 // ── Prose overrides for rich text editor output ─────────────────────────────
 @import './variables';
 

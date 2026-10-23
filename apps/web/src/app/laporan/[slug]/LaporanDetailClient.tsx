@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { getImageUrlByVariant } from '@/lib/image';
 import { RenderContent } from '@/lib/render-content';
+import { formatReportDate as formatDate, getReportReferenceLabel as getReferenceLabel } from '@/lib/report-label';
+import { ShareBar } from '@/components/molecules/ShareBar';
 
 interface ReportDetail {
   id: string;
@@ -25,24 +27,6 @@ interface ReportDetail {
   creatorName: string | null;
 }
 
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-function getReferenceLabel(type: string) {
-  switch (type) {
-    case 'campaign': return 'Program';
-    case 'zakat_period': return 'Zakat';
-    case 'zakat_disbursement': return 'Penyaluran Zakat';
-    case 'qurban_period': return 'Qurban';
-    default: return 'Laporan';
-  }
-}
-
 function getYoutubeEmbedUrl(url: string): string | null {
   try {
     const u = new URL(url);
@@ -60,7 +44,7 @@ function getYoutubeEmbedUrl(url: string): string | null {
   }
 }
 
-export default function LaporanDetailClient({ report }: { report: ReportDetail }) {
+export default function LaporanDetailClient({ report, shareUrl }: { report: ReportDetail; shareUrl: string }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const tsd = report.typeSpecificData || {};
@@ -70,8 +54,8 @@ export default function LaporanDetailClient({ report }: { report: ReportDetail }
   return (
     <>
       <article className="space-y-8">
-        {/* Header */}
-        <div className="space-y-4">
+        {/* Header — desktop saja; di mobile judul ada di header halaman (page.tsx) */}
+        <div className="hidden lg:block space-y-4">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-sm font-medium">
               {getReferenceLabel(report.referenceType)}
@@ -146,8 +130,8 @@ export default function LaporanDetailClient({ report }: { report: ReportDetail }
         )}
 
         {/* Description */}
-        <div className="bg-white rounded-lg shadow-sm p-6 md:p-8">
-          <RenderContent html={report.description} className="prose prose-sm md:prose-base max-w-none text-gray-700 prose-img:rounded-lg prose-headings:text-gray-900" />
+        <div className="bg-white shadow-sm -mx-4 sm:-mx-6 md:mx-0 rounded-none md:rounded-lg px-[15px] pt-0 pb-4 md:p-8">
+          <RenderContent html={report.description} className="prose prose-bleed prose-sm md:prose-base max-w-none text-gray-700 prose-img:rounded-lg prose-headings:text-gray-900" />
         </div>
 
         {/* Video */}
@@ -189,6 +173,8 @@ export default function LaporanDetailClient({ report }: { report: ReportDetail }
             </div>
           </div>
         )}
+
+        <ShareBar url={shareUrl} title={report.title} />
 
         {/* Footer meta */}
         <div className="border-t border-gray-200 pt-6 flex items-center justify-between flex-wrap gap-4">

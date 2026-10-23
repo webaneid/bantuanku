@@ -22,6 +22,7 @@ tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-k
 | `CategoryGrid` (pilar) | desain kartu baru, posisi tetap di bawah hero | 419136a |
 | CTA | rata tengah, tinggi +20%, tombol 1 putih + tombol 2 outline putih | 419136a |
 | Mobile single shell | header disembunyikan, `MobileTopBar` (back + titik tiga), `MobileActionSheet` (bar donasi/qurban naik-turun); lihat `arsitektur-mobile-single-shell.md` | 9b62dd5, 472b81e |
+| Header mobile `/page/[slug]` & `/laporan/[slug]` | persis campaign (top bar overlay + gambar penuh + blok judul), tanpa tombol donasi, `ShareBar` di bawah konten; desktop tidak berubah (belum di-commit) | — |
 
 ## Belum dikerjakan / keputusan terbuka
 - `FeaturedCarousel` ("Program Unggulan & Mendesak") masih tampilan lama; qurban section, "Why Choose Us", Header, Footer belum di-redesign. User akan menyebut bagian berikutnya.

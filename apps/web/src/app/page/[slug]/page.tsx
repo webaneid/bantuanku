@@ -3,6 +3,7 @@ import Link from "next/link";
 import { RenderContent } from "@/lib/render-content";
 import { notFound } from "next/navigation";
 import { Header, Footer, Breadcrumb, MobileTopBar } from "@/components/organisms";
+import { ShareBar } from "@/components/molecules/ShareBar";
 import { getImageUrl } from "@/lib/image";
 import { fetchPageBySlug } from "@/services/pages";
 import { fetchCampaigns } from "@/services/campaigns";
@@ -279,35 +280,53 @@ export default async function StaticPage({ params }: StaticPageProps) {
       />
       <div className="min-h-screen flex flex-col">
         <Header hideOnMobile />
-        <MobileTopBar backHref="/" />
 
         <main className="flex-1 bg-gray-50">
-          <Breadcrumb items={[
-            { label: 'Beranda', href: '/' },
-            { label: page.title },
-          ]} />
+          <div className="hidden lg:block">
+            <Breadcrumb items={[
+              { label: 'Beranda', href: '/' },
+              { label: page.title },
+            ]} />
+          </div>
 
-        <div className="container py-8">
+          {/* Mobile: header persis campaign — gambar penuh + top bar overlay, lalu judul */}
+          <div className="lg:hidden">
+            {featureImage ? (
+              <div className="relative">
+                <MobileTopBar overlay backHref="/" />
+                <img src={featureImage} alt={page.title} className="w-full aspect-video object-contain bg-gray-100" />
+              </div>
+            ) : (
+              <MobileTopBar backHref="/" />
+            )}
+            <div className="bg-white px-4 py-4">
+              <h1 className="text-xl font-bold text-gray-900">{page.title}</h1>
+            </div>
+          </div>
+
+        <div className="container pt-0 pb-4 lg:py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <article className="lg:col-span-2 space-y-6">
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">{page.title}</h1>
+              <h1 className="hidden lg:block text-4xl font-bold text-gray-900">{page.title}</h1>
 
               {featureImage && (
                 <img
                   src={featureImage}
                   alt={page.title}
-                  className="w-full h-auto rounded-lg object-contain"
+                  className="hidden lg:block w-full h-auto rounded-lg object-contain"
                 />
               )}
 
-              <div className="bg-white rounded-lg shadow-sm p-6 md:p-8">
-                <RenderContent html={page.content} className="prose prose-sm md:prose-base max-w-none text-gray-700" />
+              <div className="bg-white shadow-sm -mx-4 sm:-mx-6 md:mx-0 rounded-none md:rounded-lg px-[15px] pt-0 pb-4 md:p-8">
+                <RenderContent html={page.content} className="prose prose-bleed prose-sm md:prose-base max-w-none text-gray-700" />
               </div>
+
+              <ShareBar url={`${appUrl}/page/${slug}`} title={page.title} />
             </article>
 
             <aside className="lg:col-span-1">
-              <div className="space-y-4 sticky top-24">
-                <div className="bg-white rounded-lg shadow-sm p-4">
+              <div className="space-y-4 sticky top-24 -mx-4 sm:-mx-6 md:mx-0">
+                <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                   <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                     <h2 className="text-xl font-semibold text-gray-900">Program Lainnya</h2>
                     <Link href="/program" aria-label="Lihat semua program" className="text-gray-700 hover:text-primary-600">
@@ -349,7 +368,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                   <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                     <h2 className="text-xl font-semibold text-gray-900">Zakat Lainnya</h2>
                     <Link href="/zakat" aria-label="Lihat semua zakat" className="text-gray-700 hover:text-primary-600">
@@ -391,7 +410,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                   <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                     <h2 className="text-xl font-semibold text-gray-900">Qurban Lainnya</h2>
                     <Link href="/qurban" aria-label="Lihat semua qurban" className="text-gray-700 hover:text-primary-600">
@@ -439,6 +458,9 @@ export default async function StaticPage({ params }: StaticPageProps) {
       </main>
 
         <Footer />
+
+        {/* Spacer bar share mobile — elemen PALING TERAKHIR (docs/arsitektur-mobile-single-shell.md) */}
+        <div className="h-20 lg:hidden" aria-hidden="true" />
       </div>
     </>
   );

@@ -3,6 +3,7 @@ import type { Messages } from "../types";
 export const enMessages: Messages = {
   common: {
     back: "Back",
+    share: "Share",
     openMenu: "Open menu",
     closeMenu: "Close menu",
     dashboard: "Dashboard",

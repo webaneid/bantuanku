@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { Header, Footer, Breadcrumb, MobileTopBar } from '@/components/organisms';
-import { getImageUrl } from '@/lib/image';
+import { getImageUrl, getImageUrlByVariant } from '@/lib/image';
+import { formatReportDate, getReportReferenceLabel } from '@/lib/report-label';
 import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
 import { fetchCampaigns } from '@/services/campaigns';
 import { fetchZakatTypes } from '@/services/zakat';
@@ -138,6 +139,8 @@ export default async function LaporanDetailPage({ params }: PageProps) {
     permanentRedirect(canonicalUrl);
   }
 
+  const heroImage = report.gallery?.[0] ? getImageUrlByVariant(report.gallery[0], ['large', 'medium']) : null;
+
   // Fetch sidebar data
   let sidebarCampaigns: any[] = [];
   let sidebarZakat: any[] = [];
@@ -190,24 +193,50 @@ export default async function LaporanDetailPage({ params }: PageProps) {
       />
       <div className="min-h-screen flex flex-col">
         <Header hideOnMobile />
-      <MobileTopBar backHref="/laporan" />
         <main className="flex-1 bg-gray-50">
-          <Breadcrumb
-            items={[
-              { label: 'Beranda', href: '/' },
-              { label: 'Laporan Kegiatan', href: '/laporan' },
-              { label: report.title },
-            ]}
-          />
-          <div className="container py-8">
+          <div className="hidden lg:block">
+            <Breadcrumb
+              items={[
+                { label: 'Beranda', href: '/' },
+                { label: 'Laporan Kegiatan', href: '/laporan' },
+                { label: report.title },
+              ]}
+            />
+          </div>
+
+          {/* Mobile: header persis campaign — gambar penuh + top bar overlay, lalu judul */}
+          <div className="lg:hidden">
+            {heroImage ? (
+              <div className="relative">
+                <MobileTopBar overlay backHref="/laporan" />
+                <img src={heroImage} alt={report.title} className="w-full aspect-video object-contain bg-gray-100" />
+              </div>
+            ) : (
+              <MobileTopBar backHref="/laporan" />
+            )}
+            <div className="bg-white px-4 py-4 space-y-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-sm font-medium">
+                  {getReportReferenceLabel(report.referenceType)}
+                </span>
+                <span className="text-sm text-gray-500">{formatReportDate(report.activityDate)}</span>
+              </div>
+              <h1 className="text-xl font-bold text-gray-900">{report.title}</h1>
+              {report.referenceName && (
+                <p className="text-base text-emerald-600 font-medium">{report.referenceName}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="container pt-0 pb-4 lg:py-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
-                <LaporanDetailClient report={report} />
+                <LaporanDetailClient report={report} shareUrl={canonicalUrl} />
               </div>
 
               <aside className="lg:col-span-1">
-                <div className="space-y-4 sticky top-24">
-                  <div className="bg-white rounded-lg shadow-sm p-4">
+                <div className="space-y-4 sticky top-24 -mx-4 sm:-mx-6 md:mx-0">
+                  <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                     <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                       <h2 className="text-xl font-semibold text-gray-900">Program Lainnya</h2>
                       <Link href="/program" aria-label="Lihat semua program" className="text-gray-700 hover:text-primary-600">
@@ -236,7 +265,7 @@ export default async function LaporanDetailPage({ params }: PageProps) {
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow-sm p-4">
+                  <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                     <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                       <h2 className="text-xl font-semibold text-gray-900">Zakat Lainnya</h2>
                       <Link href="/zakat" aria-label="Lihat semua zakat" className="text-gray-700 hover:text-primary-600">
@@ -265,7 +294,7 @@ export default async function LaporanDetailPage({ params }: PageProps) {
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow-sm p-4">
+                  <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                     <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                       <h2 className="text-xl font-semibold text-gray-900">Qurban Lainnya</h2>
                       <Link href="/qurban" aria-label="Lihat semua qurban" className="text-gray-700 hover:text-primary-600">
@@ -299,6 +328,9 @@ export default async function LaporanDetailPage({ params }: PageProps) {
           </div>
         </main>
         <Footer />
+
+        {/* Spacer bar share mobile — elemen PALING TERAKHIR (docs/arsitektur-mobile-single-shell.md) */}
+        <div className="h-20 lg:hidden" aria-hidden="true" />
       </div>
     </>
   );

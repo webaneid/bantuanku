@@ -3,6 +3,7 @@ import type { Messages } from "../types";
 export const idMessages: Messages = {
   common: {
     back: "Kembali",
+    share: "Bagikan",
     openMenu: "Buka menu",
     closeMenu: "Tutup menu",
     dashboard: "Dasbor",

@@ -21,6 +21,8 @@ export type { SearchBoxProps } from './SearchBox';
 // Share Buttons
 export { ShareButtons } from './ShareButtons';
 export type { ShareButtonsProps } from './ShareButtons';
+export { ShareBar } from './ShareBar';
+export type { ShareBarProps } from './ShareBar';
 
 // Quantity Selector
 export { QuantitySelector } from './QuantitySelector';
