@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { Input, Button, Label } from "@/components/atoms";
 import Autocomplete from "@/components/Autocomplete";
 import toast from "@/lib/feedback-toast";
 import { useI18n } from "@/lib/i18n/provider";
+import { readNextFromLocation } from "@/lib/safe-next";
 
 interface ProfileData {
   name: string;
@@ -41,6 +43,13 @@ interface JobCategory {
 export default function ProfilePage() {
   const { user, isHydrated, mergeUser } = useAuth();
   const { t } = useI18n();
+  const router = useRouter();
+  // `?next=` (mis. /checkout): selesai simpan kembali ke sana; di mode ini hanya nomor WhatsApp yang wajib
+  // (isian demografis tidak boleh menahan donatur di tengah checkout)
+  const [nextPath, setNextPath] = useState<string | null>(null);
+  useEffect(() => {
+    setNextPath(readNextFromLocation());
+  }, []);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -281,10 +290,14 @@ export default function ProfilePage() {
 
     // Validate required fields
     const missing: string[] = [];
-    if (!profileData.jobTitleId) missing.push("Pekerjaan");
-    if (!profileData.incomeRangeId) missing.push("Penghasilan Bulanan");
-    if (!profileData.gender) missing.push("Jenis Kelamin");
-    if (!profileData.provinceCode) missing.push("Provinsi");
+    if (nextPath) {
+      if (!profileData.whatsappNumber) missing.push("Nomor WhatsApp");
+    } else {
+      if (!profileData.jobTitleId) missing.push("Pekerjaan");
+      if (!profileData.incomeRangeId) missing.push("Penghasilan Bulanan");
+      if (!profileData.gender) missing.push("Jenis Kelamin");
+      if (!profileData.provinceCode) missing.push("Provinsi");
+    }
     if (missing.length > 0) {
       toast.error(`Data wajib belum diisi: ${missing.join(", ")}`);
       return;
@@ -301,6 +314,8 @@ export default function ProfilePage() {
         whatsappNumber: profileData.whatsappNumber || null,
       });
       toast.success(t("account.profile.toasts.profileUpdated"));
+      // Datang dari alur lain (mis. checkout): kembali ke sana setelah simpan
+      if (nextPath) router.push(nextPath);
     } catch (error: any) {
       toast.error(error.response?.data?.message || t("account.profile.toasts.profileUpdateFailed"));
     } finally {
@@ -374,10 +389,12 @@ export default function ProfilePage() {
 
   // Check required fields
   const missingFields: string[] = [];
-  if (!profileData.jobTitleId) missingFields.push("Pekerjaan");
-  if (!profileData.incomeRangeId) missingFields.push("Penghasilan Bulanan");
-  if (!profileData.gender) missingFields.push("Jenis Kelamin");
-  if (!profileData.provinceCode) missingFields.push("Provinsi");
+  if (!nextPath) {
+    if (!profileData.jobTitleId) missingFields.push("Pekerjaan");
+    if (!profileData.incomeRangeId) missingFields.push("Penghasilan Bulanan");
+    if (!profileData.gender) missingFields.push("Jenis Kelamin");
+    if (!profileData.provinceCode) missingFields.push("Provinsi");
+  }
   if (!profileData.whatsappNumber) missingFields.push("Nomor WhatsApp");
 
   const hasIncompleteRequired = !isLoading && missingFields.length > 0;

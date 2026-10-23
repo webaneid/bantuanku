@@ -8,6 +8,7 @@ import { Input, Button, Label } from "@/components/atoms";
 import { VerifyEmailNotice, GoogleSignInButton } from "@/components/molecules";
 import toast from "@/lib/feedback-toast";
 import { useI18n } from "@/lib/i18n/provider";
+import { readNextFromLocation } from "@/lib/safe-next";
 
 const GOOGLE_ERROR_CODES = ["google_unverified", "google_staff", "google_inactive", "google_cancelled", "google_disabled", "google_failed"];
 
@@ -36,10 +37,16 @@ export default function LoginPage() {
   // Diisi saat API menolak login karena email belum terverifikasi (EMAIL_NOT_VERIFIED)
   const [unverified, setUnverified] = useState<{ email: string; status?: "sent" | "cooldown" | "failed" } | null>(null);
 
+  // Tujuan setelah login (`?next=`, mis. /checkout): dibaca di client; default dashboard akun
+  const [nextPath, setNextPath] = useState("/account");
+  useEffect(() => {
+    setNextPath(readNextFromLocation() || "/account");
+  }, []);
+
   // Redirect if already logged in (only after hydration)
   useEffect(() => {
     if (isHydrated && user) {
-      router.push("/account");
+      router.push(readNextFromLocation() || "/account");
     }
   }, [user, router, isHydrated]);
 
@@ -52,8 +59,8 @@ export default function LoginPage() {
     try {
       await login(email, password);
       toast.success(t("auth.login.success"));
-      // Redirect to account dashboard
-      router.push("/account");
+      // Kembali ke tujuan semula (mis. checkout), bila tidak ada ke dashboard akun
+      router.push(readNextFromLocation() || "/account");
     } catch (error: any) {
       if (error.response?.data?.code === "EMAIL_NOT_VERIFIED") {
         setUnverified({ email, status: error.response.data.verificationEmail });
@@ -130,7 +137,7 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-6">
-          <GoogleSignInButton />
+          <GoogleSignInButton returnTo={nextPath} />
         </div>
 
         <div className="mt-6 text-center text-sm text-gray-600">

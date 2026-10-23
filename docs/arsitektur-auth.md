@@ -227,6 +227,20 @@ Token selalu disimpan di `localStorage["token"]` dan di-attach ke setiap request
 
 ---
 
+### Tujuan Setelah Login (`?next=`) — alur checkout (2026-10-24)
+
+Agar donatur tidak "berputar" dan kehilangan momentum, tujuan semula dibawa lewat `?next=` (path internal saja, divalidasi `lib/safe-next.ts`: tolak `//`, skema/host lain, backslash, karakter kontrol):
+
+| Alur | Perilaku |
+|---|---|
+| "Login di sini" di checkout | `/login?next=/checkout`; login sukses (dan sesi yang sudah ada) → `next`, bukan `/account` |
+| Login Google (tombol di checkout/login membawa `returnTo`) | callback web `/auth/google?code&next=...`: bila ada tujuan khusus (bukan `/account`) langsung ke sana **tanpa** singgah di profil, meski WhatsApp kosong; tanpa tujuan khusus dan WhatsApp kosong → `/account/profile` seperti biasa |
+| `/account/profile?next=...` | hanya WhatsApp yang wajib (empat isian demografis tidak menahan); setelah Simpan → `next`. Tanpa `next`: empat isian tetap wajib |
+| Checkout, user login tanpa HP/WhatsApp di profil | kolom HP/WhatsApp tampil; setelah transaksi dibuat, nomor disimpan ke profil lewat `PATCH /auth/me` (fetch, gagal diabaikan) dan `mergeUser` |
+| Login biasa lalu `/account` | tidak berubah: dialihkan ke profil bila empat isian wajib belum lengkap |
+
+Checkout mengirim `Authorization: Bearer <token>` pada `POST /v1/transactions` (3 jalur: campaign, zakat, qurban) supaya server mengisi `user_id` dari token; token kedaluwarsa/rusak diabaikan (transaksi tetap dibuat sebagai tamu).
+
 ## Rate Limiting
 
 Route auth mendapat rate limit lebih ketat via `authRateLimit` middleware (terpisah dari `apiRateLimit` global).

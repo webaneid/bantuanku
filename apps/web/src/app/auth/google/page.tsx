@@ -7,21 +7,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/atoms";
 import { useI18n } from "@/lib/i18n/provider";
-
-// Hanya path relatif di situs sendiri (cegah open redirect lewat parameter `next`). Browser membuang
-// TAB/CR/LF saat mem-parse URL, jadi "/\t/evil.com" menjadi "//evil.com": tolak karakter kontrol dan
-// pastikan hasil parse tetap di origin yang sama.
-function safeNext(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\") || /[\u0000-\u001f\u007f]/.test(value)) {
-    return "/account";
-  }
-  try {
-    if (new URL(value, window.location.origin).origin !== window.location.origin) return "/account";
-  } catch {
-    return "/account";
-  }
-  return value;
-}
+import { safeNextPath } from "@/lib/safe-next";
 
 function GoogleCallbackContent() {
   const { t } = useI18n();
@@ -37,7 +23,9 @@ function GoogleCallbackContent() {
     started.current = true;
 
     const code = searchParams.get("code");
-    const next = safeNext(searchParams.get("next"));
+    // API selalu mengirim `next` (default /account). `/account` = tidak ada tujuan khusus.
+    const next = safeNextPath(searchParams.get("next")) || "/account";
+    const hasExplicitNext = next !== "/account";
     if (!code) {
       setFailed(true);
       return;
@@ -51,8 +39,10 @@ function GoogleCallbackContent() {
       .then(async (res) => {
         const { user, accessToken } = res.data.data;
         await setSession(user, accessToken);
-        // Nomor WhatsApp wajib: akun Google baru belum punya, arahkan ke profil untuk melengkapi
-        router.replace(user.whatsappNumber ? next : "/account/profile");
+        // Datang dari alur tertentu (mis. checkout): langsung ke sana, tanpa memutar lewat profil; nomor yang
+        // kosong diisi di halaman tujuan (checkout menyimpannya ke profil). Tanpa tujuan khusus dan WhatsApp
+        // masih kosong, arahkan ke profil untuk melengkapi seperti biasa.
+        router.replace(user.whatsappNumber || hasExplicitNext ? next : "/account/profile");
       })
       .catch(() => setFailed(true));
   }, [searchParams, router, setSession]);

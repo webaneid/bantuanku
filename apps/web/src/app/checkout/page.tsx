@@ -321,6 +321,13 @@ export default function CheckoutPage() {
             donor_email: formData.email.toLowerCase().trim(),
             donor_phone: normalizePhone(formData.phone),
           };
+      // Token ikut dikirim agar server menautkan transaksi ke akun (user_id diambil dari token, bukan body);
+      // token kedaluwarsa/rusak diabaikan server (auth opsional), jadi transaksi tetap dibuat sebagai tamu
+      const transactionHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
       // "Atas nama" kosong: pakai nama donatur bila diketik; untuk donatur terdaftar dibiarkan kosong
       // (server tidak membuka nama aslinya ke data publik transaksi)
       const behalfOf = formData.onBehalfOf.trim() || (registeredMode ? undefined : formData.name.trim());
@@ -364,9 +371,7 @@ export default function CheckoutPage() {
 
           const response = await fetch(`${API_URL}/transactions`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: transactionHeaders,
             body: JSON.stringify(transactionData),
           });
 
@@ -453,9 +458,7 @@ export default function CheckoutPage() {
 
           const response = await fetch(`${API_URL}/transactions`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: transactionHeaders,
             body: JSON.stringify(transactionData),
           });
 
@@ -525,9 +528,7 @@ export default function CheckoutPage() {
 
           const response = await fetch(`${API_URL}/transactions`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: transactionHeaders,
             body: JSON.stringify(transactionData),
           });
 
@@ -550,6 +551,31 @@ export default function CheckoutPage() {
 
         const qurbanResults = await Promise.all(qurbanPromises);
         allResults.push(...qurbanResults);
+      }
+
+      // User login yang profilnya belum punya HP/WhatsApp: simpan nomor yang baru diisi ke profil supaya tidak
+      // diminta lagi. fetch (bukan axios `api`: interceptor 401 akan melempar ke /login di tengah checkout);
+      // gagal tidak menggagalkan checkout.
+      if (user && token && !registeredMode && (!user.phone || !user.whatsappNumber)) {
+        try {
+          const profilePhone = normalizePhone(formData.phone);
+          const profileWhatsapp = whatsappSameAsPhone
+            ? profilePhone
+            : (formData.whatsapp ? normalizePhone(formData.whatsapp) : profilePhone);
+          const profileRes = await fetch(`${API_URL}/auth/me`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ phone: user.phone || profilePhone, whatsappNumber: user.whatsappNumber || profileWhatsapp }),
+          });
+          if (profileRes.ok) {
+            mergeUser({
+              phone: user.phone || profilePhone,
+              whatsappNumber: user.whatsappNumber || profileWhatsapp,
+            });
+          }
+        } catch (error) {
+          console.error('Error saving phone to profile:', error);
+        }
       }
 
       // Success message based on item types
@@ -685,7 +711,7 @@ export default function CheckoutPage() {
                       <p className="text-sm text-primary-800 flex-1">
                         {t('checkout.main.alreadyHaveAccount')}{' '}
                         <Link
-                          href="/login"
+                          href="/login?next=/checkout"
                           className="font-semibold text-primary-700 hover:text-primary-900 underline"
                         >
                           {t('checkout.main.loginHere')}

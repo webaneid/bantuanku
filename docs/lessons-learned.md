@@ -520,3 +520,8 @@
 **Masalah:** checkout mengisi form dari `useAuth().user` (store zustand persisted, diisi dari respons login), sedangkan `PATCH /auth/me` hanya menulis ke database; `setUser` tidak pernah dipanggil di mana pun. Jadi nomor yang dilengkapi sesudah login tidak pernah sampai ke store sampai login ulang. Tidak terlihat sebagai error, hanya kolom kosong.
 **Pelajaran:** data profil yang dipakai halaman lain harus diperbarui saat profil disimpan (`mergeUser`) dan disegarkan dari API di halaman yang membutuhkannya. Jangan menyegarkan lewat axios `api` di tempat umum karena interceptor 401-nya menghapus sesi; pakai `fetch` yang gagal diam-diam. Uji dengan menyuntikkan sesi basi (HP null) ke localStorage lalu membuka checkout.
 
+### [2026-10-24] Menghapus `user_id` dari body tanpa mengirim token membuat transaksi user login kehilangan `user_id`
+**Konteks:** saat donatur ditentukan server (Fase 1), `user_id` dari body publik dibuang dan diganti dari token (`optionalAuthMiddleware`). Checkout memakai `fetch` polos ke `/transactions`.
+**Masalah:** `fetch` tidak membawa `Authorization` (header hanya otomatis pada axios `api`), sehingga transaksi user login tersimpan dengan `user_id` kosong. Tidak ada error dan riwayat tetap muncul (dicari lewat email donatur), jadi baru ketahuan saat memeriksa baris DB setelah uji lain.
+**Pelajaran:** memindahkan sumber identitas dari body ke token berarti SEMUA pemanggil harus mengirim token. Setelah perubahan semacam itu, periksa kolom hasilnya di DB (bukan hanya respons 200). Untuk alur dengan `next`, tujuan harus dibawa di setiap lompatan (login, Google, profil) dan divalidasi dengan satu helper bersama.
+
