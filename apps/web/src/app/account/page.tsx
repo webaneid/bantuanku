@@ -57,7 +57,7 @@ interface Transaction {
 }
 
 export default function DashboardPage() {
-  const { user, isHydrated } = useAuth();
+  const { user, isHydrated, logout } = useAuth();
   const { t, locale } = useI18n();
   const router = useRouter();
   const localeTag = locale === "id" ? "id-ID" : "en-US";
@@ -133,40 +133,123 @@ export default function DashboardPage() {
     );
   }
 
+  const completion = getProfileCompletion(profile);
+
+  // Aksi cepat: lingkaran ikon di dalam hero (seperti referensi desain)
+  const quickActions = [
+    { href: "/account/transactions", label: t("account.dashboard.quickActions.history"), icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" },
+    { href: "/account/qurban-savings", label: t("account.dashboard.quickActions.qurbanSavings"), icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" },
+    { href: "/qurban", label: t("account.dashboard.quickActions.qurban"), icon: "M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" },
+    { href: "/account/fundraiser", label: t("account.dashboard.quickActions.influencer"), icon: "M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46" },
+    { href: "/account/profile", label: t("account.dashboard.quickActions.profile"), icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
+  ];
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-6 sm:p-8 text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+    <div>
+      {/* Hero: mobile edge-to-edge dengan sudut bawah membulat; desktop kartu membulat */}
+      <section className="bg-gradient-to-br from-primary-600 to-primary-800 text-white rounded-b-[28px] lg:rounded-2xl px-[15px] lg:px-8 pt-5 lg:pt-8 pb-7 lg:pb-8 relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-24 -right-16 h-64 w-64 rounded-full bg-white/5"></div>
+        <div className="pointer-events-none absolute -bottom-20 -left-12 h-48 w-48 rounded-full bg-white/5"></div>
 
-        <div className="relative z-10">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-            {t("account.dashboard.greeting", { name: user?.name || "" })}
-          </h1>
-          <p className="text-primary-50 text-sm sm:text-base">
-            {t("account.dashboard.subtitle")}
-          </p>
-        </div>
-      </div>
-
-      {/* Profile Completion */}
-      {(() => {
-        const completion = getProfileCompletion(profile);
-        if (completion.percent >= 100) return null;
-        return (
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">{t("account.dashboard.profileCompletion.title")}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">{t("account.dashboard.profileCompletion.description")}</p>
+        <div className="relative">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-lg font-bold">
+                {(user?.name || "?").charAt(0).toUpperCase()}
               </div>
-              <Link href="/account/profile">
-                <Button size="sm">{t("account.dashboard.profileCompletion.cta")}</Button>
-              </Link>
+              <div className="min-w-0">
+                <p className="text-xs text-white/70">{t("account.dashboard.welcomeBack")}</p>
+                <p className="truncate text-lg font-semibold leading-tight">{user?.name}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+
+            {/* Mobile: beranda situs + keluar (desktop memakai sidebar) */}
+            <div className="flex items-center gap-2 lg:hidden">
+              <Link
+                href="/"
+                aria-label={t("account.layout.backToHome")}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 hover:bg-white/25 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </Link>
+              <button
+                type="button"
+                onClick={logout}
+                aria-label={t("account.layout.nav.logout")}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 hover:bg-white/25 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-end justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm text-white/70">{t("account.dashboard.heroLabel")}</p>
+              <p className="mt-1 whitespace-nowrap text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">{formatRupiahFull(stats.totalAmount)}</p>
+            </div>
+            <Link
+              href="/program"
+              className="flex-shrink-0 rounded-full bg-white px-4 py-2 text-xs sm:text-sm font-semibold text-primary-700 shadow-sm hover:bg-primary-50 transition-colors"
+            >
+              {t("account.dashboard.heroDonate")}
+            </Link>
+          </div>
+
+          <div className="mt-7 grid grid-cols-5 gap-2 lg:max-w-xl">
+            {quickActions.map((action) => (
+              <Link key={action.href} href={action.href} className="group flex flex-col items-center gap-2 text-center">
+                <span className="flex h-12 w-12 lg:h-14 lg:w-14 items-center justify-center rounded-full bg-white text-primary-700 shadow-sm transition-transform group-hover:scale-105">
+                  <svg className="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.icon} />
+                  </svg>
+                </span>
+                <span className="text-[11px] leading-tight text-white/85">{action.label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Isi: mobile satu kolom; desktop 2/3 transaksi + 1/3 ringkasan */}
+      <div className="mt-5 px-[15px] lg:px-0 grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
+        {/* Ringkasan (mobile di atas, desktop di kanan) */}
+        <div className="space-y-4 lg:order-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-success-100 text-success-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalDonations}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{t("account.dashboard.successTile")}</p>
+            </div>
+            <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-warning-100 text-warning-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+              <p className="text-2xl font-bold text-gray-900">{stats.pendingDonations}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{t("account.dashboard.pendingTile")}</p>
+            </div>
+          </div>
+
+          {completion.percent < 100 && (
+            <div className="rounded-2xl bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-gray-900">{t("account.dashboard.profileCompletion.title")}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">{t("account.dashboard.profileCompletion.description")}</p>
+                </div>
+                <span className="text-sm font-bold text-primary-700">{completion.percent}%</span>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-100">
                 <div
                   className={cn(
                     "h-full rounded-full transition-all duration-500",
@@ -175,180 +258,75 @@ export default function DashboardPage() {
                   style={{ width: `${completion.percent}%` }}
                 />
               </div>
-              <span className="text-xs font-medium text-gray-600 whitespace-nowrap">
-                {completion.filled} {t("account.dashboard.profileCompletion.of")} {completion.total} {t("account.dashboard.profileCompletion.fields")}
-              </span>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <span className="text-xs text-gray-500">
+                  {completion.filled} {t("account.dashboard.profileCompletion.of")} {completion.total} {t("account.dashboard.profileCompletion.fields")}
+                </span>
+                <Link href="/account/profile" className="text-sm font-semibold text-primary-600 hover:text-primary-700">
+                  {t("account.dashboard.profileCompletion.cta")}
+                </Link>
+              </div>
             </div>
-          </div>
-        );
-      })()}
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-        <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-lg bg-success-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-              </svg>
-            </div>
-          </div>
-          <h3 className="text-gray-600 text-sm font-medium mb-1">{t("account.dashboard.stats.totalDonations")}</h3>
-          <p className="text-3xl font-bold text-gray-900">{stats.totalDonations}</p>
-          <p className="text-xs text-gray-500 mt-2">{t("account.dashboard.stats.successTransactions")}</p>
+          )}
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-lg bg-primary-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <h3 className="text-gray-600 text-sm font-medium mb-1">{t("account.dashboard.stats.totalAmount")}</h3>
-          <p className="text-2xl sm:text-3xl font-bold text-gray-900">{formatRupiahFull(stats.totalAmount)}</p>
-          <p className="text-xs text-gray-500 mt-2">{t("account.dashboard.stats.yourContribution")}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-lg bg-warning-100 flex items-center justify-center">
-              <svg className="w-6 h-6 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M4.93 19h14.14c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.2 16c-.77 1.33.19 3 1.73 3z" />
-              </svg>
-            </div>
-          </div>
-          <h3 className="text-gray-600 text-sm font-medium mb-1">{t("account.dashboard.stats.pendingDonations")}</h3>
-          <p className="text-3xl font-bold text-gray-900">{stats.pendingDonations}</p>
-          <p className="text-xs text-gray-500 mt-2">{t("account.dashboard.stats.waitingPayment")}</p>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-        <Link
-          href="/account/transactions"
-          className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500 hover:shadow-md transition-all group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center mb-3 group-hover:bg-primary-100 transition-colors">
-            <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </div>
-          <p className="text-sm font-medium text-gray-900">{t("account.dashboard.quickActions.history")}</p>
-        </Link>
-        <Link
-          href="/account/qurban-savings"
-          className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500 hover:shadow-md transition-all group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-success-50 flex items-center justify-center mb-3 group-hover:bg-success-100 transition-colors">
-            <svg className="w-5 h-5 text-success-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-          <p className="text-sm font-medium text-gray-900">{t("account.dashboard.quickActions.qurbanSavings")}</p>
-        </Link>
-
-        <Link
-          href="/qurban"
-          className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500 hover:shadow-md transition-all group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-warning-50 flex items-center justify-center mb-3 group-hover:bg-warning-100 transition-colors">
-            <svg className="w-5 h-5 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-            </svg>
-          </div>
-          <p className="text-sm font-medium text-gray-900">{t("account.dashboard.quickActions.qurban")}</p>
-        </Link>
-
-        <Link
-          href="/account/profile"
-          className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-500 hover:shadow-md transition-all group"
-        >
-          <div className="w-10 h-10 rounded-lg bg-info-50 flex items-center justify-center mb-3 group-hover:bg-info-100 transition-colors">
-            <svg className="w-5 h-5 text-info-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          <p className="text-sm font-medium text-gray-900">{t("account.dashboard.quickActions.profile")}</p>
-        </Link>
-      </div>
-
-      {/* Recent Transactions */}
-      <div className="bg-white rounded-xl border border-gray-200">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900">{t("account.dashboard.recent.title")}</h2>
+        {/* Transaksi terbaru */}
+        <section className="lg:order-1 lg:col-span-2">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-bold text-gray-900">{t("account.dashboard.recent.title")}</h2>
             {transactions.length > 0 && (
-              <Link
-                href="/account/transactions"
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-              >
+              <Link href="/account/transactions" className="text-sm font-medium text-primary-600 hover:text-primary-700">
                 {t("account.dashboard.recent.viewAll")}
               </Link>
             )}
           </div>
-        </div>
 
-        {transactions.length === 0 ? (
-          <div className="p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
+          {transactions.length === 0 ? (
+            <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">{t("account.dashboard.recent.emptyTitle")}</h3>
+              <p className="text-sm text-gray-500 mb-5">{t("account.dashboard.recent.emptyDesc")}</p>
+              <Link href="/program">
+                <Button>{t("account.dashboard.recent.startDonating")}</Button>
+              </Link>
             </div>
-            <h3 className="text-base font-medium text-gray-900 mb-2">{t("account.dashboard.recent.emptyTitle")}</h3>
-            <p className="text-sm text-gray-500 mb-6">{t("account.dashboard.recent.emptyDesc")}</p>
-            <Link href="/">
-              <Button>{t("account.dashboard.recent.startDonating")}</Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {transactions.map((transaction) => {
-              const status = statusConfig[transaction.paymentStatus as keyof typeof statusConfig] || statusConfig.pending;
-              return (
-                <Link
-                  key={transaction.id}
-                  href={`/invoice/${transaction.id}`}
-                  className="block p-4 sm:p-6 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
-                          {transaction.transactionNumber}
+          ) : (
+            <ul className="m-0 list-none space-y-3 p-0">
+              {transactions.map((transaction) => {
+                const status = statusConfig[transaction.paymentStatus as keyof typeof statusConfig] || statusConfig.pending;
+                return (
+                  <li key={transaction.id}>
+                    <Link
+                      href={`/invoice/${transaction.id}`}
+                      className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-gray-900">{transaction.productName}</p>
+                        <p className="mt-0.5 text-xs text-gray-500">
+                          {transaction.transactionNumber} ·{" "}
+                          {new Date(transaction.createdAt).toLocaleDateString(localeTag, { day: "numeric", month: "short", year: "numeric" })}
                         </p>
-                        <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border", status.color)}>
+                        <span className={cn("mt-2 inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium", status.color)}>
                           {status.label}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 mb-1 truncate">
-                        {transaction.productName}
-                      </p>
-                      <p className="text-lg font-bold text-gray-900 mb-1">
-                        {formatRupiahFull(transaction.totalAmount)}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(transaction.createdAt).toLocaleDateString(localeTag, {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+                      <div className="flex flex-shrink-0 items-center gap-2">
+                        <p className="text-sm font-bold text-gray-900">{formatRupiahFull(transaction.totalAmount)}</p>
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       </div>
     </div>
   );

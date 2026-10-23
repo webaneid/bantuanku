@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useSettings } from "@/hooks/useSettings";
 import { cn } from "@/lib/cn";
 import { useI18n } from "@/lib/i18n/provider";
+import { AccountBottomNav } from "@/components/account/AccountBottomNav";
 
 function useGravatarUrl(email: string | undefined, size = 80) {
   const [hash, setHash] = useState<string | null>(null);
@@ -123,26 +124,6 @@ export default function DashboardLayout({
   const { user, logout, isHydrated } = useAuth();
   const { settings } = useSettings();
   const { t } = useI18n();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Close mobile menu on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMobileMenuOpen(false);
-      }
-    }
-    if (mobileMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [mobileMenuOpen]);
-
-  // Close mobile menu on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
 
   // Use logo from settings or fallback
   const logo = settings.organization_logo || '/logo.svg';
@@ -177,78 +158,28 @@ export default function DashboardLayout({
     );
   }
 
+  const logoutLabel = t("account.layout.nav.logout");
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Navigation */}
-      <nav className="bg-white border-b border-gray-200 fixed w-full z-30 top-0">
+      {/* Bar atas: tamu di semua ukuran layar; user login hanya di desktop (mobile memakai hero + bar bawah) */}
+      <nav className={cn("bg-white border-b border-gray-200 fixed w-full z-30 top-0", user && "hidden lg:block")}>
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex">
-              <Link href="/" className="flex items-center">
-                <img src={logo} alt={siteName} className="h-8 w-auto" />
-              </Link>
-            </div>
+            <Link href="/" className="flex items-center">
+              <img src={logo} alt={siteName} className="h-8 w-auto" />
+            </Link>
             <div className="flex items-center gap-4">
-              <Link
-                href="/"
-                className="text-sm text-gray-600 hover:text-gray-900 hidden sm:block"
-              >
+              <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 hidden sm:block">
                 {t("account.layout.backToHome")}
               </Link>
               {user ? (
-                <div className="relative" ref={menuRef}>
-                  <button
-                    type="button"
-                    onClick={() => setMobileMenuOpen((v) => !v)}
-                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 lg:cursor-default"
-                  >
-                    <UserAvatar name={user.name} email={user.email} size={40} />
-                  </button>
-
-                  {/* Mobile dropdown menu */}
-                  {mobileMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-gray-200 shadow-lg py-2 z-50 lg:hidden">
-                      <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-                        <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                      </div>
-                      <div className="py-1">
-                        {navigation.map((item) => {
-                          const isActive = pathname === item.href;
-                          const label = t(`account.layout.nav.${item.key}`);
-
-                          if (item.isLogout) {
-                            return (
-                              <button
-                                key={item.key}
-                                onClick={() => { setMobileMenuOpen(false); logout(); }}
-                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger-700 hover:bg-danger-50"
-                              >
-                                {item.icon}
-                                {label}
-                              </button>
-                            );
-                          }
-
-                          return (
-                            <Link
-                              key={item.key}
-                              href={item.href}
-                              className={cn(
-                                "flex items-center gap-3 px-4 py-2.5 text-sm",
-                                isActive
-                                  ? "text-primary-700 bg-primary-50"
-                                  : "text-gray-700 hover:bg-gray-50"
-                              )}
-                            >
-                              {item.icon}
-                              {label}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                <div className="flex items-center gap-3">
+                  <div className="text-right hidden xl:block">
+                    <p className="text-sm font-medium text-gray-900 leading-tight">{user.name}</p>
+                    <p className="text-xs text-gray-500 leading-tight">{user.email}</p>
+                  </div>
+                  <UserAvatar name={user.name} email={user.email} size={40} />
                 </div>
               ) : (
                 <Link
@@ -263,55 +194,67 @@ export default function DashboardLayout({
         </div>
       </nav>
 
-      <div className="flex pt-16">
-        {/* Sidebar - Only show for logged in users */}
+      <div className={cn(user ? "lg:pt-16" : "pt-16")}>
+        {/* Sidebar desktop: kartu pengguna + menu */}
         {user && (
           <aside className="fixed inset-y-0 left-0 pt-16 w-64 bg-white border-r border-gray-200 hidden lg:block">
-            <nav className="flex-1 px-4 py-6 space-y-1">
-              {navigation.map((item) => {
-                const isActive = pathname === item.href;
-                const label = t(`account.layout.nav.${item.key}`);
+            <div className="flex h-full flex-col px-4 py-6">
+              <div className="mb-4 flex items-center gap-3 rounded-2xl bg-primary-50 p-3">
+                <UserAvatar name={user.name} email={user.email} size={44} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-gray-900">{user.name}</p>
+                  <p className="truncate text-xs text-gray-500">{user.email}</p>
+                </div>
+              </div>
 
-                if (item.isLogout) {
+              <nav className="flex-1 space-y-1">
+                {navigation.map((item) => {
+                  const isActive = item.href === "/account" ? pathname === item.href : pathname?.startsWith(item.href);
+                  const label = t(`account.layout.nav.${item.key}`);
+
+                  if (item.isLogout) {
+                    return (
+                      <button
+                        key={item.key}
+                        onClick={logout}
+                        className="mt-4 w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors text-danger-700 hover:bg-danger-50"
+                      >
+                        {item.icon}
+                        {logoutLabel}
+                      </button>
+                    );
+                  }
+
                   return (
-                    <button
+                    <Link
                       key={item.key}
-                      onClick={logout}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors text-danger-700 hover:bg-danger-50"
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors",
+                        isActive
+                          ? "bg-primary-600 text-white shadow-sm"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                      )}
                     >
                       {item.icon}
                       {label}
-                    </button>
+                    </Link>
                   );
-                }
-
-                return (
-                  <Link
-                    key={item.key}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors",
-                      isActive
-                        ? "bg-primary-50 text-primary-700"
-                        : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                    )}
-                  >
-                    {item.icon}
-                    {label}
-                  </Link>
-                );
-              })}
-            </nav>
+                })}
+              </nav>
+            </div>
           </aside>
         )}
 
-        {/* Main Content */}
+        {/* Main Content: mobile penuh sampai tepi (hero edge-to-edge) + ruang untuk bar bawah; desktop berpadding */}
         <main className={cn("flex-1", user && "lg:ml-64")}>
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
+          <div className={cn(user ? "pb-28 lg:pb-8 lg:px-8 lg:py-8" : "px-4 sm:px-6 lg:px-8 py-8")}>
             {children}
           </div>
         </main>
       </div>
+
+      {user && <AccountBottomNav />}
     </div>
   );
 }

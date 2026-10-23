@@ -1351,10 +1351,21 @@ export const enMessages: Messages = {
         profile: "Profile",
         logout: "Logout",
       },
+      tab: {
+        home: "Home",
+        history: "History",
+        qurban: "Qurban",
+        profile: "Profile",
+      },
     },
     dashboard: {
       greeting: "Assalamu'alaikum, {name}!",
       subtitle: "Thank you for your trust and kindness in helping others",
+      welcomeBack: "Welcome back",
+      heroLabel: "Your Total Contribution",
+      heroDonate: "Donate Now",
+      pendingTile: "Awaiting payment",
+      successTile: "Successful donations",
       stats: {
         totalDonations: "Total Donations",
         successTransactions: "Successful transactions",
@@ -1364,6 +1375,7 @@ export const enMessages: Messages = {
         waitingPayment: "Waiting for payment",
       },
       quickActions: {
+        influencer: "Influencer",
         history: "History",
         qurbanSavings: "Qurban Savings",
         qurban: "Qurban",

@@ -1364,10 +1364,21 @@ export const idMessages: Messages = {
         profile: "Profil",
         logout: "Keluar",
       },
+      tab: {
+        home: "Beranda",
+        history: "Riwayat",
+        qurban: "Qurban",
+        profile: "Profil",
+      },
     },
     dashboard: {
       greeting: "Assalamu'alaikum, {name}!",
       subtitle: "Terima kasih atas kepercayaan dan kebaikan hati Anda dalam membantu sesama",
+      welcomeBack: "Selamat datang kembali",
+      heroLabel: "Total Kontribusi Anda",
+      heroDonate: "Donasi Sekarang",
+      pendingTile: "Menunggu bayar",
+      successTile: "Donasi berhasil",
       stats: {
         totalDonations: "Total Donasi",
         successTransactions: "Transaksi berhasil",
@@ -1377,6 +1388,7 @@ export const idMessages: Messages = {
         waitingPayment: "Menunggu pembayaran",
       },
       quickActions: {
+        influencer: "Influencer",
         history: "Riwayat",
         qurbanSavings: "Tabungan Qurban",
         qurban: "Qurban",
