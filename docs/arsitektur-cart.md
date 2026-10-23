@@ -301,6 +301,13 @@ Behavior awal:
 - jika donatur existing tanpa user account, tampil popup ajakan register
 - guest melihat tombol "Lanjutkan dengan Google" (`GoogleSignInButton`, `returnTo="/checkout"`, hanya tampil bila `GET /auth/methods` melaporkan Google aktif); setelah login kembali ke checkout dan form terisi dari akun. Keranjang aman karena tersimpan di localStorage. Akun Google baru tanpa nomor WA diarahkan dulu ke `/account/profile` (keranjang tetap ada)
 
+### Tampilan Mobile Checkout (2026-10-23)
+
+- Grid wajib `grid grid-cols-1 lg:grid-cols-3`: tanpa `grid-cols-1`, kolom implisit mengikuti min-content dan seluruh halaman overflow horizontal di layar sempit (terukur 394px di layar 380px).
+- Kartu form dan kartu ringkasan di mobile (< md) menembus padding container (`-mx-4 sm:-mx-6 md:mx-0`), tanpa border/radius, teks berjarak 15px; `md` ke atas tetap kartu bergaya lama.
+- Bar bawah mobile (`fixed bottom-0`, portal): tombol utama "Pilih Metode Pembayaran" di atas, di bawahnya tautan teks "Kembali ke Keranjang" tanpa border. Spacer `h-28 lg:hidden` setelah `<Footer />` (bukan `pb-*` di `<main>`), lihat `arsitektur-mobile-single-shell.md`.
+- Desktop (tombol di akhir form) tidak berubah.
+
 ## Checkout Validation
 
 Validasi sebelum create transaction:

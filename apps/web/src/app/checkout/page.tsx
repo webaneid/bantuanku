@@ -598,10 +598,10 @@ export default function CheckoutPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 py-8 pb-24 lg:pb-8">
-        <div className="container mx-auto px-4">
+      <main className="min-h-screen bg-gray-50 py-4 md:py-8">
+        <div className="container mx-auto px-[15px] md:px-4">
           {/* Page Title */}
-          <div className="mb-8">
+          <div className="mb-4 md:mb-8">
             <h1 className="section-title text-gray-900 mb-2">
               {t('checkout.main.title')}
             </h1>
@@ -610,10 +610,10 @@ export default function CheckoutPage() {
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
             {/* Checkout Form */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100">
+              <div className="bg-white shadow-sm -mx-4 sm:-mx-6 md:mx-0 rounded-none md:rounded-lg px-[15px] py-5 md:p-6 md:border md:border-gray-100">
                 {/* Login Status */}
                 <div className="mb-6 pb-6 border-b border-gray-200">
                   {user ? (
@@ -859,7 +859,7 @@ export default function CheckoutPage() {
 
             {/* Summary Sidebar */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 sticky top-24">
+              <div className="bg-white shadow-sm -mx-4 sm:-mx-6 md:mx-0 rounded-none md:rounded-lg px-[15px] py-5 md:p-6 md:border md:border-gray-100 lg:sticky lg:top-24">
                 <h2 className="section-title text-gray-900 mb-6">
                   {t('checkout.main.summaryTitle')}
                 </h2>
@@ -936,32 +936,28 @@ export default function CheckoutPage() {
         </div>
       </main>
 
-      {/* Mobile Sticky Bottom Bar */}
+      {/* Mobile Sticky Bottom Bar: tombol utama, di bawahnya tautan teks (tanpa border) */}
       {isMounted && createPortal(
-        <div className="fixed bottom-0 left-0 right-0 z-[1030] bg-white rounded-t-[20px] shadow-[0_-4px_12px_rgba(0,0,0,0.1)] p-4 lg:hidden">
-          <div className="flex flex-col gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={() => router.push('/keranjang-bantuan')}
-              disabled={isSubmitting}
-              className="w-full"
-            >
-              {t('checkout.main.actions.backToCart')}
-            </Button>
-            <Button
-              type="button"
-              size="lg"
-              onClick={processCheckout}
-              disabled={isSubmitting}
-              className="w-full"
-            >
-              {isSubmitting
-                ? t('checkout.common.processing')
-                : t('checkout.main.actions.choosePaymentMethod')}
-            </Button>
-          </div>
+        <div className="fixed bottom-0 left-0 right-0 z-[1030] bg-white rounded-t-[20px] shadow-[0_-4px_12px_rgba(0,0,0,0.1)] px-[15px] pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
+          <Button
+            type="button"
+            size="lg"
+            onClick={processCheckout}
+            disabled={isSubmitting}
+            className="w-full"
+          >
+            {isSubmitting
+              ? t('checkout.common.processing')
+              : t('checkout.main.actions.choosePaymentMethod')}
+          </Button>
+          <button
+            type="button"
+            onClick={() => router.push('/keranjang-bantuan')}
+            disabled={isSubmitting}
+            className="block w-full py-3 text-center text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50 transition-colors"
+          >
+            {t('checkout.main.actions.backToCart')}
+          </button>
         </div>,
         document.body
       )}
@@ -1009,6 +1005,9 @@ export default function CheckoutPage() {
       )}
 
       <Footer />
+
+      {/* Spacer bar bawah mobile — elemen PALING TERAKHIR (docs/arsitektur-mobile-single-shell.md) */}
+      <div className="h-28 lg:hidden" aria-hidden="true" />
     </>
   );
 }

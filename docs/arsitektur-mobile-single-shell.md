@@ -49,4 +49,4 @@ Desktop (`lg` ke atas) **tidak berubah**.
 
 ## Gap / catatan
 
-- Halaman alur bayar (checkout, keranjang, invoice) sengaja tidak diubah; bar bawahnya masih gaya lama.
+- Halaman alur bayar (keranjang, invoice) sengaja tidak diubah; bar bawahnya masih gaya lama. `/checkout` sudah memakai pola bar baru (tombol utama + tautan teks, spacer setelah Footer), tanpa top bar.
