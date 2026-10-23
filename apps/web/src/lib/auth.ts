@@ -36,6 +36,8 @@ interface AuthState {
   setSession: (user: User, accessToken: string) => Promise<void>;
   logout: () => void;
   setUser: (user: User | null) => void;
+  /** Gabungkan perubahan profil (nama, HP, WhatsApp) ke user di store & localStorage tanpa login ulang. */
+  mergeUser: (patch: Partial<User>) => void;
   setHydrated: () => void;
 }
 
@@ -97,6 +99,19 @@ export const useAuth = create<AuthState>()(
       },
 
       setUser: (user) => set({ user }),
+      mergeUser: (patch) =>
+        set((state) => {
+          if (!state.user) return state;
+          const changed = (Object.keys(patch) as Array<keyof User>).some((key) => state.user![key] !== patch[key]);
+          if (!changed) return state;
+          const user = { ...state.user, ...patch };
+          try {
+            localStorage.setItem("user", JSON.stringify(user));
+          } catch {
+            // localStorage tidak tersedia: state tetap diperbarui
+          }
+          return { user };
+        }),
       setHydrated: () => set({ isHydrated: true }),
     }),
     {

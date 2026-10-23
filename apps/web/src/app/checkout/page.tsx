@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -68,7 +68,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { items, getCartTotal, clearCart, isLoaded: isCartLoaded } = useCart();
-  const { user, isHydrated } = useAuth();
+  const { user, token, isHydrated, mergeUser } = useAuth();
   const { t, locale } = useI18n();
   const activeLocale = locale === 'id' ? 'id-ID' : 'en-US';
 
@@ -129,6 +129,28 @@ export default function CheckoutPage() {
       router.push('/keranjang-bantuan');
     }
   }, [isCartLoaded, items, router, isSubmitting, checkoutSuccess]);
+
+  // Segarkan profil user login sekali saat checkout dibuka: store login menyimpan salinan nama/HP/WhatsApp
+  // dari SAAT LOGIN, jadi nomor yang dilengkapi di profil sesudahnya tidak muncul. Memakai fetch (bukan axios `api`)
+  // karena interceptor `api` melempar ke /login saat 401; di sini kegagalan cukup diabaikan.
+  const profileRefreshed = useRef(false);
+  useEffect(() => {
+    if (!isHydrated || !user || !token || profileRefreshed.current) return;
+    profileRefreshed.current = true;
+
+    fetch(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const profile = json?.data;
+        if (!profile) return;
+        mergeUser({
+          ...(profile.name ? { name: profile.name } : {}),
+          phone: profile.phone || null,
+          whatsappNumber: profile.whatsappNumber || null,
+        });
+      })
+      .catch(() => {});
+  }, [isHydrated, user, token]);
 
   // Auto-fill from logged-in user
   useEffect(() => {

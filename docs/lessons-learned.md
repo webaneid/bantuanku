@@ -515,3 +515,8 @@
 **Masalah:** `CartProvider` memulai `items = []` lalu mengisinya dari localStorage di `useEffect`. Efek redirect di `/checkout` (`items.length === 0` → `/keranjang-bantuan`) berjalan di render pertama, sebelum keranjang terbaca, sehingga setiap muat ulang penuh (refresh, atau dev yang melakukan full reload saat kompilasi rute) memantul ke keranjang. Navigasi client-side biasa tidak terkena, jadi sulit direproduksi.
 **Pelajaran:** state yang dimuat asinkron dari storage harus mengekspos penanda `isLoaded`; guard "kosong → redirect" wajib menunggunya. Uji redirect dengan muat ulang penuh halaman tujuan, bukan hanya klik navigasi.
 
+### [2026-10-24] Checkout user login tidak mengisi HP/WhatsApp: salinan profil di store tidak pernah disegarkan
+**Konteks:** user melengkapi nomor HP dan WhatsApp di profil, tetapi kolom itu kosong di checkout saat login.
+**Masalah:** checkout mengisi form dari `useAuth().user` (store zustand persisted, diisi dari respons login), sedangkan `PATCH /auth/me` hanya menulis ke database; `setUser` tidak pernah dipanggil di mana pun. Jadi nomor yang dilengkapi sesudah login tidak pernah sampai ke store sampai login ulang. Tidak terlihat sebagai error, hanya kolom kosong.
+**Pelajaran:** data profil yang dipakai halaman lain harus diperbarui saat profil disimpan (`mergeUser`) dan disegarkan dari API di halaman yang membutuhkannya. Jangan menyegarkan lewat axios `api` di tempat umum karena interceptor 401-nya menghapus sesi; pakai `fetch` yang gagal diam-diam. Uji dengan menyuntikkan sesi basi (HP null) ke localStorage lalu membuka checkout.
+

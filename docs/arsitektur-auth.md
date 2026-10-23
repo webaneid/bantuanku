@@ -223,6 +223,8 @@ const useAuth = create<AuthState>()(persist(...))
 
 Token selalu disimpan di `localStorage["token"]` dan di-attach ke setiap request via axios interceptor di `src/lib/api.ts`.
 
+**Salinan profil di store web basi (2026-10-24):** `user` di store (nama, `phone`, `whatsappNumber`) adalah salinan dari SAAT LOGIN dan tidak pernah disegarkan, sedangkan `PATCH /auth/me` menyimpan perubahan ke tabel `users`/`donatur`. Akibatnya nomor yang dilengkapi di profil setelah login tidak muncul di checkout (yang mengisi form dari `user`). Perbaikan: `mergeUser(patch)` di store (juga menulis `localStorage["user"]`), dipanggil (1) setelah simpan profil di `/account/profile`, dan (2) sekali saat `/checkout` dibuka lewat `GET /auth/me` dengan `fetch` (bukan axios `api`, karena interceptor `api` menghapus sesi dan melempar ke `/login` pada 401; kegagalan penyegaran cukup diabaikan). Sengaja **tidak** menyegarkan di setiap halaman: token akses hanya 15 menit, sehingga 401 akan menendang user dari halaman publik. Halaman lain yang membaca `user.phone`/`user.whatsappNumber` dari store sebaiknya memakai pola yang sama.
+
 ---
 
 ## Rate Limiting

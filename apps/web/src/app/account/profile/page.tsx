@@ -39,7 +39,7 @@ interface JobCategory {
 }
 
 export default function ProfilePage() {
-  const { user, isHydrated } = useAuth();
+  const { user, isHydrated, mergeUser } = useAuth();
   const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -294,6 +294,12 @@ export default function ProfilePage() {
 
     try {
       await api.patch("/auth/me", profileData);
+      // Store login berisi salinan nama/HP/WhatsApp dari saat login: segarkan agar checkout memakai data terbaru
+      mergeUser({
+        ...(profileData.name ? { name: profileData.name } : {}),
+        phone: profileData.phone || null,
+        whatsappNumber: profileData.whatsappNumber || null,
+      });
       toast.success(t("account.profile.toasts.profileUpdated"));
     } catch (error: any) {
       toast.error(error.response?.data?.message || t("account.profile.toasts.profileUpdateFailed"));
