@@ -479,3 +479,9 @@
 **Konteks:** Saat redesign hero, pemilik produk bertanya dari mana section "Jelajahi Halaman Penting" datang karena tidak ada di desain.
 **Masalah:** Section itu hardcode di `apps/web/src/app/page.tsx` (ditambahkan 2026-04-01 sebagai tautan internal untuk crawler), tanpa pengaturan di admin dan tanpa i18n, tetapi tampil sebagai elemen desain di beranda. Daftar tautannya juga dipakai Footer, sehingga menghapus tampilannya tidak menghapus tautan SEO.
 **Pelajaran:** Elemen yang ditambahkan hanya demi SEO jangan menjadi section tampil di beranda; cukup tautan di Footer/menu. Sebelum menghapus elemen hardcode, cari semua pemakai datanya (di sini `crawlPriorityLinks` → Footer) dan buktikan lewat HTML hasil render bahwa tautan penting tetap ada.
+
+### [2026-10-23] Bar bawah mobile: spacer harus elemen terakhir halaman, collapsed sheet harus setinggi bar
+**Konteks:** halaman single (program, qurban) diubah ke pola mobile shell (top bar + bottom sheet naik-turun) meniru jalajogja.
+**Masalah:** (1) Collapsed sheet `max-h-24` lebih tinggi dari bar sebenarnya (64px), sehingga awal isi sheet "mengintip" di bawah bar. (2) Footer dirender setelah `<main>`, jadi spacer atau `pb-*` di dalam main menaruh jarak kosong di tengah dan footer tetap tertutup bar. (3) Beberapa halaman zakat dirender oleh komponen kalkulator yang membawa `<Header />` sendiri, sehingga mengubah `zakat/[slug]/page.tsx` saja tidak cukup.
+**Pelajaran:** tinggi collapsed = tinggi bar (h-16 + safe-area), spacer `h-20 lg:hidden` diletakkan SETELAH `<Footer />`; setelah mengubah header satu halaman, cek juga komponen yang di-render halaman itu. Sheet wajib collapse (`collapseSignal`) sebelum modal lain dibuka. Qurban detail tidak bisa diuji visual di DB lokal (tabel `qurban_discounts` belum ada) — uji di staging/produksi.
+

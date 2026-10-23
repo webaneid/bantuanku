@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Header, Footer, ZakatCard, Breadcrumb } from '@/components/organisms';
+import { Header, Footer, ZakatCard, Breadcrumb, MobileTopBar } from '@/components/organisms';
 import { useAuth } from '@/lib/auth';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchZakatConfig, fetchZakatPeriods, fetchZakatTypes, formatCurrency, getImageUrl, type ZakatPeriod, type ZakatType } from '@/services/zakat';
@@ -140,7 +140,8 @@ export default function ZakatPeternakanPage() {
 
   return (
     <>
-      <Header />
+      <Header hideOnMobile />
+      <MobileTopBar backHref="/zakat" />
       <ZakatPageHeader
         displayName={displayName}
         displayDescription={displayDescription}

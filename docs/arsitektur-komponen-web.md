@@ -150,6 +150,8 @@ Folder: `apps/web/src/components/organisms`.
 | `ProgramCard` | Card campaign donasi dengan image, badge, progress, stats |
 | `FeaturedCarousel` | Carousel campaign featured/urgent |
 | `CategoryGrid` | Grid kategori layanan/program |
+| `MobileTopBar` | Top bar mobile halaman single (back + titik tiga/menu); lihat `arsitektur-mobile-single-shell.md` |
+| `MobileMenuPanel` | Isi menu mobile, satu sumber untuk `Header` dan `MobileTopBar` |
 | `QurbanCard` | Card paket qurban, memakai CSS lokal `QurbanCard.css` |
 | `QurbanCarousel` | Carousel paket qurban, memakai CSS lokal `QurbanCarousel.css` |
 | `QurbanSection` | Section qurban di homepage |
@@ -343,3 +345,7 @@ Isi route tersebut berfungsi sebagai demo komponen, bukan dokumentasi resmi. **S
 - Domain checkout, payment, qurban, zakat, laporan, dan account masih banyak memakai komponen lokal.
 - `Header` dan `Footer` bersifat settings-driven dan menjadi shell publik umum.
 - Dokumen ini tidak menghapus file lama karena tidak ditemukan dokumen lama khusus komponen web yang perlu diserap.
+
+### Mobile single shell (2026-10-23)
+
+`MobileTopBar`, `MobileMenuPanel` (organisms), `MobileActionSheet` (molecule), hook `useHeaderMenuItems`, prop `Header.hideOnMobile`. Detail, cakupan halaman, z-index, dan aturan spacer: `docs/arsitektur-mobile-single-shell.md`.

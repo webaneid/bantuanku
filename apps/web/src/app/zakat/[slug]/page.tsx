@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { Header, Footer, Breadcrumb } from '@/components/organisms';
+import { Header, Footer, Breadcrumb, MobileTopBar } from '@/components/organisms';
 import { fetchZakatTypes, type ZakatType } from '@/services/zakat';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
@@ -251,7 +251,8 @@ export default async function ZakatDetailPage({ params }: Props) {
         contentIds={[String(zakatType.id)]}
         contentType="product"
       />
-      <Header />
+      <Header hideOnMobile />
+      <MobileTopBar overlay={!!zakatType.imageUrl} backHref="/zakat" />
       <div className="hidden lg:block">
         <Breadcrumb items={[{ label: t('zakatDetail.breadcrumb.home'), href: '/' }, { label: t('zakatDetail.breadcrumb.zakat'), href: '/zakat' }, { label: zakatType.name }]} />
       </div>
@@ -259,14 +260,6 @@ export default async function ZakatDetailPage({ params }: Props) {
       {/* Mobile: edge-to-edge image with back button */}
       {zakatType.imageUrl && (
         <div className="lg:hidden relative">
-          <Link
-            href="/zakat"
-            className="absolute top-4 left-4 z-10 w-10 h-10 bg-black/40 rounded-full flex items-center justify-center text-white"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
           <img
             src={getImageUrlByVariant(zakatType.imageUrl, ['large'])}
             alt={zakatType.name}

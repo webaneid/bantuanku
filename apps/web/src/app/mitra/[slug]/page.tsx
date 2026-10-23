@@ -2,7 +2,7 @@ import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Header, Footer, Breadcrumb, ProgramCard } from '@/components/organisms';
+import { Header, Footer, Breadcrumb, ProgramCard, MobileTopBar } from '@/components/organisms';
 import { getImageUrl } from '@/lib/image';
 import { calculateDaysLeft } from '@/services/campaigns';
 import { fetchPublicSettings } from '@/services/settings';
@@ -133,7 +133,8 @@ export default async function MitraProfilePage({ params, searchParams }: MitraPa
   return (
     <div className="min-h-screen flex flex-col">
       {mitraData.fundraiserCode && <MitraReferralCapture code={mitraData.fundraiserCode} />}
-      <Header />
+      <Header hideOnMobile />
+      <MobileTopBar backHref="/" />
 
       <main className="flex-1 bg-gray-50">
         <Breadcrumb items={[

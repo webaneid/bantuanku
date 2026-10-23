@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { Header, Footer, Breadcrumb } from '@/components/organisms';
+import { Header, Footer, Breadcrumb, MobileTopBar } from '@/components/organisms';
 import { QurbanCard } from '@/components/organisms/QurbanCard/QurbanCard';
 import { fetchPackageDetail, fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrl, getQurbanImageUrlByVariant } from '@/services/qurban';
 import { fetchPublicSettings } from '@/services/settings';
@@ -311,7 +311,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
       />
-      <Header />
+      <Header hideOnMobile />
 
       <main className="flex-1 bg-gray-50">
         {/* Breadcrumb — desktop only */}
@@ -325,14 +325,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
 
         {/* Mobile: edge-to-edge image with back button */}
         <div className="lg:hidden relative">
-          <a
-            href="/qurban"
-            className="absolute top-4 left-4 z-10 w-10 h-10 bg-black/40 rounded-full flex items-center justify-center text-white"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </a>
+          <MobileTopBar overlay backHref="/qurban" />
           <div className="bg-white overflow-hidden">
             {qurbanPackage.imageUrl ? (
               <img
@@ -392,11 +385,8 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
           </div>
         </div>
 
-        {/* Mobile: Order Section portal target */}
-        <div id="mobile-qurban-order" className="lg:hidden"></div>
-
         {/* Qurban Content */}
-        <div className="container py-4 lg:py-8 pb-24 lg:pb-8">
+        <div className="container py-4 lg:py-8 lg:pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2 space-y-6">
@@ -530,6 +520,9 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
         address={fullAddress || settings.organization_detail_address}
         programLinks={footerProgramLinks}
       />
+
+      {/* Spacer bar bawah mobile — elemen PALING TERAKHIR di halaman (docs/arsitektur-mobile-single-shell.md) */}
+      <div className="h-20 lg:hidden" aria-hidden="true" />
     </div>
   );
 }

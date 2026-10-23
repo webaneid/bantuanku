@@ -153,7 +153,7 @@ User buka /program/[slug]
 | Route | Fungsi |
 |-------|--------|
 | `/program` | List semua kampanye aktif |
-| `/program/:slug` | Detail kampanye |
+| `/program/:slug` | Detail kampanye (mobile: top bar + bar donasi naik-turun, lihat `arsitektur-mobile-single-shell.md`) |
 | `/program/pilar/:pilar` | Filter by pilar (Kemanusiaan, Wakaf, dll.) |
 | `/program/kategori/:slug` | Filter by kategori |
 | `/keranjang-bantuan` | Keranjang donasi |

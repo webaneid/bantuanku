@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { Header, Footer, ProgramCard, Breadcrumb } from '@/components/organisms';
+import { Header, Footer, ProgramCard, Breadcrumb, MobileTopBar } from '@/components/organisms';
 import { fetchCampaignBySlug, fetchCampaigns, calculateDaysLeft, getImageUrl, getImageUrlByVariant } from '@/services/campaigns';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchCompleteAddress, formatCompleteAddress } from '@/services/address';
@@ -309,7 +309,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
     <div className="min-h-screen flex flex-col">
       <JsonLdScript data={articleSchema} />
       <JsonLdScript data={breadcrumbSchema} />
-      <Header />
+      <Header hideOnMobile />
 
       <main className="flex-1 bg-gray-50">
         {/* Breadcrumb — desktop only */}
@@ -323,14 +323,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
 
         {/* Mobile: edge-to-edge gallery with back button */}
         <div className="lg:hidden relative">
-          <a
-            href="/program"
-            className="absolute top-4 left-4 z-10 w-10 h-10 bg-black/40 rounded-full flex items-center justify-center text-white"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </a>
+          <MobileTopBar overlay backHref="/program" />
           <CampaignGallery
             featuredImage={campaign.imageUrl}
             galleryImages={campaignGalleryImages}
@@ -373,11 +366,8 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
           </div>
         </div>
 
-        {/* Mobile: Amount Selector portal target */}
-        <div id="mobile-amount-selector" className="lg:hidden"></div>
-
         {/* Campaign Content */}
-        <div className="container py-4 lg:py-8 pb-24 lg:pb-8">
+        <div className="container py-4 lg:py-8 lg:pb-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2 space-y-6">
@@ -520,6 +510,9 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
         address={fullAddress || settings.organization_detail_address}
         programLinks={footerProgramLinks}
       />
+
+      {/* Spacer bar bawah mobile — elemen PALING TERAKHIR di halaman (docs/arsitektur-mobile-single-shell.md) */}
+      <div className="h-20 lg:hidden" aria-hidden="true" />
     </div>
   );
 }

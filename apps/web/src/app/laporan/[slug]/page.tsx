@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { Header, Footer, Breadcrumb } from '@/components/organisms';
+import { Header, Footer, Breadcrumb, MobileTopBar } from '@/components/organisms';
 import { getImageUrl } from '@/lib/image';
 import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
 import { fetchCampaigns } from '@/services/campaigns';
@@ -189,7 +189,8 @@ export default async function LaporanDetailPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <div className="min-h-screen flex flex-col">
-        <Header />
+        <Header hideOnMobile />
+      <MobileTopBar backHref="/laporan" />
         <main className="flex-1 bg-gray-50">
           <Breadcrumb
             items={[

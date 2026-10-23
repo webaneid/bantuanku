@@ -9,6 +9,7 @@ import { getImageUrl } from '@/lib/image';
 import { useI18n } from '@/lib/i18n/provider';
 import * as fbPixel from '@/lib/fbPixel';
 import feedbackToast from '@/lib/feedback-toast';
+import { MobileActionSheet } from '@/components/molecules';
 import DonationAmountSelector from './DonationAmountSelector';
 import DonationConfirmModal from './DonationConfirmModal';
 
@@ -75,6 +76,13 @@ export default function CampaignSidebar({
       }
     }
   }, [searchParams]);
+
+  const donateLabel =
+    campaign.pillar?.toLowerCase() === 'fidyah'
+      ? t('campaignDetail.sidebar.actions.payFidyah')
+      : programType === 'wakaf'
+        ? t('campaignDetail.sidebar.actions.wakafNow')
+        : t('campaignDetail.sidebar.actions.donateNow');
 
   const handleDonateClick = () => {
     if (selectedAmount <= 0) {
@@ -344,20 +352,44 @@ export default function CampaignSidebar({
         fidyahData={fidyahData}
       />
 
-      {/* Mobile Sticky Bottom Bar — portal ke document.body */}
-      {isMounted && createPortal(
-        <div className="fixed bottom-0 left-0 right-0 z-[1030] bg-white rounded-t-[20px] shadow-[0_-4px_12px_rgba(0,0,0,0.1)] p-4 lg:hidden">
-          <div className="flex justify-between font-bold mb-3">
+      {/* Mobile: bar bawah naik-turun — nominal, total, tombol, share, favorit di satu tempat */}
+      <MobileActionSheet
+        toggleLabel={t('campaignDetail.sidebar.mobile.toggle')}
+        collapseSignal={isModalOpen || isShareOpen}
+        collapsedBar={() => (
+          <>
+            <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500">{donateLabel}</p>
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {selectedAmount > 0 ? formatRupiahFull(selectedAmount) : t('campaignDetail.sidebar.mobile.chooseAmount')}
+              </p>
+            </div>
+            <span className="shrink-0 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white">
+              {t('campaignDetail.sidebar.mobile.cta')}
+            </span>
+          </>
+        )}
+      >
+        <div className="space-y-4 pt-2">
+          <DonationAmountSelector
+            programType={programType}
+            pillar={campaign.pillar}
+            onAmountSelect={setSelectedAmount}
+            selectedAmount={selectedAmount}
+            onFidyahDataChange={setFidyahData}
+          />
+          <div className="flex justify-between font-bold">
             <span className="text-gray-900">{t('campaignDetail.sidebar.total')}</span>
             <span className="text-primary-600">{formatRupiahFull(selectedAmount)}</span>
           </div>
           <div className="flex items-center gap-2">
             <Button onClick={handleDonateClick} size="lg" className="flex-1" disabled={selectedAmount <= 0}>
-              {campaign.pillar?.toLowerCase() === 'fidyah'
-                ? t('campaignDetail.sidebar.actions.payFidyah')
-                : programType === 'wakaf'
-                  ? t('campaignDetail.sidebar.actions.wakafNow')
-                  : t('campaignDetail.sidebar.actions.donateNow')}
+              {donateLabel}
             </Button>
             <button
               onClick={() => setIsShareOpen(true)}
@@ -378,23 +410,8 @@ export default function CampaignSidebar({
               </svg>
             </button>
           </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Mobile Amount Selector — portal to mobile target */}
-      {isMounted && document.getElementById('mobile-amount-selector') && createPortal(
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <DonationAmountSelector
-            programType={programType}
-            pillar={campaign.pillar}
-            onAmountSelect={setSelectedAmount}
-            selectedAmount={selectedAmount}
-            onFidyahDataChange={setFidyahData}
-          />
-        </div>,
-        document.getElementById('mobile-amount-selector')!
-      )}
+        </div>
+      </MobileActionSheet>
 
       {/* Share Modal */}
       {isShareOpen && isMounted && createPortal(

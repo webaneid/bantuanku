@@ -377,3 +377,24 @@
     transform: translateX(0);
   }
 }
+
+// Halaman single di mobile: header diganti MobileTopBar (docs/arsitektur-mobile-single-shell.md)
+.header--hide-mobile {
+  @media (max-width: $breakpoint-lg - 1) {
+    display: none;
+  }
+}
+
+// Panel menu yang dibuka dari MobileTopBar (menutupi seluruh tinggi layar, di atas bar bawah)
+.header__overlay--top {
+  z-index: 1050;
+}
+
+.header__mobile-menu--full {
+  top: 0;
+  z-index: 1051;
+
+  @include mobile {
+    top: 0;
+  }
+}

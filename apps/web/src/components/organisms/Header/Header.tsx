@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/cn';
@@ -9,30 +9,20 @@ import { SearchBox } from '@/components/molecules';
 import { useSettings } from '@/hooks/useSettings';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/lib/auth';
-import type { MenuItem } from '@/services/settings';
+import { useHeaderMenuItems } from '@/hooks/useHeaderMenu';
+import { MobileMenuPanel } from '@/components/organisms/MobileMenuPanel';
 import { useI18n } from '@/lib/i18n/provider';
 import type { Locale } from '@/lib/i18n/types';
 
 export interface HeaderProps extends React.HTMLAttributes<HTMLElement> {
   logo?: string;
   showSearch?: boolean;
-}
-
-function normalizePublicHref(href: string): string {
-  const normalized = href.trim();
-
-  switch (normalized) {
-    case '/tentang':
-      return '/page/tentang-kami';
-    case '/infaq':
-      return '/program';
-    default:
-      return normalized;
-  }
+  /** Sembunyikan header di bawah lg (halaman single memakai MobileTopBar) */
+  hideOnMobile?: boolean;
 }
 
 export const Header = React.forwardRef<HTMLElement, HeaderProps>(
-  ({ logo: logoProp, showSearch = true, className, ...props }, ref) => {
+  ({ logo: logoProp, showSearch = true, hideOnMobile = false, className, ...props }, ref) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
@@ -49,32 +39,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
     const logo = settings.organization_logo || logoProp || '/logo.svg';
     const siteName = settings.site_name || '';
 
-    // Parse menu items from settings
-    const menuItems = useMemo(() => {
-      if (settings.frontend_header_menu) {
-        try {
-          const parsed = JSON.parse(settings.frontend_header_menu) as MenuItem[];
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // Convert MenuItem format to menu format with href
-            return parsed.map((item) => ({
-              label: item.label,
-              href: normalizePublicHref(item.url),
-            }));
-          }
-        } catch (error) {
-          console.error('Failed to parse header menu:', error);
-        }
-      }
-      return [
-        { label: t('common.menuHome'), href: '/' },
-        { label: t('common.program'), href: '/program' },
-        { label: t('common.menuZakat'), href: '/zakat' },
-        { label: t('common.menuQurban'), href: '/qurban' },
-        { label: t('common.menuWakaf'), href: '/wakaf' },
-        { label: t('common.menuLaporan'), href: '/laporan' },
-        { label: t('common.menuAbout'), href: '/page/tentang-kami' },
-      ];
-    }, [settings.frontend_header_menu, t]);
+    const menuItems = useHeaderMenuItems();
 
     useEffect(() => {
       const handleScroll = () => {
@@ -135,6 +100,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
           'header',
           isScrolled && 'header--scrolled',
           mobileMenuOpen && 'header--menu-open',
+          hideOnMobile && 'header--hide-mobile',
           className
         )}
         {...props}
@@ -342,84 +308,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
               onClick={() => setMobileMenuOpen(false)}
             />
             <div className="header__mobile-menu">
-              <nav className="header__mobile-nav">
-                {menuItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      'header__mobile-nav-link',
-                      pathname === item.href && 'header__mobile-nav-link--active'
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-              <div className="header__mobile-actions">
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="text-sm text-gray-600">{t('common.language')}:</span>
-                  <button
-                    type="button"
-                    onClick={() => handleLocaleChange('id')}
-                    className={cn(
-                      'px-3 py-1.5 text-xs rounded-md border',
-                      locale === 'id'
-                        ? 'bg-primary-50 border-primary-500 text-primary-700'
-                        : 'bg-white border-gray-200 text-gray-700'
-                    )}
-                  >
-                    {t('common.languageIndonesia')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleLocaleChange('en')}
-                    className={cn(
-                      'px-3 py-1.5 text-xs rounded-md border',
-                      locale === 'en'
-                        ? 'bg-primary-50 border-primary-500 text-primary-700'
-                        : 'bg-white border-gray-200 text-gray-700'
-                    )}
-                  >
-                    {t('common.languageEnglish')}
-                  </button>
-                </div>
-                {user ? (
-                  <>
-                    <div className="px-4 py-3 bg-gray-50 rounded-lg mb-3">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
-                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                    </div>
-                    <Link href="/account">
-                      <Button fullWidth variant="outline">{t('common.dashboard')}</Button>
-                    </Link>
-                    <Link href="/account/transactions">
-                      <Button fullWidth variant="outline">{t('common.transactionHistory')}</Button>
-                    </Link>
-                    <Link href="/qurban/savings">
-                      <Button fullWidth variant="outline">{t('common.qurbanSavings')}</Button>
-                    </Link>
-                    <Link href="/account/fundraiser">
-                      <Button fullWidth variant="outline">{t('common.influencer')}</Button>
-                    </Link>
-                    <Link href="/account/profile">
-                      <Button fullWidth variant="outline">{t('common.profile')}</Button>
-                    </Link>
-                    <Button variant="outline" fullWidth onClick={logout} className="text-danger-600 border-danger-300 hover:bg-danger-50">
-                      {t('common.logout')}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login">
-                      <Button fullWidth>{t('common.login')}</Button>
-                    </Link>
-                    <Link href="/register">
-                      <Button variant="outline" fullWidth>{t('common.register')}</Button>
-                    </Link>
-                  </>
-                )}
-              </div>
+              <MobileMenuPanel />
             </div>
           </>
         )}

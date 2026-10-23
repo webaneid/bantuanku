@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { RenderContent } from "@/lib/render-content";
 import { notFound } from "next/navigation";
-import { Header, Footer, Breadcrumb } from "@/components/organisms";
+import { Header, Footer, Breadcrumb, MobileTopBar } from "@/components/organisms";
 import { getImageUrl } from "@/lib/image";
 import { fetchPageBySlug } from "@/services/pages";
 import { fetchCampaigns } from "@/services/campaigns";
@@ -278,7 +278,8 @@ export default async function StaticPage({ params }: StaticPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageJsonLd) }}
       />
       <div className="min-h-screen flex flex-col">
-        <Header />
+        <Header hideOnMobile />
+        <MobileTopBar backHref="/" />
 
         <main className="flex-1 bg-gray-50">
           <Breadcrumb items={[

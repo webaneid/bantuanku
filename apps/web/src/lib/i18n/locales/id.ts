@@ -2,6 +2,9 @@ import type { Messages } from "../types";
 
 export const idMessages: Messages = {
   common: {
+    back: "Kembali",
+    openMenu: "Buka menu",
+    closeMenu: "Tutup menu",
     dashboard: "Dasbor",
     home: "Beranda",
     transactionHistory: "Riwayat Transaksi",
@@ -148,6 +151,11 @@ export const idMessages: Messages = {
       title: "Donasi Lain",
     },
     sidebar: {
+      mobile: {
+        toggle: "Naik/turunkan panel donasi",
+        chooseAmount: "Pilih nominal",
+        cta: "Donasi",
+      },
       validation: {
         selectAmount: "Silakan pilih nominal donasi terlebih dahulu",
       },
@@ -253,6 +261,10 @@ export const idMessages: Messages = {
       },
     },
     sidebar: {
+      mobile: {
+        toggle: "Naik/turunkan panel pemesanan",
+        cta: "Pesan",
+      },
       validation: {
         unavailable: "Paket ini sudah tidak tersedia",
       },

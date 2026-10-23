@@ -2,6 +2,9 @@ import type { Messages } from "../types";
 
 export const enMessages: Messages = {
   common: {
+    back: "Back",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
     dashboard: "Dashboard",
     home: "Home",
     transactionHistory: "Transaction History",
@@ -148,6 +151,11 @@ export const enMessages: Messages = {
       title: "Other Donations",
     },
     sidebar: {
+      mobile: {
+        toggle: "Toggle donation panel",
+        chooseAmount: "Choose amount",
+        cta: "Donate",
+      },
       validation: {
         selectAmount: "Please select a donation amount first",
       },
@@ -253,6 +261,10 @@ export const enMessages: Messages = {
       },
     },
     sidebar: {
+      mobile: {
+        toggle: "Toggle order panel",
+        cta: "Order",
+      },
       validation: {
         unavailable: "This package is no longer available",
       },

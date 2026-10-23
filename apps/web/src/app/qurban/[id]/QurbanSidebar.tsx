@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/atoms';
 import { formatRupiah } from '@/lib/format';
 import { getImageUrl } from '@/lib/image';
+import { MobileActionSheet } from '@/components/molecules';
 import { useI18n } from '@/lib/i18n/provider';
 import * as fbPixel from '@/lib/fbPixel';
 import QurbanConfirmModal from './QurbanConfirmModal';
@@ -492,70 +493,28 @@ export default function QurbanSidebar({
         })()}
       </div>
 
-      {/* Mobile Sticky Bottom Bar */}
-      {isMounted && createPortal(
-        <div className="fixed bottom-0 left-0 right-0 z-[1030] bg-white rounded-t-[20px] shadow-[0_-4px_12px_rgba(0,0,0,0.1)] p-4 lg:hidden">
-          {/* Price Breakdown */}
-          <div className="space-y-1.5 mb-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('qurbanDetail.sidebar.summary.subtotal')}</span>
-              <span className="font-medium mono">Rp {formatRupiah(subtotal)}</span>
+      {/* Mobile: bar bawah naik-turun — periode, jumlah, ringkasan, tombol, share, favorit */}
+      <MobileActionSheet
+        toggleLabel={t('qurbanDetail.sidebar.mobile.toggle')}
+        collapseSignal={isModalOpen || isShareOpen}
+        collapsedBar={() => (
+          <>
+            <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              </svg>
             </div>
-            {totalDiscountAmount > 0 && (
-              <div className="flex justify-between text-sm text-green-700">
-                <span>Diskon</span>
-                <span className="font-medium mono">- Rp {formatRupiah(totalDiscountAmount)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('qurbanDetail.sidebar.summary.adminFee', { quantity })}</span>
-              <span className="font-medium mono">Rp {formatRupiah(totalAdminFee)}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500">{t('qurbanDetail.sidebar.actions.orderNow')}</p>
+              <p className="text-sm font-semibold text-gray-900 truncate mono">Rp {formatRupiah(total)}</p>
             </div>
-            <div className="flex justify-between font-bold pt-2 border-t border-gray-200">
-              <span className="text-gray-900">{t('qurbanDetail.sidebar.summary.total')}</span>
-              <span className="text-primary-600 mono">Rp {formatRupiah(total)}</span>
-            </div>
-          </div>
-          {/* Buttons + Icons */}
-          <div className="flex items-start gap-2">
-            <div className="flex-1 flex flex-col gap-2">
-              <Button onClick={handleOrderClick} size="lg" className="w-full bg-amber-600 hover:bg-amber-700" disabled={!isAvailable}>
-                {t('qurbanDetail.sidebar.actions.orderNow')}
-              </Button>
-              <Link href={`/qurban/savings/new?packagePeriodId=${qurbanPackage.packagePeriodId}`}>
-                <Button size="lg" variant="outline" className="w-full">
-                  {t('qurbanDetail.sidebar.actions.saveForPackage')}
-                </Button>
-              </Link>
-            </div>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => setIsShareOpen(true)}
-                className="p-3 hover:bg-gray-100 rounded-full transition-colors"
-                aria-label={t('qurbanDetail.sidebar.actions.share')}
-              >
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-              </button>
-              <button
-                onClick={handleFavoriteToggle}
-                className="p-3 hover:bg-gray-100 rounded-full transition-colors"
-                aria-label={t('qurbanDetail.sidebar.actions.favorite')}
-              >
-                <svg className={`w-5 h-5 ${isFavorite ? 'text-red-500 fill-current' : 'text-gray-600'}`} fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Mobile Order Section — portal to mobile target */}
-      {isMounted && document.getElementById('mobile-qurban-order') && createPortal(
-        <div className="bg-white rounded-lg shadow-sm p-4 space-y-4">
+            <span className="shrink-0 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white">
+              {t('qurbanDetail.sidebar.mobile.cta')}
+            </span>
+          </>
+        )}
+      >
+        <div className="space-y-4 pt-2">
           {/* Period Selection */}
           {isAvailable && qurbanPackage.availablePeriods.length > 1 && (
             <div>
@@ -600,6 +559,12 @@ export default function QurbanSidebar({
                 <span className="text-gray-600">{t('qurbanDetail.sidebar.summary.subtotal')}</span>
                 <span className="font-medium mono">Rp {formatRupiah(subtotal)}</span>
               </div>
+              {totalDiscountAmount > 0 && (
+                <div className="flex justify-between text-sm text-green-700">
+                  <span>Diskon</span>
+                  <span className="font-medium mono">- Rp {formatRupiah(totalDiscountAmount)}</span>
+                </div>
+              )}
               <div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('qurbanDetail.sidebar.summary.adminFee', { quantity })}</span>
@@ -617,9 +582,42 @@ export default function QurbanSidebar({
               </div>
             </div>
           )}
-        </div>,
-        document.getElementById('mobile-qurban-order')!
-      )}
+
+          {/* Buttons + Icons */}
+          <div className="flex items-start gap-2">
+            <div className="flex-1 flex flex-col gap-2">
+              <Button onClick={handleOrderClick} size="lg" className="w-full bg-amber-600 hover:bg-amber-700" disabled={!isAvailable}>
+                {t('qurbanDetail.sidebar.actions.orderNow')}
+              </Button>
+              <Link href={`/qurban/savings/new?packagePeriodId=${qurbanPackage.packagePeriodId}`}>
+                <Button size="lg" variant="outline" className="w-full">
+                  {t('qurbanDetail.sidebar.actions.saveForPackage')}
+                </Button>
+              </Link>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setIsShareOpen(true)}
+                className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label={t('qurbanDetail.sidebar.actions.share')}
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+              </button>
+              <button
+                onClick={handleFavoriteToggle}
+                className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label={t('qurbanDetail.sidebar.actions.favorite')}
+              >
+                <svg className={`w-5 h-5 ${isFavorite ? 'text-red-500 fill-current' : 'text-gray-600'}`} fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </MobileActionSheet>
 
       {/* Qurban Confirmation Modal */}
       <QurbanConfirmModal
