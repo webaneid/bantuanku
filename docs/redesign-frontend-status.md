@@ -1,6 +1,6 @@
 # Status Redesign Front-End Web Publik (redesign-1)
 
-Terakhir diperbarui: 2026-10-23. Referensi desain asli (`docs/redesign-1/`: DESIGN.md, code.html,
+Terakhir diperbarui: 2026-10-23 (sesi lanjutan: laporan kegiatan). Referensi desain asli (`docs/redesign-1/`: DESIGN.md, code.html,
 screen.png) sudah DIHAPUS dari repo atas permintaan user supaya tidak ikut git; salinannya ada di
 tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-komponen-web.md`.
 
@@ -22,7 +22,10 @@ tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-k
 | `CategoryGrid` (pilar) | desain kartu baru, posisi tetap di bawah hero | 419136a |
 | CTA | rata tengah, tinggi +20%, tombol 1 putih + tombol 2 outline putih | 419136a |
 | Mobile single shell | header disembunyikan, `MobileTopBar` (back + titik tiga), `MobileActionSheet` (bar donasi/qurban naik-turun); lihat `arsitektur-mobile-single-shell.md` | 9b62dd5, 472b81e |
-| Header mobile `/page/[slug]` & `/laporan/[slug]` | persis campaign (top bar overlay + gambar penuh + blok judul), tanpa tombol donasi, `ShareBar` di bawah konten; desktop tidak berubah (belum di-commit) | — |
+| Header mobile `/page/[slug]` & `/laporan/[slug]` | persis campaign (top bar overlay + gambar penuh + blok judul), tanpa tombol donasi; `ShareBar` = bar statis di bawah layar (mobile) / kartu (desktop); kartu artikel & sidebar padding 15px di mobile, gambar editor full-width (`prose-bleed`) | 0c8007f |
+| Arsip `/laporan` | mobile: daftar ringkas (thumbnail persegi, judul, tanggal singkat · kabupaten); paginasi diperbaiki (redirect di luar jangkauan, style `.pagination`, "Halaman X dari N" di mobile) | d8e0ae5 |
+| Laporan terkait di `/laporan/[slug]` | "Laporan Terkait" (referensi sama) / "Laporan Lain"; API `GET /activity-reports/by-slug/:slug/related`; `ReportCard` + `RelatedReports` | 8d73123 |
+| Tab "Kabar Terbaru" di `/program/[slug]` | daftar saja (timeline desktop tanpa konten, mobile = `ReportCard`), kartu klik ke detail laporan; payload API campaign diringkas | b0c6d96 |
 
 ## Belum dikerjakan / keputusan terbuka
 - `FeaturedCarousel` ("Program Unggulan & Mendesak") masih tampilan lama; qurban section, "Why Choose Us", Header, Footer belum di-redesign. User akan menyebut bagian berikutnya.
