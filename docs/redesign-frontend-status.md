@@ -32,7 +32,6 @@ tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-k
 | Modal donasi campaign (`DonationConfirmModal`) | 3 tombol seragam (`h-12`): Donasi Sekarang → `/checkout`, Tambah ke Keranjang & Lihat → `/keranjang-bantuan`, Tambah ke Keranjang → `/program`; "Cari Program Lain" dihapus; `/checkout` menunggu `CartContext.isLoaded` sebelum redirect ke keranjang | c8ddc85 |
 | Checkout: bar bawah dan Lanjutkan | bar "Pilih Metode Pembayaran" hanya tampil bila data donatur siap; tombol Lanjutkan hilang setelah terverifikasi/mulai mengisi; auto-gulir ke hasil | aa36930 |
 | `/invoice/[id]/payment-instruction` mobile | blok primary + kartu penuh + tautan teks; QRIS: tombol "Unduh QRIS" (PNG 800px) | 3708299 |
-
 | Halaman akun `/account/*` (redesign total) | cangkang baru (bar bawah mengambang mobile, sidebar berkartu pengguna desktop), dashboard (hero total kontribusi + aksi cepat + ringkasan + transaksi terbaru), Riwayat, Tabungan Qurban (daftar + detail), Influencer, Profil; tabel baku tidak diubah | e2be6eb, c214276, e8900f2, 045776a |
 
 ## Belum dikerjakan / keputusan terbuka
