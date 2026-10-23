@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { Header, Footer, Breadcrumb, MobileTopBar } from '@/components/organisms';
+import { Header, Footer, Breadcrumb, MobileTopBar, RelatedReports } from '@/components/organisms';
 import { getImageUrl, getImageUrlByVariant } from '@/lib/image';
 import { formatReportDate, getReportReferenceLabel } from '@/lib/report-label';
 import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
@@ -61,6 +61,19 @@ async function fetchReport(slug: string) {
     console.error('Failed to fetch report:', err);
   }
   return null;
+}
+
+async function fetchRelatedReports(slug: string) {
+  try {
+    const res = await fetch(`${API_URL}/activity-reports/by-slug/${encodeURIComponent(slug)}/related?limit=3`, {
+      next: { revalidate: 300 },
+    });
+    const json = await res.json();
+    if (json.success && json.data) return json.data as { mode: 'related' | 'other'; data: any[] };
+  } catch (err) {
+    console.error('Failed to fetch related reports:', err);
+  }
+  return { mode: 'other' as const, data: [] as any[] };
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -126,7 +139,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function LaporanDetailPage({ params }: PageProps) {
   const { slug } = await params;
-  const report = await fetchReport(slug);
+  const [report, related] = await Promise.all([fetchReport(slug), fetchRelatedReports(slug)]);
 
   if (!report) {
     notFound();
@@ -325,6 +338,8 @@ export default async function LaporanDetailPage({ params }: PageProps) {
                 </div>
               </aside>
             </div>
+
+            <RelatedReports mode={related.mode} reports={related.data} />
           </div>
         </main>
         <Footer />

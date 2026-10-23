@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq, and, or, desc, sql } from "drizzle-orm";
+import { eq, and, or, ne, desc, sql } from "drizzle-orm";
 import {
   activityReports,
   indonesiaProvinces,
@@ -112,6 +112,72 @@ activityReportsPublic.get("/by-slug/:slug", async (c) => {
   }
 
   return success(c, results[0]);
+});
+
+// GET /activity-reports/by-slug/:slug/related - Laporan terkait untuk halaman detail (public)
+// Ada laporan published lain dengan reference (type + id) yang sama -> mode "related".
+// Tidak ada -> mode "other": laporan published terbaru lain. referenceId sengaja tidak diekspos.
+activityReportsPublic.get("/by-slug/:slug/related", async (c) => {
+  const db = c.get("db");
+  const slug = c.req.param("slug");
+  const limit = Math.min(12, Math.max(1, parseInt(c.req.query("limit") || "3") || 3));
+
+  const [current] = await db
+    .select({
+      id: activityReports.id,
+      referenceType: activityReports.referenceType,
+      referenceId: activityReports.referenceId,
+    })
+    .from(activityReports)
+    .where(and(eq(activityReports.slug, slug), eq(activityReports.status, "published")))
+    .limit(1);
+
+  if (!current) {
+    return error(c, "Activity report not found", 404);
+  }
+
+  // Ringkas: description dikirim sebagai teks polos 150 karakter (kartu hanya butuh kutipan)
+  const cardFields = {
+    id: activityReports.id,
+    slug: activityReports.slug,
+    title: activityReports.title,
+    referenceType: activityReports.referenceType,
+    referenceName: activityReports.referenceName,
+    activityDate: activityReports.activityDate,
+    description: sql<string>`left(regexp_replace(${activityReports.description}, '<[^>]*>', '', 'g'), 150)`,
+    gallery: activityReports.gallery,
+    publishedAt: activityReports.publishedAt,
+    provinceName: indonesiaProvinces.name,
+    regencyName: indonesiaRegencies.name,
+  };
+
+  const baseConditions = [
+    eq(activityReports.status, "published"),
+    eq(activityReports.noIndex, false),
+    ne(activityReports.id, current.id),
+  ];
+
+  const fetchCards = (extra: any[]) =>
+    db
+      .select(cardFields)
+      .from(activityReports)
+      .leftJoin(indonesiaProvinces, eq(activityReports.provinceCode, indonesiaProvinces.code))
+      .leftJoin(indonesiaRegencies, eq(activityReports.regencyCode, indonesiaRegencies.code))
+      .where(and(...baseConditions, ...extra))
+      .orderBy(desc(activityReports.activityDate))
+      .limit(limit);
+
+  const related = await fetchCards([
+    eq(activityReports.referenceType, current.referenceType),
+    eq(activityReports.referenceId, current.referenceId),
+  ]);
+
+  if (related.length > 0) {
+    return success(c, { mode: "related", data: related });
+  }
+
+  const others = await fetchCards([]);
+  return success(c, { mode: "other", data: others });
 });
 
 // GET /activity-reports/:id - Get a single published activity report by ID (public)

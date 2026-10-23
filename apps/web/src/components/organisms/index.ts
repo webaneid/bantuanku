@@ -48,3 +48,6 @@ export { TestimonialSection } from './TestimonialSection';
 export { MobileTopBar } from './MobileTopBar';
 export type { MobileTopBarProps } from './MobileTopBar/MobileTopBar';
 export { MobileMenuPanel } from './MobileMenuPanel';
+export { ReportCard } from './ReportCard';
+export type { ReportCardProps, ReportCardData } from './ReportCard';
+export { RelatedReports } from './RelatedReports';

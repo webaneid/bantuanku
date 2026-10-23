@@ -36,6 +36,13 @@ export const enMessages: Messages = {
     languageIndonesia: "Indonesia",
     languageEnglish: "English",
   },
+  laporanDetail: {
+    related: {
+      title: "Related Reports",
+      other: "Other Reports",
+      viewAll: "View All",
+    },
+  },
   footer: {
     aboutUs: "About Us",
     contact: "Contact",

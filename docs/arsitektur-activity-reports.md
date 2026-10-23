@@ -247,6 +247,7 @@ Base route: `/v1/activity-reports`.
 | Endpoint | Perilaku |
 |---|---|
 | `GET /` | List published dengan pagination (`page` min 1, `limit` default 20, maks 100), filter optional `reference_type`, hanya `noIndex=false`. Urut `activityDate` desc. |
+| `GET /by-slug/:slug/related?limit=` | Laporan terkait untuk halaman detail (`limit` default 3, maks 12). 404 bila slug tidak published. Respons `{ mode, data }`: `mode: "related"` bila ada laporan published lain dengan `referenceType` + `referenceId` yang sama (urut `activityDate` desc); jika tidak ada, `mode: "other"` berisi laporan published terbaru lain. Selalu `noIndex=false` dan tanpa laporan itu sendiri. Item ringkas (kartu): `id, slug, title, referenceType, referenceName, activityDate, description` (teks polos 150 karakter), `gallery, publishedAt, provinceName, regencyName` — tanpa `referenceId`. |
 | `GET /by-slug/:slug` | Detail by slug, hanya `status=published`; tidak memfilter `noIndex=false`. |
 | `GET /:id` | Detail by ID, hanya `status=published`; tidak memfilter `noIndex=false`. |
 | `GET /campaign/:campaignId` | List laporan campaign, `status=published`, `noIndex=false`, cocok via `referenceType/referenceId` atau legacy `campaignId`. Respons berupa array langsung (bukan objek paginasi); `limit` default 50, maks 100. Tidak mengembalikan field SEO/`status`. |
@@ -277,7 +278,7 @@ Perilaku:
 
 - Server component.
 - Fetch `GET /activity-reports?page={page}&limit=12` dengan `revalidate=300`.
-- Menampilkan archive card 3 kolom desktop.
+- Menampilkan archive card 3 kolom desktop memakai `ReportCard` (organism bersama dengan `RelatedReports`); helper label/tanggal/warna ada di `lib/report-label.ts`.
 - Thumbnail dari item pertama `gallery`.
 - Label reference type:
   - `campaign` -> Program
@@ -296,6 +297,7 @@ File: `apps/web/src/app/laporan/[slug]/page.tsx` dan `LaporanDetailClient.tsx`.
 Perilaku:
 
 - Fetch `GET /activity-reports/by-slug/:slug` dengan `revalidate=300`.
+- Section "Laporan Terkait" (mode `related`) / "Laporan Lain" (mode `other`) di bawah grid artikel+sidebar: fetch `GET /activity-reports/by-slug/:slug/related?limit=3` (`revalidate=300`), komponen `RelatedReports` (i18n `laporanDetail.related.*`, tautan "Lihat Semua" ke `/laporan`). Kartu memakai `ReportCard` yang sama dengan arsip: desktop kartu, mobile baris ringkas. Section tidak tampil bila hasil kosong.
 - Metadata memakai field SEO dari report jika tersedia.
 - Fallback OG image: `ogImageUrl`, lalu gallery pertama, lalu setting `og_image`, lalu `/og` (route dinamis `next/og`).
 - Robots mengikuti `noIndex` dan `noFollow`.

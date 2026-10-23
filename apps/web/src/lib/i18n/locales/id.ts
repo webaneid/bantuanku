@@ -36,6 +36,13 @@ export const idMessages: Messages = {
     languageIndonesia: "Indonesia",
     languageEnglish: "English",
   },
+  laporanDetail: {
+    related: {
+      title: "Laporan Terkait",
+      other: "Laporan Lain",
+      viewAll: "Lihat Semua",
+    },
+  },
   footer: {
     aboutUs: "Tentang Kami",
     contact: "Kontak",

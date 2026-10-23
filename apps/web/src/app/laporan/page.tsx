@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { Header, Footer, Breadcrumb } from '@/components/organisms';
-import { getImageUrlByVariant } from '@/lib/image';
+import { Header, Footer, Breadcrumb, ReportCard } from '@/components/organisms';
 import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
@@ -91,22 +90,6 @@ async function fetchReports(page: number = 1): Promise<{ data: Report[]; paginat
   return { data: [], pagination: { page: 1, limit: 12, total: 0, totalPages: 0 } };
 }
 
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
-function formatDateShort(dateString: string) {
-  return new Date(dateString).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
-
 function pageHref(page: number) {
   return page <= 1 ? '/laporan' : `/laporan?page=${page}`;
 }
@@ -122,30 +105,6 @@ function getPageItems(current: number, total: number): Array<number | 'ellipsis'
     items.push(p);
   });
   return items;
-}
-
-function stripHtml(html: string) {
-  return html.replace(/<[^>]*>/g, '').substring(0, 150);
-}
-
-function getReferenceLabel(type: string) {
-  switch (type) {
-    case 'campaign': return 'Program';
-    case 'zakat_period': return 'Zakat';
-    case 'zakat_disbursement': return 'Penyaluran Zakat';
-    case 'qurban_period': return 'Qurban';
-    default: return 'Laporan';
-  }
-}
-
-function getReferenceColor(type: string) {
-  switch (type) {
-    case 'campaign': return 'bg-blue-50 text-blue-700';
-    case 'zakat_period':
-    case 'zakat_disbursement': return 'bg-emerald-50 text-emerald-700';
-    case 'qurban_period': return 'bg-amber-50 text-amber-700';
-    default: return 'bg-gray-50 text-gray-700';
-  }
 }
 
 export default async function LaporanPage({
@@ -188,61 +147,9 @@ export default async function LaporanPage({
               <>
                 {/* Mobile: daftar ringkas (thumbnail persegi + judul + meta kecil). md ke atas: grid kartu. */}
                 <div className="grid grid-cols-1 divide-y divide-gray-100 md:divide-y-0 md:grid-cols-2 lg:grid-cols-3 gap-0 md:gap-6">
-                  {reports.map((report) => {
-                    const thumbnail = report.gallery?.[0];
-                    const location = [report.regencyName, report.provinceName].filter(Boolean).join(', ');
-                    const shortLocation = report.regencyName || report.provinceName;
-
-                    return (
-                      <Link
-                        key={report.id}
-                        href={`/laporan/${report.slug}`}
-                        className="group flex items-center gap-3 py-3 md:block md:py-0 md:bg-white md:border md:border-gray-200 md:rounded-xl md:overflow-hidden md:hover:shadow-lg transition-shadow"
-                      >
-                        {/* Thumbnail */}
-                        <div className="w-16 h-16 flex-shrink-0 rounded-lg md:rounded-none md:w-auto md:h-auto md:aspect-video bg-gray-100 relative overflow-hidden">
-                          {thumbnail ? (
-                            <img
-                              src={getImageUrlByVariant(thumbnail, ['medium'])}
-                              alt={report.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                              <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                              </svg>
-                            </div>
-                          )}
-                          <span className={`hidden md:block absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-medium ${getReferenceColor(report.referenceType)}`}>
-                            {getReferenceLabel(report.referenceType)}
-                          </span>
-                        </div>
-
-                        {/* Content */}
-                        <div className="min-w-0 md:p-4 md:space-y-2">
-                          <h3 className="text-base font-semibold leading-snug text-gray-900 line-clamp-2 group-hover:text-emerald-600 transition-colors">
-                            {report.title}
-                          </h3>
-                          {report.referenceName && (
-                            <p className="hidden md:block text-sm text-emerald-600 font-medium truncate">{report.referenceName}</p>
-                          )}
-                          <p className="hidden md:block text-sm text-gray-500 line-clamp-2">{stripHtml(report.description)}</p>
-                          <div className="flex items-center gap-1.5 md:gap-3 text-xs text-gray-500 md:text-gray-400 mt-1 md:mt-0 md:pt-1">
-                            <span className="flex-shrink-0 md:hidden">{formatDateShort(report.activityDate)}</span>
-                            <span className="hidden md:inline">{formatDate(report.activityDate)}</span>
-                            {location && (
-                              <>
-                                <span>·</span>
-                                <span className="truncate md:hidden">{shortLocation}</span>
-                                <span className="truncate hidden md:inline">{location}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                  {reports.map((report) => (
+                    <ReportCard key={report.id} report={report} />
+                  ))}
                 </div>
 
                 {/* Pagination */}

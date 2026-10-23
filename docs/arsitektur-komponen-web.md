@@ -209,6 +209,12 @@ Props: `id, slug, title, description, image, categoryName, currentAmount, target
 - Desktop/tablet: vertikal (gambar 12rem, chip kategori + Mendesak/Target Tercapai/sisa hari, progress 8px, tombol "Donasi Sekarang"). Mobile (<640px): horizontal, gambar kiri dan teks kanan, tanpa deskripsi dan tombol.
 - `isUrgent` memakai warna `danger`. Dipakai di beranda, `/program` (+ kategori), `/program/[slug]` (terkait), `/wakaf`, `/mitra/[slug]`. Grid arsip 3 kolom.
 
+### ReportCard dan RelatedReports
+
+`ReportCard` (`organisms/ReportCard`): kartu laporan kegiatan, satu komponen dengan dua tampilan lewat kelas responsif. Mobile (< md): baris ringkas (thumbnail persegi 64px, judul maks 2 baris, meta kecil tanggal singkat · kabupaten/provinsi). md ke atas: kartu (thumbnail 16:9, badge jenis, nama referensi, kutipan, meta). Induknya wajib grid `grid-cols-1 divide-y divide-gray-100 md:divide-y-0 md:grid-cols-2 lg:grid-cols-3 gap-0 md:gap-6`. Dipakai di arsip `/laporan` dan `RelatedReports`.
+
+`RelatedReports` (`organisms/RelatedReports`, client component): judul "Laporan Terkait" (`mode="related"`) atau "Laporan Lain" (`mode="other"`) + tautan "Lihat Semua" + grid `ReportCard`. Dipakai di `/laporan/[slug]`.
+
 ### HeroSlider
 
 `HeroSlider` adalah client component.
