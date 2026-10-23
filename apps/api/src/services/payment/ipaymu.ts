@@ -119,6 +119,8 @@ export class IPaymuAdapter implements PaymentGatewayAdapter {
           signature,
         },
         body: bodyJson,
+        // Tanpa timeout, gangguan di sisi iPaymu (mis. VA sandbox) membuat request checkout menggantung
+        signal: AbortSignal.timeout(30_000),
       });
 
       const result = (await response.json()) as {
@@ -167,6 +169,9 @@ export class IPaymuAdapter implements PaymentGatewayAdapter {
         error: result.Message || "Payment creation failed",
       };
     } catch (err) {
+      if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
+        return { success: false, error: "iPaymu tidak merespons (timeout 30 detik), coba lagi atau pilih metode lain" };
+      }
       return {
         success: false,
         error: err instanceof Error ? err.message : "Unknown error",

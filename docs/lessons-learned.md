@@ -490,3 +490,8 @@
 **Masalah:** HTML memakai kelas `__variable_d8ebd1` sedangkan CSS mendefinisikan `__variable_f367f3`; `--font-inter` tidak terdefinisi sehingga aturan `font-family` dibuang browser. Penyebab: `apps/web/.next` basi, bukan kode.
 **Pelajaran:** gejala "font berubah" → bandingkan kelas variabel di HTML vs CSS yang disajikan; perbaiki dengan `rm -rf apps/web/.next` lalu restart dev. Jangan menyalahkan perubahan kode tanpa membuktikan lewat `git diff`.
 
+### [2026-10-23] iPaymu `unauthorized signature`: secret di tabel settings tersimpan terenkripsi
+**Konteks:** checkout iPaymu lokal (mode sandbox) gagal; konfigurasi di admin terlihat benar (VA, API key, environment).
+**Masalah:** `payment_ipaymu_api_key` disimpan AES-256-CBC (`iv:ciphertext`) oleh `PUT /admin/settings/batch`, sedangkan `routes/payments.ts` membaca nilai mentah dan memakainya sebagai API key untuk HMAC, sehingga iPaymu menolak signature. Admin menampilkan nilai terdekripsi, jadi kelihatan benar. Berlaku juga untuk secret Xendit/Flip. Dokumen lama menyebut gap ini hanya sebagai "ciphertext bisa terbaca", belum pernah dibuktikan menimpa gateway. Tambahan: adapter tanpa timeout membuat checkout menggantung saat iPaymu sandbox tidak merespons (VA BCA).
+**Pelajaran:** setiap kode yang membaca `settings` berkategori secret (`*_api_key`, `*_secret*`, `*_access_token`) wajib `decrypt()`. Saat debugging error auth gateway, bandingkan bentuk nilai di DB (`hex:hex` = ciphertext) sebelum menyalahkan kredensial. Uji adapter langsung ke sandbox dengan key hasil dekripsi untuk memisahkan masalah konfigurasi dari masalah kode. Semua panggilan keluar ke gateway harus punya timeout.
+

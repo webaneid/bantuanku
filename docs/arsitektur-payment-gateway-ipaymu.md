@@ -1,6 +1,6 @@
 # Arsitektur Payment Gateway iPaymu
 
-> Terakhir di-sync: 2026-07-02
+> Terakhir di-sync: 2026-10-23 (perbaikan dekripsi secret + uji sandbox; sisanya masih audit 2026-07-02)
 
 ---
 
@@ -625,6 +625,46 @@ Detail umum ada di `arsitektur-observability-logging.md`.
 
 ---
 
+## Perbaikan dan Hasil Uji Sandbox (2026-10-23)
+
+**Gejala:** checkout iPaymu lokal (mode sandbox) gagal dengan `unauthorized signature`.
+
+**Akar masalah:** `payment_ipaymu_api_key` tersimpan **terenkripsi** (format `iv-hex:ciphertext-hex`, AES-256-CBC via `PUT /admin/settings/batch` karena key mengandung `_api_key`), tetapi `routes/payments.ts` membaca nilai mentah dari tabel `settings` dan memakainya sebagai API key untuk HMAC. iPaymu menolak signature. Pola yang sama berlaku untuk secret Xendit (`payment_xendit_secret_key`) dan Flip (`payment_flip_api_key`).
+
+**Perbaikan:**
+
+| Perubahan | File |
+|---|---|
+| `decrypt()` untuk API key iPaymu, secret Xendit, dan API key Flip, di `POST /create` dan `POST /:gateway/webhook` (`decrypt` mengembalikan input apa adanya bila belum terenkripsi, jadi aman untuk data lama) | `apps/api/src/routes/payments.ts` |
+| Mode dibaca dari `payment_ipaymu_environment` (key yang benar-benar disimpan admin), fallback `payment_ipaymu_mode` / `ipaymu_mode` | `apps/api/src/routes/payments.ts` |
+| Timeout 30 detik pada request ke iPaymu; pesan error jelas saat timeout | `apps/api/src/services/payment/ipaymu.ts` |
+
+**Hasil uji (sandbox iPaymu, VA `0000005210626455`, nominal 25.000):**
+
+| Skenario | Hasil |
+|---|---|
+| Ciphertext mentah (perilaku lama) | `unauthorized signature` |
+| Key didekripsi, `qris:qris` (adapter langsung dan lewat `POST /v1/payments/create`) | Berhasil; QR sandbox berupa teks "THIS IS NOT A REAL QRIS" |
+| `va:bni` | Berhasil (nomor VA terbit, ±1,5 detik) |
+| `cstore:indomaret` | Berhasil (kode bayar terbit) |
+| `va:bca` | **Sandbox iPaymu tidak merespons** (>5 menit tanpa balasan, dua kali dicoba); kini berakhir timeout 30 detik. Bukan masalah kode: BNI dan metode lain dengan request identik berhasil |
+
+**Perbandingan dengan implementasi iPaymu di project `webane-admin` (produksi, terbukti jalan)** — temuan yang masih menjadi gap di Bantuanku:
+
+| Aspek | webane-admin (jalan) | Bantuanku saat ini |
+|---|---|---|
+| Base URL production | `https://my.ipaymu.com` | `https://app.ipaymu.com/api/v2` (belum terbukti) |
+| Header `timestamp` (`YYYYMMDDHHmmss`) | dikirim | tidak dikirim (sandbox tetap menerima) |
+| Format callback iPaymu | `application/x-www-form-urlencoded`: `trx_id`, `status`, `status_code`, `reference_id`, `via` | handler webhook memakai `c.req.json()` |
+| Sukses callback | `status_code == 1` dan `status == "berhasil"` | `status` in success/paid/berhasil |
+| Verifikasi callback | **tidak ada signature**; memanggil `POST /api/v2/payment/check-status` `{trxId}` ke iPaymu (`Data.Status == 1`) | HMAC base64 atas `JSON.stringify(payload)` (kemungkinan besar tidak pernah cocok) |
+| Respons ke iPaymu | selalu HTTP 200 | 401 bila signature tidak cocok |
+| `notifyUrl`, `returnUrl`, `cancelUrl` | notifyUrl ke route callback nyata, plus return/cancel URL | notifyUrl ke `/v1/webhooks/ipaymu` (route tidak ada), tanpa return/cancel URL |
+
+Artinya: **pembuatan pembayaran sudah jalan, tetapi konfirmasi pembayaran otomatis (webhook) iPaymu belum akan bekerja** sampai handler callback diselaraskan dengan format di atas. Di lokal ini juga tidak terjangkau iPaymu (butuh tunnel publik). Pekerjaan lanjutan ini belum dikerjakan.
+
+---
+
 ## Dokumen Lama yang Dikoreksi
 
 ### `dokumentasi-ipaymu.md`
@@ -658,7 +698,7 @@ Alasan:
 | Production base URL adapter memakai `app.ipaymu.com`, official aktif memakai `my.ipaymu.com` | Payment production bisa gagal atau memakai endpoint lama/tidak resmi | Verifikasi ke iPaymu dan ubah adapter production base ke `https://my.ipaymu.com/api/v2` jika sesuai official |
 | Adapter tidak mengirim header `timestamp` | Request bisa ditolak jika iPaymu mewajibkan timestamp sesuai official collection | Tambahkan timestamp generator dan masukkan ke signed request header |
 | Frontend `/checkout/ipaymu-channels` kirim `donationId`, API wajib `transactionId` | Create payment gagal validasi | Samakan payload frontend ke `transactionId` atau ubah API schema dengan migrasi hati-hati |
-| Admin simpan `payment_ipaymu_environment`, API baca `payment_ipaymu_mode`/`ipaymu_mode` | Mode admin tidak dipakai; API default sandbox | Samakan key environment/mode di admin dan API |
+| ~~Admin simpan `payment_ipaymu_environment`, API baca `payment_ipaymu_mode`~~ | **Selesai 2026-10-23**: API membaca `payment_ipaymu_environment` lebih dulu (fallback `*_mode`) | — |
 | Adapter `notifyUrl` memakai `/v1/webhooks/ipaymu` | Webhook dari iPaymu bisa masuk route tidak ada | Ubah notifyUrl ke `/v1/payments/ipaymu/webhook` |
 | Channel list frontend mock hardcoded padahal official ada `GET /api/v2/payment-channels` | Tidak mencerminkan channel aktif merchant iPaymu | Tambah endpoint backend untuk proxy/cache payment channels iPaymu |
 | Webhook signature memakai `JSON.stringify(payload)` dan base64 HMAC | Signature callback provider bisa gagal jika official callback berbeda | Verifikasi callback signature official iPaymu, lalu simpan raw body jika signature berbasis raw payload |

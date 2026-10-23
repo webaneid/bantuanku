@@ -260,7 +260,7 @@ Admin settings punya perilaku berbeda per endpoint:
 Konsekuensi:
 
 1. Secret bisa tersimpan plaintext atau ciphertext tergantung endpoint update.
-2. Integrasi yang membaca setting langsung dapat menerima ciphertext bila data disimpan via batch encryption.
+2. Integrasi yang membaca setting langsung dapat menerima ciphertext bila data disimpan via batch encryption. **Terbukti 2026-10-23:** `routes/payments.ts` membaca API key iPaymu mentah sehingga gateway menerima ciphertext (`unauthorized signature`); sudah diperbaiki dengan `decrypt()` untuk iPaymu, Xendit, dan Flip. Integrasi lain yang membaca `settings` langsung harus diperiksa dengan pola yang sama.
 3. Admin API dapat mengekspos secret penuh kepada role yang boleh membaca settings.
 
 ---
