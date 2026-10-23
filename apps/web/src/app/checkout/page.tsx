@@ -154,6 +154,42 @@ export default function CheckoutPage() {
   const showIdentityFields = !!user || identifyState === 'new';
   const showOptionalFields = !!user || identifyState === 'new' || identifyState === 'registered';
 
+  // Pesan error validasi data donatur (null = lengkap). Donatur terdaftar tidak perlu data identitas.
+  const getDonorDataErrorKey = (): string | null => {
+    if (registeredMode) return null;
+    if (!formData.name || formData.name.trim().length < 2) return 'checkout.main.validation.invalidName';
+    if (!formData.email || !EMAIL_PATTERN.test(formData.email)) return 'checkout.main.validation.invalidEmail';
+    if (!formData.phone || normalizePhone(formData.phone).length < 10) return 'checkout.main.validation.invalidPhone';
+    if (!whatsappSameAsPhone && (!formData.whatsapp || normalizePhone(formData.whatsapp).length < 10)) {
+      return 'checkout.main.validation.invalidWhatsapp';
+    }
+    return null;
+  };
+
+  // Tombol bar bawah "Pilih Metode Pembayaran" hanya muncul bila data donatur sudah siap:
+  // terdaftar (data dari profil), atau data donatur baru/akun login sudah lengkap
+  const isDonorReady = user
+    ? getDonorDataErrorKey() === null
+    : identifyState === 'registered' || (identifyState === 'new' && getDonorDataErrorKey() === null);
+
+  // Tombol "Lanjutkan" hilang setelah donatur terverifikasi atau saat mulai mengisi data donatur baru
+  const identifierIsEmail = identifier.includes('@');
+  const newDonorStarted =
+    identifyState === 'new' &&
+    (formData.name.trim() !== '' ||
+      (identifierIsEmail ? formData.phone.trim() !== '' : formData.email.trim() !== ''));
+  const showContinueButton = identifyState !== 'registered' && !newDonorStarted;
+
+  // Setelah Lanjutkan (mobile): gulir ke hasilnya supaya "Anda telah terdaftar" dan isian di bawahnya terlihat
+  useEffect(() => {
+    if (identifyState !== 'registered' && identifyState !== 'new') return;
+    if (typeof window === 'undefined' || window.innerWidth >= 1024) return;
+    const timer = setTimeout(() => {
+      document.getElementById('identify-result')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [identifyState]);
+
   const handleIdentify = async () => {
     const value = identifier.trim();
     const isEmail = value.includes('@');
@@ -221,27 +257,10 @@ export default function CheckoutPage() {
     }
 
     // Validation (identitas tidak diisi/divalidasi untuk donatur terdaftar: server memakai profilnya)
-    if (!registeredMode) {
-      if (!formData.name || formData.name.trim().length < 2) {
-        toast.error(t('checkout.main.validation.invalidName'));
-        return;
-      }
-
-      if (!formData.email || !EMAIL_PATTERN.test(formData.email)) {
-        toast.error(t('checkout.main.validation.invalidEmail'));
-        return;
-      }
-
-      if (!formData.phone || normalizePhone(formData.phone).length < 10) {
-        toast.error(t('checkout.main.validation.invalidPhone'));
-        return;
-      }
-
-      // Validate WhatsApp if different from phone
-      if (!whatsappSameAsPhone && (!formData.whatsapp || normalizePhone(formData.whatsapp).length < 10)) {
-        toast.error(t('checkout.main.validation.invalidWhatsapp'));
-        return;
-      }
+    const donorErrorKey = getDonorDataErrorKey();
+    if (donorErrorKey) {
+      toast.error(t(donorErrorKey));
+      return;
     }
 
     if (items.length === 0) {
@@ -682,21 +701,23 @@ export default function CheckoutPage() {
                           placeholder={t('checkout.main.identify.placeholder')}
                         />
                       </div>
-                      <Button
-                        type="button"
-                        onClick={handleIdentify}
-                        disabled={identifyState === 'checking' || !identifier.trim()}
-                        className="flex-shrink-0"
-                      >
-                        {identifyState === 'checking'
-                          ? t('checkout.main.identify.checking')
-                          : t('checkout.main.identify.continue')}
-                      </Button>
+                      {showContinueButton && (
+                        <Button
+                          type="button"
+                          onClick={handleIdentify}
+                          disabled={identifyState === 'checking' || !identifier.trim()}
+                          className="flex-shrink-0"
+                        >
+                          {identifyState === 'checking'
+                            ? t('checkout.main.identify.checking')
+                            : t('checkout.main.identify.continue')}
+                        </Button>
+                      )}
                     </div>
                     <p className="text-xs text-gray-500 mt-2">{t('checkout.main.identify.hint')}</p>
 
                     {identifyState === 'registered' && (
-                      <div className="mt-4 rounded-xl bg-primary-50 p-4 flex items-start gap-3">
+                      <div id="identify-result" className="mt-4 rounded-xl bg-primary-50 p-4 flex items-start gap-3 scroll-mt-24">
                         <svg className="w-6 h-6 text-primary-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
@@ -729,7 +750,7 @@ export default function CheckoutPage() {
                     )}
 
                     {identifyState === 'new' && (
-                      <div className="mt-4 rounded-xl bg-gray-50 p-4">
+                      <div id="identify-result" className="mt-4 rounded-xl bg-gray-50 p-4 scroll-mt-24">
                         <p className="font-semibold text-gray-900">{t('checkout.main.identify.newTitle')}</p>
                         <p className="text-sm text-gray-600 mt-1">{t('checkout.main.identify.newDesc')}</p>
                         <button
@@ -1041,8 +1062,8 @@ export default function CheckoutPage() {
         </div>
       </main>
 
-      {/* Mobile Sticky Bottom Bar: tombol utama, di bawahnya tautan teks (tanpa border) */}
-      {isMounted && createPortal(
+      {/* Mobile Sticky Bottom Bar: hanya tampil bila data donatur siap; tombol utama + tautan teks (tanpa border) */}
+      {isMounted && isDonorReady && createPortal(
         <div className="fixed bottom-0 left-0 right-0 z-[1030] bg-white rounded-t-[20px] shadow-[0_-4px_12px_rgba(0,0,0,0.1)] px-[15px] pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
           <Button
             type="button"
@@ -1070,7 +1091,7 @@ export default function CheckoutPage() {
       <Footer />
 
       {/* Spacer bar bawah mobile — elemen PALING TERAKHIR (docs/arsitektur-mobile-single-shell.md) */}
-      <div className="h-28 lg:hidden" aria-hidden="true" />
+      {isDonorReady && <div className="h-28 lg:hidden" aria-hidden="true" />}
     </>
   );
 }
