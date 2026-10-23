@@ -22,3 +22,18 @@ export function readNextFromLocation(): string | null {
   if (typeof window === 'undefined') return null;
   return safeNextPath(new URLSearchParams(window.location.search).get('next'));
 }
+
+/**
+ * Tujuan setelah login berhasil, SAMA untuk login email dan Google:
+ * - ada tujuan khusus (mis. /checkout) -> langsung ke sana, tanpa singgah di profil
+ *   (nomor yang kosong diisi di halaman tujuan; checkout menyimpannya ke profil);
+ * - tanpa tujuan khusus: WhatsApp masih kosong -> /account/profile untuk melengkapi, selain itu /account.
+ * `/account` dianggap "tidak ada tujuan khusus" (default API/Google).
+ */
+export function postLoginPath(
+  user: { whatsappNumber?: string | null } | null | undefined,
+  next: string | null | undefined
+): string {
+  if (next && next !== '/account') return next;
+  return user?.whatsappNumber ? '/account' : '/account/profile';
+}

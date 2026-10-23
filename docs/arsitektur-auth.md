@@ -233,11 +233,13 @@ Agar donatur tidak "berputar" dan kehilangan momentum, tujuan semula dibawa lewa
 
 | Alur | Perilaku |
 |---|---|
-| "Login di sini" di checkout | `/login?next=/checkout`; login sukses (dan sesi yang sudah ada) → `next`, bukan `/account` |
-| Login Google (tombol di checkout/login membawa `returnTo`) | callback web `/auth/google?code&next=...`: bila ada tujuan khusus (bukan `/account`) langsung ke sana **tanpa** singgah di profil, meski WhatsApp kosong; tanpa tujuan khusus dan WhatsApp kosong → `/account/profile` seperti biasa |
+| "Login di sini" di checkout | `/login?next=/checkout`; login sukses (dan sesi yang sudah ada) memakai `postLoginPath` (di bawah) |
+| Login Google (tombol di checkout/login membawa `returnTo`) | callback web `/auth/google?code&next=...` memakai `postLoginPath` (di bawah) |
 | `/account/profile?next=...` | hanya WhatsApp yang wajib (empat isian demografis tidak menahan); setelah Simpan → `next`. Tanpa `next`: empat isian tetap wajib |
 | Checkout, user login tanpa HP/WhatsApp di profil | kolom HP/WhatsApp tampil; setelah transaksi dibuat, nomor disimpan ke profil lewat `PATCH /auth/me` (fetch, gagal diabaikan) dan `mergeUser` |
 | Login biasa lalu `/account` | tidak berubah: dialihkan ke profil bila empat isian wajib belum lengkap |
+
+**Aturan tujuan yang SAMA untuk login email dan Google** (`postLoginPath(user, next)` di `lib/safe-next.ts`): (1) ada tujuan khusus selain `/account` (mis. `/checkout`) → langsung ke sana, tanpa singgah di profil meski WhatsApp kosong; (2) tanpa tujuan khusus: WhatsApp kosong → `/account/profile`, selain itu `/account` (yang meneruskan ke profil bila empat isian wajib belum lengkap). Sebelumnya login email selalu ke `/account` sedangkan Google memeriksa WhatsApp.
 
 Checkout mengirim `Authorization: Bearer <token>` pada `POST /v1/transactions` (3 jalur: campaign, zakat, qurban) supaya server mengisi `user_id` dari token; token kedaluwarsa/rusak diabaikan (transaksi tetap dibuat sebagai tamu).
 

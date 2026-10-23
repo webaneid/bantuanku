@@ -7,7 +7,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/atoms";
 import { useI18n } from "@/lib/i18n/provider";
-import { safeNextPath } from "@/lib/safe-next";
+import { safeNextPath, postLoginPath } from "@/lib/safe-next";
 
 function GoogleCallbackContent() {
   const { t } = useI18n();
@@ -24,8 +24,7 @@ function GoogleCallbackContent() {
 
     const code = searchParams.get("code");
     // API selalu mengirim `next` (default /account). `/account` = tidak ada tujuan khusus.
-    const next = safeNextPath(searchParams.get("next")) || "/account";
-    const hasExplicitNext = next !== "/account";
+    const next = safeNextPath(searchParams.get("next"));
     if (!code) {
       setFailed(true);
       return;
@@ -39,10 +38,8 @@ function GoogleCallbackContent() {
       .then(async (res) => {
         const { user, accessToken } = res.data.data;
         await setSession(user, accessToken);
-        // Datang dari alur tertentu (mis. checkout): langsung ke sana, tanpa memutar lewat profil; nomor yang
-        // kosong diisi di halaman tujuan (checkout menyimpannya ke profil). Tanpa tujuan khusus dan WhatsApp
-        // masih kosong, arahkan ke profil untuk melengkapi seperti biasa.
-        router.replace(user.whatsappNumber || hasExplicitNext ? next : "/account/profile");
+        // Aturan tujuan yang sama dengan login email (lihat postLoginPath)
+        router.replace(postLoginPath(user, next));
       })
       .catch(() => setFailed(true));
   }, [searchParams, router, setSession]);
