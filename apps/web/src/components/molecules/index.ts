@@ -42,3 +42,5 @@ export type { GoogleSignInButtonProps } from './GoogleSignInButton';
 // Mobile action sheet
 export { MobileActionSheet } from './MobileActionSheet';
 export type { MobileActionSheetProps } from './MobileActionSheet/MobileActionSheet';
+export { CartSummaryCard } from './CartSummaryCard';
+export type { CartSummaryCardProps } from './CartSummaryCard';

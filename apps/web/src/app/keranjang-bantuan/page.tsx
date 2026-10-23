@@ -9,6 +9,7 @@ import { formatRupiahFull } from '@/lib/format';
 import { useI18n } from '@/lib/i18n/provider';
 import { Button } from '@/components/atoms';
 import { Header, Footer } from '@/components/organisms';
+import { CartSummaryCard } from '@/components/molecules';
 
 export default function KeranjangBantuanPage() {
   const router = useRouter();
@@ -52,176 +53,168 @@ export default function KeranjangBantuanPage() {
     );
   }
 
+  // Kartu item: mobile penuh sampai tepi layar (menembus padding container), md ke atas kartu biasa
+  const itemCardClass =
+    'bg-white shadow-sm -mx-4 sm:-mx-6 md:mx-0 rounded-none md:rounded-lg px-[15px] py-5 md:p-6 md:border md:border-gray-100';
+
+  const removeButton = (cartItemId: string) => (
+    <button
+      onClick={() => removeFromCart(cartItemId)}
+      className="text-gray-400 hover:text-red-600 transition-colors p-1 -mr-1 flex-shrink-0"
+      aria-label={t('keranjang.item.removeAriaLabel')}
+    >
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  );
+
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 py-8 pb-24 lg:pb-8">
-        <div className="container mx-auto px-4">
-          {/* Page Title */}
-          <div className="mb-8">
+      <main className="min-h-screen bg-gray-50 py-4 md:py-8">
+        <div className="container mx-auto px-[15px] md:px-4">
+          {/* Page Title — desktop; di mobile judul ada di blok ringkasan */}
+          <div className="hidden lg:block mb-8">
             <h1 className="section-title text-gray-900 mb-2">{t('keranjang.title')}</h1>
             <p className="text-gray-600" style={{ fontSize: '15px' }}>
               {t('keranjang.itemCount', { count: items.length })}
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
+          {/* Mobile: ringkasan di atas, latar primary, teks putih (sama dengan checkout) */}
+          <CartSummaryCard
+            className="lg:hidden mb-4"
+            items={items}
+            total={getCartTotal()}
+            title={t('keranjang.title')}
+            subtitle={t('keranjang.itemCount', { count: items.length })}
+            summaryTitle={t('keranjang.summary.title')}
+            totalLabel={t('keranjang.summary.totalLabel')}
+            infoText={t('keranjang.summary.infoText')}
+            formatAmount={formatRupiahFull}
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
             {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-4">
+            <div className="lg:col-span-2 space-y-2 md:space-y-4">
               {items.map((item) => (
-                <div
-                  key={item.cartItemId}
-                  className="bg-white rounded-lg shadow-sm p-6 border border-gray-100"
-                >
+                <div key={item.cartItemId} className={itemCardClass}>
                   {item.itemType === 'qurban' && item.qurbanData ? (
                     // Qurban Item Display
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        {/* Category Badge */}
-                        <span className="inline-block px-3 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full mb-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <span className="inline-block px-3 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">
                           Qurban {item.qurbanData.animalType === 'cow' ? 'Sapi' : 'Kambing'}
                         </span>
+                        {removeButton(item.cartItemId)}
+                      </div>
+                      <div className="min-w-0">
 
-                        {/* Title */}
-                        <h3 className="section-title text-gray-900 mb-2">
-                          <Link
-                            href={`/qurban/${item.slug}`}
-                            className="hover:text-primary-600 transition-colors"
-                          >
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
+                          <Link href={`/qurban/${item.slug}`} className="hover:text-primary-600 transition-colors">
                             {item.title}
                           </Link>
                         </h3>
 
-                        {/* Qurban Details */}
-                        <div className="bg-amber-50 rounded-lg p-4 mt-4 space-y-2 text-sm">
-                          <div className="flex justify-between">
+                        <div className="bg-amber-50 rounded-lg p-3 mt-3 space-y-2 text-sm">
+                          <div className="flex justify-between gap-3">
                             <span className="text-gray-600">{t('keranjang.item.periode')}</span>
-                            <span className="font-medium text-gray-900">{item.qurbanData.periodName}</span>
+                            <span className="font-medium text-gray-900 text-right">{item.qurbanData.periodName}</span>
                           </div>
-                          <div className="flex justify-between">
+                          <div className="flex justify-between gap-3">
                             <span className="text-gray-600">{t('keranjang.item.jenis')}</span>
-                            <span className="font-medium text-gray-900">
+                            <span className="font-medium text-gray-900 text-right">
                               {item.qurbanData.animalType === 'cow' ? 'Sapi' : 'Kambing'} - {item.qurbanData.packageType === 'individual' ? 'Individu' : 'Patungan'}
                             </span>
                           </div>
-                          <div className="flex justify-between">
+                          <div className="flex justify-between gap-3">
                             <span className="text-gray-600">{t('keranjang.item.jumlah')}</span>
                             <span className="font-medium text-gray-900">{item.qurbanData.quantity} ekor</span>
                           </div>
                         </div>
 
-                        {/* Price Breakdown */}
-                        <div className="mt-4 space-y-2 text-sm">
-                          <div className="flex justify-between">
+                        <div className="mt-3 space-y-2 text-sm">
+                          <div className="flex justify-between gap-3">
                             <span className="text-gray-600">{t('keranjang.item.harga', { quantity: item.qurbanData.quantity })}</span>
                             <span className="font-medium mono">{formatRupiahFull(item.qurbanData.price * item.qurbanData.quantity)}</span>
                           </div>
-                          <div className="flex justify-between">
+                          <div className="flex justify-between gap-3">
                             <span className="text-gray-600">{t('keranjang.item.biayaAdmin', { quantity: item.qurbanData.quantity })}</span>
                             <span className="font-medium mono">{formatRupiahFull(item.qurbanData.adminFee * item.qurbanData.quantity)}</span>
                           </div>
-                          <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between">
+                          <div className="border-t border-gray-100 pt-2 mt-2 flex justify-between items-center gap-3">
                             <span className="font-semibold text-gray-900">{t('keranjang.item.total')}</span>
-                            <span className="text-xl font-bold text-amber-600 mono">{formatRupiahFull(item.amount)}</span>
+                            <span className="text-lg font-bold text-amber-600 mono">{formatRupiahFull(item.amount)}</span>
                           </div>
                         </div>
                       </div>
-
-                      {/* Remove Button */}
-                      <button
-                        onClick={() => removeFromCart(item.cartItemId)}
-                        className="text-gray-400 hover:text-red-600 transition-colors p-2"
-                        aria-label={t('keranjang.item.removeAriaLabel')}
-                      >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
                     </div>
                   ) : item.itemType === 'zakat' && item.zakatData ? (
                     // Zakat Item Display
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        {/* Category Badge */}
-                        <span className="inline-block px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full mb-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <span className="inline-block px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full">
                           Zakat {item.zakatData.zakatType.charAt(0).toUpperCase() + item.zakatData.zakatType.slice(1)}
                         </span>
+                        {removeButton(item.cartItemId)}
+                      </div>
+                      <div className="min-w-0">
 
-                        {/* Title */}
-                        <h3 className="section-title text-gray-900 mb-2">
-                          {item.title}
-                        </h3>
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
 
-                        {/* Zakat Details - Show quantity breakdown if available */}
                         {item.zakatData.quantity && item.zakatData.pricePerUnit ? (
-                          <div className="bg-emerald-50 rounded-lg p-4 mt-4 space-y-2 text-sm">
-                            <div className="flex justify-between">
+                          <div className="bg-emerald-50 rounded-lg p-3 mt-3 space-y-2 text-sm">
+                            <div className="flex justify-between gap-3">
                               <span className="text-gray-600">Jumlah:</span>
                               <span className="font-medium text-gray-900">{item.zakatData.quantity} {item.zakatData.zakatType === 'fitrah' ? 'jiwa' : 'unit'}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between gap-3">
                               <span className="text-gray-600">Per {item.zakatData.zakatType === 'fitrah' ? 'jiwa' : 'unit'}:</span>
                               <span className="font-medium text-gray-900 mono">{formatRupiahFull(item.zakatData.pricePerUnit)}</span>
                             </div>
-                            <div className="border-t border-emerald-200 pt-2 mt-2 flex justify-between">
+                            <div className="border-t border-emerald-200 pt-2 mt-2 flex justify-between items-center gap-3">
                               <span className="font-semibold text-gray-900">{t('keranjang.item.total')}</span>
-                              <span className="text-xl font-bold text-emerald-600 mono">{formatRupiahFull(item.amount)}</span>
+                              <span className="text-lg font-bold text-emerald-600 mono">{formatRupiahFull(item.amount)}</span>
                             </div>
                           </div>
                         ) : (
-                          // No quantity - just show amount
-                          <p className="text-xl font-bold text-emerald-600 mt-3 mono">
-                            {formatRupiahFull(item.amount)}
-                          </p>
+                          <p className="text-lg font-bold text-emerald-600 mt-2 mono">{formatRupiahFull(item.amount)}</p>
                         )}
                       </div>
-
-                      {/* Remove Button */}
-                      <button
-                        onClick={() => removeFromCart(item.cartItemId)}
-                        className="text-gray-400 hover:text-red-600 transition-colors p-2"
-                        aria-label={t('keranjang.item.removeAriaLabel')}
-                      >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
                     </div>
                   ) : (
                     // Campaign Item Display
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        {/* Category Badge */}
-                        {item.category && (
-                          <span className="inline-block px-3 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full mb-3">
+                    <div>
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        {item.category ? (
+                          <span className="inline-block px-3 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">
                             {item.category}
                           </span>
+                        ) : (
+                          <span />
                         )}
+                        {removeButton(item.cartItemId)}
+                      </div>
+                      <div className="min-w-0">
 
-                        {/* Title */}
-                        <h3 className="section-title text-gray-900 mb-2">
-                          <Link
-                            href={`/program/${item.slug}`}
-                            className="hover:text-primary-600 transition-colors"
-                          >
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1">
+                          <Link href={`/program/${item.slug}`} className="hover:text-primary-600 transition-colors">
                             {item.title}
                           </Link>
                         </h3>
 
-                        {/* Organization */}
                         {item.organizationName && (
-                          <p className="text-sm text-gray-600 mb-4">
-                            {item.organizationName}
-                          </p>
+                          <p className="text-sm text-gray-600">{item.organizationName}</p>
                         )}
 
-                        {/* Amount Input */}
                         <div className="flex items-center gap-3 mt-4">
                           <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
                             {t('keranjang.item.nominal')}
                           </label>
                           <input
                             type="text"
+                            inputMode="numeric"
                             value={item.amount.toLocaleString('id-ID')}
                             onChange={(e) => {
                               const numericValue = e.target.value.replace(/[^0-9]/g, '');
@@ -230,27 +223,13 @@ export default function KeranjangBantuanPage() {
                                 updateCartItem(item.cartItemId, { amount });
                               }
                             }}
-                            className="flex-1 max-w-xs px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:outline-none transition-colors"
+                            className="flex-1 min-w-0 md:max-w-xs px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-primary-500 focus:outline-none transition-colors"
                             style={{ fontSize: '15px' }}
                           />
                         </div>
 
-                        {/* Formatted Amount Display */}
-                        <p className="text-xl font-bold text-primary-600 mt-3 mono">
-                          {formatRupiahFull(item.amount)}
-                        </p>
+                        <p className="text-lg font-bold text-primary-600 mt-3 mono">{formatRupiahFull(item.amount)}</p>
                       </div>
-
-                      {/* Remove Button */}
-                      <button
-                        onClick={() => removeFromCart(item.cartItemId)}
-                        className="text-gray-400 hover:text-red-600 transition-colors p-2"
-                        aria-label={t('keranjang.item.removeAriaLabel')}
-                      >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
                     </div>
                   )}
                 </div>
@@ -259,14 +238,14 @@ export default function KeranjangBantuanPage() {
               {/* Clear Cart Button */}
               <button
                 onClick={clearCart}
-                className="text-sm text-red-600 hover:text-red-700 font-medium mt-4"
+                className="text-sm text-red-600 hover:text-red-700 font-medium mt-2 md:mt-4"
               >
                 {t('keranjang.clearCart')}
               </button>
             </div>
 
-            {/* Summary Sidebar */}
-            <div className="lg:col-span-1">
+            {/* Summary Sidebar — desktop saja (mobile memakai blok primary di atas) */}
+            <div className="hidden lg:block lg:col-span-1">
               <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 sticky top-24">
                 <h2 className="section-title text-gray-900 mb-6">
                   {t('keranjang.summary.title')}
@@ -310,7 +289,7 @@ export default function KeranjangBantuanPage() {
                 </div>
 
                 {/* Desktop Buttons */}
-                <div className="hidden lg:block space-y-3">
+                <div className="space-y-3">
                   <Button
                     onClick={handleCheckout}
                     className="w-full"
@@ -355,33 +334,31 @@ export default function KeranjangBantuanPage() {
         </div>
       </main>
 
-      {/* Mobile Sticky Bottom Bar */}
+      {/* Mobile Sticky Bottom Bar: tombol utama, di bawahnya tautan teks (tanpa border) */}
       {isMounted && createPortal(
-        <div className="fixed bottom-0 left-0 right-0 z-[1030] bg-white rounded-t-[20px] shadow-[0_-4px_12px_rgba(0,0,0,0.1)] p-4 lg:hidden">
-          <div className="flex flex-col gap-3">
-            <Button
-              onClick={handleCheckout}
-              size="lg"
-              disabled={getCartTotal() === 0}
-              className="w-full"
-            >
-              Lanjutkan Pembayaran
-            </Button>
-            <Link href="/program">
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full"
-              >
-                Tambah Program Lain
-              </Button>
-            </Link>
-          </div>
+        <div className="fixed bottom-0 left-0 right-0 z-[1030] bg-white rounded-t-[20px] shadow-[0_-4px_12px_rgba(0,0,0,0.1)] px-[15px] pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden">
+          <Button
+            onClick={handleCheckout}
+            size="lg"
+            disabled={getCartTotal() === 0}
+            className="w-full"
+          >
+            {t('keranjang.summary.checkout')}
+          </Button>
+          <Link
+            href="/program"
+            className="block w-full py-3 text-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            {t('keranjang.summary.addMore')}
+          </Link>
         </div>,
         document.body
       )}
 
       <Footer />
+
+      {/* Spacer bar bawah mobile — elemen PALING TERAKHIR (docs/arsitektur-mobile-single-shell.md) */}
+      <div className="h-28 lg:hidden" aria-hidden="true" />
     </>
   );
 }

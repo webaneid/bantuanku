@@ -256,8 +256,9 @@ Behavior:
 - qurban dan zakat amount tidak bisa diedit di cart
 - item bisa dihapus per baris
 - cart bisa dikosongkan total
-- checkout redirect ke `/checkout`
-- mobile memakai sticky bottom bar via `createPortal(document.body)`
+- tombol checkout berlabel **"Verifikasi Donatur"** (`keranjang.summary.checkout`; en "Verify Donor") karena langkah berikutnya di `/checkout` adalah verifikasi email/HP donatur, lalu redirect ke `/checkout`
+- **Tampilan mobile (2026-10-24, seragam dengan checkout)**: blok ringkasan di atas (`CartSummaryCard`: gradasi primary, radius 24px, teks putih, total besar); kartu item penuh sampai tepi layar, tanpa border, teks 15px, tombol hapus (X) di baris badge supaya isi memakai lebar penuh; grid `grid-cols-1 lg:grid-cols-3` (tanpa kolom dasar halaman overflow); sidebar ringkasan hanya di desktop
+- bar bawah mobile (`createPortal(document.body)`): tombol utama "Verifikasi Donatur", di bawahnya tautan teks "Tambah Program Lain" tanpa border; spacer `h-28 lg:hidden` setelah `<Footer />`. Desktop tidak berubah (tombol "Tambah Program Lain" tetap outline di sidebar)
 
 ### Tampilan Item
 
@@ -309,7 +310,7 @@ Behavior awal:
 - Grid wajib `grid grid-cols-1 lg:grid-cols-3`: tanpa `grid-cols-1`, kolom implisit mengikuti min-content dan seluruh halaman overflow horizontal di layar sempit (terukur 394px di layar 380px).
 - Kartu form dan kartu ringkasan di mobile (< md) menembus padding container (`-mx-4 sm:-mx-6 md:mx-0`), tanpa border/radius, teks berjarak 15px; `md` ke atas tetap kartu bergaya lama.
 - Bar bawah mobile (`fixed bottom-0`, portal): tombol utama "Pilih Metode Pembayaran" di atas, di bawahnya tautan teks "Kembali ke Keranjang" tanpa border. Spacer `h-28 lg:hidden` setelah `<Footer />` (bukan `pb-*` di `<main>`), lihat `arsitektur-mobile-single-shell.md`.
-- Ringkasan donasi di mobile: blok di atas halaman, latar gradasi primary, radius 24px, teks putih (judul, daftar item, total besar, info setelah checkout). Sidebar ringkasan lama hanya tampil di desktop (`lg`).
+- Ringkasan donasi di mobile: komponen bersama `CartSummaryCard` (juga dipakai `/keranjang-bantuan`): blok di atas halaman, latar gradasi primary, radius 24px, teks putih (judul, daftar item, total besar, info setelah checkout). Sidebar ringkasan lama hanya tampil di desktop (`lg`).
 - Desktop (tombol di akhir form) tidak berubah.
 
 ## Checkout Validation

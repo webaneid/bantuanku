@@ -1761,7 +1761,7 @@ export const idMessages: Messages = {
     summary: {
       title: "Ringkasan Bantuan",
       totalLabel: "Total Bantuan",
-      checkout: "Lanjutkan Pembayaran",
+      checkout: "Verifikasi Donatur",
       addMore: "Tambah Program Lain",
       infoText: "Anda dapat mendonasikan ke berbagai program sekaligus dalam satu transaksi. Donasi Anda akan disalurkan sesuai pilihan program.",
     },
