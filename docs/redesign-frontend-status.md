@@ -29,6 +29,9 @@ tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-k
 | Halaman pilih metode bayar `/invoice/[id]/payment-method` | semua metode tampil sekaligus (kartu manual + channel iPaymu), logo lembaga di atas judul; halaman instruksi bayar baru `/invoice/[id]/payment-instruction` | 4793520, c061a7d |
 | `/checkout` mobile | tanpa overflow (grid `grid-cols-1`), kartu penuh tanpa border teks 15px, bar bawah tombol utama + tautan teks, blok ringkasan primary di atas (`CartSummaryCard`); alur satu isian email/HP + tombol Lanjutkan (terdaftar → tanpa isian identitas; belum → form lengkap) | 8c0f01e, 27d8235 |
 | `/keranjang-bantuan` mobile | seluruh isi keranjang di satu blok primary (`CartSummaryCard` mode `edit`: nominal, hapus, rincian zakat/qurban, kosongkan); tombol "Verifikasi Donatur" + tautan teks "Tambah Program Lain"; daftar kartu hanya desktop | 263e598, 2a7dbe0, ca1bbfb |
+| Modal donasi campaign (`DonationConfirmModal`) | 3 tombol seragam (`h-12`): Donasi Sekarang → `/checkout`, Tambah ke Keranjang & Lihat → `/keranjang-bantuan`, Tambah ke Keranjang → `/program`; "Cari Program Lain" dihapus; `/checkout` menunggu `CartContext.isLoaded` sebelum redirect ke keranjang | c8ddc85 |
+| Checkout: bar bawah dan Lanjutkan | bar "Pilih Metode Pembayaran" hanya tampil bila data donatur siap; tombol Lanjutkan hilang setelah terverifikasi/mulai mengisi; auto-gulir ke hasil | aa36930 |
+| `/invoice/[id]/payment-instruction` mobile | blok primary + kartu penuh + tautan teks; QRIS: tombol "Unduh QRIS" (PNG 800px) | 3708299 |
 
 ## Belum dikerjakan / keputusan terbuka
 - `FeaturedCarousel` ("Program Unggulan & Mendesak") masih tampilan lama; qurban section, "Why Choose Us", Header, Footer belum di-redesign. User akan menyebut bagian berikutnya.
@@ -46,4 +49,6 @@ tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-k
 - Pemilik produk menyebut UI checkout dan keranjang "sementara ok, akan berubah lagi"; jangan menganggap final.
 - Belum teruji di perangkat mobile sungguhan: checkout/keranjang/instruksi bayar (diuji lewat iframe 390px), dan alur checkout dengan user login.
 - Thumbnail program di blok ringkasan (seperti referensi desain) belum ada karena `CartItem` tidak menyimpan gambar.
-- Tombol "Tambah Program Lain" di sidebar desktop keranjang tetap outline (hanya mobile yang jadi tautan teks).
+- Tombol "Tambah Program Lain" di sidebar desktop keranjang tetap outline (hanya mobile yang jadi tautan teks); tombol form checkout desktop tidak digating.
+- Modal donasi qurban dan zakat belum disederhanakan seperti modal campaign (masih pola lama, tombol tidak seragam).
+- Unduh QRIS belum diuji di iPhone/Safari nyata.
