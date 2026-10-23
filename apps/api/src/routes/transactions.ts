@@ -27,7 +27,9 @@ import { TransactionService } from "../services/transaction";
 import { RevenueShareService } from "../services/revenue-share";
 import { WhatsAppService } from "../services/whatsapp";
 import { generatePayload, generateQrDataUrl, parseMerchantInfo } from "../services/qris-generator";
-import { requireRole, authMiddleware } from "../middleware/auth";
+import { requireRole, authMiddleware, optionalAuthMiddleware } from "../middleware/auth";
+import { protectTransactionDonor } from "../lib/transaction-privacy";
+import { transactionCreateRateLimit } from "../middleware/ratelimit";
 import { getCookie } from "hono/cookie";
 import { updateBankBalance } from "../utils/bank-balance";
 import { sendCAPIEvent } from "../lib/meta-capi";
@@ -166,9 +168,15 @@ async function detectAndFetchTransaction(db: any, id: string) {
 }
 
 // POST /transactions - Create new transaction (NEW)
-app.post("/", async (c) => {
+app.post("/", transactionCreateRateLimit, optionalAuthMiddleware, async (c) => {
   const db = c.get("db");
   const body = await c.req.json();
+  const requestUser = c.get("user");
+
+  // Pemilik transaksi ditentukan dari token, bukan dari body (sebelumnya user_id kiriman klien dipercaya)
+  body.user_id = requestUser?.id;
+  // donatur_id hanya boleh ditentukan server (bot WhatsApp dsb.), bukan klien publik
+  delete body.donatur_id;
 
   // Cookie fallback: jika frontend tidak kirim referral code (localStorage expired),
   // coba baca dari server cookie "fundraiser_ref" (30 hari)
@@ -268,7 +276,7 @@ app.post("/", async (c) => {
 
     return c.json({
       success: true,
-      data: transaction,
+      data: await protectTransactionDonor(db, requestUser, transaction),
     }, 201);
   } catch (error: any) {
     return c.json({
@@ -364,7 +372,7 @@ app.get("/my", authMiddleware, async (c) => {
 });
 
 // GET /transactions/:id - Get transaction detail
-app.get("/:id", async (c) => {
+app.get("/:id", optionalAuthMiddleware, async (c) => {
   const id = c.req.param("id");
   const db = c.get("db");
 
@@ -373,12 +381,15 @@ app.get("/:id", async (c) => {
   const newTransaction = await service.getById(id);
 
   if (newTransaction) {
+    // Endpoint publik: identitas donatur yang diambil dari profil terdaftar disamarkan
+    // kecuali pembacanya staf atau pemilik transaksi (login)
+    const visible = await protectTransactionDonor(db, c.get("user"), newTransaction);
     return c.json({
       success: true,
       data: {
         type: "transaction",
         data: {
-          ...newTransaction,
+          ...visible,
           transferAmount: newTransaction.totalAmount + (newTransaction.uniqueCode || 0),
         },
       },

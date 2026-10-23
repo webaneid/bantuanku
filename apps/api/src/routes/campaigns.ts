@@ -3,6 +3,7 @@ import { eq, desc, and, like, sql } from "drizzle-orm";
 import { campaigns, campaignUpdates, categories, transactions, mitra, employees } from "@bantuanku/db";
 import { success, error, paginated } from "../lib/response";
 import { optionalAuthMiddleware } from "../middleware/auth";
+import { publicDonorName } from "../lib/transaction-privacy";
 import type { Env, Variables } from "../types";
 
 const campaignsRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -272,6 +273,7 @@ campaignsRoute.get("/:id/donors", async (c) => {
         totalAmount: true,
         message: true,
         paidAt: true,
+        typeSpecificData: true,
       },
     }),
     db
@@ -286,7 +288,13 @@ campaignsRoute.get("/:id/donors", async (c) => {
       ),
   ]);
 
-  return paginated(c, data, {
+  // Nama dari profil terdaftar disamarkan; typeSpecificData tidak ikut ke respons publik
+  const publicData = data.map(({ typeSpecificData, ...row }: any) => ({
+    ...row,
+    donorName: publicDonorName(row.donorName, typeSpecificData),
+  }));
+
+  return paginated(c, publicData, {
     page,
     limit,
     total: Number(countResult[0]?.count || 0),

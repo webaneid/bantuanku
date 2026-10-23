@@ -17,6 +17,7 @@ import {
   zakatTypes,
 } from "@bantuanku/db";
 import { success } from "../lib/response";
+import { publicDonorName } from "../lib/transaction-privacy";
 import type { Env, Variables } from "../types";
 
 const publicStats = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -104,6 +105,7 @@ publicStats.get("/zakat-report", async (c) => {
       id: transactions.id,
       paidAt: transactions.paidAt,
       donorName: transactions.donorName,
+      typeSpecificData: transactions.typeSpecificData,
       amount: transactions.totalAmount,
       periodId: zakatPeriods.id,
       periodName: zakatPeriods.name,
@@ -213,7 +215,7 @@ publicStats.get("/zakat-report", async (c) => {
     rows: rows.map((row) => ({
       id: row.id,
       paidAt: row.paidAt,
-      donorName: row.donorName,
+      donorName: publicDonorName(row.donorName, row.typeSpecificData),
       amount: Number(row.amount || 0),
       periodId: row.periodId,
       periodName: row.periodName,
@@ -350,6 +352,7 @@ publicStats.get("/qurban-report", async (c) => {
       id: transactions.id,
       paidAt: transactions.paidAt,
       donorName: transactions.donorName,
+      typeSpecificData: transactions.typeSpecificData,
       amount: transactions.totalAmount,
       quantity: transactions.quantity,
       periodId: qurbanPeriods.id,
@@ -523,7 +526,7 @@ publicStats.get("/qurban-report", async (c) => {
     rows: rows.map((row) => ({
       id: row.id,
       paidAt: row.paidAt,
-      donorName: row.donorName,
+      donorName: publicDonorName(row.donorName, row.typeSpecificData),
       amount: Number(row.amount || 0),
       quantity: Number(row.quantity || 0),
       periodId: row.periodId,

@@ -18,6 +18,8 @@ import {
   type Transaction,
 } from "@bantuanku/db";
 import { normalizePhone } from "../lib/contact-helpers";
+import { parseDonaturIdentifier, findDonaturByIdentifier, isPlaceholderEmail } from "./donatur-lookup";
+import { DONOR_FROM_PROFILE_KEY } from "../lib/transaction-privacy";
 
 interface CreateTransactionDTO {
   product_type: "campaign" | "zakat" | "qurban";
@@ -25,9 +27,17 @@ interface CreateTransactionDTO {
   quantity?: number;
   unit_price?: number;
   admin_fee?: number;
-  donor_name: string;
+  donor_name?: string;
   donor_email?: string;
   donor_phone?: string;
+  /**
+   * Alur checkout "sudah terdaftar": klien hanya mengirim isian email/HP (`donor_identifier`) dan
+   * `use_registered_donatur: true`. Server mencari donatur sendiri dan mengambil nama/email/HP dari
+   * profilnya. `donatur_id` dari klien tidak dipercaya lagi.
+   */
+  donor_identifier?: string;
+  use_registered_donatur?: boolean;
+  /** Hanya untuk pemanggil server tepercaya (mis. bot WhatsApp). Rute publik membuang field ini. */
   donatur_id?: string;
   is_anonymous?: boolean;
   message?: string;
@@ -335,12 +345,40 @@ export class TransactionService {
       data.type_specific_data
     );
 
-    // Use provided donatur_id or find/create donatur record
-    const donaturId = data.donatur_id || await this.findOrCreateDonatur({
-      name: data.donor_name,
-      email: data.donor_email,
-      phone: data.donor_phone,
-    });
+    // Donatur ditentukan SERVER: dari profil terdaftar (isian email/HP) atau dari data yang diketik.
+    // `donatur_id` hanya datang dari kode server tepercaya; POST /transactions publik membuangnya.
+    let donorName = data.donor_name?.trim() || "";
+    let donorEmail = data.donor_email;
+    let donorPhone = data.donor_phone;
+    let donaturId: string;
+    let donorFromProfile = false;
+
+    if (data.use_registered_donatur) {
+      const parsed = parseDonaturIdentifier(data.donor_identifier);
+      const registered = parsed ? await findDonaturByIdentifier(this.db, parsed) : null;
+      if (!registered) {
+        throw new Error("Donatur terdaftar tidak ditemukan. Mohon isi data lengkap.");
+      }
+
+      donaturId = registered.id;
+      donorName = registered.name;
+      donorEmail = isPlaceholderEmail(registered.email) ? undefined : registered.email;
+      donorPhone = registered.phone || registered.whatsappNumber || undefined;
+      donorFromProfile = true;
+    } else {
+      if (!donorName) {
+        throw new Error("Nama donatur wajib diisi");
+      }
+      donaturId = data.donatur_id || await this.findOrCreateDonatur({
+        name: donorName,
+        email: donorEmail,
+        phone: donorPhone,
+      });
+    }
+
+    // Penanda dikendalikan server; nilai dari klien dibuang
+    const clientTypeData: Record<string, any> = { ...(data.type_specific_data || {}) };
+    delete clientTypeData[DONOR_FROM_PROFILE_KEY];
 
     // Lookup fundraiser by referral code (self-referral protection)
     let referredByFundraiserId: string | null = null;
@@ -363,8 +401,8 @@ export class TransactionService {
           });
 
           if (fundraiserDonatur) {
-            const donorEmail = this.normalizeEmail(data.donor_email);
-            const donorPhone = data.donor_phone ? normalizePhone(data.donor_phone) : undefined;
+            const donorEmailNorm = this.normalizeEmail(donorEmail);
+            const donorPhoneNorm = donorPhone ? normalizePhone(donorPhone) : undefined;
 
             const ownerEmail = this.normalizeEmail(fundraiserDonatur.email);
             const ownerPhone = fundraiserDonatur.phone ? normalizePhone(fundraiserDonatur.phone) : undefined;
@@ -372,10 +410,10 @@ export class TransactionService {
               ? normalizePhone(fundraiserDonatur.whatsappNumber)
               : undefined;
 
-            const sameEmail = Boolean(donorEmail && ownerEmail && donorEmail === ownerEmail);
+            const sameEmail = Boolean(donorEmailNorm && ownerEmail && donorEmailNorm === ownerEmail);
             const samePhone = Boolean(
-              donorPhone &&
-              (donorPhone === ownerPhone || donorPhone === ownerWhatsapp)
+              donorPhoneNorm &&
+              (donorPhoneNorm === ownerPhone || donorPhoneNorm === ownerWhatsapp)
             );
 
             if (sameEmail || samePhone) {
@@ -422,17 +460,18 @@ export class TransactionService {
         adminFee,
         totalAmount,
         uniqueCode,
-        donorName: data.donor_name,
-        donorEmail: data.donor_email,
-        donorPhone: data.donor_phone,
+        donorName,
+        donorEmail,
+        donorPhone,
         isAnonymous: data.is_anonymous || false,
         userId: data.user_id,
         donaturId: donaturId,
         paymentMethodId: data.payment_method_id,
         referredByFundraiserId,
         typeSpecificData: {
-          ...data.type_specific_data,
+          ...clientTypeData,
           ...sharedGroupData,
+          ...(donorFromProfile ? { [DONOR_FROM_PROFILE_KEY]: true } : {}),
           ...(data.product_type === 'campaign' && product.pillar ? { pillar: product.pillar } : {}),
         },
         message: data.message,

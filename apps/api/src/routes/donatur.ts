@@ -6,6 +6,7 @@ import { donatur, createId } from "@bantuanku/db";
 import { success, error } from "../lib/response";
 import { normalizeContactData, maskName, maskEmail, maskPhone } from "../lib/contact-helpers";
 import { hashPassword } from "../lib/password";
+import { parseDonaturIdentifier, findDonaturByIdentifier } from "../services/donatur-lookup";
 import { lookupRateLimit } from "../middleware/ratelimit";
 import type { Env, Variables } from "../types";
 
@@ -56,6 +57,31 @@ donaturRoute.get("/search", lookupRateLimit, async (c) => {
     phone: maskPhone(found.phone),
     whatsappNumber: maskPhone(found.whatsappNumber),
     hasAccount: !!found.userId,
+  });
+});
+
+// POST /donatur/check - Apakah email/nomor HP/WhatsApp sudah terdaftar sebagai donatur? (publik)
+// Hanya menjawab ya/tidak: tanpa id dan tanpa data pribadi apa pun (nama, email, HP tidak ikut).
+// Data donatur dipakai server saat membuat transaksi (`use_registered_donatur`), bukan oleh klien.
+const checkDonaturSchema = z.object({
+  identifier: z.string().trim().min(5).max(120),
+});
+
+donaturRoute.post("/check", lookupRateLimit, zValidator("json", checkDonaturSchema), async (c) => {
+  const db = c.get("db");
+  const { identifier } = c.req.valid("json");
+
+  const parsed = parseDonaturIdentifier(identifier);
+  if (!parsed) {
+    return error(c, "Format email atau nomor HP tidak valid", 400);
+  }
+
+  const found = await findDonaturByIdentifier(db, parsed);
+
+  return success(c, {
+    type: parsed.kind,
+    registered: !!found,
+    hasAccount: !!found?.userId,
   });
 });
 

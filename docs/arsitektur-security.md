@@ -265,6 +265,16 @@ Konsekuensi:
 
 ---
 
+## Data Donatur pada Transaksi Publik (2026-10-24)
+
+`GET /v1/transactions/:id` dan keluaran publik lain menampilkan nama donor. Karena checkout kini dapat mengisi identitas dari profil donatur terdaftar (server-side, `use_registered_donatur`), data itu **tidak boleh** terbaca oleh orang yang hanya mengetik email/HP orang lain:
+
+1. Transaksi bertanda `type_specific_data.donor_from_profile` disamarkan untuk pembaca yang bukan staf atau pemilik (`lib/transaction-privacy.ts`).
+2. Keluaran publik lain memakai `publicDonorName()`: `GET /campaigns/:id/donors`, `GET /public-stats/zakat-report` dan `/qurban-report`, `GET /fundraisers/me/referrals`. Tanpa ini nama lengkap bocor lewat daftar publik setelah penyerang membayar nominal kecil.
+3. `donatur_id` dan `user_id` dari body publik tidak dipercaya lagi (sebelumnya dipercaya begitu saja); `donatur_id` hanya untuk kode server tepercaya (bot WhatsApp).
+4. `POST /v1/donatur/check` hanya menjawab terdaftar/tidak, tanpa id dan data. Sisa risiko yang diterima: (a) enumerasi "email/HP ini terdaftar?" (rate limit 30/15 menit/IP); (b) tanpa verifikasi kepemilikan (OTP), siapa pun bisa berdonasi "atas nama" donatur terdaftar: efeknya transaksi muncul di riwayat pemiliknya dan WhatsApp order terkirim ke nomornya (dibatasi `transactionCreateRateLimit` 20/menit/IP).
+5. Syarat kepemilikan memakai email akun login; login mensyaratkan email terverifikasi (ADR-0010), jadi pemilik email terbukti.
+
 ## Webhook Security
 
 ### Payment webhook

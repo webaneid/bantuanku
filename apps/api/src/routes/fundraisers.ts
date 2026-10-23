@@ -18,6 +18,7 @@ import {
 } from "@bantuanku/db";
 import { success, error, paginated } from "../lib/response";
 import { authMiddleware } from "../middleware/auth";
+import { publicDonorName } from "../lib/transaction-privacy";
 import type { Env, Variables } from "../types";
 import { DisbursementService } from "../services/disbursement";
 import { z } from "zod";
@@ -217,6 +218,7 @@ app.get("/me/referrals", authMiddleware, async (c) => {
       createdAt: fundraiserReferrals.createdAt,
       productName: transactions.productName,
       donorName: transactions.donorName,
+      typeSpecificData: transactions.typeSpecificData,
     })
     .from(fundraiserReferrals)
     .leftJoin(transactions, eq(fundraiserReferrals.transactionId, transactions.id))
@@ -230,7 +232,13 @@ app.get("/me/referrals", authMiddleware, async (c) => {
     .from(fundraiserReferrals)
     .where(eq(fundraiserReferrals.fundraiserId, fundraiser.id));
 
-  return paginated(c, list, {
+  // Fundraiser bukan pemilik data donor: nama dari profil terdaftar disamarkan, typeSpecificData tidak ikut
+  const referrals = list.map(({ typeSpecificData, ...row }: any) => ({
+    ...row,
+    donorName: row.donorName ? publicDonorName(row.donorName, typeSpecificData) : row.donorName,
+  }));
+
+  return paginated(c, referrals, {
     page,
     limit,
     total: Number(countResult?.total || 0),

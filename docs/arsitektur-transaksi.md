@@ -148,21 +148,30 @@ createdAt / updatedAt   timestamptz
   quantity?: number,           // default 1
   unit_price?: number,
   admin_fee?: number,
-  donor_name: string,
+  donor_name?: string,         // wajib kecuali use_registered_donatur
   donor_email?: string,
   donor_phone?: string,
-  donatur_id?: string,
+  donor_identifier?: string,   // email / HP / WhatsApp donatur terdaftar (alur checkout "sudah terdaftar")
+  use_registered_donatur?: boolean, // server mengambil nama/email/HP dari profil donatur
+  donatur_id?: string,         // HANYA untuk kode server tepercaya (bot WA); POST publik membuangnya
   is_anonymous?: boolean,
   message?: string,
   payment_method_id?: string,
   type_specific_data?: Record<string, any>,
-  user_id?: string,
+  user_id?: string,            // POST publik: diisi dari token login, body diabaikan
   include_unique_code?: boolean,
   referred_by_fundraiser_code?: string,
 }
 ```
 
 Cart multi-item → frontend membuat **N transaksi terpisah** (satu per item).
+
+### Donatur pada transaksi (2026-10-24)
+
+- **Donatur ditentukan server.** `POST /transactions` publik membuang `donatur_id` dan `user_id` dari body; `user_id` diambil dari token (`optionalAuthMiddleware`). Rate limit `transactionCreateRateLimit` 20/menit/IP (tiap transaksi memicu WhatsApp ke donatur).
+- **Alur terdaftar**: `use_registered_donatur: true` + `donor_identifier` (email, atau HP/WhatsApp). Server mencari donatur (`services/donatur-lookup.ts`), lalu mengisi `donorName/donorEmail/donorPhone` dari profilnya (email placeholder `@temp.local` tidak dipakai) dan menandai `type_specific_data.donor_from_profile = true` (nilai dari klien dibuang). Tidak ditemukan → 400. Nama/email/HP dari klien diabaikan.
+- **Alur diketik**: seperti sebelumnya (`findOrCreateDonatur`: cocok email ATAU HP/WhatsApp, selain itu buat donatur baru).
+- **Masking**: transaksi bertanda `donor_from_profile` disamarkan (`maskName/maskEmail/maskPhone`) di `GET /transactions/:id` dan respons `POST /transactions` kecuali pembacanya staf (`super_admin`, `admin_finance`, `admin_campaign`) atau pemilik (user login yang `userId`/`donatur.userId`/email-nya cocok; login mensyaratkan email terverifikasi). Nama donor di keluaran publik lain (daftar donatur campaign, laporan zakat/qurban publik, referral fundraiser) juga disamarkan lewat `publicDonorName()` (`lib/transaction-privacy.ts`).
 
 ---
 
@@ -229,8 +238,8 @@ Auth guard diterapkan per-route: `authMiddleware` + `requireRole()` inline di ma
 
 | Method | Path | Fungsi |
 |--------|------|--------|
-| `POST` | `/v1/transactions` | Buat transaksi baru (guest & login) |
-| `GET` | `/v1/transactions/:id` | Detail satu transaksi |
+| `POST` | `/v1/transactions` | Buat transaksi baru (guest & login; auth opsional, rate limit 20/menit/IP) |
+| `GET` | `/v1/transactions/:id` | Detail satu transaksi (auth opsional: donatur dari profil terdaftar tersamar bagi non-pemilik/non-staf) |
 | `POST` | `/v1/transactions/:id/upload-proof` | Upload bukti bayar (multipart) |
 | `POST` | `/v1/transactions/:id/confirm-payment` | Konfirmasi metode bayar |
 | `GET` | `/v1/transactions/:id/qris` | Generate QR code QRIS dinamis |

@@ -104,6 +104,13 @@ export const apiRateLimit = rateLimit({
   maxRequests: 300, // Increased for development
 });
 
+// Pembuatan transaksi publik (guest checkout). Tiap transaksi memicu WhatsApp ke nomor donatur, jadi dibatasi
+// agar tidak dipakai membanjiri nomor orang lain. Satu checkout membuat satu transaksi per item keranjang.
+export const transactionCreateRateLimit = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  maxRequests: 20,
+});
+
 export const paymentRateLimit = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   maxRequests: 10,
