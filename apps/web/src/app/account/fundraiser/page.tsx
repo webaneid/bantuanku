@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import toast from "@/lib/feedback-toast";
 import RevenueShareDisbursementPanel from "@/components/account/RevenueShareDisbursementPanel";
 import { useI18n } from "@/lib/i18n/provider";
+import { AccountPageHeader } from "@/components/account/AccountPageHeader";
 
 interface Fundraiser {
   id: string;
@@ -278,13 +279,11 @@ export default function FundraiserPage() {
   // Not registered yet
   if (isError || !fundraiser) {
     return (
-      <div className="space-y-6 max-w-3xl mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t("account.fundraiser.title")}</h1>
-          <p className="text-gray-600 mt-1">{t("account.fundraiser.introSubtitle")}</p>
-        </div>
+      <div className="max-w-3xl mx-auto">
+        <AccountPageHeader title={t("account.fundraiser.title")} subtitle={t("account.fundraiser.introSubtitle")} />
 
-        <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+        <div className="mt-5 lg:mt-0 px-[15px] lg:px-0">
+        <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 text-center">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary-100 flex items-center justify-center">
             <svg className="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46" />
@@ -326,10 +325,11 @@ export default function FundraiserPage() {
             type="button"
             onClick={() => registerMutation.mutate()}
             disabled={registerMutation.isPending || !profileComplete}
-            className="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex h-12 items-center justify-center px-6 font-semibold text-white bg-primary-500 rounded-lg hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {registerMutation.isPending ? t("account.fundraiser.registerProcessing") : t("account.fundraiser.registerAction")}
           </button>
+        </div>
         </div>
       </div>
     );
@@ -338,12 +338,10 @@ export default function FundraiserPage() {
   const status = statusConfig[fundraiser.status] || statusConfig.pending;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t("account.fundraiser.title")}</h1>
-        <p className="text-gray-600 mt-1">{t("account.fundraiser.subtitle")}</p>
-      </div>
+    <div className="max-w-4xl mx-auto">
+      <AccountPageHeader title={t("account.fundraiser.title")} subtitle={t("account.fundraiser.subtitle")} />
+
+      <div className="mt-5 lg:mt-0 px-[15px] lg:px-0 space-y-4 lg:space-y-6">
 
       {/* Pending notice */}
       {fundraiser.status === "pending" && (
@@ -378,7 +376,7 @@ export default function FundraiserPage() {
               style={{ width: `${Math.round((referralFieldsFilled / referralRequiredFields.length) * 100)}%` }}
             />
           </div>
-          <ul className="text-xs text-warning-700 space-y-1 mb-3">
+          <ul className="m-0 list-none space-y-1 p-0 mb-3 text-xs text-warning-700">
             {!profileData.nik && <li>- {t("account.profile.labels.nik")}</li>}
             {(!profileData.birthPlace || !profileData.birthDate) && <li>- {t("account.profile.labels.birthPlace")} & {t("account.profile.labels.birthDate")}</li>}
             {!profileData.jobTitleId && <li>- {t("account.profile.labels.jobTitle")}</li>}
@@ -394,7 +392,7 @@ export default function FundraiserPage() {
       )}
 
       {/* Status & Link Card */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <span className="text-sm text-gray-500">{t("account.fundraiser.status")}</span>
@@ -415,24 +413,24 @@ export default function FundraiserPage() {
         {fundraiser.status === "active" && referralDataComplete && (
           <div className="border-t border-gray-200 pt-4 mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">{t("account.fundraiser.referralLink")}</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                readOnly
-                value={`${webUrl}?ref=${fundraiser.code}`}
-                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg font-mono text-sm text-gray-700"
-              />
+            <input
+              type="text"
+              readOnly
+              value={`${webUrl}?ref=${fundraiser.code}`}
+              className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-sm text-gray-700"
+            />
+            <div className="mt-3 grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="h-12 rounded-lg border-2 border-gray-200 bg-white font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
               >
                 {copied ? t("account.fundraiser.copied") : t("account.fundraiser.copy")}
               </button>
               <button
                 type="button"
                 onClick={handleShareWhatsApp}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                className="h-12 rounded-lg border-2 border-success-600 bg-success-600 font-semibold text-white transition-colors hover:bg-success-700 hover:border-success-700"
               >
                 {t("account.fundraiser.whatsapp")}
               </button>
@@ -444,19 +442,19 @@ export default function FundraiserPage() {
       {/* Stats */}
       {fundraiser.status === "active" && referralDataComplete && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="text-sm text-gray-500">{t("account.fundraiser.cards.totalReferral")}</div>
             <div className="text-2xl font-bold text-gray-900 mt-1">{fundraiser.totalReferrals || 0}</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="text-sm text-gray-500">{t("account.fundraiser.cards.totalDonation")}</div>
-            <div className="text-lg font-bold text-gray-900 mt-1">{formatRupiahFull(fundraiser.totalDonationAmount || 0)}</div>
+            <div className="text-lg font-bold text-gray-900 mt-1 break-words">{formatRupiahFull(fundraiser.totalDonationAmount || 0)}</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="text-sm text-gray-500">{t("account.fundraiser.cards.totalCommission")}</div>
             <div className="text-lg font-bold text-primary-600 mt-1">{formatRupiahFull(totalKomisiPaid)}</div>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="text-sm text-gray-500">{t("account.fundraiser.cards.balance")}</div>
             <div className="text-lg font-bold text-success-600 mt-1">{formatRupiahFull(saldoKomisi)}</div>
           </div>
@@ -466,51 +464,32 @@ export default function FundraiserPage() {
       {/* Tabs: Share Program | Pendapatan */}
       {fundraiser.status === "active" && referralDataComplete && (
         <>
-          <div className="border-b border-gray-200">
-            <nav className="flex gap-0 -mb-px">
-              <button
-                type="button"
-                onClick={() => setActiveTab("share")}
-                className={cn(
-                  "px-5 py-3 text-sm font-medium border-b-2 transition-colors",
-                  activeTab === "share"
-                    ? "border-primary-600 text-primary-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                )}
-              >
-                {t("account.fundraiser.tabs.shareProgram")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("pendapatan")}
-                className={cn(
-                  "px-5 py-3 text-sm font-medium border-b-2 transition-colors",
-                  activeTab === "pendapatan"
-                    ? "border-primary-600 text-primary-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                )}
-              >
-                {t("account.fundraiser.tabs.income")}
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("pencairan")}
-                className={cn(
-                  "px-5 py-3 text-sm font-medium border-b-2 transition-colors",
-                  activeTab === "pencairan"
-                    ? "border-primary-600 text-primary-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                )}
-              >
-                {t("account.fundraiser.tabs.disbursement")}
-              </button>
+          <div className="rounded-full bg-gray-100 p-1">
+            <nav className="grid grid-cols-3 gap-1">
+              {([
+                ["share", t("account.fundraiser.tabs.shareProgram")],
+                ["pendapatan", t("account.fundraiser.tabs.income")],
+                ["pencairan", t("account.fundraiser.tabs.disbursement")],
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setActiveTab(key)}
+                  className={cn(
+                    "rounded-full px-1 py-2.5 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors",
+                    activeTab === key ? "bg-white text-primary-700 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
             </nav>
           </div>
 
           {/* Tab: Share Program */}
           {activeTab === "share" && (
-            <div className="bg-white rounded-xl border border-gray-200">
-              <div className="p-6 border-b border-gray-200">
+            <div className="bg-white rounded-2xl shadow-sm">
+              <div className="p-4 sm:p-6 border-b border-gray-100">
                 <p className="text-sm text-gray-500">{t("account.fundraiser.share.hint")}</p>
               </div>
 
@@ -526,8 +505,8 @@ export default function FundraiserPage() {
                     const type = typeBadgeMap[p.type] || typeBadgeMap.campaign;
                     const shareUrl = `${webUrl}${p.shareUrl}?ref=${fundraiser.code}`;
                     return (
-                      <div key={`${p.type}-${p.id}`} className="flex items-center justify-between px-6 py-4 gap-4">
-                        <div className="flex items-center gap-3 min-w-0">
+                      <div key={`${p.type}-${p.id}`} className="flex flex-col items-start gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:gap-4">
+                        <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto">
                           <span className={cn("inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full shrink-0", type.color)}>
                             {type.label}
                           </span>
@@ -547,7 +526,7 @@ export default function FundraiserPage() {
             <>
               {/* Info & Bank */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="bg-white rounded-2xl shadow-sm p-6">
                   <h3 className="text-base font-semibold text-gray-900 mb-4">{t("account.fundraiser.info.title")}</h3>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
@@ -565,7 +544,7 @@ export default function FundraiserPage() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="bg-white rounded-2xl shadow-sm p-6">
                   <h3 className="text-base font-semibold text-gray-900 mb-4">{t("account.fundraiser.bankAccount.title")}</h3>
                   {fundraiser.bankAccounts && fundraiser.bankAccounts.length > 0 ? (
                     <div className="space-y-3 text-sm">
@@ -593,7 +572,7 @@ export default function FundraiserPage() {
               </div>
 
               {/* Referrals */}
-              <div className="bg-white rounded-xl border border-gray-200">
+              <div className="bg-white rounded-2xl shadow-sm">
                 <div className="p-6 border-b border-gray-200">
                   <h3 className="text-base font-semibold text-gray-900">{t("account.fundraiser.referrals.title")}</h3>
                 </div>
@@ -710,6 +689,7 @@ export default function FundraiserPage() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }
