@@ -250,7 +250,7 @@ Base route: `/v1/activity-reports`.
 | `GET /by-slug/:slug/related?limit=` | Laporan terkait untuk halaman detail (`limit` default 3, maks 12). 404 bila slug tidak published. Respons `{ mode, data }`: `mode: "related"` bila ada laporan published lain dengan `referenceType` + `referenceId` yang sama (urut `activityDate` desc); jika tidak ada, `mode: "other"` berisi laporan published terbaru lain. Selalu `noIndex=false` dan tanpa laporan itu sendiri. Item ringkas (kartu): `id, slug, title, referenceType, referenceName, activityDate, description` (teks polos 150 karakter), `gallery, publishedAt, provinceName, regencyName` — tanpa `referenceId`. |
 | `GET /by-slug/:slug` | Detail by slug, hanya `status=published`; tidak memfilter `noIndex=false`. |
 | `GET /:id` | Detail by ID, hanya `status=published`; tidak memfilter `noIndex=false`. |
-| `GET /campaign/:campaignId` | List laporan campaign, `status=published`, `noIndex=false`, cocok via `referenceType/referenceId` atau legacy `campaignId`. Respons berupa array langsung (bukan objek paginasi); `limit` default 50, maks 100. Tidak mengembalikan field SEO/`status`. |
+| `GET /campaign/:campaignId` | List laporan campaign, `status=published`, `noIndex=false`, cocok via `referenceType/referenceId` atau legacy `campaignId`. Respons berupa array langsung (bukan objek paginasi); `limit` default 50, maks 100. Tidak mengembalikan field SEO/`status`. Sejak 2026-10-23 payload diringkas untuk tab "Kabar Terbaru": `description` berupa kutipan teks polos 150 karakter (bukan HTML penuh), `videoUrl` dihapus, `referenceType` dan `referenceName` ditambahkan; isi lengkap hanya di `/laporan/:slug`. |
 
 Response list `/` membungkus data dan pagination di dalam `data`:
 
@@ -315,7 +315,7 @@ Risiko canonical (analisis kode, belum diuji di browser): `inferCanonicalReportU
 
 File: `apps/web/src/app/program/[slug]/CampaignTabs.tsx`.
 
-Tab `updates` mengambil `GET /activity-reports/campaign/:campaignId?limit=50`, lalu menampilkan timeline activity reports campaign. Konten yang dirender mencakup tanggal, judul, lokasi, `beneficiary_count`, HTML description, YouTube embed, gallery, dan lightbox.
+Tab `updates` mengambil `GET /activity-reports/campaign/:campaignId?limit=50`. Sejak 2026-10-23 tab hanya berisi **daftar** (isi laporan tidak ditampilkan di tab); tiap item mengarah ke `/laporan/:slug`. Desktop (md ke atas): timeline lama — ikon kalender di kiri, lalu tanggal, judul, lokasi lengkap dan `beneficiary_count` di bawahnya; seluruh blok bisa diklik. Mobile (< md): `ReportCard` yang sama dengan arsip `/laporan` (baris ringkas, hemat CSS). Description, YouTube embed, gallery, dan lightbox dihapus dari tab.
 
 ### Zakat dan Qurban Public Report
 

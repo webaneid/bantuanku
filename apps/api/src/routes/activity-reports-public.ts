@@ -213,10 +213,12 @@ activityReportsPublic.get("/campaign/:campaignId", async (c) => {
       id: activityReports.id,
       slug: activityReports.slug,
       title: activityReports.title,
-      description: activityReports.description,
+      referenceType: activityReports.referenceType,
+      referenceName: activityReports.referenceName,
+      // Daftar kabar terbaru hanya butuh kutipan; isi lengkap ada di /laporan/:slug
+      description: sql<string>`left(regexp_replace(${activityReports.description}, '<[^>]*>', '', 'g'), 150)`,
       activityDate: activityReports.activityDate,
       gallery: activityReports.gallery,
-      videoUrl: activityReports.videoUrl,
       typeSpecificData: activityReports.typeSpecificData,
       createdAt: activityReports.createdAt,
       // Address

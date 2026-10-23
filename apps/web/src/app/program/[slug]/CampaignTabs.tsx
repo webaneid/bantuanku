@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n/provider';
-import { getImageUrlByVariant } from '@/lib/image';
+import Link from 'next/link';
+import { ReportCard } from '@/components/organisms/ReportCard';
 import { RenderContent } from '@/lib/render-content';
 
 interface Donation {
@@ -16,11 +17,13 @@ interface Donation {
 
 interface ActivityReport {
   id: string;
+  slug: string;
   title: string;
-  description: string;
+  referenceType: string;
+  referenceName: string | null;
+  description: string; // kutipan teks polos
   activityDate: string;
   gallery: string[] | null;
-  videoUrl: string | null;
   typeSpecificData: Record<string, any> | null;
   createdAt: string;
   // Address
@@ -57,7 +60,6 @@ export default function CampaignTabs({
   const [isLoading, setIsLoading] = useState(false);
   const [donationsPage, setDonationsPage] = useState(1);
   const [donationsTotalPages, setDonationsTotalPages] = useState(1);
-  const [lightbox, setLightbox] = useState<{ reportIndex: number; imageIndex: number } | null>(null);
   const localeTag = locale === 'id' ? 'id-ID' : 'en-US';
 
   // Fetch data when tabs are active
@@ -257,119 +259,91 @@ export default function CampaignTabs({
                 <p className="text-gray-600">{t('campaignDetail.tabs.noUpdates')}</p>
               </div>
             ) : (
-              <div className="space-y-8">
-                {activityReports.map((report, rIndex) => {
-                  const tsd = report.typeSpecificData || {};
-                  const addressParts = [
-                    report.detailAddress,
-                    report.villageName,
-                    report.districtName,
-                    report.regencyName,
-                    report.provinceName,
-                  ].filter(Boolean);
+              <>
+                {/* Mobile (< md): daftar ringkas yang sama dengan arsip laporan */}
+                <div className="md:hidden grid grid-cols-1 divide-y divide-gray-100">
+                  {activityReports.map((report) => (
+                    <ReportCard key={report.id} report={report} />
+                  ))}
+                </div>
 
-                  return (
-                    <div key={report.id} className="relative">
-                      {/* Timeline line */}
-                      {rIndex !== activityReports.length - 1 && (
-                        <div className="absolute left-6 top-12 bottom-0 w-0.5 bg-gray-200"></div>
-                      )}
+                {/* Desktop (md ke atas): timeline; kartu mengarah ke detail laporan */}
+                <div className="hidden md:block space-y-8">
+                  {activityReports.map((report, rIndex) => {
+                    const tsd = report.typeSpecificData || {};
+                    const addressParts = [
+                      report.detailAddress,
+                      report.villageName,
+                      report.districtName,
+                      report.regencyName,
+                      report.provinceName,
+                    ].filter(Boolean);
 
-                      {/* Timeline content */}
-                      <div className="flex gap-6">
-                        {/* Timeline dot */}
-                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center relative z-10">
-                          <svg
-                            className="w-6 h-6 text-primary-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                        </div>
+                    return (
+                      <div key={report.id} className="relative">
+                        {/* Timeline line */}
+                        {rIndex !== activityReports.length - 1 && (
+                          <div className="absolute left-6 top-12 bottom-0 w-0.5 bg-gray-200"></div>
+                        )}
 
-                        {/* Content */}
-                        <div className="flex-1 pb-8">
-                          <div className="mb-2">
-                            <time className="text-sm text-gray-500 font-medium">
-                              {formatDate(report.activityDate)}
-                            </time>
-                          </div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-3">
-                            {report.title}
-                          </h3>
-
-                          {/* Meta: Lokasi & Penerima */}
-                          {(addressParts.length > 0 || tsd.beneficiary_count > 0) && (
-                            <div className="flex flex-wrap gap-x-6 gap-y-2 mb-4 text-sm text-gray-500">
-                              {addressParts.length > 0 && (
-                                <div className="flex items-center gap-1.5">
-                                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                  </svg>
-                                  <span>{addressParts.join(', ')}</span>
-                                </div>
-                              )}
-                              {tsd.beneficiary_count > 0 && (
-                                <div className="flex items-center gap-1.5">
-                                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                  </svg>
-                                  <span>{tsd.beneficiary_count} Penerima Manfaat</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          <RenderContent html={report.description} className="prose prose-gray max-w-none mb-4 text-gray-600" />
-
-                          {/* Video Embed */}
-                          {report.videoUrl && getYoutubeEmbedUrl(report.videoUrl) && (
-                            <div className="aspect-video w-full overflow-hidden rounded-lg bg-black mb-4">
-                              <iframe
-                                src={getYoutubeEmbedUrl(report.videoUrl)!}
-                                title={report.title}
-                                className="w-full h-full"
-                                loading="lazy"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                referrerPolicy="strict-origin-when-cross-origin"
-                                allowFullScreen
+                        <div className="flex gap-6">
+                          {/* Timeline dot */}
+                          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center relative z-10">
+                            <svg
+                              className="w-6 h-6 text-primary-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                               />
-                            </div>
-                          )}
+                            </svg>
+                          </div>
 
-                          {/* Gallery */}
-                          {report.gallery && report.gallery.length > 0 && (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-4">
-                              {report.gallery.map((imageUrl, imgIndex) => (
-                                <button
-                                  key={imgIndex}
-                                  type="button"
-                                  onClick={() => setLightbox({ reportIndex: rIndex, imageIndex: imgIndex })}
-                                  className="relative aspect-video rounded-lg overflow-hidden bg-gray-100 cursor-pointer group"
-                                >
-                                  <img
-                                    src={getImageUrlByVariant(imageUrl, ['large', 'medium'])}
-                                    alt={t('campaignDetail.tabs.photoAlt', { title: report.title, number: imgIndex + 1 })}
-                                    className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                                  />
-                                </button>
-                              ))}
+                          {/* Content — seluruh blok bisa diklik ke detail laporan */}
+                          <Link href={`/laporan/${report.slug}`} className="group flex-1 pb-8 block">
+                            <div className="mb-2">
+                              <time className="text-sm text-gray-500 font-medium">
+                                {formatDate(report.activityDate)}
+                              </time>
                             </div>
-                          )}
+                            <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors">
+                              {report.title}
+                            </h3>
+
+                            {/* Meta: Lokasi & Penerima */}
+                            {(addressParts.length > 0 || tsd.beneficiary_count > 0) && (
+                              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500">
+                                {addressParts.length > 0 && (
+                                  <div className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span>{addressParts.join(', ')}</span>
+                                  </div>
+                                )}
+                                {tsd.beneficiary_count > 0 && (
+                                  <div className="flex items-center gap-1.5">
+                                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    <span>{tsd.beneficiary_count} Penerima Manfaat</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </Link>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         )}
@@ -534,77 +508,6 @@ export default function CampaignTabs({
         )}
 
       </div>
-
-      {/* Image Lightbox */}
-      {lightbox !== null && (() => {
-        const report = activityReports[lightbox.reportIndex];
-        const images = report?.gallery || [];
-        if (images.length === 0) return null;
-        const imgIdx = lightbox.imageIndex;
-
-        return (
-          <div
-            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-            onClick={() => setLightbox(null)}
-          >
-            {/* Close */}
-            <button
-              type="button"
-              onClick={() => setLightbox(null)}
-              className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
-            >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-
-            {/* Previous */}
-            {images.length > 1 && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLightbox({ ...lightbox, imageIndex: (imgIdx - 1 + images.length) % images.length });
-                }}
-                className="absolute left-4 text-white/80 hover:text-white z-10"
-              >
-                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-            )}
-
-            {/* Image */}
-            <img
-              src={images[imgIdx]}
-              alt={`Gallery ${imgIdx + 1}`}
-              className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
-              onClick={(e) => e.stopPropagation()}
-            />
-
-            {/* Next */}
-            {images.length > 1 && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLightbox({ ...lightbox, imageIndex: (imgIdx + 1) % images.length });
-                }}
-                className="absolute right-4 text-white/80 hover:text-white z-10"
-              >
-                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            )}
-
-            {/* Counter */}
-            <div className="absolute bottom-4 text-white/70 text-sm">
-              {imgIdx + 1} / {images.length}
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 }

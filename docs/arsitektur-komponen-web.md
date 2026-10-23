@@ -211,7 +211,7 @@ Props: `id, slug, title, description, image, categoryName, currentAmount, target
 
 ### ReportCard dan RelatedReports
 
-`ReportCard` (`organisms/ReportCard`): kartu laporan kegiatan, satu komponen dengan dua tampilan lewat kelas responsif. Mobile (< md): baris ringkas (thumbnail persegi 64px, judul maks 2 baris, meta kecil tanggal singkat · kabupaten/provinsi). md ke atas: kartu (thumbnail 16:9, badge jenis, nama referensi, kutipan, meta). Induknya wajib grid `grid-cols-1 divide-y divide-gray-100 md:divide-y-0 md:grid-cols-2 lg:grid-cols-3 gap-0 md:gap-6`. Dipakai di arsip `/laporan` dan `RelatedReports`.
+`ReportCard` (`organisms/ReportCard`): kartu laporan kegiatan, satu komponen dengan dua tampilan lewat kelas responsif. Mobile (< md): baris ringkas (thumbnail persegi 64px, judul maks 2 baris, meta kecil tanggal singkat · kabupaten/provinsi). md ke atas: kartu (thumbnail 16:9, badge jenis, nama referensi, kutipan, meta). Induknya wajib grid `grid-cols-1 divide-y divide-gray-100 md:divide-y-0 md:grid-cols-2 lg:grid-cols-3 gap-0 md:gap-6`. Dipakai di arsip `/laporan`, `RelatedReports`, dan tab "Kabar Terbaru" di `/program/[slug]` (`CampaignTabs`, hanya tampilan mobile; desktop memakai timeline sendiri).
 
 `RelatedReports` (`organisms/RelatedReports`, client component): judul "Laporan Terkait" (`mode="related"`) atau "Laporan Lain" (`mode="other"`) + tautan "Lihat Semua" + grid `ReportCard`. Dipakai di `/laporan/[slug]`.
 
