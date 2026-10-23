@@ -494,12 +494,11 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
               <div className="mb-4">
                 <h2 className="text-2xl font-bold text-gray-900">{t('campaignDetail.related.title')}</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {relatedCampaigns.map((relatedCampaign) => (
                   <ProgramCard
                     key={relatedCampaign.id}
                     {...mapCampaignToCardProps(relatedCampaign, t('campaignDetail.defaultCategory'))}
-                    variant="compact"
                   />
                 ))}
               </div>

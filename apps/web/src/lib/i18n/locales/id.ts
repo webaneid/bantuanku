@@ -71,6 +71,16 @@ export const idMessages: Messages = {
       empty: "Tidak ada program tersedia saat ini",
       viewAll: "Lihat Semua Program",
       defaultCategory: "Program",
+      allPrograms: "Semua Program",
+      card: {
+        collected: "Terkumpul",
+        target: "Target: Rp {value}",
+        donors: "{count} Donatur",
+        donateNow: "Donasi Sekarang",
+        completed: "Target Tercapai",
+        urgent: "Mendesak",
+        daysLeft: "{count} hari lagi",
+      },
     },
     qurban: {
       title: "Paket Qurban",

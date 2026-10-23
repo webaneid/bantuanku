@@ -1,3 +1,5 @@
+@import '../variables';
+
 // ============================================================================
 // PROGRAMS GRID COMPONENT
 // ============================================================================
@@ -17,10 +19,6 @@
 
   @media (min-width: 1024px) {
     grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (min-width: 1280px) {
-    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -55,5 +53,58 @@
     color: var(--color-gray-600);
     max-width: 28rem;
     margin: 0 auto;
+  }
+}
+
+// ============================================================================
+// PROGRAMS NAV (menu kategori di bawah judul section program beranda)
+// ============================================================================
+
+.programs-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+
+  // Mobile: satu baris yang bisa digeser
+  @media (max-width: 639px) {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  &__link {
+    flex-shrink: 0;
+    padding: 0.5rem 1.25rem;
+    border-radius: 9999px;
+    background: $gray-100;
+    color: $gray-700;
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+
+    &:hover {
+      background: rgba($primary-500, 0.1);
+      color: $primary-500;
+    }
+
+    &--primary {
+      background: $primary-500;
+      color: white;
+
+      &:hover {
+        background: $primary-600;
+        color: white;
+      }
+    }
   }
 }

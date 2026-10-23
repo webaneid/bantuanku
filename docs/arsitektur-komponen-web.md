@@ -200,26 +200,12 @@ Kebijakan kualitas UX lintas frontend seperti native dialog, inline style, respo
 
 ### ProgramCard
 
-`ProgramCard` menerima data campaign yang sudah dimapping oleh page/template.
+Satu desain kartu untuk seluruh situs (redesign-1, 2026-10-23); varian `default/compact/featured` dan prop `variant` sudah dihapus. Client component: teks lewat `useI18n` (`home.programs.card.*`), jadi pemanggil cukup mengirim data campaign yang sudah dimapping.
 
-Props kunci:
+Props: `id, slug, title, description, image, categoryName, currentAmount, targetAmount, donorCount, daysLeft, isUrgent`.
 
-```text
-id, slug, title, description, image, categoryName,
-currentAmount, targetAmount, donorCount, daysLeft, isUrgent, variant
-```
-
-Variant:
-
-```text
-default, compact, featured
-```
-
-Card selalu link ke:
-
-```text
-/program/{slug}
-```
+- Desktop/tablet: vertikal (gambar 12rem, chip kategori + Mendesak/Target Tercapai/sisa hari, progress 8px, tombol "Donasi Sekarang"). Mobile (<640px): horizontal, gambar kiri dan teks kanan, tanpa deskripsi dan tombol.
+- `isUrgent` memakai warna `danger`. Dipakai di beranda, `/program` (+ kategori), `/program/[slug]` (terkait), `/wakaf`, `/mitra/[slug]`. Grid arsip 3 kolom.
 
 ### HeroSlider
 

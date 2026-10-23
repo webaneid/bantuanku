@@ -484,7 +484,7 @@ Jika klien meminta layout checkout yang berbeda total → itu **custom project**
 
 | # | Item | Status |
 |---|------|--------|
-| 1 | Homepage masih punya hardcoded sections ("Why Choose Us", CTA buttons). Section "Jelajahi Halaman Penting" sudah DIHAPUS 2026-10-23 (hardcode di `app/page.tsx`, tidak di settings/i18n; tautannya tetap ada di Footer lewat `crawlPriorityLinks`) | Bisa dipindah ke settings DB atau cukup diedit per-theme di HeroSection — keputusan saat Fase 1 |
+| 1 | Redesign-1 (docs/redesign-1): hero, funfact-section, kartu program (semua halaman), kartu pilar `CategoryGrid` (posisi tetap di bawah hero, tidak menumpuk), dan CTA (rata tengah, tinggi +20%, tombol 1 putih + tombol 2 outline putih) sudah mengikuti desain; badge "Transparansi Penyaluran Real-time" dan "Diawasi Kemenag & BAZNAS RI" dari desain SENGAJA tidak dibuat (klaim lembaga, tidak ada di settings). Homepage masih punya hardcoded sections ("Why Choose Us", CTA buttons). Section "Jelajahi Halaman Penting" sudah DIHAPUS 2026-10-23 (hardcode di `app/page.tsx`, tidak di settings/i18n; tautannya tetap ada di Footer lewat `crawlPriorityLinks`) | Bisa dipindah ke settings DB atau cukup diedit per-theme di HeroSection — keputusan saat Fase 1 |
 | 2 | `NEXT_PUBLIC_THEME` harus diset sebelum build — tidak bisa diubah saat runtime tanpa rebuild | Disengaja by design |
 | 3 | Tailwind masih hardcode warna — akan di-fix di Fase 2 | Fase 2 |
 | 4 | SCSS `_variables.scss` juga hardcode warna — perlu sinkron dengan CSS vars di Fase 2 | Fase 2 |

@@ -142,7 +142,7 @@ export default function TestOrganismsPage() {
 
             {/* Featured Card */}
             <div className="mb-8">
-              <ProgramCard {...programs[0]} variant="featured" />
+              <ProgramCard {...programs[0]} />
             </div>
 
             {/* Grid of Cards */}
@@ -155,7 +155,7 @@ export default function TestOrganismsPage() {
             {/* Compact Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {programs.slice(4, 6).map((program) => (
-                <ProgramCard key={program.id} {...program} variant="compact" />
+                <ProgramCard key={program.id} {...program} />
               ))}
             </div>
           </div>

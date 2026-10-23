@@ -71,6 +71,16 @@ export const enMessages: Messages = {
       empty: "No programs available right now",
       viewAll: "View All Programs",
       defaultCategory: "Program",
+      allPrograms: "All Programs",
+      card: {
+        collected: "Raised",
+        target: "Target: Rp {value}",
+        donors: "{count} Donors",
+        donateNow: "Donate Now",
+        completed: "Goal Reached",
+        urgent: "Urgent",
+        daysLeft: "{count} days left",
+      },
     },
     qurban: {
       title: "Qurban Packages",

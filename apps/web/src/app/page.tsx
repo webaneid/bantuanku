@@ -324,6 +324,19 @@ export default async function HomePage() {
     console.error('Failed to fetch categories:', error);
   }
 
+  // Menu kategori di bawah judul "Program": hanya kategori yang punya campaign aktif
+  let programCategoryLinks: { id: string; name: string; slug: string }[] = [];
+  try {
+    const activeResponse = await fetchCampaigns({ limit: 100, status: 'active' });
+    const activeCategoryIds = new Set((activeResponse.data || []).map((c: any) => c.categoryId).filter(Boolean));
+    programCategoryLinks = allCategoriesForLookup
+      .filter((cat: any) => cat.isActive !== false && activeCategoryIds.has(cat.id))
+      .sort((a: any, b: any) => a.name.localeCompare(b.name, localeTag))
+      .map((cat: any) => ({ id: cat.id, name: cat.name, slug: cat.slug }));
+  } catch (error) {
+    console.error('Failed to fetch campaign categories:', error);
+  }
+
   // Service categories will be loaded from settings frontend_service_categories
   let serviceCategoriesData: any[] = [];
 
@@ -505,7 +518,7 @@ export default async function HomePage() {
         {/* Our Programs */}
         <section className="programs-section py-16 bg-white">
           <div className="container">
-            <div className="text-center mb-12">
+            <div className="text-center mb-6">
               <h2 className="section-title text-gray-900">
                 {programsSectionData.title}
               </h2>
@@ -514,10 +527,26 @@ export default async function HomePage() {
               </p>
             </div>
 
+            {programCategoryLinks.length > 0 && (
+              <nav className="programs-nav" aria-label={programsSectionData.title}>
+                <Link href="/program" className="programs-nav__link programs-nav__link--primary">
+                  {t('home.programs.allPrograms')}
+                </Link>
+                {programCategoryLinks.map((cat) => (
+                  <Link key={cat.id} href={`/program/kategori/${cat.slug}`} className="programs-nav__link">
+                    {cat.name}
+                  </Link>
+                ))}
+              </nav>
+            )}
+
             {campaigns.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
                 {campaigns.slice(0, programsSectionData.limit).map((campaign) => (
-                  <ProgramCard key={campaign.id} {...mapCampaign(campaign)} />
+                  <ProgramCard
+                    key={campaign.id}
+                    {...mapCampaign(campaign)}
+                  />
                 ))}
               </div>
             ) : (
@@ -555,24 +584,15 @@ export default async function HomePage() {
         )}
 
         {/* Stats */}
-        <section className="funfact-section py-16 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 text-white relative overflow-hidden rounded-xl">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
-          </div>
-
-          <div className="container relative z-10">
-            <div className="text-center mb-4">
-              <h2 className="section-title text-white">
-                {funfactSectionData.title}
-              </h2>
-              <p className="section-description text-primary-50">
-                {funfactSectionData.description}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+        <section className="funfact-section py-12 md:py-16 bg-white">
+          <div className="container">
+            <div className="relative overflow-hidden rounded-3xl bg-primary-600 p-6 text-white shadow-xl md:p-8 lg:p-10">
+              <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-primary-400/40 to-transparent"></div>
+              <div className="relative z-10 pb-6">
+                <h2 className="text-2xl font-bold md:text-3xl">{funfactSectionData.title}</h2>
+                <p className="mt-1 text-primary-50">{funfactSectionData.description}</p>
+              </div>
+              <div className="relative z-10 grid grid-cols-2 gap-3 border-t border-white/15 pt-6 md:gap-4 lg:grid-cols-4">
               {funfactSectionData.items.map((item) => {
                 // Get stat value based on key
                 let statValue: string = t('home.stats.defaultValue');
@@ -601,21 +621,21 @@ export default async function HomePage() {
                 }
 
                 return (
-                  <div key={item.id} className="group relative">
-                    <div className="absolute inset-0 bg-white/10 rounded-xl md:rounded-2xl backdrop-blur-sm transform transition-transform group-hover:scale-105"></div>
-                    <div className="relative p-5 sm:p-6 md:p-8 text-center">
-                      <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-3 sm:mb-4 bg-white/20 rounded-xl md:rounded-2xl flex items-center justify-center transform transition-transform group-hover:rotate-6">
-                        <svg className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconPath} />
-                        </svg>
-                      </div>
-                      <div className="text-4xl sm:text-5xl md:text-6xl font-bold mb-2 mono">{statValue}</div>
-                      <div className="text-sm sm:text-base md:text-lg text-primary-50 font-medium">{item.title}</div>
-                      <p className="text-xs sm:text-sm text-primary-100 mt-1 sm:mt-2 hidden sm:block">{item.description}</p>
+                  <div key={item.id} className="funfact-section__item flex flex-col justify-between rounded-2xl bg-white/10 p-4 md:p-5 backdrop-blur-sm">
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
+                      <svg className="h-6 w-6 text-accent-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconPath} />
+                      </svg>
+                    </div>
+                    <div>
+                      <div className="mono text-3xl font-bold tracking-tight md:text-4xl">{statValue}</div>
+                      <div className="mt-1 text-sm font-semibold text-accent-300 md:text-base">{item.title}</div>
+                      <p className="mt-0.5 text-xs text-primary-100 md:text-sm">{item.description}</p>
                     </div>
                   </div>
                 );
               })}
+              </div>
             </div>
           </div>
         </section>
@@ -654,7 +674,7 @@ export default async function HomePage() {
         <TestimonialSection />
 
         {/* CTA */}
-        <section className="cta-section py-16 md:py-24 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 text-white relative overflow-hidden">
+        <section className="cta-section py-20 md:py-[5.4rem] bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 text-white relative overflow-hidden">
           {/* Decorative elements */}
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-24 -left-24 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
@@ -663,21 +683,19 @@ export default async function HomePage() {
           </div>
 
           <div className="container relative z-10">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-16">
-              {/* Left: Text */}
-              <div className="flex-1 text-center lg:text-left">
+            <div className="mx-auto flex max-w-3xl flex-col items-center gap-8 text-center">
+              <div>
                 <h2 className="section-title text-white">
                   {ctaSectionData.title}
                 </h2>
-                <p className="text-base md:text-lg text-primary-100 leading-relaxed max-w-xl mx-auto lg:mx-0">
+                <p className="mx-auto max-w-xl text-base leading-relaxed text-primary-100 md:text-lg">
                   {ctaSectionData.description}
                 </p>
               </div>
 
-              {/* Right: Buttons */}
-              <div className="flex flex-col gap-3 w-full sm:w-auto shrink-0">
+              <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4">
                 {ctaSectionData.buttons.map((button, index) => (
-                  <Link key={index} href={button.url}>
+                  <Link key={index} href={button.url} className="w-full sm:w-auto">
                     {button.variant === 'primary' ? (
                       <Button size="lg" className="w-full sm:w-64 !bg-white !text-primary-700 hover:!bg-primary-50 font-bold shadow-lg shadow-black/10">
                         {button.text}

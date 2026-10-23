@@ -33,18 +33,18 @@ export const CategoryGrid: React.FC<CategoryGridProps> = ({ categories }) => {
             className="category-card"
           >
           <div className={cn('category-card__inner', category.gradient || 'gradient-primary')}>
-            <div
-              className="category-card__icon"
-              dangerouslySetInnerHTML={{ __html: sanitizeSvg(category.iconSvg || DEFAULT_ICON_SVG) }}
-            />
+            <div className="category-card__top">
+              <div
+                className="category-card__icon"
+                dangerouslySetInnerHTML={{ __html: sanitizeSvg(category.iconSvg || DEFAULT_ICON_SVG) }}
+              />
+              <svg className="category-card__arrow" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 10h12m0 0l-5-5m5 5l-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
             <div className="category-card__content">
               <h3 className="category-card__title">{category.name}</h3>
               <p className="category-card__description">{category.description || ''}</p>
-            </div>
-            <div className="category-card__arrow">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
             </div>
           </div>
         </Link>
