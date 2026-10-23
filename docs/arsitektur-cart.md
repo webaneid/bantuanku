@@ -159,10 +159,17 @@ fidyahData = optional
 
 Behavior:
 
-- `handleAddToCart()` tambah item lalu tetap di halaman
-- `handleGoToCart()` tambah item lalu redirect `/keranjang-bantuan`
-- `handleDirectCheckout()` tambah item lalu redirect `/checkout`
-- kirim Meta Pixel `AddToCart`
+Modal konfirmasi (disederhanakan 2026-10-24) hanya punya **tiga** tombol, semuanya berkelas dasar sama (`h-12`, border 2px, radius, font) sehingga ukurannya identik; tombol "Cari Program Lain" dihapus:
+
+| Tombol | Aksi |
+|---|---|
+| Donasi/Wakaf Sekarang (primary) | `handleDirectCheckout()`: tambah item lalu langsung `/checkout` (tanpa singgah di keranjang) |
+| Tambah ke Keranjang & Lihat | `handleGoToCart()`: tambah item lalu `/keranjang-bantuan` |
+| Tambah ke Keranjang | `handleAddAndBrowse()`: tambah item lalu `/program` untuk menambah program lain |
+
+Ketiganya memakai `addItem()` (satu-satunya tempat `addToCart` + Meta Pixel `AddToCart`). Modal qurban dan zakat belum disederhanakan (masih pola lama).
+
+`CartContext` mengekspos `isLoaded`: halaman `/checkout` hanya mengalihkan ke keranjang bila keranjang kosong SETELAH selesai dibaca dari localStorage (sebelumnya `items` kosong di render pertama sehingga muat ulang penuh `/checkout` memantul ke keranjang).
 
 Karena `cartItemId` campaign berbasis `campaign.id`, menambahkan campaign yang sama dua kali akan replace amount item lama, bukan membuat baris baru.
 
@@ -294,7 +301,7 @@ apps/web/src/app/checkout/page.tsx
 
 Behavior awal:
 
-- jika cart kosong dan bukan sedang submit/success, redirect ke `/keranjang-bantuan`
+- jika cart kosong (setelah `isLoaded`) dan bukan sedang submit/success, redirect ke `/keranjang-bantuan`
 - saat page load dengan item, kirim Meta Pixel `InitiateCheckout`
 - ambil referral code dari localStorage via `getReferralCode()`
 - jika user login, autofill data dari `useAuth()`

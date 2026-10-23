@@ -4,11 +4,16 @@ import { Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog, Transition } from '@headlessui/react';
 import { formatRupiahFull } from '@/lib/format';
-import { Button } from '@/components/atoms';
 import { useCart } from '@/contexts/CartContext';
 import toast from '@/lib/feedback-toast';
 import * as fbPixel from '@/lib/fbPixel';
 import { useI18n } from '@/lib/i18n/provider';
+
+// Ketiga tombol aksi memakai kelas dasar yang sama (tinggi, border 2px, radius, font) supaya ukurannya identik
+const actionButtonBase =
+  'w-full h-12 px-4 rounded-lg border-2 font-semibold transition-all flex items-center justify-center';
+const primaryActionClass = 'border-primary-500 bg-primary-500 text-white hover:bg-primary-600 hover:border-primary-600';
+const secondaryActionClass = 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50';
 
 interface DonationConfirmModalProps {
   isOpen: boolean;
@@ -42,7 +47,8 @@ export default function DonationConfirmModal({
   const router = useRouter();
   const { addToCart } = useCart();
 
-  const handleAddToCart = () => {
+  // Satu-satunya tempat item ditambahkan ke keranjang; ketiga aksi di bawah memakainya
+  const addItem = () => {
     addToCart({
       cartItemId: `campaign-${campaign.id}`,
       itemType: 'campaign',
@@ -63,42 +69,30 @@ export default function DonationConfirmModal({
       content_type: 'product',
       value: amount,
     });
-
-    toast.success(t('campaignDetail.confirmModal.toasts.addedToCart'));
-    onClose();
   };
 
+  // Donasi Sekarang: langsung ke checkout (tanpa singgah di keranjang)
+  const handleDirectCheckout = () => {
+    addItem();
+    // InitiateCheckout fires on checkout page load (single trigger point)
+    toast.success(t('campaignDetail.confirmModal.toasts.redirectCheckout'));
+    router.push('/checkout');
+  };
+
+  // Tambah ke Keranjang & Lihat: tambah lalu buka keranjang
   const handleGoToCart = () => {
-    handleAddToCart();
+    addItem();
+    toast.success(t('campaignDetail.confirmModal.toasts.addedToCart'));
+    onClose();
     router.push('/keranjang-bantuan');
   };
 
-  const handleDirectCheckout = () => {
-    // Add to cart and redirect to checkout
-    addToCart({
-      cartItemId: `campaign-${campaign.id}`,
-      itemType: 'campaign',
-      campaignId: campaign.id,
-      slug: campaign.slug,
-      title: campaignTitle,
-      amount,
-      category: campaign.category,
-      pillar: campaign.pillar,
-      programType,
-      organizationName: campaign.organizationName,
-      fidyahData,
-    });
-
-    fbPixel.addToCart({
-      content_name: campaignTitle,
-      content_ids: [campaign.id],
-      content_type: 'product',
-      value: amount,
-    });
-    // InitiateCheckout fires on checkout page load (single trigger point)
-
-    toast.success(t('campaignDetail.confirmModal.toasts.redirectCheckout'));
-    router.push('/checkout');
+  // Tambah ke Keranjang: tambah lalu ke daftar program untuk menambah program lain
+  const handleAddAndBrowse = () => {
+    addItem();
+    toast.success(t('campaignDetail.confirmModal.toasts.addedToCart'));
+    onClose();
+    router.push('/program');
   };
 
   return (
@@ -172,53 +166,29 @@ export default function DonationConfirmModal({
 
                   <div className="space-y-3">
                     {/* Direct Checkout */}
-                    <Button
-                      onClick={handleDirectCheckout}
-                      className="w-full"
-                      size="lg"
-                    >
+                    <button onClick={handleDirectCheckout} className={`${actionButtonBase} ${primaryActionClass}`}>
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
                       {programType === 'wakaf'
                         ? t('campaignDetail.confirmModal.actions.wakafNow')
                         : t('campaignDetail.confirmModal.actions.donateNow')}
-                    </Button>
+                    </button>
 
                     {/* Add to Cart and Go to Cart */}
-                    <button
-                      onClick={handleGoToCart}
-                      className="w-full py-3 px-4 rounded-lg border-2 border-primary-500 bg-primary-50 text-primary-700 font-semibold hover:bg-primary-100 transition-all flex items-center justify-center"
-                    >
+                    <button onClick={handleGoToCart} className={`${actionButtonBase} ${secondaryActionClass}`}>
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                       {t('campaignDetail.confirmModal.actions.addToCartAndView')}
                     </button>
 
-                    {/* Add to Cart and Continue Shopping */}
-                    <button
-                      onClick={handleAddToCart}
-                      className="w-full py-3 px-4 rounded-lg border-2 border-gray-200 bg-white text-gray-700 font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all flex items-center justify-center"
-                    >
+                    {/* Add to Cart, then browse other programs */}
+                    <button onClick={handleAddAndBrowse} className={`${actionButtonBase} ${secondaryActionClass}`}>
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                       </svg>
                       {t('campaignDetail.confirmModal.actions.addToCart')}
-                    </button>
-
-                    {/* Browse Other Programs */}
-                    <button
-                      onClick={() => {
-                        onClose();
-                        router.push('/program');
-                      }}
-                      className="w-full py-3 px-4 rounded-lg border-2 border-gray-200 bg-white text-gray-700 font-semibold hover:border-gray-300 hover:bg-gray-50 transition-all flex items-center justify-center"
-                    >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      {t('campaignDetail.confirmModal.actions.browsePrograms')}
                     </button>
                   </div>
                 </div>

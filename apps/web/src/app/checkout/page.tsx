@@ -67,7 +67,7 @@ interface CheckoutFormData {
 export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { items, getCartTotal, clearCart } = useCart();
+  const { items, getCartTotal, clearCart, isLoaded: isCartLoaded } = useCart();
   const { user, isHydrated } = useAuth();
   const { t, locale } = useI18n();
   const activeLocale = locale === 'id' ? 'id-ID' : 'en-US';
@@ -121,12 +121,14 @@ export default function CheckoutPage() {
     }
   }, []);
 
-  // Redirect if cart is empty (but not during submission or after successful checkout)
+  // Redirect if cart is empty (but not during submission or after successful checkout).
+  // Tunggu keranjang selesai dibaca dari localStorage: sebelum itu items kosong dan redirect salah
+  // (mis. saat halaman dimuat penuh atau kompilasi dev memicu reload) melempar user ke keranjang.
   useEffect(() => {
-    if (items.length === 0 && !isSubmitting && !checkoutSuccess) {
+    if (isCartLoaded && items.length === 0 && !isSubmitting && !checkoutSuccess) {
       router.push('/keranjang-bantuan');
     }
-  }, [items, router, isSubmitting, checkoutSuccess]);
+  }, [isCartLoaded, items, router, isSubmitting, checkoutSuccess]);
 
   // Auto-fill from logged-in user
   useEffect(() => {

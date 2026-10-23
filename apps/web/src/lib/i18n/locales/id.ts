@@ -228,7 +228,6 @@ export const idMessages: Messages = {
         donateNow: "Donasi Sekarang",
         addToCartAndView: "Tambah ke Keranjang & Lihat",
         addToCart: "Tambah ke Keranjang",
-        browsePrograms: "Cari Program Lain",
       },
       toasts: {
         addedToCart: "Program berhasil ditambahkan ke keranjang!",

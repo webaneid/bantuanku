@@ -228,7 +228,6 @@ export const enMessages: Messages = {
         donateNow: "Donate Now",
         addToCartAndView: "Add to Cart & View",
         addToCart: "Add to Cart",
-        browsePrograms: "Browse Other Programs",
       },
       toasts: {
         addedToCart: "Program added to cart successfully!",
