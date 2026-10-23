@@ -24,6 +24,8 @@ File implementasi utama:
 | Admin list/create/detail/edit | `apps/admin/src/app/dashboard/activity-reports/*` |
 | Admin campaign/zakat/qurban detail tab | `apps/admin/src/app/dashboard/campaigns/[id]/page.tsx`, `apps/admin/src/app/dashboard/zakat/periods/[id]/page.tsx`, `apps/admin/src/app/dashboard/qurban/periods/[id]/page.tsx` |
 | Public archive/detail | `apps/web/src/app/laporan/page.tsx`, `apps/web/src/app/laporan/[slug]/page.tsx`, `LaporanDetailClient.tsx` |
+| Tampilan mobile arsip `/laporan` (< md) | Daftar ringkas: thumbnail persegi 64px + judul (maks 2 baris) + meta kecil (tanggal singkat · kabupaten, fallback provinsi); badge jenis, nama referensi, dan deskripsi disembunyikan. md ke atas tetap grid kartu |
+| Paginasi arsip `/laporan` | 12 laporan/halaman, `?page=N` (nilai tidak valid → halaman 1; di luar jangkauan → redirect ke halaman terakhir; halaman 1 = `/laporan` tanpa query). Memakai style `.pagination` bersama (seperti `/wakaf`): prev/next + nomor (pertama, terakhir, ±1, ellipsis); di mobile (< sm) diganti teks "Halaman X dari N". `rel=prev/next`, `aria-current`. Halaman > 1 `noindex` |
 | Sitemap | `apps/web/src/app/sitemap.ts` (`fetchReportPages`, paginasi `limit=100`, skip `noIndex`) |
 | Mekanisme terpisah (bukan modul ini) | `disbursement_activity_reports` + `/admin/disbursements/:id/activity-reports` — lihat § Mekanisme Terpisah |
 | Public campaign tab | `apps/web/src/app/program/[slug]/CampaignTabs.tsx` |

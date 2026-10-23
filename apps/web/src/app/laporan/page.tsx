@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { Header, Footer, Breadcrumb } from '@/components/organisms';
 import { getImageUrlByVariant } from '@/lib/image';
 import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
@@ -98,6 +99,31 @@ function formatDate(dateString: string) {
   });
 }
 
+function formatDateShort(dateString: string) {
+  return new Date(dateString).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function pageHref(page: number) {
+  return page <= 1 ? '/laporan' : `/laporan?page=${page}`;
+}
+
+/** Nomor halaman yang ditampilkan: pertama, terakhir, dan ±1 dari halaman aktif; celahnya jadi 'ellipsis'. */
+function getPageItems(current: number, total: number): Array<number | 'ellipsis'> {
+  const pages = Array.from({ length: total }, (_, i) => i + 1).filter(
+    (p) => p === 1 || p === total || Math.abs(p - current) <= 1
+  );
+  const items: Array<number | 'ellipsis'> = [];
+  pages.forEach((p, i) => {
+    if (i > 0 && p - pages[i - 1] > 1) items.push('ellipsis');
+    items.push(p);
+  });
+  return items;
+}
+
 function stripHtml(html: string) {
   return html.replace(/<[^>]*>/g, '').substring(0, 150);
 }
@@ -127,8 +153,14 @@ export default async function LaporanPage({
 }: {
   searchParams?: { page?: string };
 }) {
-  const page = parseInt(searchParams?.page || '1');
+  // Nilai tidak valid (abc, 0, negatif) jatuh ke halaman 1
+  const page = Math.max(1, parseInt(searchParams?.page || '1', 10) || 1);
   const { data: reports, pagination } = await fetchReports(page);
+
+  // Halaman di luar jangkauan (mis. ?page=99): arahkan ke halaman terakhir, bukan "belum ada laporan"
+  if (pagination.totalPages > 0 && page > pagination.totalPages) {
+    redirect(pageHref(pagination.totalPages));
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -146,27 +178,29 @@ export default async function LaporanPage({
         </section>
 
         {/* Reports Grid */}
-        <section className="py-8">
-          <div className="container mx-auto px-4">
+        <section className="py-4 md:py-8">
+          <div className="container mx-auto px-[15px] md:px-4">
             {reports.length === 0 ? (
               <div className="text-center py-16 text-gray-500">
                 <p className="text-lg">Belum ada laporan kegiatan yang dipublikasikan.</p>
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Mobile: daftar ringkas (thumbnail persegi + judul + meta kecil). md ke atas: grid kartu. */}
+                <div className="grid grid-cols-1 divide-y divide-gray-100 md:divide-y-0 md:grid-cols-2 lg:grid-cols-3 gap-0 md:gap-6">
                   {reports.map((report) => {
                     const thumbnail = report.gallery?.[0];
                     const location = [report.regencyName, report.provinceName].filter(Boolean).join(', ');
+                    const shortLocation = report.regencyName || report.provinceName;
 
                     return (
                       <Link
                         key={report.id}
                         href={`/laporan/${report.slug}`}
-                        className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
+                        className="group flex items-center gap-3 py-3 md:block md:py-0 md:bg-white md:border md:border-gray-200 md:rounded-xl md:overflow-hidden md:hover:shadow-lg transition-shadow"
                       >
                         {/* Thumbnail */}
-                        <div className="aspect-video bg-gray-100 relative overflow-hidden">
+                        <div className="w-16 h-16 flex-shrink-0 rounded-lg md:rounded-none md:w-auto md:h-auto md:aspect-video bg-gray-100 relative overflow-hidden">
                           {thumbnail ? (
                             <img
                               src={getImageUrlByVariant(thumbnail, ['medium'])}
@@ -175,31 +209,33 @@ export default async function LaporanPage({
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-gray-400">
-                              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                               </svg>
                             </div>
                           )}
-                          <span className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-medium ${getReferenceColor(report.referenceType)}`}>
+                          <span className={`hidden md:block absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-medium ${getReferenceColor(report.referenceType)}`}>
                             {getReferenceLabel(report.referenceType)}
                           </span>
                         </div>
 
                         {/* Content */}
-                        <div className="p-4 space-y-2">
-                          <h3 className="font-semibold text-gray-900 line-clamp-2 group-hover:text-emerald-600 transition-colors">
+                        <div className="min-w-0 md:p-4 md:space-y-2">
+                          <h3 className="text-base font-semibold leading-snug text-gray-900 line-clamp-2 group-hover:text-emerald-600 transition-colors">
                             {report.title}
                           </h3>
                           {report.referenceName && (
-                            <p className="text-sm text-emerald-600 font-medium truncate">{report.referenceName}</p>
+                            <p className="hidden md:block text-sm text-emerald-600 font-medium truncate">{report.referenceName}</p>
                           )}
-                          <p className="text-sm text-gray-500 line-clamp-2">{stripHtml(report.description)}</p>
-                          <div className="flex items-center gap-3 text-xs text-gray-400 pt-1">
-                            <span>{formatDate(report.activityDate)}</span>
+                          <p className="hidden md:block text-sm text-gray-500 line-clamp-2">{stripHtml(report.description)}</p>
+                          <div className="flex items-center gap-1.5 md:gap-3 text-xs text-gray-500 md:text-gray-400 mt-1 md:mt-0 md:pt-1">
+                            <span className="flex-shrink-0 md:hidden">{formatDateShort(report.activityDate)}</span>
+                            <span className="hidden md:inline">{formatDate(report.activityDate)}</span>
                             {location && (
                               <>
                                 <span>·</span>
-                                <span className="truncate">{location}</span>
+                                <span className="truncate md:hidden">{shortLocation}</span>
+                                <span className="truncate hidden md:inline">{location}</span>
                               </>
                             )}
                           </div>
@@ -211,43 +247,65 @@ export default async function LaporanPage({
 
                 {/* Pagination */}
                 {pagination.totalPages > 1 && (
-                  <div className="flex justify-center gap-2 mt-8">
-                    {page > 1 && (
-                      <Link
-                        href={`/laporan?page=${page - 1}`}
-                        className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
-                      >
-                        Sebelumnya
+                  <nav className="pagination" aria-label="Paginasi laporan kegiatan">
+                    {page > 1 ? (
+                      <Link href={pageHref(page - 1)} rel="prev" className="pagination__btn pagination__btn--prev" aria-label="Halaman sebelumnya">
+                        <svg className="pagination__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span className="pagination__text">Sebelumnya</span>
                       </Link>
+                    ) : (
+                      <span className="pagination__btn pagination__btn--prev opacity-50 cursor-not-allowed" aria-disabled="true">
+                        <svg className="pagination__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span className="pagination__text">Sebelumnya</span>
+                      </span>
                     )}
-                    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-                      .filter(p => Math.abs(p - page) <= 2 || p === 1 || p === pagination.totalPages)
-                      .map((p, idx, arr) => (
-                        <span key={p}>
-                          {idx > 0 && arr[idx - 1] !== p - 1 && (
-                            <span className="px-2 py-2 text-gray-400">...</span>
-                          )}
-                          <Link
-                            href={`/laporan?page=${p}`}
-                            className={`px-4 py-2 rounded-lg border ${
-                              p === page
-                                ? 'bg-emerald-600 text-white border-emerald-600'
-                                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                            }`}
-                          >
-                            {p}
-                          </Link>
-                        </span>
-                      ))}
-                    {page < pagination.totalPages && (
-                      <Link
-                        href={`/laporan?page=${page + 1}`}
-                        className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
-                      >
-                        Selanjutnya
+
+                    {/* Mobile: ringkas "Halaman X dari N" (deretan nomor tidak muat) */}
+                    <span className="sm:hidden px-2 text-sm text-gray-600">
+                      Halaman {page} dari {pagination.totalPages}
+                    </span>
+
+                    {/* sm ke atas: deretan nomor halaman */}
+                    <div className="hidden sm:block">
+                      <div className="pagination__numbers">
+                        {getPageItems(page, pagination.totalPages).map((item, idx) =>
+                          item === 'ellipsis' ? (
+                            <span key={`e${idx}`} className="pagination__ellipsis">…</span>
+                          ) : (
+                            <Link
+                              key={item}
+                              href={pageHref(item)}
+                              aria-label={`Halaman ${item}`}
+                              aria-current={item === page ? 'page' : undefined}
+                              className={`pagination__number ${item === page ? 'pagination__number--active' : ''}`}
+                            >
+                              {item}
+                            </Link>
+                          )
+                        )}
+                      </div>
+                    </div>
+
+                    {page < pagination.totalPages ? (
+                      <Link href={pageHref(page + 1)} rel="next" className="pagination__btn pagination__btn--next" aria-label="Halaman berikutnya">
+                        <span className="pagination__text">Selanjutnya</span>
+                        <svg className="pagination__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </Link>
+                    ) : (
+                      <span className="pagination__btn pagination__btn--next opacity-50 cursor-not-allowed" aria-disabled="true">
+                        <span className="pagination__text">Selanjutnya</span>
+                        <svg className="pagination__icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </span>
                     )}
-                  </div>
+                  </nav>
                 )}
               </>
             )}
