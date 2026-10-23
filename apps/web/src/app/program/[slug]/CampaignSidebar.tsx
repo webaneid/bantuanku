@@ -356,7 +356,7 @@ export default function CampaignSidebar({
       <MobileActionSheet
         toggleLabel={t('campaignDetail.sidebar.mobile.toggle')}
         collapseSignal={isModalOpen || isShareOpen}
-        collapsedBar={() => (
+        collapsedBar={(expanded) => (
           <>
             <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -369,9 +369,11 @@ export default function CampaignSidebar({
                 {selectedAmount > 0 ? formatRupiahFull(selectedAmount) : t('campaignDetail.sidebar.mobile.chooseAmount')}
               </p>
             </div>
-            <span className="shrink-0 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white">
+            {!expanded && (
+              <span className="shrink-0 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white">
               {t('campaignDetail.sidebar.mobile.cta')}
             </span>
+            )}
           </>
         )}
       >

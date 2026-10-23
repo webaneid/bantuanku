@@ -497,7 +497,7 @@ export default function QurbanSidebar({
       <MobileActionSheet
         toggleLabel={t('qurbanDetail.sidebar.mobile.toggle')}
         collapseSignal={isModalOpen || isShareOpen}
-        collapsedBar={() => (
+        collapsedBar={(expanded) => (
           <>
             <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
               <svg className="w-5 h-5 text-amber-600" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -508,9 +508,11 @@ export default function QurbanSidebar({
               <p className="text-xs text-gray-500">{t('qurbanDetail.sidebar.actions.orderNow')}</p>
               <p className="text-sm font-semibold text-gray-900 truncate mono">Rp {formatRupiah(total)}</p>
             </div>
-            <span className="shrink-0 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white">
+            {!expanded && (
+              <span className="shrink-0 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white">
               {t('qurbanDetail.sidebar.mobile.cta')}
             </span>
+            )}
           </>
         )}
       >
