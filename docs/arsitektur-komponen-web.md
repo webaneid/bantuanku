@@ -209,6 +209,10 @@ Props: `id, slug, title, description, image, categoryName, currentAmount, target
 - Desktop/tablet: vertikal (gambar 12rem, chip kategori + Mendesak/Target Tercapai/sisa hari, progress 8px, tombol "Donasi Sekarang"). Mobile (<640px): horizontal, gambar kiri dan teks kanan, tanpa deskripsi dan tombol.
 - `isUrgent` memakai warna `danger`. Dipakai di beranda, `/program` (+ kategori), `/program/[slug]` (terkait), `/wakaf`, `/mitra/[slug]`. Grid arsip 3 kolom.
 
+### AccountPageHeader dan AccountBottomNav
+
+`components/account/AccountPageHeader.tsx`: kepala halaman akun. Mobile (< lg) = hero gradasi `primary-600 → primary-800` bersudut bawah 28px (judul, subjudul, `backHref` opsional, `action` opsional); desktop = judul biasa. `components/account/AccountBottomNav.tsx`: bar navigasi bawah mengambang (4 item, aktif = lingkaran primary, `z-[1030]`) hanya di mobile; dipasang oleh `account/layout.tsx`.
+
 ### CartSummaryCard
 
 `molecules/CartSummaryCard` (client): blok ringkasan mobile untuk `/keranjang-bantuan` dan `/checkout` — gradasi `primary-600 → primary-800`, radius 24px, teks putih: judul + subjudul, daftar item (judul, jenis, nominal, rincian zakat), total dalam angka besar, teks info. Props: `items`, `total`, `title`, `subtitle`, `summaryTitle`, `totalLabel`, `infoText`, `formatAmount`, `className` (pemanggil memberi `lg:hidden`; desktop memakai sidebar sendiri), dan opsional `edit` (`onAmountChange`, `onRemove`, `onClear`). Tanpa `edit` = ringkasan baca-saja (`/checkout`); dengan `edit` = isi keranjang lengkap (`/keranjang-bantuan`): nominal campaign bisa diedit, tombol hapus per item, rincian zakat/qurban, tautan "Kosongkan Keranjang".

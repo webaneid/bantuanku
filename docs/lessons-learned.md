@@ -525,3 +525,8 @@
 **Masalah:** `fetch` tidak membawa `Authorization` (header hanya otomatis pada axios `api`), sehingga transaksi user login tersimpan dengan `user_id` kosong. Tidak ada error dan riwayat tetap muncul (dicari lewat email donatur), jadi baru ketahuan saat memeriksa baris DB setelah uji lain.
 **Pelajaran:** memindahkan sumber identitas dari body ke token berarti SEMUA pemanggil harus mengirim token. Setelah perubahan semacam itu, periksa kolom hasilnya di DB (bukan hanya respons 200). Untuk alur dengan `next`, tujuan harus dibawa di setiap lompatan (login, Google, profil) dan divalidasi dengan satu helper bersama.
 
+### [2026-10-24] Daftar kartu menjorok: aturan global `ul { padding-left }`
+**Konteks:** redesign halaman akun; kartu transaksi di dalam `<ul>` terlihat bergeser ke kanan dibanding judul di atasnya.
+**Masalah:** `globals.scss` mendefinisikan padding kiri untuk `ul`/`ol` (untuk konten rich text), sehingga `<ul className="space-y-3">` mendapat padding kiri ±26px; kartu menjadi tidak sejajar tanpa error apa pun.
+**Pelajaran:** daftar kartu memakai `m-0 list-none p-0` (atau `div` + `role="list"`). Ukur `getBoundingClientRect().left` kartu dibanding judul saat memeriksa kerapian mobile. Untuk menguji halaman yang bergantung API yang rusak di DB dev (mis. tabungan qurban butuh kolom `discount_id`), tiru respons XHR di browser (patch `XMLHttpRequest.prototype.send` setelah halaman awal dimuat lalu navigasi client-side) alih-alih mengubah skema DB.
+

@@ -9,6 +9,7 @@ import Autocomplete from "@/components/Autocomplete";
 import toast from "@/lib/feedback-toast";
 import { useI18n } from "@/lib/i18n/provider";
 import { readNextFromLocation } from "@/lib/safe-next";
+import { AccountPageHeader } from "@/components/account/AccountPageHeader";
 
 interface ProfileData {
   name: string;
@@ -41,7 +42,7 @@ interface JobCategory {
 }
 
 export default function ProfilePage() {
-  const { user, isHydrated, mergeUser } = useAuth();
+  const { user, isHydrated, mergeUser, logout } = useAuth();
   const { t } = useI18n();
   const router = useRouter();
   // `?next=` (mis. /checkout): selesai simpan kembali ke sana; di mode ini hanya nomor WhatsApp yang wajib
@@ -408,16 +409,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t("account.profile.title")}</h1>
-        <p className="text-sm text-gray-600 mt-1">{t("account.profile.subtitle")}</p>
-      </div>
+    <div className="max-w-4xl mx-auto pb-8">
+      <AccountPageHeader title={t("account.profile.title")} subtitle={t("account.profile.subtitle")} />
+
+      <div className="mt-5 lg:mt-0 px-[15px] lg:px-0 space-y-4 lg:space-y-6">
 
       {/* Required fields warning */}
       {hasIncompleteRequired && (
-        <div className="bg-warning-50 border border-warning-200 rounded-xl p-4">
+        <div className="bg-warning-50 border border-warning-200 rounded-2xl p-4">
           <div className="flex gap-3">
             <div className="flex-shrink-0">
               <svg className="w-5 h-5 text-warning-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -436,8 +435,8 @@ export default function ProfilePage() {
 
       <form onSubmit={handleSubmitProfile} className="space-y-6">
         {/* Basic Info Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-6">{t("account.profile.basicInfo")}</h2>
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">{t("account.profile.basicInfo")}</h2>
 
           <div className="space-y-5">
             <div>
@@ -490,8 +489,8 @@ export default function ProfilePage() {
         </div>
 
         {/* Personal Info Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-6">{t("account.profile.personalInfo")}</h2>
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">{t("account.profile.personalInfo")}</h2>
 
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -564,8 +563,8 @@ export default function ProfilePage() {
         </div>
 
         {/* Contact Info Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-6">{t("account.profile.contactInfo")}</h2>
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">{t("account.profile.contactInfo")}</h2>
 
           <div className="space-y-5">
             <div>
@@ -607,8 +606,8 @@ export default function ProfilePage() {
         </div>
 
         {/* Address Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-6">{t("account.profile.address")}</h2>
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">{t("account.profile.address")}</h2>
 
           <div className="space-y-5">
             <div>
@@ -673,7 +672,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Bank Accounts Card */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-gray-900">{t("account.profile.bankAccounts")}</h2>
             <Button type="button" onClick={addBankAccount} size="sm" variant="outline">
@@ -743,15 +742,15 @@ export default function ProfilePage() {
         </div>
 
         {/* Submit Button */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <Button type="submit" disabled={isSaving} fullWidth size="lg">
+        <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+          <Button type="submit" disabled={isSaving} fullWidth className="h-12">
             {isSaving ? t("account.profile.saving") : t("account.profile.saveChanges")}
           </Button>
         </div>
       </form>
 
       {/* WhatsApp Preferences Card */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-1">Notifikasi WhatsApp</h2>
         <p className="text-sm text-gray-500 mb-5">
           Atur apakah Anda ingin menerima informasi program, kampanye, dan pesan kebaikan dari kami via WhatsApp.
@@ -792,8 +791,8 @@ export default function ProfilePage() {
       </div>
 
       {/* Change Password Card */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-6">{t("account.profile.changePassword")}</h2>
+      <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
+        <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">{t("account.profile.changePassword")}</h2>
 
         <form onSubmit={handleSubmitPassword} className="space-y-5">
           <div>
@@ -836,11 +835,23 @@ export default function ProfilePage() {
           </div>
 
           <div className="pt-4">
-            <Button type="submit" disabled={isChangingPassword} fullWidth variant="outline">
+            <Button type="submit" disabled={isChangingPassword} fullWidth variant="outline" className="h-12">
               {isChangingPassword ? t("account.profile.changingPassword") : t("account.profile.updatePassword")}
             </Button>
           </div>
         </form>
+      </div>
+
+      {/* Keluar: di mobile tidak ada sidebar, jadi tombol keluar ada di sini */}
+      <div className="lg:hidden">
+        <button
+          type="button"
+          onClick={logout}
+          className="h-12 w-full rounded-lg border-2 border-danger-200 bg-white font-semibold text-danger-700 transition-colors hover:bg-danger-50"
+        >
+          {t("account.layout.nav.logout")}
+        </button>
+      </div>
       </div>
     </div>
   );

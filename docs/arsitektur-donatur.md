@@ -138,6 +138,24 @@ Kolom yang diekspor: name, email, phone, whatsappNumber, nik, npwp, gender, birt
 | `/account/transactions` | Riwayat transaksi (API: `GET /transactions/my`) |
 | `/account/qurban-savings` | Tabungan qurban |
 | `/account/fundraiser` | Profil fundraiser (jika aktif) |
+
+### Tampilan Halaman Akun (redesign 2026-10-24)
+
+Semua halaman `/account/*` memakai cangkang yang sama (`apps/web/src/app/account/layout.tsx`):
+
+| Area | Mobile (< lg) | Desktop (lg ke atas) |
+|---|---|---|
+| Navigasi | **bar bawah mengambang** (`AccountBottomNav`, `z-[1030]`): Beranda, Riwayat, Qurban, Profil (aktif = lingkaran primary); Influencer lewat aksi cepat dashboard; Keluar di hero dashboard dan di bawah halaman Profil | bar atas (logo, Kembali ke Beranda, avatar) + sidebar dengan kartu pengguna dan menu (aktif = primary) |
+| Kepala halaman | `AccountPageHeader`: hero gradasi primary, sudut bawah membulat, tombol kembali opsional (detail tabungan) | judul biasa di atas konten |
+| Isi | kartu bersudut besar (`rounded-2xl shadow-sm`) di atas latar abu, teks berjarak 15px | tabel baku dan kartu seperti sebelumnya |
+
+- `/account` (dashboard): hero dengan total kontribusi (`stats.totalAmount`) + tombol "Donasi Sekarang" (`/program`), lima aksi cepat melingkar (Riwayat, Tabungan Qurban, Qurban, Influencer, Profil), ubin ringkasan (donasi berhasil, menunggu bayar), kartu kelengkapan profil (hilang bila 100%), daftar transaksi terbaru; desktop 2/3 transaksi + 1/3 ringkasan. Aturan alihkan ke profil bila empat isian wajib belum lengkap tidak berubah.
+- `/account/transactions`: filter berbentuk pil bergulir; mobile = kartu, desktop = tabel baku.
+- `/account/qurban-savings`: mobile = kartu berprogres, desktop = tabel baku; detail memakai kartu progres (token tema, bukan warna mentah), mobile menaruh form setor sebelum riwayat.
+- `/account/fundraiser`: kartu status + link referral (tombol Salin/WhatsApp setinggi 48px), tab berbentuk pil, tabel referral dan panel pencairan tetap.
+- `/account/profile`: kartu per bagian; di mobile ada tombol Keluar di bawah.
+- Gotcha CSS: aturan global `ul { padding-left }` membuat daftar kartu menjorok; daftar kartu memakai `m-0 list-none p-0`.
+
 | `/register` | Daftar akun baru |
 | `/login` | Login |
 | `/forgot-password` | Reset password via OTP WA |
