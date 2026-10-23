@@ -168,9 +168,9 @@ Alur aktual:
 ```text
 Checkout web
   -> buat transaksi per item via POST /v1/transactions
-  -> jika donaturId belum ada:
-       POST /v1/donatur
-       { name, email, phone, whatsappNumber }
+  -> donatur ditentukan server di TransactionService.create()
+     (terdaftar: use_registered_donatur + donor_identifier; selain itu findOrCreateDonatur)
+     [POST /v1/donatur publik dihapus 2026-10-24]
 ```
 
 Public API `/v1/donatur` hanya mendukung field dasar: `name`, `email`, `phone`, `whatsappNumber`, `password`. Tidak mengelola alamat, pekerjaan, penghasilan, personal data, atau rekening.

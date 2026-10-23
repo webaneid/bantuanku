@@ -1,68 +1,18 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { eq, or } from "drizzle-orm";
-import { donatur, createId } from "@bantuanku/db";
 import { success, error } from "../lib/response";
-import { normalizeContactData, maskName, maskEmail, maskPhone } from "../lib/contact-helpers";
-import { hashPassword } from "../lib/password";
-import { parseDonaturIdentifier, findDonaturByIdentifier } from "../services/donatur-lookup";
 import { lookupRateLimit } from "../middleware/ratelimit";
+import { parseDonaturIdentifier, findDonaturByIdentifier } from "../services/donatur-lookup";
 import type { Env, Variables } from "../types";
 
 const donaturRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-// GET /donatur/search - Cari donatur by email/phone (public, respons disamarkan)
-donaturRoute.get("/search", lookupRateLimit, async (c) => {
-  const db = c.get("db");
-  const email = c.req.query("email");
-  const phone = c.req.query("phone");
-
-  if (!email && !phone) {
-    return error(c, "Email or phone parameter required", 400);
-  }
-
-  const conditions = [];
-  if (email) {
-    conditions.push(eq(donatur.email, email.toLowerCase().trim()));
-  }
-  if (phone) {
-    const trimmedPhone = phone.trim();
-    conditions.push(eq(donatur.phone, trimmedPhone));
-    conditions.push(eq(donatur.whatsappNumber, trimmedPhone));
-  }
-
-  const found = await db.query.donatur.findFirst({
-    where: or(...conditions),
-    columns: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-      whatsappNumber: true,
-      userId: true,
-    },
-  });
-
-  if (!found) {
-    return error(c, "Donatur not found", 404);
-  }
-
-  // Endpoint publik: data pribadi disamarkan agar tidak bisa dipakai untuk mengintip identitas orang lain.
-  // userId internal juga tidak diekspos; cukup tahu apakah donatur ini sudah punya akun.
-  return success(c, {
-    id: found.id,
-    name: maskName(found.name),
-    email: maskEmail(found.email),
-    phone: maskPhone(found.phone),
-    whatsappNumber: maskPhone(found.whatsappNumber),
-    hasAccount: !!found.userId,
-  });
-});
-
 // POST /donatur/check - Apakah email/nomor HP/WhatsApp sudah terdaftar sebagai donatur? (publik)
 // Hanya menjawab ya/tidak: tanpa id dan tanpa data pribadi apa pun (nama, email, HP tidak ikut).
 // Data donatur dipakai server saat membuat transaksi (`use_registered_donatur`), bukan oleh klien.
+// Endpoint publik lama `GET /search` (mengembalikan id + data tersamar) dan `POST /` (mengembalikan id
+// donatur yang sudah ada) dihapus 2026-10-24: tidak dipakai lagi dan keduanya membuka data/id donatur.
 const checkDonaturSchema = z.object({
   identifier: z.string().trim().min(5).max(120),
 });
@@ -83,56 +33,6 @@ donaturRoute.post("/check", lookupRateLimit, zValidator("json", checkDonaturSche
     registered: !!found,
     hasAccount: !!found?.userId,
   });
-});
-
-// POST /donatur - Create donatur (public, for guest checkout)
-const createDonaturSchema = z.object({
-  name: z.string().trim().min(2),
-  email: z.string().trim().email(),
-  phone: z.string().trim().min(10),
-  whatsappNumber: z.string().trim().min(10).optional(),
-  password: z.string().trim().min(8).optional(),
-});
-
-donaturRoute.post("/", zValidator("json", createDonaturSchema), async (c) => {
-  const body = c.req.valid("json");
-  const db = c.get("db");
-
-  // Normalize contact data
-  const normalizedBody = normalizeContactData(body);
-
-  // Check if email already exists
-  const existing = await db.query.donatur.findFirst({
-    where: eq(donatur.email, normalizedBody.email),
-  });
-
-  if (existing) {
-    return success(c, { id: existing.id }, "Donatur already exists");
-  }
-
-  const donaturId = createId();
-  const insertData: any = {
-    id: donaturId,
-    email: normalizedBody.email,
-    name: normalizedBody.name,
-    phone: normalizedBody.phone,
-    whatsappNumber: normalizedBody.whatsappNumber || normalizedBody.phone,
-    isActive: true,
-  };
-
-  // Hash password if provided
-  if (body.password) {
-    insertData.passwordHash = await hashPassword(body.password);
-  }
-
-  await db.insert(donatur).values(insertData);
-
-  return success(
-    c,
-    { id: donaturId },
-    "Donatur created successfully",
-    201
-  );
 });
 
 export default donaturRoute;

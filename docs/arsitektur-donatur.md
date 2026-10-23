@@ -113,9 +113,9 @@ Semua endpoint profil donatur ada di prefix `/v1/auth/me` dan `/v1/account/`.
 
 | Method | Path | Fungsi |
 |--------|------|--------|
-| `GET` | `/v1/donatur/search` | Cari donatur by email/phone untuk guest checkout. Publik, rate limit 30/15 menit/IP. Respons **disamarkan** (`maskName/maskEmail/maskPhone` di `lib/contact-helpers.ts`) + `id` + `hasAccount` (bukan `userId`); tidak untuk autofill, hanya mengenali donatur dan menautkan `donaturId` (RETROFIT-GAPS V, 2026-10-23) |
+| ~~`GET`~~ | ~~`/v1/donatur/search`~~ | **Dihapus 2026-10-24** (mengembalikan `id` dan data tersamar; tidak dipakai lagi). |
 | `POST` | `/v1/donatur/check` | Body `{ identifier }` (email, atau HP/WhatsApp). Jawab `{ type, registered, hasAccount }` — **tanpa id dan tanpa data pribadi**. Rate limit sama dengan `/search`. Dipakai checkout satu-isian (2026-10-24); server mencari donatur sendiri saat membuat transaksi. |
-| `POST` | `/v1/donatur` | Buat donatur baru (guest checkout) |
+| ~~`POST`~~ | ~~`/v1/donatur`~~ | **Dihapus 2026-10-24** (donatur dibuat server saat transaksi; endpoint ini mengembalikan `id` donatur yang sudah ada). |
 
 ---
 

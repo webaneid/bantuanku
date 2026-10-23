@@ -297,8 +297,11 @@ Behavior awal:
 - saat page load dengan item, kirim Meta Pixel `InitiateCheckout`
 - ambil referral code dari localStorage via `getReferralCode()`
 - jika user login, autofill data dari `useAuth()`
-- jika guest mengisi email/phone/WA, cek donatur existing via `GET /v1/donatur/search`; hasilnya **tersamar**, jadi form TIDAK diisi otomatis: hanya `donaturId` disimpan dan toast "Data Anda ditemukan (nama tersamar)" tampil
-- jika donatur existing tanpa user account, tampil popup ajakan register
+- **Satu isian + tombol Lanjutkan (2026-10-24)**: guest mengisi satu kolom "Email atau nomor HP/WhatsApp" lalu menekan **Lanjutkan** (bukan otomatis saat blur, agar tidak terpicu saat user masih mengetik). Klien memanggil `POST /v1/donatur/check` yang hanya menjawab `{ registered, hasAccount }`.
+  - **Terdaftar**: pesan "Anda telah terdaftar"; tidak ada kolom nama/HP/email dan tidak ada data donatur yang dikirim ke browser. Yang tampil hanya isian opsional (checklist "Hamba Allah", "atas nama" untuk zakat/qurban, doa/catatan) dan tautan "Buat akun" bila belum punya akun. Transaksi dikirim dengan `use_registered_donatur: true` + `donor_identifier`; server mengambil nama/email/HP dari profil donatur (lihat `arsitektur-transaksi.md`).
+  - **Belum terdaftar**: form lengkap seperti sebelumnya, dengan isian tadi terisi di kolom yang sesuai (email, atau HP + WhatsApp sama dengan HP).
+  - Mengubah isian setelah dicek, atau "Ganti email/nomor", mengembalikan ke langkah awal. Menekan "Pilih Metode Pembayaran" sebelum langkah ini memberi toast dan memfokuskan kolom.
+  - User login tidak melalui langkah ini: form terisi dari akun (alur lama). `user_id`/`donatur_id` tidak dikirim klien; server menentukan sendiri.
 - guest melihat tombol "Lanjutkan dengan Google" (`GoogleSignInButton`, `returnTo="/checkout"`, hanya tampil bila `GET /auth/methods` melaporkan Google aktif); setelah login kembali ke checkout dan form terisi dari akun. Keranjang aman karena tersimpan di localStorage. Akun Google baru tanpa nomor WA diarahkan dulu ke `/account/profile` (keranjang tetap ada)
 
 ### Tampilan Mobile Checkout (2026-10-23)
@@ -306,6 +309,7 @@ Behavior awal:
 - Grid wajib `grid grid-cols-1 lg:grid-cols-3`: tanpa `grid-cols-1`, kolom implisit mengikuti min-content dan seluruh halaman overflow horizontal di layar sempit (terukur 394px di layar 380px).
 - Kartu form dan kartu ringkasan di mobile (< md) menembus padding container (`-mx-4 sm:-mx-6 md:mx-0`), tanpa border/radius, teks berjarak 15px; `md` ke atas tetap kartu bergaya lama.
 - Bar bawah mobile (`fixed bottom-0`, portal): tombol utama "Pilih Metode Pembayaran" di atas, di bawahnya tautan teks "Kembali ke Keranjang" tanpa border. Spacer `h-28 lg:hidden` setelah `<Footer />` (bukan `pb-*` di `<main>`), lihat `arsitektur-mobile-single-shell.md`.
+- Ringkasan donasi di mobile: blok di atas halaman, latar gradasi primary, radius 24px, teks putih (judul, daftar item, total besar, info setelah checkout). Sidebar ringkasan lama hanya tampil di desktop (`lg`).
 - Desktop (tombol di akhir form) tidak berubah.
 
 ## Checkout Validation
@@ -418,23 +422,9 @@ referred_by_fundraiser_code = referral code jika ada
 type_specific_data = period_id, package_id, package_period_id, onBehalfOf, animal_type, package_type, meta cookies, meta_event_id
 ```
 
-## Donatur Auto-Create
+## Donatur pada Checkout
 
-Jika `donaturId` belum ditemukan, checkout mencoba membuat donatur guest setelah transaksi berhasil dibuat:
-
-```text
-POST /v1/donatur
-{
-  name,
-  email,
-  phone,
-  whatsappNumber
-}
-```
-
-Kegagalan create donatur tidak menggagalkan transaksi. Ini hanya dicatat ke console.
-
-Catatan: transaksi sudah dibuat sebelum guest donatur auto-create ini. `TransactionService.create()` juga punya mekanisme find/create donatur sendiri jika `donatur_id` tidak dikirim.
+Klien tidak lagi membuat donatur (`POST /v1/donatur` dihapus 2026-10-24). Donatur ditentukan sepenuhnya oleh `TransactionService.create()` di server: dari profil terdaftar (`use_registered_donatur`) atau, untuk data yang diketik, `findOrCreateDonatur` (cocok email ATAU HP/WhatsApp, selain itu dibuat baru).
 
 ## Success dan Redirect
 

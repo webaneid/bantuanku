@@ -108,7 +108,7 @@ kentara dari nama-nama dokumen yang ada.
 
 | # | Temuan audit | Status |
 |---|--------------|--------|
-| V | **(High)** `GET /v1/donatur/search` publik membuka nama, email, telepon, WA donatur (autofill checkout) | ✅ 2026-10-23 (keputusan user: masking). Respons kini `{id, name, email, phone, whatsappNumber}` tersamar (`Ahm** Fau**`, `a***@gmail.com`, `0812******90`) + `hasAccount`; checkout tidak lagi autofill dari hasil ini, hanya menyimpan `donaturId` + toast + popup daftar. Sisa risiko kecil: `POST /v1/donatur` masih mengembalikan `id` untuk email yang sudah ada, dan `POST /transactions` mempercayai `donatur_id` dari klien (tanpa PII, hanya bisa menautkan donasi ke riwayat donatur lain) — kandidat: tautkan donatur di server berdasar email/telepon, bukan id dari klien |
+| V | **(High)** `GET /v1/donatur/search` publik membuka nama, email, telepon, WA donatur (autofill checkout) | ✅ 2026-10-23 (keputusan user: masking). Respons kini `{id, name, email, phone, whatsappNumber}` tersamar (`Ahm** Fau**`, `a***@gmail.com`, `0812******90`) + `hasAccount`; checkout tidak lagi autofill dari hasil ini, hanya menyimpan `donaturId` + toast + popup daftar. Sisa risiko kecil: `POST /v1/donatur` masih mengembalikan `id` untuk email yang sudah ada, dan `POST /transactions` mempercayai `donatur_id` dari klien (tanpa PII, hanya bisa menautkan donasi ke riwayat donatur lain) — **Selesai 2026-10-24**: `/donatur/search` dan `POST /donatur` dihapus; checkout satu isian + `POST /donatur/check` (hanya terdaftar/tidak); server menentukan donatur sendiri dan mengabaikan `donatur_id`/`user_id` dari klien; data donor profil disamarkan di baca publik (lihat `arsitektur-security.md` § Data Donatur pada Transaksi Publik) |
 | W | **(High)** Pre-registration hijack belum tertutup: link verifikasi yang diklik pemilik email mengesahkan akun ber-password penyerang | ✅ Verifikasi butuh token + password; daftar ulang akun belum terverifikasi menimpa password; Google meng-klaim akun (hapus password). 54 + 53 kasus uji |
 | X | **(Medium)** Tidak ada pencabutan sesi; `/refresh` tidak cek verifikasi | ✅ `users.sessions_valid_after` (migrasi 122) + cek verifikasi. Gap #U selesai |
 | Y | **(Medium)** Admin bisa memberi peran staf ke user belum terverifikasi (`admin/employees.ts`, 2 jalur) | ✅ Ditolak bila `email_verified_at` NULL. Tidak diuji runtime (butuh fixture admin+employee), terverifikasi lewat tsc dan baca kode |
@@ -116,7 +116,7 @@ kentara dari nama-nama dokumen yang ada.
 | AA | **(Medium)** Open redirect `returnTo`/`next` lewat TAB | ✅ Validasi `new URL()` + tolak karakter kontrol, API dan web |
 | AB | **(Low)** Enumerasi akun (`register` 400, `check-registration`, waktu login) | ◐ Sebagian: tetap ada (diterima, rate limit). Dummy bcrypt untuk email tak dikenal belum dibuat |
 | AC | **(Low)** Email tak dinormalisasi lowercase | ◐ Lookup case-insensitive + simpan lowercase. **Belum** ada unique index `lower(email)`: cek data duplikat produksi dulu |
-| AD | **(Low)** WA selamat datang ke nomor tak terverifikasi | ✅ Dikirim setelah email terverifikasi. `POST /v1/donatur` publik masih membuat record dengan nomor/nama sembarang (belum ditangani) |
+| AD | **(Low)** WA selamat datang ke nomor tak terverifikasi | ✅ Dikirim setelah email terverifikasi. `POST /v1/donatur` publik dihapus 2026-10-24 (record donatur kini hanya dibuat server saat transaksi) |
 | AE | **(Low)** Override URL OAuth lewat env di production | ✅ Diabaikan bila `ENVIRONMENT=production` |
 | AF | **(Medium)** Rate limit via XFF palsu → email-bombing/brute force | ⏳ = item S: set `TRUSTED_PROXY_HOPS` di VPS. Limiter per-akun belum ada |
 
@@ -128,14 +128,14 @@ kentara dari nama-nama dokumen yang ada.
 - **Sudah di VPS:** `git pull` kode Fase 1–4, migrasi 121 + 122 sukses, `.env` di `/var/www/bantuanku/shared/` ditambah `GOOGLE_*` dan `RESEND_API_KEY`/`FROM_EMAIL`, API direstart; `GET /v1/auth/methods` → `{"google":true}` (kode baru aktif, Google terbaca).
 - **Belum terkonfirmasi:** build+restart admin dan web (user sempat berada di `apps/web`; kesalahan awal `cd apps/admin` relatif dari `packages/db`), `ENVIRONMENT=production` dan domain `FROM_EMAIL` terverifikasi di Resend (hanya diminta cek, belum dilaporkan), `pm2 status`/log API bersih.
 - **Belum diuji sama sekali di produksi (ditunda user):** login admin lama (WAJIB pertama), daftar akun baru + email verifikasi masuk, lupa password via email, login Google (redirect URI `https://api.bantuanku.org/v1/auth/google/callback`).
-- **Menunggu:** `TRUSTED_PROXY_HOPS` (butuh output `grep -rn "proxy_set_header\|real_ip\|set_real_ip_from" /etc/nginx/` + info Cloudflare), keputusan produk `/v1/donatur/search` (item V).
+- **Menunggu:** `TRUSTED_PROXY_HOPS` (butuh output `grep -rn "proxy_set_header\|real_ip\|set_real_ip_from" /etc/nginx/` + info Cloudflare).
 - Risiko selama belum diuji: bila Resend belum benar, pendaftar baru tidak bisa login (akun lama/staf aman berkat backfill 121).
 
 **Update 2026-10-23 — deploy selesai dan teruji di produksi:**
 - Build + restart admin dan web, `ENVIRONMENT=production` (duplikat baris di `.env` dirapikan), domain Resend verified, `TRUSTED_PROXY_HOPS=2` (lihat item S).
 - Uji lolos: login admin lama (backfill 121 bekerja), daftar + login dengan email, lupa password via email, login Google (akun baru dan akun yang sudah terdaftar).
 - Gotcha uji: rate limit disimpan di memori per proses; uji brute force dari IP sendiri mengunci login IP itu 15 menit, `pm2 restart bantuanku-api` mengosongkannya. Domain publik web (`bantuanku.org`) tidak melayani `/v1/*`; API ada di `api.bantuanku.org`.
-- Sisa: keputusan produk `/v1/donatur/search` (item V), item U (revocation refresh token), hapus `/etc/nginx/sites-available/bantuanku.save`.
+- Sisa: item U (revocation refresh token), hapus `/etc/nginx/sites-available/bantuanku.save`.
 
 ### Temuan 2026-10-23 — SEOPanel menimpa nilai awal saat StrictMode (Low, kemungkinan hanya dev)
 Efek skor `SEOPanel` (`components/SEOPanel.tsx`, `useEffect([scoreResult.overall])`) memanggil `onChange({ ...seo, seoScore })` dengan `seo` dari render lama. Dengan `reactStrictMode: true` (next.config) efek mount dijalankan dua kali: pada halaman edit laporan kegiatan dengan data sudah di cache React Query, panggilan kedua menimpa `focusKeyphrase` hasil populate dengan `""` (terbukti lewat log: onChange kp="" muncul setelah populate "Distribusi lansia"). Di dev, form edit menampilkan Focus Keyphrase kosong dan menyimpan tanpa menyadarinya menghapus nilainya. Campaign tidak terdampak pada uji yang sama. **Belum diverifikasi di build produksi** (StrictMode tidak menjalankan efek ganda di produksi). Perbaikan kandidat: hitung `seoScore` tanpa `onChange` berbasis closure lama (pakai updater/`useRef` ke nilai terbaru).

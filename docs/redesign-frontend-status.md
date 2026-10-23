@@ -33,7 +33,7 @@ tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-k
 - Halaman arsip `/program`: filter dan teks "Memuat program..." masih hardcode/tampilan lama.
 - `/qurban/[id]` mobile shell belum diuji visual (DB lokal tidak punya tabel `qurban_discounts`); uji di staging/produksi, begitu juga menu top bar saat login.
 - Caption kecil "DONASI SEKARANG" di bar ringkas masih ada (hanya keterangan); bisa diganti "Pilih nominal donasi" bila dirasa dobel.
-- Alur bayar (keranjang, invoice) sengaja belum memakai top bar; bar bawahnya masih gaya lama. `/checkout` mobile sudah dirapikan (overflow, padding 15px, bar bawah baru).
+- Alur bayar (keranjang, invoice) sengaja belum memakai top bar; bar bawahnya masih gaya lama. `/checkout` mobile sudah dirapikan (overflow, padding 15px, bar bawah baru, blok ringkasan primary di atas, satu isian email/HP + tombol Lanjutkan).
 
 ## Gotcha lokal
 - Font tiba-tiba serif di dev = cache `apps/web/.next` basi (kelas `__variable_xxx` di HTML tidak cocok dengan CSS). Perbaiki: hentikan dev server, `rm -rf apps/web/.next`, jalankan ulang. Bukan perubahan kode font.
