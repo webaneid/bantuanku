@@ -33,9 +33,10 @@ tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-k
 | Checkout: bar bawah dan Lanjutkan | bar "Pilih Metode Pembayaran" hanya tampil bila data donatur siap; tombol Lanjutkan hilang setelah terverifikasi/mulai mengisi; auto-gulir ke hasil | aa36930 |
 | `/invoice/[id]/payment-instruction` mobile | blok primary + kartu penuh + tautan teks; QRIS: tombol "Unduh QRIS" (PNG 800px) | 3708299 |
 | Halaman akun `/account/*` (redesign total) | cangkang baru (bar bawah mengambang mobile, sidebar berkartu pengguna desktop), dashboard (hero total kontribusi + aksi cepat + ringkasan + transaksi terbaru), Riwayat, Tabungan Qurban (daftar + detail), Influencer, Profil; tabel baku tidak diubah | e2be6eb, c214276, e8900f2, 045776a |
+| `FeaturedCarousel` ("Program Unggulan & Mendesak") | section baru: teks kiri + kartu gelap bergulir kanan, gambar rasio 900:498 (varian `large`), lencana sisa hari/target tercapai, dekorasi flat | (belum commit) |
 
 ## Belum dikerjakan / keputusan terbuka
-- `FeaturedCarousel` ("Program Unggulan & Mendesak") masih tampilan lama; qurban section, "Why Choose Us", Header, Footer belum di-redesign. User akan menyebut bagian berikutnya.
+- qurban section, "Why Choose Us", Header, Footer belum di-redesign. User akan menyebut bagian berikutnya.
 - Overflow horizontal header di lebar < 1340px (sudah ada sebelum redesign, belum diperbaiki).
 - Halaman arsip `/program`: filter dan teks "Memuat program..." masih hardcode/tampilan lama.
 - `/qurban/[id]` mobile shell belum diuji visual (DB lokal tidak punya tabel `qurban_discounts`); uji di staging/produksi, begitu juga menu top bar saat login.

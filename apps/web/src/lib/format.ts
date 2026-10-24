@@ -59,6 +59,28 @@ export function formatCompactNumber(num: number): string {
 }
 
 /**
+ * Rupiah ringkas untuk kartu: "Rp 145 Jt", "Rp 1,2 M", "Rp 750 Rb" (satuan Indonesia, koma desimal).
+ * Satu desimal hanya bila perlu; di bawah seribu ditulis penuh.
+ */
+export function formatRupiahCompact(amount: number | null | undefined): string {
+  const value = Math.max(0, Number(amount || 0));
+  const units: Array<[number, string]> = [
+    [1_000_000_000_000, 'T'],
+    [1_000_000_000, 'M'],
+    [1_000_000, 'Jt'],
+    [1_000, 'Rb'],
+  ];
+
+  for (const [size, suffix] of units) {
+    if (value >= size) {
+      const scaled = Math.round((value / size) * 10) / 10;
+      return `Rp ${String(scaled).replace('.', ',')} ${suffix}`;
+    }
+  }
+  return `Rp ${Math.round(value)}`;
+}
+
+/**
  * Format percentage
  * @param value - Number value
  * @param total - Total value

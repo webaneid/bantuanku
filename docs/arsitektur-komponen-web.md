@@ -148,7 +148,7 @@ Folder: `apps/web/src/components/organisms`.
 | `Breadcrumb` | Navigasi breadcrumb halaman |
 | `HeroSlider` | Hero berbentuk kartu (tidak full width, radius 24px) dengan autoplay, swipe, optional navigation; teks sejajar `.container` (lihat § HeroSlider) |
 | `ProgramCard` | Card campaign donasi dengan image, badge, progress, stats |
-| `FeaturedCarousel` | Carousel campaign featured/urgent |
+| `FeaturedCarousel` | Section lengkap "Program Unggulan & Mendesak": kolom teks kiri (eyebrow, judul, deskripsi, "Lihat Semua") + carousel kartu GELAP (`bg-primary-900`) scroll-snap di kanan, panel latar `primary-50` menempel tepi kanan (desktop), titik pil + panah. Props `campaigns`, `title`, `description`. Area gambar kartu dikunci `aspect-[900/498]` = rasio crop media (kirim varian `large` 900×498, fallback `medium`). Lencana: "Sisa N Hari" (merah bila urgent/≤7 hari), "Target Tercapai"; bar progres bercahaya (emas ≥80%). Dekorasi flat, tanpa ornamen. Angka pakai `formatRupiahCompact` |
 | `CategoryGrid` | Grid kategori layanan/program |
 | `MobileTopBar` | Top bar mobile halaman single (back + titik tiga/menu); lihat `arsitektur-mobile-single-shell.md` |
 | `MobileMenuPanel` | Isi menu mobile, satu sumber untuk `Header` dan `MobileTopBar` |

@@ -75,6 +75,16 @@ export const idMessages: Messages = {
     featured: {
       title: "Program Unggulan & Mendesak",
       description: "Program-program prioritas yang membutuhkan dukungan Anda",
+      eyebrow: "Program Pilihan",
+      viewAll: "Lihat Semua",
+      help: "Bantu Sekarang",
+      daysLeft: "Sisa {days} Hari",
+      urgent: "Mendesak",
+      completed: "Target Tercapai",
+      donors: "{count} donatur",
+      prev: "Sebelumnya",
+      next: "Berikutnya",
+      goTo: "Ke program {number}",
     },
     programs: {
       title: "Program Kami",

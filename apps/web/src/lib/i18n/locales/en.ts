@@ -75,6 +75,16 @@ export const enMessages: Messages = {
     featured: {
       title: "Featured & Urgent Programs",
       description: "Priority programs that need your support",
+      eyebrow: "Featured Programs",
+      viewAll: "View All",
+      help: "Help Now",
+      daysLeft: "{days} Days Left",
+      urgent: "Urgent",
+      completed: "Goal Reached",
+      donors: "{count} donors",
+      prev: "Previous",
+      next: "Next",
+      goTo: "Go to program {number}",
     },
     programs: {
       title: "Our Programs",

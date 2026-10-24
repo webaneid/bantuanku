@@ -490,29 +490,19 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Featured Urgent Campaigns Carousel */}
+        {/* Featured Urgent Campaigns Carousel (section lengkap: teks kiri + kartu gelap kanan) */}
         {featuredAndUrgentCampaigns.length > 0 && (
-          <section className="py-16 bg-white">
-            <div className="container">
-              <div className="text-center mb-8">
-                <h2 className="section-title text-gray-900">
-                  {featuredSectionData.title}
-                </h2>
-                <p className="section-description text-gray-600">
-                  {featuredSectionData.description}
-                </p>
-              </div>
-
-              <div className="featured-carousel-wrapper">
-                <FeaturedCarousel
-                  campaigns={featuredAndUrgentCampaigns
-                    .slice(0, featuredSectionData.limit)
-                    .map(mapCampaign)
-                  }
-                />
-              </div>
-            </div>
-          </section>
+          <FeaturedCarousel
+            title={featuredSectionData.title}
+            description={featuredSectionData.description}
+            campaigns={featuredAndUrgentCampaigns
+              .slice(0, featuredSectionData.limit)
+              .map((campaign) => ({
+                ...mapCampaign(campaign),
+                // Varian large (900x498) = rasio crop media; kartu desktop ±340px (layar 2x)
+                image: getImageUrlByVariant(campaign.imageUrl, ['large', 'medium']),
+              }))}
+          />
         )}
 
         {/* Our Programs */}
