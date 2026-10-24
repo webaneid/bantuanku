@@ -156,6 +156,24 @@ export async function uploadToGCS(
       console.warn('[GCS] Failed to make file public, but upload succeeded');
     }
 
+    // Nama objek unik (timestamp + id media) sehingga isi tidak pernah berubah: browser/CDN boleh menyimpan setahun.
+    // Best-effort: gagal tidak menggagalkan upload (objek lama tetap memakai default bucket, 1 jam).
+    if (mimeType.startsWith('image/')) {
+      await fetch(
+        `https://storage.googleapis.com/storage/v1/b/${config.bucketName}/o/${encodeURIComponent(destination)}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ cacheControl: 'public, max-age=31536000, immutable' }),
+        }
+      ).catch(() => {
+        console.warn('[GCS] Failed to set Cache-Control metadata, upload succeeded');
+      });
+    }
+
     // Return public URL
     const publicUrl = `https://storage.googleapis.com/${config.bucketName}/${destination}`;
     console.log('[GCS] Public URL:', publicUrl);

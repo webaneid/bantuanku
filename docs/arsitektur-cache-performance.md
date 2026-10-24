@@ -82,7 +82,7 @@ Tujuan: halaman publik terbuka secepat mungkin dan ringan untuk VPS. Dikerjakan 
 | 2 | Waterfall beranda: semua fetch dimulai paralel di awal `HomePage` (helper `started`), satu fetch campaign (`limit=100`) dipakai untuk carousel + menu kategori, paket qurban per periode paralel; id Pixel/GTM dioper dari `layout` → `Providers` (tanpa `/settings` dari browser) | Selesai (isi HTML identik, diverifikasi) |
 | 3 | Next Data Cache: fetch server publik pakai `revalidate` + tag (campaign 60 dtk; settings/kategori/stats/qurban/pages/laporan/zakat 5 mnt); `POST /revalidate-cache` (web) dipanggil `webRevalidateMiddleware` (API) setelah mutasi admin; service memakai `lib/api-url.ts` (`API_INTERNAL_URL`) | Selesai (diuji: cache hit tanpa hit API, revalidate per tag, 401 tanpa secret) |
 | 4 | Cache respons API publik di memori (`cache.ts`, TTL 60 dtk–5 mnt) + dikosongkan saat mutasi admin; `status` publik campaign di-whitelist (draft tidak bocor). `prettyJSON` ternyata hanya aktif dengan `?pretty` (tidak perlu dimatikan) | Selesai (diuji: MISS/HIT, 500 tak di-cache, invalidasi hanya pada mutasi sukses) |
-| 5 | Custom image loader ke varian WebP (lewati optimizer Next) | Belum |
+| 5 | Loader `next/image` kustom (`lib/image-loader.ts`, `loader: 'custom'`): media WebP (CDN/GCS/API) dikembalikan apa adanya, Unsplash di-resize lewat parameter URL; `/_next/image` tidak dipakai/dilayani lagi. Upload GCS baru diberi `Cache-Control: public, max-age=31536000, immutable` | Selesai (diuji: 0 request `/_next/image`, 13 gambar termuat, fallback Unsplash) |
 | 6 | Komponen presentasional jadi server component | Belum |
 | 7 | Rekomendasi Cloudflare/reverse proxy (tidak ada konfigurasi di repo) | Belum |
 
@@ -303,6 +303,9 @@ Gap:
 ---
 
 ## Image dan Media Performance
+
+> **Sejak fase 5 (2026-10-24):** `next.config.js` memakai `images.loader: 'custom'` → `src/lib/image-loader.ts`. Endpoint `/_next/image` tidak dilayani (404) sehingga tidak ada resize/encode AVIF di VPS. Media `.webp` dari host CDN/GCS/API dikembalikan apa adanya (varian dipilih di kode lewat `getImageUrlByVariant`, tanpa penukaran otomatis karena kategori `financial/activity/document` hanya punya `original`); Unsplash memakai parameter `w/q/auto=format`; sumber lain apa adanya. Konsekuensi: gambar non-WebP (mis. bukti bayar JPEG) tidak lagi di-resize; srcset berisi URL yang sama untuk semua lebar (browser tetap mengunduh satu file). Objek GCS lama masih `max-age=3600`; untuk menyamakan: `gsutil -m setmeta -h "Cache-Control:public, max-age=31536000, immutable" "gs://<bucket>/bantuanku/**"` (nama objek unik, aman).
+
 
 Media library memproses image via `sharp`:
 

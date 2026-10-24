@@ -19,7 +19,7 @@ Dokumen ini adalah source of truth arsitektur media library Bantuanku sesuai imp
 Media library berbeda dari upload bukti bayar transaksi universal. Upload bukti bayar transaksi utama didokumentasikan di `arsitektur-universal-payment.md` dan saat ini GCS-required. Media library admin masih bisa fallback ke local uploads jika CDN tidak aktif atau upload GCS gagal.
 
 Gap security upload seperti validasi MIME berbasis request, public local uploads, dan policy fallback production dicatat di `arsitektur-security.md`.
-Cache media, local uploads memory cache, image variants, dan performance processing dicatat di `arsitektur-cache-performance.md`.
+Cache media, local uploads memory cache, image variants, dan performance processing dicatat di `arsitektur-cache-performance.md`. Tampilan gambar di web memakai loader kustom (`apps/web/src/lib/image-loader.ts`, tanpa optimizer `/_next/image`); upload GCS gambar diberi `Cache-Control: public, max-age=31536000, immutable`.
 Pemakaian MediaLibrary untuk `featureImageUrl` CMS pages dicatat di `arsitektur-pages-cms.md`.
 
 ## Endpoint

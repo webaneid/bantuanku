@@ -21,10 +21,12 @@ function buildRemotePatterns() {
 const nextConfig = {
   reactStrictMode: true,
 
-  // Image optimization
+  // Loader kustom: /_next/image TIDAK dipakai/dilayani (tanpa kerja resize di VPS); lihat src/lib/image-loader.ts.
+  // remotePatterns dipertahankan sebagai daftar host gambar yang sah bila loader kelak dikembalikan ke bawaan.
   images: {
+    loader: 'custom',
+    loaderFile: './src/lib/image-loader.ts',
     remotePatterns: buildRemotePatterns(),
-    formats: ['image/avif', 'image/webp'],
   },
 
   // Rewrites for API proxy (development)
