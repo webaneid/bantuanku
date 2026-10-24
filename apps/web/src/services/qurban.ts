@@ -1,6 +1,6 @@
 import { getImageUrl, getImageUrlByVariant, type ImageVariant } from '@/lib/image';
+import { API_URL } from '@/lib/api-url';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
 export interface QurbanPeriod {
   id: string;
@@ -62,7 +62,7 @@ export async function fetchActivePeriods() {
     const url = `${API_URL}/qurban/periods`;
 
     const response = await fetch(url, {
-      cache: 'no-store',
+      next: { revalidate: 300, tags: ['qurban'] },
     });
 
     if (!response.ok) {
@@ -82,7 +82,7 @@ export async function fetchPackagesByPeriod(periodId: string) {
     const url = `${API_URL}/qurban/periods/${periodId}/packages`;
 
     const response = await fetch(url, {
-      cache: 'no-store',
+      next: { revalidate: 300, tags: ['qurban'] },
     });
 
     if (!response.ok) {
@@ -102,7 +102,7 @@ export async function fetchPackageDetail(packagePeriodId: string) {
     const url = `${API_URL}/qurban/packages/${packagePeriodId}`;
 
     const response = await fetch(url, {
-      cache: 'no-store',
+      next: { revalidate: 300, tags: ['qurban'] },
     });
 
     if (!response.ok) {

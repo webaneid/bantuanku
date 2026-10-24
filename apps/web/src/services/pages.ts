@@ -24,10 +24,10 @@ export interface StaticPage {
   seoScore?: number | null;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:50245/v1";
+import { API_URL } from '@/lib/api-url';
 
 export async function fetchPublishedPages(): Promise<StaticPage[]> {
-  const response = await fetch(`${API_URL}/pages`, { cache: "no-store" });
+  const response = await fetch(`${API_URL}/pages`, { next: { revalidate: 300, tags: ['pages'] }, });
   if (!response.ok) {
     throw new Error(`Failed to fetch pages: ${response.statusText}`);
   }
@@ -37,7 +37,7 @@ export async function fetchPublishedPages(): Promise<StaticPage[]> {
 }
 
 export async function fetchPageBySlug(slug: string): Promise<StaticPage> {
-  const response = await fetch(`${API_URL}/pages/${slug}`, { cache: "no-store" });
+  const response = await fetch(`${API_URL}/pages/${slug}`, { next: { revalidate: 300, tags: ['pages'] }, });
   if (!response.ok) {
     throw new Error(`Failed to fetch page: ${response.statusText}`);
   }

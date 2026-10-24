@@ -599,7 +599,7 @@ Implikasi:
 2. Setiap request page detail memanggil API.
 3. Sidebar juga memanggil campaign, zakat, dan qurban APIs.
 4. Sitemap dynamic fetch bisa menghasilkan `lastModified` fallback waktu request karena public list tidak mengembalikan `updatedAt`.
-5. Tidak ada invalidation explicit setelah admin update page.
+5. ~~Tidak ada invalidation explicit setelah admin update page.~~ Sejak 2026-10-24 `fetchPublishedPages/fetchPageBySlug` memakai Data Cache tag `pages` (5 mnt) dan admin update memicu `revalidateTag('pages')` lewat `webRevalidateMiddleware` bila `WEB_INTERNAL_URL`/`REVALIDATE_SECRET` di-set.
 
 Detail cache lintas aplikasi dicatat di `arsitektur-cache-performance.md`.
 

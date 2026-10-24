@@ -80,7 +80,7 @@ Tujuan: halaman publik terbuka secepat mungkin dan ringan untuk VPS. Dikerjakan 
 |------|-----|--------|
 | 1 | Bundel: `TestimonialSection` jadi server component + scroll-snap CSS (tanpa Swiper/axios/react-query di klien); `jspdf`/`html2canvas` dimuat lewat `import()` saat tombol unduh diklik | Selesai: beranda 234 → 194 kB, `/invoice/[id]` 342 → 169 kB |
 | 2 | Waterfall beranda: semua fetch dimulai paralel di awal `HomePage` (helper `started`), satu fetch campaign (`limit=100`) dipakai untuk carousel + menu kategori, paket qurban per periode paralel; id Pixel/GTM dioper dari `layout` → `Providers` (tanpa `/settings` dari browser) | Selesai (isi HTML identik, diverifikasi) |
-| 3 | Next Data Cache: `no-store` → `revalidate` + tag; invalidasi dari admin | Belum |
+| 3 | Next Data Cache: fetch server publik pakai `revalidate` + tag (campaign 60 dtk; settings/kategori/stats/qurban/pages/laporan/zakat 5 mnt); `POST /revalidate-cache` (web) dipanggil `webRevalidateMiddleware` (API) setelah mutasi admin; service memakai `lib/api-url.ts` (`API_INTERNAL_URL`) | Selesai (diuji: cache hit tanpa hit API, revalidate per tag, 401 tanpa secret) |
 | 4 | Cache API publik (Cache-Control/ETag), matikan `prettyJSON` | Belum |
 | 5 | Custom image loader ke varian WebP (lewati optimizer Next) | Belum |
 | 6 | Komponen presentasional jadi server component | Belum |
@@ -216,7 +216,30 @@ Catatan: React Query cache ini hanya cache browser/client, bukan server cache.
 
 ## Next.js Fetch Cache
 
-### Banyak service publik memakai `no-store`
+### Next Data Cache + invalidasi (sejak fase 3, 2026-10-24)
+
+Service publik di `apps/web/src/services/*.ts` memakai `next: { revalidate, tags }` (bukan lagi `no-store`):
+
+| Tag | TTL | Service |
+|-----|-----|---------|
+| `campaigns` | 60 dtk | `campaigns.ts`, `/program/pilar/[slug]` |
+| `categories` | 5 mnt | `categories.ts` |
+| `stats` | 5 mnt | `stats.ts` |
+| `qurban` | 5 mnt | `qurban.ts` |
+| `pages` | 5 mnt | `pages.ts` |
+| `settings` | 5 mnt | `settings.ts`, `lib/seo.tsx` (`fetchSeoSettings`, tanpa cache variabel modul lagi), `testimonials.ts` (1 jam) |
+| `reports` | 5 mnt | `public-reports.ts`, `/laporan`, `/laporan/[slug]` |
+| `zakat` | 5 mnt | `zakat.ts` (GET) |
+
+Sengaja TIDAK di-cache: `sitemap.ts` (lihat lessons-learned 2026-10-23), `/mitra/[slug]`, dan semua panggilan berotentikasi/POST. Respons non-OK (4xx/5xx) tidak masuk cache.
+
+**Invalidasi:** `apps/api/src/middleware/web-revalidate.ts` (dipasang di `/v1/admin/*` pada `index.ts`) — setelah POST/PUT/PATCH/DELETE sukses, memetakan segmen route admin ke tag (`ROUTE_TAGS`) lalu `POST {WEB_INTERNAL_URL}/revalidate-cache` dengan header `x-revalidate-secret`. Route web `app/revalidate-cache/route.ts`: wajib `REVALIDATE_SECRET` (503 bila kosong, 401 bila salah, `timingSafeEqual`), hanya tag dalam whitelist. Fire-and-forget; bila gagal/dimatikan (env kosong) cache tetap kedaluwarsa sendiri sesuai TTL. Perubahan data oleh jalur non-admin (donasi masuk, mitra) hanya mengandalkan TTL.
+
+**URL API server:** `lib/api-url.ts` memakai `API_INTERNAL_URL` bila di-set (fetch SSR langsung ke API di VPS, tanpa memutar lewat Cloudflare), kalau tidak jatuh ke `NEXT_PUBLIC_API_URL`. Variabel ini bukan `NEXT_PUBLIC_*` sehingga di browser otomatis tidak terpakai.
+
+Cache ini tersimpan di `.next/cache` pada VPS: kosong setelah build ulang, dan per-instance (PM2 satu proses web = konsisten).
+
+### Sebelum fase 3: banyak service publik memakai `no-store`
 
 Service web berikut memakai `cache: "no-store"`:
 

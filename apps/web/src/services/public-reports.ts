@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
+
+import { API_URL } from '@/lib/api-url';
 
 export interface PublicZakatReportRow {
   id: string;
@@ -64,7 +65,7 @@ export async function fetchPublicZakatReport(params: {
   if (params.program) search.set('program', params.program);
 
   const response = await fetch(`${API_URL}/public-stats/zakat-report?${search.toString()}`, {
-    cache: 'no-store',
+    next: { revalidate: 300, tags: ['reports'] },
   });
 
   if (!response.ok) {
@@ -95,7 +96,7 @@ export async function fetchPublicZakatActivities(params: {
   if (params.program) search.set('program', params.program);
 
   const response = await fetch(`${API_URL}/public-stats/zakat-activities?${search.toString()}`, {
-    cache: 'no-store',
+    next: { revalidate: 300, tags: ['reports'] },
   });
 
   if (!response.ok) {
@@ -144,7 +145,7 @@ export async function fetchPublicQurbanReport(params: {
   if (params.program) search.set('program', params.program);
 
   const response = await fetch(`${API_URL}/public-stats/qurban-report?${search.toString()}`, {
-    cache: 'no-store',
+    next: { revalidate: 300, tags: ['reports'] },
   });
 
   if (!response.ok) {

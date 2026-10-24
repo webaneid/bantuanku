@@ -14,7 +14,7 @@ async function fetchPillarBySlug(slug: string) {
   try {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
     const response = await fetch(`${API_URL}/pillars`, {
-      next: { revalidate: 60 }, // Revalidate every 60 seconds
+      next: { revalidate: 60, tags: ['campaigns'] }, // Revalidate every 60 seconds
     });
     const data = await response.json();
 

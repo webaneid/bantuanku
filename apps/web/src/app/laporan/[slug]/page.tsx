@@ -53,7 +53,7 @@ interface PageProps {
 async function fetchReport(slug: string) {
   try {
     const res = await fetch(`${API_URL}/activity-reports/by-slug/${slug}`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 300, tags: ['reports'] },
     });
     const json = await res.json();
     if (json.success && json.data) return json.data;
@@ -66,7 +66,7 @@ async function fetchReport(slug: string) {
 async function fetchRelatedReports(slug: string) {
   try {
     const res = await fetch(`${API_URL}/activity-reports/by-slug/${encodeURIComponent(slug)}/related?limit=3`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 300, tags: ['reports'] },
     });
     const json = await res.json();
     if (json.success && json.data) return json.data as { mode: 'related' | 'other'; data: any[] };

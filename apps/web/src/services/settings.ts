@@ -3,6 +3,8 @@
  * Fetch public settings from API
  */
 
+import { API_URL } from '@/lib/api-url';
+
 export interface MenuItem {
   id: string;
   label: string;
@@ -88,7 +90,6 @@ function isIgnorableSettingsError(error: unknown): boolean {
   return false;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
 let cachedSettings: PublicSettings | null = null;
 let cacheTime: number = 0;
@@ -102,7 +103,7 @@ export async function fetchPublicSettings(): Promise<PublicSettings> {
 
   try {
     const response = await fetch(`${API_URL}/settings`, {
-      cache: 'no-store',
+      next: { revalidate: 300, tags: ['settings'] },
     });
 
     if (!response.ok) {

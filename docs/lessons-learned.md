@@ -540,3 +540,8 @@
 **Masalah:** tiap blok `try { await fetchX() }` menunggu blok sebelumnya, sehingga waktu render = jumlah semua latensi, bukan yang terlama. `MetaPixel` dan `GoogleTagManager` juga memanggil `/settings` dari browser padahal layout server sudah memegang settings itu.
 **Pelajaran:** mulai SEMUA fetch independen di awal komponen (promise tanpa await), lalu tiap blok `try` menunggu promise miliknya. Bungkus promise yang belum ditunggu dengan `.catch(() => {})` (helper `started`) agar penolakan awal tidak menjadi unhandled rejection. Data yang sudah ada di layout server dioper lewat props, bukan diambil ulang oleh komponen klien.
 
+### [2026-10-24] Cache data web: variabel modul membekukan data, dan fetch SSR memutar lewat Cloudflare
+**Konteks:** TTFB produksi 0,6 dtk karena setiap render menembak ±8 endpoint API dengan `no-store`.
+**Masalah:** (1) `fetchSeoSettings` menyimpan hasil di variabel modul 5 menit; cache semacam ini TIDAK ikut `revalidateTag`, jadi invalidasi dari admin tertahan sampai 5 menit. (2) Service SSR memakai `NEXT_PUBLIC_API_URL` (domain publik), sehingga tiap fetch server memutar internet → Cloudflare → VPS; `API_INTERNAL_URL` sudah dibaca satu file saja dan tak terdokumentasi. (3) Next tidak menyimpan respons non-OK, jadi endpoint yang error (mis. testimoni tanpa API key) tetap memukul API tiap request.
+**Pelajaran:** satu lapis cache saja (Next Data Cache) dengan tag, jangan tumpuk variabel modul. Fetch server-ke-server pakai alamat internal. Uji cache dengan proxy penghitung hit di depan API (build produksi di salinan + `next start` port lain), bukan dengan menebak. Env baru wajib masuk `.env.example` dan fitur harus tetap aman bila env kosong (invalidasi no-op, TTL tetap berlaku).
+

@@ -1,10 +1,5 @@
 import type { Metadata } from 'next';
 
-// Cache SEO settings untuk menghindari multiple fetch
-let cachedSettings: Record<string, any> | null = null;
-let cacheTime: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
 export function toAbsoluteUrl(appUrl: string, url?: string | null): string | undefined {
   if (!url) return undefined;
   if (url.startsWith("data:")) return undefined;
@@ -25,13 +20,6 @@ export function resolveOgImageUrl(
 }
 
 export async function fetchSeoSettings(): Promise<Record<string, any>> {
-  const now = Date.now();
-
-  // Return cached if still valid
-  if (cachedSettings && (now - cacheTime < CACHE_DURATION)) {
-    return cachedSettings || {};
-  }
-
   try {
     const baseApiUrl =
       process.env.API_INTERNAL_URL ||
@@ -43,7 +31,8 @@ export async function fetchSeoSettings(): Promise<Record<string, any>> {
       : `${normalizedBaseApiUrl}/v1/settings`;
 
     const response = await fetch(settingsUrl, {
-      next: { revalidate: 300 }, // Revalidate every 5 minutes
+      // Cache ada di Next Data Cache (bukan variabel modul) supaya revalidateTag('settings') dari admin langsung berlaku
+      next: { revalidate: 300, tags: ['settings'] },
     });
 
     if (!response.ok) {
@@ -51,10 +40,7 @@ export async function fetchSeoSettings(): Promise<Record<string, any>> {
     }
 
     const data = await response.json();
-    cachedSettings = data.data || {};
-    cacheTime = now;
-
-    return cachedSettings || {};
+    return data.data || {};
   } catch (error) {
     console.error('Error fetching SEO settings:', error);
     // Return defaults if fetch fails

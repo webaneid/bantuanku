@@ -122,7 +122,7 @@ Tabel yang sudah memiliki field SEO:
 |--------|--------|
 | `toAbsoluteUrl(appUrl, url)` | Mengubah URL relatif menjadi absolute dan menolak `data:` |
 | `resolveOgImageUrl(appUrl, candidates, fallback)` | Memilih OG image pertama yang valid dari kandidat |
-| `fetchSeoSettings()` | Fetch public settings dengan cache memory 5 menit dan `revalidate: 300` |
+| `fetchSeoSettings()` | Fetch public settings lewat Next Data Cache (`revalidate: 300`, tag `settings`); cache variabel modul sudah dihapus agar invalidasi dari admin langsung berlaku |
 | `generateSiteMetadata(overrides)` | Metadata global default untuk layout |
 | `generateOrganizationJsonLd(settings)` | JSON-LD Organization global |
 | `generateBreadcrumbJsonLd(items)` | JSON-LD BreadcrumbList |

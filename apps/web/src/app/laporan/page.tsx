@@ -80,7 +80,7 @@ export async function generateMetadata({
 async function fetchReports(page: number = 1): Promise<{ data: Report[]; pagination: PaginationData }> {
   try {
     const res = await fetch(`${API_URL}/activity-reports?page=${page}&limit=12`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 300, tags: ['reports'] },
     });
     const json = await res.json();
     if (json.success) return json.data;

@@ -4,6 +4,7 @@
  */
 
 import { getImageUrl, getImageUrlByVariant } from '@/lib/image';
+import { API_URL } from '@/lib/api-url';
 
 // Re-export for backward compatibility
 export { getImageUrl };
@@ -39,7 +40,6 @@ export interface CampaignsResponse {
   };
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
 export async function fetchCampaigns(params?: {
   limit?: number;
@@ -64,7 +64,7 @@ export async function fetchCampaigns(params?: {
     const url = `${API_URL}/campaigns${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
     const response = await fetch(url, {
-      cache: 'no-store',
+      next: { revalidate: 60, tags: ['campaigns'] },
     });
 
     if (!response.ok) {
@@ -82,7 +82,7 @@ export async function fetchCampaigns(params?: {
 export async function fetchCampaignBySlug(slug: string): Promise<Campaign> {
   try {
     const response = await fetch(`${API_URL}/campaigns/${slug}`, {
-      cache: 'no-store',
+      next: { revalidate: 60, tags: ['campaigns'] },
     });
 
     if (!response.ok) {

@@ -3,6 +3,8 @@
  * Fetch public statistics from API
  */
 
+import { API_URL } from '@/lib/api-url';
+
 export interface PublicStats {
   totalDonors: number;
   totalCampaigns: number;
@@ -10,12 +12,11 @@ export interface PublicStats {
   totalPartners: number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
 export async function fetchPublicStats(): Promise<PublicStats> {
   try {
     const response = await fetch(`${API_URL}/public-stats`, {
-      cache: 'no-store',
+      next: { revalidate: 300, tags: ['stats'] },
     });
 
     if (!response.ok) {

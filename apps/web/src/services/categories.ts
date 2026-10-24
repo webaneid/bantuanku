@@ -1,4 +1,3 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
 export interface Category {
   id: string;
@@ -18,10 +17,12 @@ export interface CategoriesResponse {
 /**
  * Fetch all active categories
  */
+
+import { API_URL } from '@/lib/api-url';
 export async function fetchCategories(): Promise<CategoriesResponse> {
   try {
     const response = await fetch(`${API_URL}/categories`, {
-      cache: 'no-store',
+      next: { revalidate: 300, tags: ['categories'] },
     });
 
     if (!response.ok) {

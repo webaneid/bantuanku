@@ -3,7 +3,7 @@
  * Ulasan Google Maps untuk beranda; dibaca di server (bukan dari browser) dan di-cache 1 jam.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
+import { API_URL } from '@/lib/api-url';
 
 export interface TestimonialReview {
   author_name: string;
@@ -16,7 +16,7 @@ export interface TestimonialReview {
 export async function fetchTestimonials(locale: string): Promise<TestimonialReview[]> {
   try {
     const response = await fetch(`${API_URL}/testimonials?lang=${encodeURIComponent(locale)}`, {
-      next: { revalidate: 3600 },
+      next: { revalidate: 3600, tags: ['settings'] },
     });
     if (!response.ok) return [];
     const json = await response.json();

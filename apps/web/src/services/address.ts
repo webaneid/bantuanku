@@ -23,7 +23,7 @@ export interface CompleteAddress {
   };
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
+import { API_URL } from '@/lib/api-url';
 
 export async function fetchCompleteAddress(villageCode: string): Promise<CompleteAddress | null> {
   try {

@@ -1,6 +1,6 @@
 import { getImageUrl } from '@/lib/image';
+import { API_URL } from '@/lib/api-url';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
 // Export image helper for use in components
 export { getImageUrl };
@@ -67,7 +67,7 @@ export interface ZakatPeriod {
 export async function fetchZakatTypes(): Promise<ZakatType[]> {
   try {
     const response = await fetch(`${API_URL}/zakat/types`, {
-      cache: 'no-store',
+      next: { revalidate: 300, tags: ['zakat'] },
     });
 
     if (!response.ok) {
@@ -86,7 +86,7 @@ export async function fetchZakatTypes(): Promise<ZakatType[]> {
 export async function fetchZakatConfig(): Promise<ZakatConfig> {
   try {
     const response = await fetch(`${API_URL}/zakat/config`, {
-      cache: 'no-store',
+      next: { revalidate: 300, tags: ['zakat'] },
     });
 
     if (!response.ok) {
@@ -106,7 +106,7 @@ export async function fetchZakatPeriods(zakatTypeId?: string): Promise<ZakatPeri
   try {
     const params = zakatTypeId ? `?zakatTypeId=${zakatTypeId}` : '';
     const response = await fetch(`${API_URL}/zakat/periods${params}`, {
-      cache: 'no-store',
+      next: { revalidate: 300, tags: ['zakat'] },
     });
 
     if (!response.ok) {
