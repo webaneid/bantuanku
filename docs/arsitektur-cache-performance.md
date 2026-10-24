@@ -60,6 +60,34 @@ Dokumen terkait:
 
 ---
 
+## Program Optimasi Kecepatan (2026-10-24)
+
+Tujuan: halaman publik terbuka secepat mungkin dan ringan untuk VPS. Dikerjakan per fase, tiap fase satu commit.
+
+**Baseline (sebelum optimasi):**
+
+| Metrik | Nilai |
+|--------|-------|
+| TTFB HTML beranda produksi (`bantuanku.org`, lewat Cloudflare) | 0,60 dtk (`cf-cache-status: DYNAMIC`, `cache-control: no-store`) |
+| First Load JS beranda | 234 kB gzip (dasar Next+React 88 kB) |
+| First Load JS `/invoice/[id]` | 342 kB |
+| `/_next/image` | Cloudflare tidak men-cache (`DYNAMIC`), tiap gambar memukul optimizer di VPS |
+| `/_next/static/*` | sudah `immutable` + `HIT` di Cloudflare (OK) |
+
+**Keputusan:** locale tetap dari cookie (halaman tidak bisa SSG penuh), jadi cache dilakukan di lapis data (Next Data Cache `revalidate` + tag) dan lapis API. Kesegaran: campaign 60 dtk; settings/kategori/halaman CMS 5 mnt. Target: JS beranda < 150 kB, LCP mobile < 2 dtk.
+
+| Fase | Isi | Status |
+|------|-----|--------|
+| 1 | Bundel: `TestimonialSection` jadi server component + scroll-snap CSS (tanpa Swiper/axios/react-query di klien); `jspdf`/`html2canvas` dimuat lewat `import()` saat tombol unduh diklik | Selesai: beranda 234 → 194 kB, `/invoice/[id]` 342 → 169 kB |
+| 2 | Waterfall beranda: `Promise.all`, satu fetch campaign; Pixel/GTM id dioper dari server | Belum |
+| 3 | Next Data Cache: `no-store` → `revalidate` + tag; invalidasi dari admin | Belum |
+| 4 | Cache API publik (Cache-Control/ETag), matikan `prettyJSON` | Belum |
+| 5 | Custom image loader ke varian WebP (lewati optimizer Next) | Belum |
+| 6 | Komponen presentasional jadi server component | Belum |
+| 7 | Rekomendasi Cloudflare/reverse proxy (tidak ada konfigurasi di repo) | Belum |
+
+---
+
 ## API Runtime Performance
 
 Middleware global API saat ini:

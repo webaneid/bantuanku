@@ -530,3 +530,8 @@
 **Masalah:** `globals.scss` mendefinisikan padding kiri untuk `ul`/`ol` (untuk konten rich text), sehingga `<ul className="space-y-3">` mendapat padding kiri ±26px; kartu menjadi tidak sejajar tanpa error apa pun.
 **Pelajaran:** daftar kartu memakai `m-0 list-none p-0` (atau `div` + `role="list"`). Ukur `getBoundingClientRect().left` kartu dibanding judul saat memeriksa kerapian mobile. Untuk menguji halaman yang bergantung API yang rusak di DB dev (mis. tabungan qurban butuh kolom `discount_id`), tiru respons XHR di browser (patch `XMLHttpRequest.prototype.send` setelah halaman awal dimuat lalu navigasi client-side) alih-alih mengubah skema DB.
 
+### [2026-10-24] Beranda 234 kB JS: section di bawah layar membawa Swiper + axios + react-query ke semua halaman
+**Konteks:** analisis kecepatan; TTFB produksi 0,6 dtk dan JS beranda jauh di atas dasar Next (88 kB).
+**Masalah:** `TestimonialSection` (client component) memakai Swiper, `api` (axios) dan `useQuery` hanya untuk satu section di bawah layar, dan mengambil datanya dari browser setelah hydrate. `UniversalInvoice` meng-import `jspdf` + `html2canvas` (180 kB) secara statis padahal dipakai hanya saat tombol unduh diklik. Bundel yang dimuat halaman ditentukan oleh import statis, bukan oleh kapan kodenya dipakai.
+**Pelajaran:** (1) Ukur dengan `next build` (kolom First Load JS) di SALINAN folder agar `.next` dev server tidak tertimpa. (2) Library besar yang hanya dipakai pada aksi (PDF, canvas) selalu `await import()` di dalam handler. (3) Section murni baca-data dibuat server component; carousel sederhana cukup scroll-snap CSS.
+

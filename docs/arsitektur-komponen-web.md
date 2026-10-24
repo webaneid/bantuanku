@@ -156,7 +156,7 @@ Folder: `apps/web/src/components/organisms`.
 | `QurbanCarousel` | Carousel paket qurban, memakai CSS lokal `QurbanCarousel.css` |
 | `QurbanSection` | Section qurban di homepage |
 | `ZakatCard` | Card zakat, memakai CSS lokal `ZakatCard.css` |
-| `TestimonialSection` | Section testimoni |
+| `TestimonialSection` | Section testimoni Google Maps. SERVER component (async, menerima `locale`): data dari `services/testimonials.ts` (`revalidate` 1 jam), geser dengan scroll-snap CSS (tanpa Swiper) |
 
 ### Header
 

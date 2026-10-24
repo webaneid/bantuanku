@@ -661,7 +661,7 @@ export default async function HomePage() {
         </section>
 
         {/* Testimonials */}
-        <TestimonialSection />
+        <TestimonialSection locale={locale} />
 
         {/* CTA */}
         <section className="cta-section py-20 md:py-[5.4rem] bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 text-white relative overflow-hidden">

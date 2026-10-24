@@ -2,8 +2,6 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import Link from 'next/link';
 import { Button } from '@/components/atoms';
 import { formatRupiahFull } from '@/lib/format';
@@ -33,6 +31,11 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
 
     setIsGeneratingPdf(true);
     try {
+      // Dimuat saat tombol diklik saja (±180 kB), tidak ikut bundel halaman
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
       const element = invoiceRef.current;
 
       // Hide action buttons during capture

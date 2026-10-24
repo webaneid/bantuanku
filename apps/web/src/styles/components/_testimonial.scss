@@ -80,30 +80,50 @@
   }
 
 
-  // Swiper overrides
+  // Geser dengan scroll-snap CSS (tanpa Swiper); track menembus padding container di mobile
   &__slider {
     position: relative;
     z-index: 1;
     max-width: 80rem;
     margin: 0 auto;
-    padding: 0;
+  }
+
+  &__track {
+    display: flex;
+    gap: $spacing-4;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 $spacing-4;
+    margin: 0 (-$spacing-4);
+    padding: 0 $spacing-4 $spacing-6;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
 
     @include desktop {
-      padding: 0 $spacing-6;
+      margin: 0;
+      padding: 0 0 $spacing-6;
+      gap: $spacing-6;
+    }
+  }
+
+  &__slide {
+    flex: 0 0 85%;
+    scroll-snap-align: start;
+
+    @media (min-width: 640px) {
+      flex-basis: calc((100% - #{$spacing-4}) / 2);
     }
 
-    .swiper {
-      padding-bottom: $spacing-12;
+    @media (min-width: 768px) {
+      flex-basis: calc((100% - #{$spacing-5 * 2}) / 3);
     }
 
-    .swiper-pagination-bullet {
-      background: $primary-300;
-      opacity: 0.6;
-
-      &-active {
-        background: $primary-600;
-        opacity: 1;
-      }
+    @media (min-width: 1024px) {
+      flex-basis: calc((100% - #{$spacing-6 * 3}) / 4);
     }
   }
 }
