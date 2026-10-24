@@ -79,7 +79,7 @@ Tujuan: halaman publik terbuka secepat mungkin dan ringan untuk VPS. Dikerjakan 
 | Fase | Isi | Status |
 |------|-----|--------|
 | 1 | Bundel: `TestimonialSection` jadi server component + scroll-snap CSS (tanpa Swiper/axios/react-query di klien); `jspdf`/`html2canvas` dimuat lewat `import()` saat tombol unduh diklik | Selesai: beranda 234 → 194 kB, `/invoice/[id]` 342 → 169 kB |
-| 2 | Waterfall beranda: `Promise.all`, satu fetch campaign; Pixel/GTM id dioper dari server | Belum |
+| 2 | Waterfall beranda: semua fetch dimulai paralel di awal `HomePage` (helper `started`), satu fetch campaign (`limit=100`) dipakai untuk carousel + menu kategori, paket qurban per periode paralel; id Pixel/GTM dioper dari `layout` → `Providers` (tanpa `/settings` dari browser) | Selesai (isi HTML identik, diverifikasi) |
 | 3 | Next Data Cache: `no-store` → `revalidate` + tag; invalidasi dari admin | Belum |
 | 4 | Cache API publik (Cache-Control/ETag), matikan `prettyJSON` | Belum |
 | 5 | Custom image loader ke varian WebP (lewati optimizer Next) | Belum |

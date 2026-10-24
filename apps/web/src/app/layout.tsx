@@ -40,7 +40,7 @@ export default async function RootLayout({
         <a href="#main-content" className="skip-to-content">
           {skipToContentText}
         </a>
-        <Providers locale={locale}>{children}</Providers>
+        <Providers locale={locale} metaPixelId={settings.meta_pixel_id || null} gtmId={settings.gtm_container_id || null}>{children}</Providers>
       </body>
     </html>
   );

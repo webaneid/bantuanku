@@ -535,3 +535,8 @@
 **Masalah:** `TestimonialSection` (client component) memakai Swiper, `api` (axios) dan `useQuery` hanya untuk satu section di bawah layar, dan mengambil datanya dari browser setelah hydrate. `UniversalInvoice` meng-import `jspdf` + `html2canvas` (180 kB) secara statis padahal dipakai hanya saat tombol unduh diklik. Bundel yang dimuat halaman ditentukan oleh import statis, bukan oleh kapan kodenya dipakai.
 **Pelajaran:** (1) Ukur dengan `next build` (kolom First Load JS) di SALINAN folder agar `.next` dev server tidak tertimpa. (2) Library besar yang hanya dipakai pada aksi (PDF, canvas) selalu `await import()` di dalam handler. (3) Section murni baca-data dibuat server component; carousel sederhana cukup scroll-snap CSS.
 
+### [2026-10-24] Waterfall fetch di server component: `await` berurutan dalam blok `try` terpisah
+**Konteks:** TTFB beranda produksi 0,6 dtk; `HomePage` memanggil ±8 endpoint satu per satu (dan campaign dua kali).
+**Masalah:** tiap blok `try { await fetchX() }` menunggu blok sebelumnya, sehingga waktu render = jumlah semua latensi, bukan yang terlama. `MetaPixel` dan `GoogleTagManager` juga memanggil `/settings` dari browser padahal layout server sudah memegang settings itu.
+**Pelajaran:** mulai SEMUA fetch independen di awal komponen (promise tanpa await), lalu tiap blok `try` menunggu promise miliknya. Bungkus promise yang belum ditunggu dengan `.catch(() => {})` (helper `started`) agar penolakan awal tidak menjadi unhandled rejection. Data yang sudah ada di layout server dioper lewat props, bukan diambil ulang oleh komponen klien.
+

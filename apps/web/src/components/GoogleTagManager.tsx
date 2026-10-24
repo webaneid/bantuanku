@@ -2,33 +2,16 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
 /**
  * GoogleTagManager — loads GTM script dynamically when `gtm_container_id` is set in settings.
  * Fires a virtual pageview on every SPA route change via dataLayer push.
  * Renders the noscript fallback iframe.
  */
-export default function GoogleTagManager() {
+export default function GoogleTagManager({ gtmId }: { gtmId?: string | null }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialized = useRef(false);
-
-  // Fetch GTM container ID from public settings
-  const { data: gtmId } = useQuery({
-    queryKey: ['gtm-container-id'],
-    queryFn: async () => {
-      const res = await fetch(`${API_URL}/settings`);
-      if (!res.ok) return null;
-      const json = await res.json();
-      const settings = json.success ? json.data : json;
-      return settings.gtm_container_id || null;
-    },
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
 
   // Initialize GTM script once when gtmId is available
   useEffect(() => {

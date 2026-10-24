@@ -33,9 +33,13 @@ function ReferralCapture() {
 export function Providers({
   children,
   locale,
+  metaPixelId,
+  gtmId,
 }: {
   children: React.ReactNode;
   locale?: string;
+  metaPixelId?: string | null;
+  gtmId?: string | null;
 }) {
   const [queryClient] = useState(
     () =>
@@ -55,8 +59,8 @@ export function Providers({
       <I18nProvider initialLocale={locale}>
         <CartProvider>
           <ReferralCapture />
-          <MetaPixel />
-          <GoogleTagManager />
+          <MetaPixel pixelId={metaPixelId} />
+          <GoogleTagManager gtmId={gtmId} />
           {children}
           <FeedbackToastHost />
         </CartProvider>

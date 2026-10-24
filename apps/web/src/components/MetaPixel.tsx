@@ -2,34 +2,17 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
 import * as fbPixel from '@/lib/fbPixel';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
 /**
  * MetaPixel — loads the Meta Pixel script and fires PageView on every route change.
- * Pixel ID is fetched from public settings (`meta_pixel_id`).
+ * Pixel ID (`meta_pixel_id`) dioper dari server (layout), tanpa request tambahan dari browser.
  * Renders nothing visible.
  */
-export default function MetaPixel() {
+export default function MetaPixel({ pixelId }: { pixelId?: string | null }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const initialized = useRef(false);
-
-  // Fetch pixel ID from public settings
-  const { data: pixelId } = useQuery({
-    queryKey: ['meta-pixel-id'],
-    queryFn: async () => {
-      const res = await fetch(`${API_URL}/settings`);
-      if (!res.ok) return null;
-      const json = await res.json();
-      const settings = json.success ? json.data : json;
-      return settings.meta_pixel_id || null;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
-  });
 
   // Initialize pixel script once when pixelId is available
   useEffect(() => {

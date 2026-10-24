@@ -241,17 +241,50 @@ export default async function HomePage() {
   const defaultProgramCategoryName = t('home.programs.defaultCategory');
   const mapCampaign = (campaign: any) => mapCampaignToCardProps(campaign, defaultProgramCategoryName);
 
+  // Semua data dimulai sekaligus (paralel); blok di bawah hanya menunggu hasilnya.
+  // `started` menandai promise sudah punya penangan supaya tidak jadi unhandled rejection
+  // sebelum blok try yang menunggunya tercapai.
+  const started = <T,>(promise: Promise<T>): Promise<T> => {
+    promise.catch(() => {});
+    return promise;
+  };
+  const activeCampaignsP = started(fetchCampaigns({ limit: 100, status: 'active' }));
+  const statsP = started(fetchPublicStats());
+  const categoriesP = started(fetchCategories());
+  const settingsP = started(fetchPublicSettings());
+  const addressP = started(
+    settingsP.then((s: any) => (s?.organization_village_code ? fetchCompleteAddress(s.organization_village_code) : null))
+  );
+  const qurbanPackagesP = started(
+    (async () => {
+      const periods = (await fetchActivePeriods()).data || [];
+      const perPeriod = await Promise.all(
+        periods.map((period: any) =>
+          fetchPackagesByPeriod(period.id)
+            .then((res) => res.data || [])
+            .catch((error) => {
+              console.error(`Failed to fetch packages for period ${period.id}:`, error);
+              return [] as any[];
+            })
+        )
+      );
+      return perPeriod.flat();
+    })()
+  );
+
   // Fetch latest 6 campaigns from API
   let campaigns: any[] = [];
   let urgentCampaign: any = null;
   let featuredAndUrgentCampaigns: any[] = [];
 
   try {
-    const response = await fetchCampaigns({ limit: 20, status: 'active' });
-    campaigns = response.data || [];
+    const response = await activeCampaignsP;
+    campaigns = [...(response.data || [])];
 
     // Sort by newest first (client-side sorting since API might not support it)
-    campaigns = campaigns.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    campaigns = campaigns
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 20);
 
     // Filter featured and urgent campaigns for carousel
     featuredAndUrgentCampaigns = campaigns.filter(c => c.isFeatured || c.isUrgent);
@@ -280,7 +313,7 @@ export default async function HomePage() {
   };
 
   try {
-    stats = await fetchPublicStats();
+    stats = await statsP;
   } catch (error) {
     console.error('Failed to fetch public stats:', error);
   }
@@ -288,26 +321,10 @@ export default async function HomePage() {
   // Fetch qurban packages from active period
   let qurbanPackages: any[] = [];
   try {
-    const periodsResponse = await fetchActivePeriods();
-    const periods = periodsResponse.data || [];
+    const allPackages = await qurbanPackagesP;
 
-    if (periods.length > 0) {
-      // Fetch packages from all active periods and combine them
-      let allPackages: any[] = [];
-
-      for (const period of periods) {
-        try {
-          const packagesResponse = await fetchPackagesByPeriod(period.id);
-          const packages = packagesResponse.data || [];
-          allPackages = [...allPackages, ...packages];
-        } catch (error) {
-          console.error(`Failed to fetch packages for period ${period.id}:`, error);
-        }
-      }
-
-      // Map to QurbanCard props and limit to 8
-      qurbanPackages = allPackages.slice(0, 8).map(mapQurbanPackageToCardProps);
-    }
+    // Map to QurbanCard props and limit to 8
+    qurbanPackages = allPackages.slice(0, 8).map(mapQurbanPackageToCardProps);
   } catch (error) {
     console.error('Failed to fetch qurban packages:', error);
   }
@@ -315,7 +332,7 @@ export default async function HomePage() {
   // Fetch categories from database (for campaign categorization)
   let allCategoriesForLookup: any[] = [];
   try {
-    const categoriesResponse = await fetchCategories();
+    const categoriesResponse = await categoriesP;
     const dbCategories = categoriesResponse.data || [];
 
     // Store ALL categories for lookup (including inactive ones)
@@ -327,7 +344,7 @@ export default async function HomePage() {
   // Menu kategori di bawah judul "Program": hanya kategori yang punya campaign aktif
   let programCategoryLinks: { id: string; name: string; slug: string }[] = [];
   try {
-    const activeResponse = await fetchCampaigns({ limit: 100, status: 'active' });
+    const activeResponse = await activeCampaignsP;
     const activeCategoryIds = new Set((activeResponse.data || []).map((c: any) => c.categoryId).filter(Boolean));
     programCategoryLinks = allCategoriesForLookup
       .filter((cat: any) => cat.isActive !== false && activeCategoryIds.has(cat.id))
@@ -367,11 +384,11 @@ export default async function HomePage() {
   ];
 
   try {
-    settings = await fetchPublicSettings();
+    settings = await settingsP;
 
     // Fetch complete address if village code exists
     if (settings.organization_village_code) {
-      const completeAddress = await fetchCompleteAddress(settings.organization_village_code);
+      const completeAddress = await addressP;
       if (completeAddress && settings.organization_detail_address) {
         fullAddress = formatCompleteAddress(settings.organization_detail_address, completeAddress);
       }
