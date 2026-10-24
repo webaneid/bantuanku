@@ -18,6 +18,21 @@ function buildRemotePatterns() {
   return patterns;
 }
 
+// Halaman publik yang sama untuk semua pengunjung (HTML tidak memuat data per-user; login/keranjang di sisi klien).
+// Hanya aktif bila HTML_EDGE_CACHE=true SAAT BUILD (headers() dibekukan ke routes-manifest). Tanpa itu perilaku tidak berubah.
+// Bahasa Inggris (cookie locale=en) TIDAK diberi header publik; Cloudflare WAJIB juga di-bypass untuk cookie itu
+// (lihat docs/arsitektur-cache-performance.md, fase 7), kalau tidak pengunjung EN bisa menerima salinan ID.
+const EDGE_CACHEABLE_PATHS = ['/', '/program', '/program/:slug', '/program/kategori/:slug', '/laporan', '/laporan/:slug', '/page/:slug'];
+
+function buildEdgeCacheHeaders() {
+  if (process.env.HTML_EDGE_CACHE !== 'true') return [];
+  return EDGE_CACHEABLE_PATHS.map((source) => ({
+    source,
+    missing: [{ type: 'cookie', key: 'locale', value: 'en' }],
+    headers: [{ key: 'Cache-Control', value: 'public, s-maxage=60, stale-while-revalidate=300' }],
+  }));
+}
+
 const nextConfig = {
   reactStrictMode: true,
 
@@ -39,9 +54,10 @@ const nextConfig = {
     ];
   },
 
-  // Headers for security
+  // Headers for security (+ cache HTML publik di edge bila HTML_EDGE_CACHE=true; lihat buildEdgeCacheHeaders)
   async headers() {
     return [
+      ...buildEdgeCacheHeaders(),
       {
         source: '/:path*',
         headers: [

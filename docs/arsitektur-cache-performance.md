@@ -86,7 +86,25 @@ Tujuan: halaman publik terbuka secepat mungkin dan ringan untuk VPS. Dikerjakan 
 | 4 | Cache respons API publik di memori (`cache.ts`, TTL 60 dtk–5 mnt) + dikosongkan saat mutasi admin; `status` publik campaign di-whitelist (draft tidak bocor). `prettyJSON` ternyata hanya aktif dengan `?pretty` (tidak perlu dimatikan) | Selesai (diuji: MISS/HIT, 500 tak di-cache, invalidasi hanya pada mutasi sukses) |
 | 5 | Loader `next/image` kustom (`lib/image-loader.ts`, `loader: 'custom'`): media WebP (CDN/GCS/API) dikembalikan apa adanya, Unsplash di-resize lewat parameter URL; `/_next/image` tidak dipakai/dilayani lagi. Upload GCS baru diberi `Cache-Control: public, max-age=31536000, immutable` | Selesai (diuji: 0 request `/_next/image`, 13 gambar termuat, fallback Unsplash) |
 | 6 | Hydration/bundel klien: kamus i18n hanya `id` di bundel klien (kamus `en` dikirim server sebagai props hanya bila locale `en`, lazy saat ganti bahasa); `lib/format.ts` dipisah dari `format-date.ts` (date-fns tak lagi di semua halaman); `lib/auth.ts` memuat axios lazy; `CategoryGrid`/`ZakatCard` jadi server component | Selesai: beranda 194 → 169 kB, checkout 241 → 193 kB, `/program` 199 → 191 kB. Sisa (belum): `ProgramCard`/`Footer`/`Header` masih client (`useI18n`, `useSettings`), React Query di root |
-| 7 | Rekomendasi Cloudflare/reverse proxy (tidak ada konfigurasi di repo) | Belum |
+| 7 | Header `Cache-Control` HTML publik untuk edge (`HTML_EDGE_CACHE=true` saat build, default MATI) + panduan rollout Cloudflare di bawah | Kode selesai & diuji lokal; AKTIVASI menunggu konfigurasi Cloudflare oleh pemilik infrastruktur |
+
+### Panduan Rollout & Cloudflare (fase 7)
+
+Kondisi terukur 2026-10-24: `bantuanku.org` berada di belakang Cloudflare (HTTP/3 + brotli aktif); `/_next/static/*` sudah `immutable` + `cf-cache-status: HIT`; HTML `cf-cache-status: DYNAMIC` dengan TTFB 0,60 dtk karena selalu dirender di VPS.
+
+**Urutan aktivasi (tiap langkah bisa berhenti di sini dan tetap aman):**
+
+1. **Env VPS** (web dan API satu server): web `API_INTERNAL_URL=http://127.0.0.1:<port API>/v1`; API `WEB_INTERNAL_URL=http://127.0.0.1:<port web>` (port web `next start` 3003); `REVALIDATE_SECRET` sama di KEDUANYA (acak >= 32 karakter). Lalu deploy (API restart dulu, web build + restart). Efek: fetch SSR tanpa memutar lewat Cloudflare, cache data diinvalidasi dari admin. Verifikasi: ubah campaign di admin, halaman publik berubah < beberapa detik.
+2. **Metadata GCS lama** (opsional): `gsutil -m setmeta -h "Cache-Control:public, max-age=31536000, immutable" "gs://<bucket>/bantuanku/**"`.
+3. **Cache HTML di edge** (dampak TTFB terbesar). Urutan wajib: (a) buat Cache Rule Cloudflare dulu, (b) baru build web dengan `HTML_EDGE_CACHE=true`.
+   - Cache Rule: kondisi `Hostname = bantuanku.org` AND `Request Method = GET` AND `URI Path` ∈ {`/`, `/program`, `/program/*`, `/laporan`, `/laporan/*`, `/page/*`} AND **`Cookie` tidak berisi `locale=en`** → *Eligible for cache*; Edge TTL = *Use cache-control header if present, bypass cache if not*; Browser TTL = *Respect origin*.
+   - Mengapa bypass cookie `locale=en`: cache key Cloudflare tidak memuat cookie; tanpa bypass, pengunjung English bisa menerima salinan Indonesia. Origin sendiri mengirim `private, no-store` untuk cookie itu.
+   - JANGAN masukkan `/checkout`, `/account`, `/invoice`, `/login`, `/keranjang-bantuan`, `/revalidate-cache`, `/api`.
+   - Konsekuensi: data di halaman publik bisa tertinggal sampai ±60 dtk (s-maxage) + ±5 mnt (stale-while-revalidate) setelah perubahan admin. Belum ada purge otomatis ke Cloudflare (peluang lanjutan: panggil API purge-by-URL dari `webRevalidateMiddleware`).
+   - Verifikasi: `curl -sI https://bantuanku.org/ | grep -i "cf-cache-status\|cache-control"` dua kali berturut-turut → kedua `HIT`; dengan `-H "Cookie: locale=en"` → `DYNAMIC`/`BYPASS`.
+4. **Dashboard Cloudflare lain** (tanpa kode): aktifkan Tiered Cache, Early Hints, dan Auto Minify tetap mati untuk JS/CSS (Next sudah memini-fikasi).
+
+Rollback: hapus Cache Rule (atau build ulang tanpa `HTML_EDGE_CACHE`) → perilaku kembali seperti sebelum fase 7.
 
 ---
 

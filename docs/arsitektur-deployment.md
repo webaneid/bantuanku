@@ -272,3 +272,15 @@ Minimal setelah deploy:
 5. Scheduler berjalan di process API, jadi scaling multi-instance perlu desain scheduler terpisah atau locking.
 6. Root `.md`, `.sql`, `.html`, dan `.db` di-ignore oleh Git; jangan jadikan file root ignored sebagai source-of-truth production.
 7. Dump database dan file DB lokal tidak boleh ditaruh di root repo. `bantuanku.db` dan `laznas_be_2026-01-17_09-39-35_pgsql_data.sql` sudah dihapus; backup harus berada di storage backup terkontrol, bukan workspace source code.
+
+## Env tambahan optimasi kecepatan (2026-10-24)
+
+| Env | Di mana | Fungsi |
+|-----|---------|--------|
+| `API_INTERNAL_URL` | web | Alamat API dari sisi server (`http://127.0.0.1:<port>/v1`); fetch SSR tidak lewat domain publik |
+| `WEB_INTERNAL_URL` | API | Alamat web dari sisi server; tujuan `POST /revalidate-cache` |
+| `REVALIDATE_SECRET` | web + API (sama) | Secret header `x-revalidate-secret`; kosong = invalidasi mati (cache tetap kedaluwarsa via TTL) |
+| `HTML_EDGE_CACHE` | web, SAAT BUILD | `true` = halaman publik berbahasa Indonesia diberi `Cache-Control: public, s-maxage=60`; aktifkan setelah Cache Rule Cloudflare |
+
+Detail: `arsitektur-cache-performance.md` (Program Optimasi Kecepatan + Panduan Rollout).
+
