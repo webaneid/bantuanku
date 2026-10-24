@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatDate } from '@/lib/format';
+import { formatDate } from '@/lib/format-date';
 
 interface PenerimaanRow {
   id: string;

@@ -4,7 +4,7 @@ import '@/styles/globals.scss';
 import { Providers } from './providers';
 import { generateSiteMetadata, fetchSeoSettings, generateOrganizationJsonLd, JsonLdScript } from '@/lib/seo';
 import { cookies } from 'next/headers';
-import { normalizeLocale, translate } from '@/lib/i18n';
+import { normalizeLocale, translate, dictionaries, DEFAULT_LOCALE } from '@/lib/i18n';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -40,7 +40,10 @@ export default async function RootLayout({
         <a href="#main-content" className="skip-to-content">
           {skipToContentText}
         </a>
-        <Providers locale={locale} metaPixelId={settings.meta_pixel_id || null} gtmId={settings.gtm_container_id || null}>{children}</Providers>
+        <Providers
+          locale={locale}
+          messages={locale === DEFAULT_LOCALE ? undefined : { [locale]: dictionaries[locale] }}
+          metaPixelId={settings.meta_pixel_id || null} gtmId={settings.gtm_container_id || null}>{children}</Providers>
       </body>
     </html>
   );

@@ -62,6 +62,8 @@ Dokumen terkait:
 
 ## Program Optimasi Kecepatan (2026-10-24)
 
+> Hasil terukur (First Load JS gzip, build produksi): beranda 234 → **169 kB**, `/invoice/[id]` 342 → 145 kB, checkout 241 → 193 kB. Target < 150 kB belum tercapai; sisa langkah ada di baris fase 6.
+
 Tujuan: halaman publik terbuka secepat mungkin dan ringan untuk VPS. Dikerjakan per fase, tiap fase satu commit.
 
 **Baseline (sebelum optimasi):**
@@ -83,7 +85,7 @@ Tujuan: halaman publik terbuka secepat mungkin dan ringan untuk VPS. Dikerjakan 
 | 3 | Next Data Cache: fetch server publik pakai `revalidate` + tag (campaign 60 dtk; settings/kategori/stats/qurban/pages/laporan/zakat 5 mnt); `POST /revalidate-cache` (web) dipanggil `webRevalidateMiddleware` (API) setelah mutasi admin; service memakai `lib/api-url.ts` (`API_INTERNAL_URL`) | Selesai (diuji: cache hit tanpa hit API, revalidate per tag, 401 tanpa secret) |
 | 4 | Cache respons API publik di memori (`cache.ts`, TTL 60 dtk–5 mnt) + dikosongkan saat mutasi admin; `status` publik campaign di-whitelist (draft tidak bocor). `prettyJSON` ternyata hanya aktif dengan `?pretty` (tidak perlu dimatikan) | Selesai (diuji: MISS/HIT, 500 tak di-cache, invalidasi hanya pada mutasi sukses) |
 | 5 | Loader `next/image` kustom (`lib/image-loader.ts`, `loader: 'custom'`): media WebP (CDN/GCS/API) dikembalikan apa adanya, Unsplash di-resize lewat parameter URL; `/_next/image` tidak dipakai/dilayani lagi. Upload GCS baru diberi `Cache-Control: public, max-age=31536000, immutable` | Selesai (diuji: 0 request `/_next/image`, 13 gambar termuat, fallback Unsplash) |
-| 6 | Komponen presentasional jadi server component | Belum |
+| 6 | Hydration/bundel klien: kamus i18n hanya `id` di bundel klien (kamus `en` dikirim server sebagai props hanya bila locale `en`, lazy saat ganti bahasa); `lib/format.ts` dipisah dari `format-date.ts` (date-fns tak lagi di semua halaman); `lib/auth.ts` memuat axios lazy; `CategoryGrid`/`ZakatCard` jadi server component | Selesai: beranda 194 → 169 kB, checkout 241 → 193 kB, `/program` 199 → 191 kB. Sisa (belum): `ProgramCard`/`Footer`/`Header` masih client (`useI18n`, `useSettings`), React Query di root |
 | 7 | Rekomendasi Cloudflare/reverse proxy (tidak ada konfigurasi di repo) | Belum |
 
 ---

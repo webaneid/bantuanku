@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import api from "./api";
 
 interface User {
   id: string;
@@ -52,6 +51,8 @@ export const useAuth = create<AuthState>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true });
         try {
+          // axios dimuat saat dibutuhkan agar tidak ikut bundel awal semua halaman (Header memakai useAuth)
+          const { default: api } = await import("./api");
           const response = await api.post("/auth/login", { email, password });
           const { user, accessToken } = response.data.data;
 
@@ -74,6 +75,7 @@ export const useAuth = create<AuthState>()(
         set({ isLoading: true });
         try {
           // Tidak ada auto-login: akun baru harus memverifikasi email dulu (ADR-0010)
+          const { default: api } = await import("./api");
           const response = await api.post("/auth/register", data);
           set({ isLoading: false });
           return response.data.data as RegisterResult;

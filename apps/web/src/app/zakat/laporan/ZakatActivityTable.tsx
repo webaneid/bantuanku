@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { getImageUrlByVariant } from '@/lib/image';
-import { formatDate } from '@/lib/format';
+import { formatDate } from '@/lib/format-date';
 
 interface ActivityRow {
   id: string;

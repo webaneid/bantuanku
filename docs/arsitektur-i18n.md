@@ -371,3 +371,11 @@ Prioritas 3: keputusan arsitektur jangka menengah.
 1. `apps/web/src/lib/i18n/**` adalah implementasi i18n aktual.
 2. `docs/arsitektur-i18n.md` adalah dokumentasi arsitektur resmi.
 3. Blueprint lama yang menyebut desain `next-intl`, `packages/i18n`, atau route `[locale]` tidak boleh dianggap source of truth kecuali implementasinya benar-benar dibuat di kode.
+
+## Pemuatan kamus di bundel klien (2026-10-24)
+
+- `lib/i18n/core.ts`: `translateWith(kamus, fallback, locale, key, params)` murni (tanpa impor kamus), `normalizeLocale`, `DEFAULT_LOCALE`.
+- `lib/i18n/index.ts` (KODE SERVER): mengimpor kedua kamus; `translate()` dan `dictionaries`. Jangan diimpor dari komponen klien.
+- `lib/i18n/provider.tsx` (klien): hanya membundel kamus `id` (default + fallback). Kamus bahasa aktif lain dikirim `app/layout.tsx` lewat `Providers messages={...}` hanya bila locale bukan default; ganti bahasa saat sesi memuat `locales/en` lewat `import()` lalu menyetel locale.
+- Menambah bahasa baru: tambahkan ke `Locale`, `dictionaries`, dan cabang lazy di `setLocale`.
+
