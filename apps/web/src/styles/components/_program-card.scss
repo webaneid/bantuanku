@@ -30,7 +30,8 @@
     position: relative;
     flex-shrink: 0;
     width: 100%;
-    height: 12rem;
+    // Rasio sama dengan crop media (900x498): gambar tampil utuh, tinggi ikut lebar kartu
+    aspect-ratio: 900 / 498;
     background: $gray-200;
     overflow: hidden;
   }
@@ -206,6 +207,7 @@
     &__image-wrapper {
       width: 7.5rem;
       height: auto;
+      aspect-ratio: auto;
       min-height: 7.5rem;
     }
 
