@@ -17,10 +17,12 @@ import {
   zakatTypes,
 } from "@bantuanku/db";
 import { success } from "../lib/response";
+import { statsCache } from "../middleware/cache";
 import { publicDonorName } from "../lib/transaction-privacy";
 import type { Env, Variables } from "../types";
 
 const publicStats = new Hono<{ Bindings: Env; Variables: Variables }>();
+publicStats.use("*", statsCache); // publik, sama untuk semua pengunjung
 
 publicStats.get("/", async (c) => {
   const db = c.get("db");

@@ -81,7 +81,7 @@ Tujuan: halaman publik terbuka secepat mungkin dan ringan untuk VPS. Dikerjakan 
 | 1 | Bundel: `TestimonialSection` jadi server component + scroll-snap CSS (tanpa Swiper/axios/react-query di klien); `jspdf`/`html2canvas` dimuat lewat `import()` saat tombol unduh diklik | Selesai: beranda 234 → 194 kB, `/invoice/[id]` 342 → 169 kB |
 | 2 | Waterfall beranda: semua fetch dimulai paralel di awal `HomePage` (helper `started`), satu fetch campaign (`limit=100`) dipakai untuk carousel + menu kategori, paket qurban per periode paralel; id Pixel/GTM dioper dari `layout` → `Providers` (tanpa `/settings` dari browser) | Selesai (isi HTML identik, diverifikasi) |
 | 3 | Next Data Cache: fetch server publik pakai `revalidate` + tag (campaign 60 dtk; settings/kategori/stats/qurban/pages/laporan/zakat 5 mnt); `POST /revalidate-cache` (web) dipanggil `webRevalidateMiddleware` (API) setelah mutasi admin; service memakai `lib/api-url.ts` (`API_INTERNAL_URL`) | Selesai (diuji: cache hit tanpa hit API, revalidate per tag, 401 tanpa secret) |
-| 4 | Cache API publik (Cache-Control/ETag), matikan `prettyJSON` | Belum |
+| 4 | Cache respons API publik di memori (`cache.ts`, TTL 60 dtk–5 mnt) + dikosongkan saat mutasi admin; `status` publik campaign di-whitelist (draft tidak bocor). `prettyJSON` ternyata hanya aktif dengan `?pretty` (tidak perlu dimatikan) | Selesai (diuji: MISS/HIT, 500 tak di-cache, invalidasi hanya pada mutasi sukses) |
 | 5 | Custom image loader ke varian WebP (lewati optimizer Next) | Belum |
 | 6 | Komponen presentasional jadi server component | Belum |
 | 7 | Rekomendasi Cloudflare/reverse proxy (tidak ada konfigurasi di repo) | Belum |
@@ -108,7 +108,7 @@ logger
 
 Catatan performance:
 
-1. `prettyJSON()` aktif global. Ini membuat response JSON lebih mudah dibaca, tetapi menambah ukuran payload dibanding compact JSON.
+1. `prettyJSON()` aktif global tetapi hanya memformat bila ada query `?pretty` (terverifikasi: respons normal compact), jadi tidak menambah payload.
 2. `dbMiddleware` dipasang sebelum semua route handler, termasuk route yang mungkin tidak butuh DB setelah `/uploads` dan `/health` root. Untuk `/v1/*`, hampir semua route memang butuh DB.
 3. Tidak ada request duration metrics, tracing, slow query log, atau endpoint metrics.
 
@@ -116,31 +116,25 @@ Catatan performance:
 
 ## API Cache Middleware
 
-`apps/api/src/middleware/cache.ts` menyediakan cache berbasis `Map`:
+`apps/api/src/middleware/cache.ts` — cache respons GET di memori proses API (aktif sejak fase 4, 2026-10-24):
 
-| Export | TTL |
-|--------|-----|
-| `campaignCache` | 60 detik |
-| `categoryCache` | 300 detik |
-| `settingsCache` | 600 detik |
+| Export | TTL | Dipasang di |
+|--------|-----|-------------|
+| `campaignCache` | 60 dtk | `GET /campaigns`, `/featured`, `/urgent`, `/:idOrSlug` |
+| `categoryCache` | 5 mnt | `/categories`, `/pillars` |
+| `settingsCache` | 5 mnt | `/settings` (+ `/bank-accounts`) |
+| `statsCache` | 2 mnt | `/public-stats/*` |
 
-Perilaku helper:
+Aturan:
 
-- hanya cache method `GET`;
-- key = path + query string;
-- simpan body response 200 sebagai string;
-- hit mengembalikan `X-Cache: HIT`;
-- miss mengembalikan `X-Cache: MISS`;
-- set `Cache-Control: public, max-age=...`;
-- cleanup expired cache dilakukan inline pada setiap request.
+- hanya `GET` berstatus 200; kunci = path + query (Authorization TIDAK ikut kunci → hanya untuk endpoint yang sama untuk semua pengunjung); request ber-`search` tidak di-cache; maksimum 300 entri (terlama dibuang);
+- header ke klien `Cache-Control: public, max-age=0, must-revalidate` + `X-Cache: HIT|MISS` (browser tidak menahan data basi);
+- `clearApiCache()` dipanggil `webRevalidateMiddleware` setiap mutasi admin sukses (`POST/PUT/PATCH/DELETE /v1/admin/*`, status < 400);
+- endpoint donor (`/campaigns/:id/donors`, `/updates`) dan semua rute berotentikasi TIDAK di-cache;
+- cache per proses; aman selama API satu proses (PM2 fork). Bila kelak multi-instance, invalidasi harus lewat penyimpanan bersama.
+- Perubahan lewat jalur non-admin (donasi masuk, mitra) hanya mengandalkan TTL (campaign 60 dtk).
 
-Status aktual: **helper ini tidak dipakai oleh route mana pun**. Tidak ada import `campaignCache`, `categoryCache`, atau `settingsCache` di route API.
-
-Konsekuensi:
-
-1. Endpoint JSON API tidak mendapat server-side cache dari middleware ini.
-2. Public API seperti campaigns, settings, categories, public stats, dan activity reports selalu hit handler/DB kecuali ada cache di layer lain.
-3. Jika middleware ini nanti dipasang, perlu audit PII dan auth karena `Cache-Control: public` tidak aman untuk endpoint user/admin.
+Catatan terkait: `GET /campaigns?status=` kini hanya menerima `active|completed|closed` (nilai lain, termasuk `draft`, jatuh ke `active`) agar draft tidak bocor lewat endpoint publik.
 
 ---
 

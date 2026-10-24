@@ -1,4 +1,5 @@
 import type { Context, Next } from "hono";
+import { clearApiCache } from "./cache";
 
 // Prefix route admin -> tag Next Data Cache di web yang harus di-revalidate (lihat arsitektur-cache-performance.md)
 const ROUTE_TAGS: Array<[string, string[]]> = [
@@ -19,16 +20,19 @@ const ROUTE_TAGS: Array<[string, string[]]> = [
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
- * Setelah mutasi admin berhasil, minta web membuang cache data terkait.
+ * Setelah mutasi admin berhasil: (1) kosongkan cache respons API (selalu), (2) minta web membuang cache data terkait.
  * Fire-and-forget: kegagalan tidak memengaruhi respons admin (cache tetap kedaluwarsa sendiri sesuai TTL).
  * No-op bila WEB_INTERNAL_URL / REVALIDATE_SECRET belum di-set.
  */
 export async function webRevalidateMiddleware(c: Context, next: Next) {
   await next();
 
+  if (!MUTATING.has(c.req.method) || c.res.status >= 400) return;
+  clearApiCache();
+
   const webUrl = process.env.WEB_INTERNAL_URL;
   const secret = process.env.REVALIDATE_SECRET;
-  if (!webUrl || !secret || !MUTATING.has(c.req.method) || c.res.status >= 400) return;
+  if (!webUrl || !secret) return;
 
   const segment = c.req.path.replace(/^\/v1\/admin\//, "").split("/")[0] || "";
   const tags = new Set<string>();

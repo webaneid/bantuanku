@@ -2,9 +2,11 @@ import { Hono } from "hono";
 import { eq, asc } from "drizzle-orm";
 import { pillars } from "@bantuanku/db";
 import { success } from "../lib/response";
+import { categoryCache } from "../middleware/cache";
 import type { Env, Variables } from "../types";
 
 const pillarsRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
+pillarsRoute.use("*", categoryCache); // publik, sama untuk semua pengunjung
 
 pillarsRoute.get("/", async (c) => {
   const db = c.get("db");

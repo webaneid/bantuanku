@@ -2,9 +2,11 @@ import { Hono } from "hono";
 import { eq, asc } from "drizzle-orm";
 import { categories } from "@bantuanku/db";
 import { success } from "../lib/response";
+import { categoryCache } from "../middleware/cache";
 import type { Env, Variables } from "../types";
 
 const categoriesRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
+categoriesRoute.use("*", categoryCache); // publik, sama untuk semua pengunjung
 
 categoriesRoute.get("/", async (c) => {
   const db = c.get("db");

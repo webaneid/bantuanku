@@ -3,18 +3,24 @@ import { eq, desc, and, like, sql } from "drizzle-orm";
 import { campaigns, campaignUpdates, categories, transactions, mitra, employees } from "@bantuanku/db";
 import { success, error, paginated } from "../lib/response";
 import { optionalAuthMiddleware } from "../middleware/auth";
+import { campaignCache } from "../middleware/cache";
 import { publicDonorName } from "../lib/transaction-privacy";
 import type { Env, Variables } from "../types";
 
+// Status yang boleh diminta lewat query di endpoint publik (draft sengaja tidak termasuk)
+const PUBLIC_LIST_STATUSES = new Set(["active", "completed", "closed"]);
+
 const campaignsRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-campaignsRoute.get("/", optionalAuthMiddleware, async (c) => {
+campaignsRoute.get("/", campaignCache, optionalAuthMiddleware, async (c) => {
   const db = c.get("db");
   const page = parseInt(c.req.query("page") || "1");
   const limit = parseInt(c.req.query("limit") || "10");
   const category = c.req.query("category");
   const search = c.req.query("search");
-  const status = c.req.query("status") || "active";
+  // Endpoint publik: hanya status yang boleh dilihat umum (draft tidak boleh bocor lewat ?status=draft)
+  const requestedStatus = c.req.query("status");
+  const status = requestedStatus && PUBLIC_LIST_STATUSES.has(requestedStatus) ? requestedStatus : "active";
 
   const offset = (page - 1) * limit;
 
@@ -75,7 +81,7 @@ campaignsRoute.get("/", optionalAuthMiddleware, async (c) => {
   });
 });
 
-campaignsRoute.get("/featured", async (c) => {
+campaignsRoute.get("/featured", campaignCache, async (c) => {
   const db = c.get("db");
   const limit = parseInt(c.req.query("limit") || "5");
 
@@ -112,7 +118,7 @@ campaignsRoute.get("/featured", async (c) => {
   return success(c, enrichedData);
 });
 
-campaignsRoute.get("/urgent", async (c) => {
+campaignsRoute.get("/urgent", campaignCache, async (c) => {
   const db = c.get("db");
   const limit = parseInt(c.req.query("limit") || "5");
 
@@ -148,7 +154,7 @@ campaignsRoute.get("/urgent", async (c) => {
   return success(c, enrichedData);
 });
 
-campaignsRoute.get("/:idOrSlug", async (c) => {
+campaignsRoute.get("/:idOrSlug", campaignCache, async (c) => {
   const db = c.get("db");
   const idOrSlug = c.req.param("idOrSlug");
 

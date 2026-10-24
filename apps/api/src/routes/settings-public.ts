@@ -9,9 +9,11 @@ import {
   indonesiaVillages,
 } from "@bantuanku/db";
 import { success } from "../lib/response";
+import { settingsCache } from "../middleware/cache";
 import type { Env, Variables } from "../types";
 
 const settingsPublic = new Hono<{ Bindings: Env; Variables: Variables }>();
+settingsPublic.use("*", settingsCache); // publik, sama untuk semua pengunjung
 
 settingsPublic.get("/", async (c) => {
   const db = c.get("db");
