@@ -126,10 +126,10 @@ export default function TestOrganismsPage() {
         </section>
 
         {/* Program Cards Section */}
-        <section className="py-16 bg-gray-50">
+        <section className="py-16 bg-light">
           <div className="container">
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              <h2 className="text-4xl font-bold text-dark mb-4">
                 Program Donasi Terpopuler
               </h2>
               <p className="text-lg text-gray-600">

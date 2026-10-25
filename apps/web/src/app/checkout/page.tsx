@@ -660,11 +660,11 @@ export default function CheckoutPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 py-4 md:py-8">
+      <main className="min-h-screen bg-light py-4 md:py-8">
         <div className="container mx-auto px-[15px] md:px-4">
           {/* Page Title — desktop; di mobile judul ada di blok ringkasan di bawah */}
           <div className="hidden lg:block mb-8">
-            <h1 className="section-title text-gray-900 mb-2">
+            <h1 className="section-title text-dark mb-2">
               {t('checkout.main.title')}
             </h1>
             <p className="text-gray-600" style={{ fontSize: '15px' }}>
@@ -699,7 +699,7 @@ export default function CheckoutPage() {
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-dark">
                           {t('checkout.main.loginAs', { name: user.name })}
                         </p>
                         <p className="text-xs text-gray-600">{user.email}</p>
@@ -732,7 +732,7 @@ export default function CheckoutPage() {
                 {!user && (
                   <div className="mb-6">
                     <label htmlFor="checkout-identifier" className="form-label">
-                      {t('checkout.main.identify.label')} <span className="text-red-600">*</span>
+                      {t('checkout.main.identify.label')} <span className="text-danger-600">*</span>
                     </label>
                     <div className="flex gap-2">
                       <div className="flex-1 min-w-0">
@@ -800,8 +800,8 @@ export default function CheckoutPage() {
                     )}
 
                     {identifyState === 'new' && (
-                      <div id="identify-result" className="mt-4 rounded-xl bg-gray-50 p-4 scroll-mt-24">
-                        <p className="font-semibold text-gray-900">{t('checkout.main.identify.newTitle')}</p>
+                      <div id="identify-result" className="mt-4 rounded-xl bg-light p-4 scroll-mt-24">
+                        <p className="font-semibold text-dark">{t('checkout.main.identify.newTitle')}</p>
                         <p className="text-sm text-gray-600 mt-1">{t('checkout.main.identify.newDesc')}</p>
                         <button
                           type="button"
@@ -824,7 +824,7 @@ export default function CheckoutPage() {
                   {/* Email - moved to top */}
                   <div className="form-field">
                     <label className="form-label">
-                      {t('checkout.main.labels.email')} <span className="text-red-600">*</span>
+                      {t('checkout.main.labels.email')} <span className="text-danger-600">*</span>
                     </label>
                     <Input
                       type="email"
@@ -841,7 +841,7 @@ export default function CheckoutPage() {
                   {/* Nama Lengkap */}
                   <div className="form-field">
                     <label className="form-label">
-                      {t('checkout.main.labels.fullName')} <span className="text-red-600">*</span>
+                      {t('checkout.main.labels.fullName')} <span className="text-danger-600">*</span>
                     </label>
                     <Input
                       type="text"
@@ -856,7 +856,7 @@ export default function CheckoutPage() {
                       required
                     />
                     {isAutoFilled && user && (
-                      <p className="text-xs text-green-600 mt-1">
+                      <p className="text-xs text-success-600 mt-1">
                         {t('checkout.main.hints.autoFilledFromAccount')}
                       </p>
                     )}
@@ -887,7 +887,7 @@ export default function CheckoutPage() {
                   {/* Nomor Telepon */}
                   <div className="form-field">
                     <label className="form-label">
-                      {t('checkout.main.labels.phone')} <span className="text-red-600">*</span>
+                      {t('checkout.main.labels.phone')} <span className="text-danger-600">*</span>
                     </label>
                     <Input
                       type="tel"
@@ -904,7 +904,7 @@ export default function CheckoutPage() {
                   {/* WhatsApp */}
                   <div className="form-field">
                     <label className="form-label">
-                      {t('checkout.main.labels.whatsapp')} <span className="text-red-600">*</span>
+                      {t('checkout.main.labels.whatsapp')} <span className="text-danger-600">*</span>
                     </label>
                     <Input
                       type="tel"
@@ -980,11 +980,11 @@ export default function CheckoutPage() {
 
                   {/* Benefits Info - Only show for guests */}
                   {!user && identifyState === 'new' && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="section-title text-blue-900 mb-2">
+                    <div className="bg-info-50 border border-info-200 rounded-lg p-4">
+                      <h4 className="section-title text-info-900 mb-2">
                         {t('checkout.main.benefitsTitle')}
                       </h4>
-                      <ul className="text-sm text-blue-800 space-y-1">
+                      <ul className="text-sm text-info-800 space-y-1">
                         <li>• {t('checkout.main.benefits.trackHistory')}</li>
                         <li>• {t('checkout.main.benefits.fasterCheckout')}</li>
                         <li>• {t('checkout.main.benefits.progressUpdate')}</li>
@@ -995,16 +995,16 @@ export default function CheckoutPage() {
 
                   {/* Logged-in User Info */}
                   {user && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="bg-success-50 border border-success-200 rounded-lg p-4">
                       <div className="flex items-start gap-3">
-                        <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-5 h-5 text-success-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
                         <div>
-                          <h4 className="section-title text-green-900 mb-1">
+                          <h4 className="section-title text-success-900 mb-1">
                             {t('checkout.main.loggedInTitle')}
                           </h4>
-                          <p className="text-sm text-green-800">
+                          <p className="text-sm text-success-800">
                             {t('checkout.main.loggedInDesc')}
                           </p>
                         </div>
@@ -1042,7 +1042,7 @@ export default function CheckoutPage() {
             {/* Summary Sidebar — desktop saja (mobile memakai blok primary di atas) */}
             <div className="hidden lg:block lg:col-span-1">
               <div className="bg-white shadow-sm -mx-4 sm:-mx-6 md:mx-0 rounded-none md:rounded-lg px-[15px] py-5 md:p-6 md:border md:border-gray-100 lg:sticky lg:top-24">
-                <h2 className="section-title text-gray-900 mb-6">
+                <h2 className="section-title text-dark mb-6">
                   {t('checkout.main.summaryTitle')}
                 </h2>
 
@@ -1059,7 +1059,7 @@ export default function CheckoutPage() {
                             {programTypeLabel(item.programType)}
                           </span>
                         </div>
-                        <span className="text-sm font-medium text-gray-900 mono whitespace-nowrap">
+                        <span className="text-sm font-medium text-dark mono whitespace-nowrap">
                           {formatAmount(item.amount)}
                         </span>
                       </div>
@@ -1076,7 +1076,7 @@ export default function CheckoutPage() {
                 {/* Total */}
                 <div className="mb-6">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold text-gray-900">
+                    <span className="text-lg font-semibold text-dark">
                       {t('checkout.main.totalDonation')}
                     </span>
                     <span className="text-2xl font-bold text-primary-600 mono">

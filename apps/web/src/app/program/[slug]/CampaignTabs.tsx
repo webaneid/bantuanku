@@ -164,7 +164,7 @@ export default function CampaignTabs({
             className={`px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap ${
               activeTab === 'detail'
                 ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                : 'border-transparent text-gray-600 hover:text-dark hover:border-gray-300'
             }`}
           >
             {t('campaignDetail.tabs.detail')}
@@ -174,7 +174,7 @@ export default function CampaignTabs({
             className={`px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap ${
               activeTab === 'updates'
                 ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                : 'border-transparent text-gray-600 hover:text-dark hover:border-gray-300'
             }`}
           >
             {t('campaignDetail.tabs.updates')}
@@ -184,7 +184,7 @@ export default function CampaignTabs({
             className={`px-6 py-4 text-sm font-medium border-b-2 whitespace-nowrap ${
               activeTab === 'donors'
                 ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
+                : 'border-transparent text-gray-600 hover:text-dark hover:border-gray-300'
             }`}
           >
             {t('campaignDetail.tabs.donors')}
@@ -208,7 +208,7 @@ export default function CampaignTabs({
             <RenderContent html={campaignDescription} className="prose prose-gray max-w-none" />
             {youtubeEmbedUrl && (
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-900">{t('campaignDetail.tabs.videoTitle')}</h3>
+                <h3 className="text-sm font-semibold text-dark">{t('campaignDetail.tabs.videoTitle')}</h3>
                 <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
                   <iframe
                     src={youtubeEmbedUrl}
@@ -225,7 +225,7 @@ export default function CampaignTabs({
             <div className="pt-4 border-t border-gray-100">
               <p className="text-sm text-gray-600">
                 {t('campaignDetail.tabs.coordinatorLabel')}{" "}
-                <span className="font-medium text-gray-900">
+                <span className="font-medium text-dark">
                   {coordinatorName || ownerName || t('campaignDetail.tabs.coordinatorUnset')}
                 </span>
               </p>
@@ -311,7 +311,7 @@ export default function CampaignTabs({
                                 {formatDate(report.activityDate)}
                               </time>
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors">
+                            <h3 className="text-xl font-bold text-dark mb-3 group-hover:text-primary-600 transition-colors">
                               {report.title}
                             </h3>
 
@@ -401,7 +401,7 @@ export default function CampaignTabs({
                             </svg>
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-gray-900 mb-1" style={{ fontSize: '15px', fontWeight: 600 }}>
+                            <h4 className="text-dark mb-1" style={{ fontSize: '15px', fontWeight: 600 }}>
                               {donation.isAnonymous ? t('campaignDetail.tabs.anonymousDonor') : donation.donorName}
                             </h4>
                             <p className="text-gray-500" style={{ fontSize: '12px' }}>
@@ -433,7 +433,7 @@ export default function CampaignTabs({
                     <button
                       onClick={() => setDonationsPage(prev => Math.max(1, prev - 1))}
                       disabled={donationsPage === 1}
-                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-light disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg
                         className="w-5 h-5"
@@ -472,7 +472,7 @@ export default function CampaignTabs({
                               className={`px-3 py-2 text-sm font-medium rounded-md ${
                                 donationsPage === page
                                   ? 'bg-primary-600 text-white'
-                                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-light'
                               }`}
                             >
                               {page}
@@ -484,7 +484,7 @@ export default function CampaignTabs({
                     <button
                       onClick={() => setDonationsPage(prev => Math.min(donationsTotalPages, prev + 1))}
                       disabled={donationsPage === donationsTotalPages}
-                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-light disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg
                         className="w-5 h-5"

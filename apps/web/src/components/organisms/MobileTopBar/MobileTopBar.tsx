@@ -84,7 +84,7 @@ export function MobileTopBar({ backHref, overlay = false }: MobileTopBarProps) {
           aria-label={t('common.back')}
           className={cn(
             'flex h-9 w-9 items-center justify-center rounded-full transition-colors',
-            solid ? 'bg-gray-100 text-gray-900' : 'bg-black/40 text-white backdrop-blur-sm'
+            solid ? 'bg-gray-100 text-dark' : 'bg-black/40 text-white backdrop-blur-sm'
           )}
         >
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -98,7 +98,7 @@ export function MobileTopBar({ backHref, overlay = false }: MobileTopBarProps) {
           aria-label={t('common.openMenu')}
           className={cn(
             'flex h-9 w-9 items-center justify-center rounded-full transition-colors',
-            solid ? 'bg-gray-100 text-gray-900' : 'bg-black/40 text-white backdrop-blur-sm'
+            solid ? 'bg-gray-100 text-dark' : 'bg-black/40 text-white backdrop-blur-sm'
           )}
         >
           <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -118,7 +118,7 @@ export function MobileTopBar({ backHref, overlay = false }: MobileTopBarProps) {
                 type="button"
                 onClick={() => setMenuOpen(false)}
                 aria-label={t('common.closeMenu')}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-900"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-dark"
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6l12 12M18 6L6 18" />

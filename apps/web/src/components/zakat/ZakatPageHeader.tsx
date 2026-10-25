@@ -68,7 +68,7 @@ export default function ZakatPageHeader({
       {/* Mobile: title + owner compact section */}
       <div className="lg:hidden bg-white px-4 py-4">
         <ZakatOwnerInfo owner={owner} />
-        <h1 className="text-xl font-bold text-gray-900 mb-1">{displayName}</h1>
+        <h1 className="text-xl font-bold text-dark mb-1">{displayName}</h1>
         {displayDescription && (
           <div
             className="text-sm text-gray-600 leading-relaxed [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"

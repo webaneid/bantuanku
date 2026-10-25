@@ -119,7 +119,7 @@ export default function PaymentGatewayPage() {
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gray-50 py-8">
+        <main className="min-h-screen bg-light py-8">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto">
               <div className="animate-pulse space-y-4">
@@ -138,18 +138,18 @@ export default function PaymentGatewayPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 py-8 pb-24 lg:pb-8">
+      <main className="min-h-screen bg-light py-8 pb-24 lg:pb-8">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
             {/* Header */}
             <div className="mb-6">
-              <Link href="/checkout/payment-method" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4">
+              <Link href="/checkout/payment-method" className="inline-flex items-center text-gray-600 hover:text-dark mb-4">
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
                 {t('checkout.paymentGateway.back')}
               </Link>
-              <h1 className="section-title text-gray-900">
+              <h1 className="section-title text-dark">
                 {t('checkout.paymentGateway.title')}
               </h1>
             </div>
@@ -185,7 +185,7 @@ export default function PaymentGatewayPage() {
                           </svg>
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900" style={{ fontSize: '1.1rem' }}>
+                          <h3 className="font-semibold text-dark" style={{ fontSize: '1.1rem' }}>
                             {gateway.name}
                           </h3>
                           <p className="text-sm text-gray-600">
@@ -213,7 +213,7 @@ export default function PaymentGatewayPage() {
             {/* Detail Section */}
             {selectedGateway && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-                <h2 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>
+                <h2 className="font-semibold text-dark mb-4" style={{ fontSize: '1.1rem' }}>
                   {selectedGateway === 'ipaymu' && t('checkout.paymentGateway.detailIpaymu')}
                   {selectedGateway === 'flip' && t('checkout.paymentGateway.detailFlip')}
                   {selectedGateway === 'xendit' && t('checkout.paymentGateway.detailXendit')}
@@ -227,7 +227,7 @@ export default function PaymentGatewayPage() {
             )}
 
             {/* Total Amount */}
-            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200 p-6 mb-6">
+            <div className="bg-gradient-to-r from-info-50 to-info-100 rounded-lg border border-info-200 p-6 mb-6">
               <div className="flex justify-between items-center">
                 <span className="text-gray-700 font-medium">{t('checkout.paymentGateway.totalPayment')}</span>
                 <span className="text-2xl font-bold text-primary-600">

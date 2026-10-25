@@ -30,7 +30,7 @@ export const TestimonialSection = async ({ locale }: TestimonialSectionProps) =>
 
       <div className="container">
         <div className="testimonial-section__header">
-          <h2 className="section-title text-gray-900">{t('testimonial.title')}</h2>
+          <h2 className="section-title text-dark">{t('testimonial.title')}</h2>
           <p className="section-description text-gray-600">{t('testimonial.description')}</p>
         </div>
 
@@ -51,7 +51,7 @@ export const TestimonialSection = async ({ locale }: TestimonialSectionProps) =>
                         key={i}
                         viewBox="0 0 24 24"
                         fill="currentColor"
-                        className={i < review.rating ? 'text-yellow-400' : 'text-gray-200'}
+                        className={i < review.rating ? 'text-warning-400' : 'text-gray-200'}
                         aria-hidden="true"
                       >
                         <path fillRule="evenodd" clipRule="evenodd" d={STAR_PATH} />

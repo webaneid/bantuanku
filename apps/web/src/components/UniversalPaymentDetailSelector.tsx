@@ -340,7 +340,7 @@ export default function UniversalPaymentDetailSelector({
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-dark mb-2">
             {t("payment.detailTitle")}
           </h1>
           <p className="text-gray-600">
@@ -367,7 +367,7 @@ export default function UniversalPaymentDetailSelector({
             {/* Method Selection */}
             {availableMethods.length > 1 && (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">
+                <h3 className="font-semibold text-dark mb-4">
                   {t("payment.chooseAccountOrQr", {
                     label: isBankTransfer
                       ? t("payment.accountLabel")
@@ -385,7 +385,7 @@ export default function UniversalPaymentDetailSelector({
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
-                      <div className="font-semibold text-gray-900">
+                      <div className="font-semibold text-dark">
                         {method.name}
                       </div>
                           {isBankTransfer && method.details?.accountName && (
@@ -402,7 +402,7 @@ export default function UniversalPaymentDetailSelector({
             {/* Selected Method Details */}
             {selectedMethod && (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">
+                <h3 className="font-semibold text-dark mb-4">
                   {isBankTransfer
                     ? t("payment.accountDetail")
                     : t("payment.qrisDetail")}
@@ -412,14 +412,14 @@ export default function UniversalPaymentDetailSelector({
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm text-gray-600">{t("payment.bank")}</label>
-                      <p className="font-semibold text-gray-900 text-lg">
+                      <p className="font-semibold text-dark text-lg">
                         {selectedMethod.details.bankName || selectedMethod.name}
                       </p>
                     </div>
                     <div>
                       <label className="text-sm text-gray-600">{t("payment.accountNumber")}</label>
                       <div className="flex items-center gap-2">
-                        <p className="font-mono font-semibold text-gray-900 text-lg">
+                        <p className="font-mono font-semibold text-dark text-lg">
                           {selectedMethod.details.accountNumber}
                         </p>
                         <button
@@ -449,7 +449,7 @@ export default function UniversalPaymentDetailSelector({
                     </div>
                     <div>
                       <label className="text-sm text-gray-600">{t("payment.accountName")}</label>
-                      <p className="font-semibold text-gray-900 text-lg">
+                      <p className="font-semibold text-dark text-lg">
                         {selectedMethod.details.accountName}
                       </p>
                     </div>
@@ -465,7 +465,7 @@ export default function UniversalPaymentDetailSelector({
                       </div>
                     ) : qrisData?.isDynamic && qrisData?.qrDataUrl ? (
                       <>
-                        <div className="inline-block bg-white p-4 rounded-lg border-2 border-green-200">
+                        <div className="inline-block bg-white p-4 rounded-lg border-2 border-success-200">
                           <img
                             src={qrisData.qrDataUrl}
                             alt="QRIS Dynamic"
@@ -475,7 +475,7 @@ export default function UniversalPaymentDetailSelector({
                           />
                         </div>
                         <div className="mt-4 space-y-1">
-                          <p className="text-sm font-semibold text-green-700">
+                          <p className="text-sm font-semibold text-success-700">
                             {t("payment.dynamicAmountLocked", {
                               amount: formatRupiahFull(qrisData.amount),
                             })}
@@ -522,11 +522,11 @@ export default function UniversalPaymentDetailSelector({
                 <>
                   <div className="flex justify-between items-center text-sm mb-1">
                     <span className="text-gray-600">{t("payment.totalDonation")}</span>
-                    <span className="font-medium text-gray-900">{formatRupiahFull(transaction.data.totalAmount)}</span>
+                    <span className="font-medium text-dark">{formatRupiahFull(transaction.data.totalAmount)}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm mb-2">
                     <span className="text-gray-600">{t("payment.uniqueCode")}</span>
-                    <span className="font-medium text-gray-900">+{formatRupiahFull(transaction.data.uniqueCode)}</span>
+                    <span className="font-medium text-dark">+{formatRupiahFull(transaction.data.uniqueCode)}</span>
                   </div>
                   <div className="border-t border-primary-200 pt-2">
                     <div className="flex justify-between items-center">
@@ -556,7 +556,7 @@ export default function UniversalPaymentDetailSelector({
 
             {/* Upload Section */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">
+              <h3 className="font-semibold text-dark mb-4">
                 {t("payment.confirmPaymentTitle")}
               </h3>
 
@@ -567,7 +567,7 @@ export default function UniversalPaymentDetailSelector({
                     htmlFor="transfer-amount"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    {t("payment.transferAmount")} <span className="text-red-500">*</span>
+                    {t("payment.transferAmount")} <span className="text-danger-500">*</span>
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
@@ -587,18 +587,18 @@ export default function UniversalPaymentDetailSelector({
                   </div>
                   <p className="mt-2 text-sm text-gray-500">
                     {transferAmount === getTotalAmount() ? (
-                      <span className="text-green-600">
+                      <span className="text-success-600">
                         {t("payment.matchAmount")}
                       </span>
                     ) : transferAmount > getTotalAmount() ? (
-                      <span className="text-blue-600">
+                      <span className="text-info-600">
                         {t("payment.overAmount", {
                           amount: formatRupiahFull(transferAmount - getTotalAmount()),
                         })}
                       </span>
                     ) : transferAmount < getTotalAmount() &&
                       transferAmount > 0 ? (
-                      <span className="text-amber-600">
+                      <span className="text-warning-600">
                         {t("payment.underAmount", {
                           amount: formatRupiahFull(getTotalAmount() - transferAmount),
                         })}
@@ -613,7 +613,7 @@ export default function UniversalPaymentDetailSelector({
                     htmlFor="payment-date"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    {t("payment.paymentDate")} <span className="text-red-500">*</span>
+                    {t("payment.paymentDate")} <span className="text-danger-500">*</span>
                   </label>
                   <div className="flex gap-3">
                     <input
@@ -640,7 +640,7 @@ export default function UniversalPaymentDetailSelector({
                 {/* Upload Bukti Transfer */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t("payment.proofTransfer")} <span className="text-red-500">*</span>
+                    {t("payment.proofTransfer")} <span className="text-danger-500">*</span>
                   </label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
                     <input
@@ -670,7 +670,7 @@ export default function UniversalPaymentDetailSelector({
                               setPaymentProof(null);
                               setProofPreview(null);
                             }}
-                            className="text-red-600 hover:text-red-700 text-sm"
+                            className="text-danger-600 hover:text-danger-700 text-sm"
                           >
                             {t("payment.remove")}
                           </button>
@@ -699,7 +699,7 @@ export default function UniversalPaymentDetailSelector({
                               e.preventDefault();
                               setPaymentProof(null);
                             }}
-                            className="text-red-600 hover:text-red-700 text-sm"
+                            className="text-danger-600 hover:text-danger-700 text-sm"
                           >
                             {t("payment.remove")}
                           </button>

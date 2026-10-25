@@ -223,7 +223,7 @@ export default function UniversalPaymentMethodSelector({
             alt={settings.site_name || ''}
             className="w-1/4 min-w-[110px] max-w-[150px] h-auto object-contain mb-4"
           />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl font-bold text-dark mb-2">
             {t('payment.chooseMethodTitle')}
           </h1>
           <p className="text-gray-600">
@@ -251,7 +251,7 @@ export default function UniversalPaymentMethodSelector({
                 onClick={() => handleSelectManual('qris')}
                 title={t('payment.qris')}
                 subtitle={t('payment.qrisDesc')}
-                tone="bg-blue-100 text-blue-600"
+                tone="bg-info-100 text-info-600"
                 icon={
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
@@ -287,7 +287,7 @@ export default function UniversalPaymentMethodSelector({
                 onClick={() => processGatewayPayment(gateway.code)}
                 title={gateway.name}
                 subtitle={t('payment.gatewayDesc')}
-                tone="bg-green-100 text-green-600"
+                tone="bg-success-100 text-success-600"
                 icon={
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -346,7 +346,7 @@ function MethodCard({ onClick, title, subtitle, tone, icon, logo }: MethodCardPr
             )}
           </div>
           <div className="min-w-0">
-            <h3 className="text-base font-semibold text-gray-900 truncate">{title}</h3>
+            <h3 className="text-base font-semibold text-dark truncate">{title}</h3>
             <p className="text-sm text-gray-600 truncate">{subtitle}</p>
           </div>
         </div>

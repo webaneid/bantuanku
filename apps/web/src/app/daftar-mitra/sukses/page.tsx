@@ -8,7 +8,7 @@ export default function DaftarMitraSuksesPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gray-50 flex items-center justify-center py-12">
+      <main className="min-h-screen bg-light flex items-center justify-center py-12">
         <div className="max-w-md mx-auto px-4 text-center">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
             <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-success-100 flex items-center justify-center">
@@ -17,25 +17,25 @@ export default function DaftarMitraSuksesPage() {
               </svg>
             </div>
 
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Pendaftaran Berhasil!</h1>
+            <h1 className="text-2xl font-bold text-dark mb-2">Pendaftaran Berhasil!</h1>
 
             <p className="text-gray-600 mb-6">
               Terima kasih telah mendaftar sebagai mitra lembaga. Tim kami akan memverifikasi data Anda dan menghubungi melalui email yang telah didaftarkan.
             </p>
 
-            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2">Langkah Selanjutnya:</h3>
+            <div className="bg-light rounded-lg p-4 mb-6 text-left">
+              <h3 className="text-sm font-semibold text-dark mb-2">Langkah Selanjutnya:</h3>
               <ol className="text-sm text-gray-600 space-y-2">
                 <li className="flex gap-2">
-                  <span className="font-medium text-gray-900">1.</span>
+                  <span className="font-medium text-dark">1.</span>
                   Tim admin akan mereview pendaftaran Anda
                 </li>
                 <li className="flex gap-2">
-                  <span className="font-medium text-gray-900">2.</span>
+                  <span className="font-medium text-dark">2.</span>
                   Anda akan menerima email konfirmasi verifikasi
                 </li>
                 <li className="flex gap-2">
-                  <span className="font-medium text-gray-900">3.</span>
+                  <span className="font-medium text-dark">3.</span>
                   Setelah diverifikasi, Anda dapat login melalui dashboard admin
                 </li>
               </ol>

@@ -10,7 +10,7 @@ export default function TransactionList({ transactions }: { transactions: Saving
   const localeTag = locale === 'id' ? 'id-ID' : 'en-US';
   const statusColors: Record<SavingsTransaction['status'], string> = {
     draft: 'bg-gray-100 text-gray-700 border-gray-200',
-    processing: 'bg-blue-50 text-blue-700 border-blue-200',
+    processing: 'bg-info-50 text-info-700 border-info-200',
     paid: 'bg-success-50 text-success-700 border-success-200',
     pending: 'bg-warning-50 text-warning-700 border-warning-200',
     verified: 'bg-success-50 text-success-700 border-success-200',
@@ -51,7 +51,7 @@ export default function TransactionList({ transactions }: { transactions: Saving
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-xs text-gray-500">{tx.transactionNumber}</p>
-              <p className="text-lg font-bold text-gray-900">{formatCurrency(tx.amount)}</p>
+              <p className="text-lg font-bold text-dark">{formatCurrency(tx.amount)}</p>
             </div>
             <span className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${statusColors[tx.status]}`}>
               {statusLabels[tx.status]}

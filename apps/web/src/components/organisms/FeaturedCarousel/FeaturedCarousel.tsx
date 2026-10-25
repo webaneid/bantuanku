@@ -176,7 +176,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
   if (campaigns.length === 0) return null;
 
   return (
-    <section className="featured-section relative overflow-hidden bg-gray-50 py-12 lg:py-20" aria-label={title}>
+    <section className="featured-section relative overflow-hidden bg-light py-12 lg:py-20" aria-label={title}>
       {/* Panel latar kanan (desktop) */}
       <div className="pointer-events-none absolute bottom-10 left-[46%] right-0 top-10 hidden bg-primary-50 lg:block" aria-hidden="true" />
 
@@ -196,7 +196,7 @@ export const FeaturedCarousel: React.FC<FeaturedCarouselProps> = ({
               </span>
             </div>
 
-            <h2 className="text-3xl font-bold leading-tight text-gray-900 lg:text-4xl">{title}</h2>
+            <h2 className="text-3xl font-bold leading-tight text-dark lg:text-4xl">{title}</h2>
             <p className="mt-4 text-base leading-relaxed text-gray-600">{description}</p>
 
             <Link

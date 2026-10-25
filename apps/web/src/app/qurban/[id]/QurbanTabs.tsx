@@ -35,7 +35,7 @@ export default function QurbanTabs({
               'px-6 py-4 font-medium text-sm transition-colors relative',
               activeTab === 'description'
                 ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-gray-600 hover:text-dark'
             )}
           >
             {t('qurbanDetail.tabs.description')}
@@ -46,7 +46,7 @@ export default function QurbanTabs({
               'px-6 py-4 font-medium text-sm transition-colors relative',
               activeTab === 'info'
                 ? 'text-primary-600 border-b-2 border-primary-600'
-                : 'text-gray-600 hover:text-gray-900'
+                : 'text-gray-600 hover:text-dark'
             )}
           >
             {t('qurbanDetail.tabs.packageInfo')}
@@ -75,17 +75,17 @@ export default function QurbanTabs({
           <div className="space-y-4">
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-1">{t('qurbanDetail.tabs.labels.period')}</h3>
-              <p className="text-base text-gray-900">{periodName}</p>
+              <p className="text-base text-dark">{periodName}</p>
             </div>
 
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-1">{t('qurbanDetail.tabs.labels.animalType')}</h3>
-              <p className="text-base text-gray-900">{animalType}</p>
+              <p className="text-base text-dark">{animalType}</p>
             </div>
 
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-1">{t('qurbanDetail.tabs.labels.packageType')}</h3>
-              <p className="text-base text-gray-900">
+              <p className="text-base text-dark">
                 {packageType === 'individual'
                   ? t('qurbanDetail.tabs.values.packageIndividual')
                   : t('qurbanDetail.tabs.values.packageShared')}

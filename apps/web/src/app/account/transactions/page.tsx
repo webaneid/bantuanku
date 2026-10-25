@@ -31,7 +31,7 @@ export default function TransactionsPage() {
   const [filter, setFilter] = useState<string>('all');
   const statusConfig = {
     pending: { label: t('account.transactions.status.pending'), color: 'bg-warning-50 text-warning-700 border-warning-200' },
-    processing: { label: t('account.transactions.status.processing'), color: 'bg-blue-50 text-blue-700 border-blue-200' },
+    processing: { label: t('account.transactions.status.processing'), color: 'bg-info-50 text-info-700 border-info-200' },
     paid: { label: t('account.transactions.status.paid'), color: 'bg-success-50 text-success-700 border-success-200' },
     cancelled: { label: t('account.transactions.status.cancelled'), color: 'bg-danger-50 text-danger-700 border-danger-200' },
   };
@@ -124,7 +124,7 @@ export default function TransactionsPage() {
                 'flex-shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap',
                 filter === item.key
                   ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-white text-gray-700 shadow-sm hover:bg-gray-50'
+                  : 'bg-white text-gray-700 shadow-sm hover:bg-light'
               )}
             >
               {item.label}
@@ -140,7 +140,7 @@ export default function TransactionsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-1">{t('account.transactions.empty.title')}</h3>
+            <h3 className="text-base font-semibold text-dark mb-1">{t('account.transactions.empty.title')}</h3>
             <p className="text-sm text-gray-500 mb-5">
               {filter === 'all' ? t('account.transactions.empty.allDesc') : t('account.transactions.empty.filteredDesc')}
             </p>
@@ -177,10 +177,10 @@ export default function TransactionsPage() {
                       return (
                         <tr key={transaction.id}>
                           <td>
-                            <div className="font-medium text-gray-900">{transaction.transactionNumber}</div>
+                            <div className="font-medium text-dark">{transaction.transactionNumber}</div>
                           </td>
                           <td>
-                            <div className="text-sm text-gray-900">{transaction.productName}</div>
+                            <div className="text-sm text-dark">{transaction.productName}</div>
                           </td>
                           <td>
                             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
@@ -231,7 +231,7 @@ export default function TransactionsPage() {
                           <span className="inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
                             {productLabel}
                           </span>
-                          <p className="mt-2 text-sm font-semibold leading-snug text-gray-900 line-clamp-2">{transaction.productName}</p>
+                          <p className="mt-2 text-sm font-semibold leading-snug text-dark line-clamp-2">{transaction.productName}</p>
                         </div>
                         <span className={cn('flex-shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium', status.color)}>
                           {status.label}
@@ -242,7 +242,7 @@ export default function TransactionsPage() {
                           <p className="truncate text-xs text-gray-500">{transaction.transactionNumber}</p>
                           <p className="text-xs text-gray-500">{formatDate(transaction.createdAt)}</p>
                         </div>
-                        <p className="flex-shrink-0 text-base font-bold text-gray-900">{formatRupiahFull(transaction.totalAmount)}</p>
+                        <p className="flex-shrink-0 text-base font-bold text-dark">{formatRupiahFull(transaction.totalAmount)}</p>
                       </div>
                     </Link>
                   </li>

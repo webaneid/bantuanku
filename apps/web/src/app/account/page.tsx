@@ -67,7 +67,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const statusConfig = {
     pending: { label: t("account.dashboard.status.pending"), color: "bg-warning-50 text-warning-700 border-warning-200" },
-    processing: { label: t("account.dashboard.status.processing"), color: "bg-blue-50 text-blue-700 border-blue-200" },
+    processing: { label: t("account.dashboard.status.processing"), color: "bg-info-50 text-info-700 border-info-200" },
     paid: { label: t("account.dashboard.status.paid"), color: "bg-success-50 text-success-700 border-success-200" },
     cancelled: { label: t("account.dashboard.status.cancelled"), color: "bg-danger-50 text-danger-700 border-danger-200" },
   };
@@ -226,7 +226,7 @@ export default function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </span>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalDonations}</p>
+              <p className="text-2xl font-bold text-dark">{stats.totalDonations}</p>
               <p className="text-xs text-gray-500 mt-0.5">{t("account.dashboard.successTile")}</p>
             </div>
             <div className="rounded-2xl bg-white p-4 shadow-sm">
@@ -235,7 +235,7 @@ export default function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </span>
-              <p className="text-2xl font-bold text-gray-900">{stats.pendingDonations}</p>
+              <p className="text-2xl font-bold text-dark">{stats.pendingDonations}</p>
               <p className="text-xs text-gray-500 mt-0.5">{t("account.dashboard.pendingTile")}</p>
             </div>
           </div>
@@ -244,7 +244,7 @@ export default function DashboardPage() {
             <div className="rounded-2xl bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-gray-900">{t("account.dashboard.profileCompletion.title")}</h3>
+                  <h3 className="text-sm font-semibold text-dark">{t("account.dashboard.profileCompletion.title")}</h3>
                   <p className="text-xs text-gray-500 mt-0.5">{t("account.dashboard.profileCompletion.description")}</p>
                 </div>
                 <span className="text-sm font-bold text-primary-700">{completion.percent}%</span>
@@ -273,7 +273,7 @@ export default function DashboardPage() {
         {/* Transaksi terbaru */}
         <section className="lg:order-1 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-bold text-gray-900">{t("account.dashboard.recent.title")}</h2>
+            <h2 className="text-base font-bold text-dark">{t("account.dashboard.recent.title")}</h2>
             {transactions.length > 0 && (
               <Link href="/account/transactions" className="text-sm font-medium text-primary-600 hover:text-primary-700">
                 {t("account.dashboard.recent.viewAll")}
@@ -288,7 +288,7 @@ export default function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-1">{t("account.dashboard.recent.emptyTitle")}</h3>
+              <h3 className="text-base font-semibold text-dark mb-1">{t("account.dashboard.recent.emptyTitle")}</h3>
               <p className="text-sm text-gray-500 mb-5">{t("account.dashboard.recent.emptyDesc")}</p>
               <Link href="/program">
                 <Button>{t("account.dashboard.recent.startDonating")}</Button>
@@ -305,7 +305,7 @@ export default function DashboardPage() {
                       className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-gray-900">{transaction.productName}</p>
+                        <p className="truncate text-sm font-semibold text-dark">{transaction.productName}</p>
                         <p className="mt-0.5 text-xs text-gray-500">
                           {transaction.transactionNumber} ·{" "}
                           {new Date(transaction.createdAt).toLocaleDateString(localeTag, { day: "numeric", month: "short", year: "numeric" })}
@@ -315,7 +315,7 @@ export default function DashboardPage() {
                         </span>
                       </div>
                       <div className="flex flex-shrink-0 items-center gap-2">
-                        <p className="text-sm font-bold text-gray-900">{formatRupiahFull(transaction.totalAmount)}</p>
+                        <p className="text-sm font-bold text-dark">{formatRupiahFull(transaction.totalAmount)}</p>
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>

@@ -52,7 +52,7 @@ export default function DepositForm({
   };
 
   const inputClass =
-    'w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-base text-gray-900 focus:border-primary-500 focus:outline-none transition-colors';
+    'w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-base text-dark focus:border-primary-500 focus:outline-none transition-colors';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

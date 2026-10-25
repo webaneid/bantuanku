@@ -273,7 +273,7 @@ export default async function ZakatDetailPage({ params }: Props) {
 
       {/* Mobile: title compact section */}
       <div className="lg:hidden bg-white px-4 py-4">
-        <h1 className="text-xl font-bold text-gray-900 mb-1">
+        <h1 className="text-xl font-bold text-dark mb-1">
           {zakatType.name}
         </h1>
         {zakatType.description && (
@@ -281,11 +281,11 @@ export default async function ZakatDetailPage({ params }: Props) {
         )}
       </div>
 
-      <main className="min-h-screen bg-gray-50 py-4 lg:py-8">
+      <main className="min-h-screen bg-light py-4 lg:py-8">
         <div className="container mx-auto px-4">
           {/* Desktop Header */}
           <div className="hidden lg:block mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl md:text-4xl font-bold text-dark mb-2">
               {zakatType.name}
             </h1>
             {zakatType.description && (
@@ -311,7 +311,7 @@ export default async function ZakatDetailPage({ params }: Props) {
             <div className="prose max-w-none">
               {!zakatType.hasCalculator ? (
                 <>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  <h2 className="text-2xl font-bold text-dark mb-4">
                     {t('zakatDetail.aboutTitle', { name: zakatType.name })}
                   </h2>
                   <p className="text-gray-600 mb-6">
@@ -325,7 +325,7 @@ export default async function ZakatDetailPage({ params }: Props) {
                 </>
               ) : (
                 <>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  <h2 className="text-2xl font-bold text-dark mb-4">
                     {t('zakatDetail.calculatorTitle', { name: zakatType.name })}
                   </h2>
                   <p className="text-gray-600 mb-6">

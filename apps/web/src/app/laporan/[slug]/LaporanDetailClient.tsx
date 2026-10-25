@@ -57,14 +57,14 @@ export default function LaporanDetailClient({ report, shareUrl }: { report: Repo
         {/* Header — desktop saja; di mobile judul ada di header halaman (page.tsx) */}
         <div className="hidden lg:block space-y-4">
           <div className="flex items-center gap-3 flex-wrap">
-            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-sm font-medium">
+            <span className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium">
               {getReferenceLabel(report.referenceType)}
             </span>
             <span className="text-sm text-gray-500">{formatDate(report.activityDate)}</span>
           </div>
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-900">{report.title}</h1>
+          <h1 className="text-2xl md:text-4xl font-bold text-dark">{report.title}</h1>
           {report.referenceName && (
-            <p className="text-lg text-emerald-600 font-medium">{report.referenceName}</p>
+            <p className="text-lg text-primary-600 font-medium">{report.referenceName}</p>
           )}
         </div>
 
@@ -81,49 +81,49 @@ export default function LaporanDetailClient({ report, shareUrl }: { report: Repo
 
         {/* Type-specific stats */}
         {(tsd.beneficiary_count > 0 || tsd.recipient_count > 0 || tsd.animals_by_type) && (
-          <div className="bg-emerald-50 rounded-xl p-6">
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Ringkasan Kegiatan</h3>
+          <div className="bg-primary-50 rounded-xl p-6">
+            <h3 className="text-base md:text-lg font-semibold text-dark mb-4">Ringkasan Kegiatan</h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {tsd.beneficiary_count > 0 && (
                 <div>
-                  <p className="text-2xl font-bold text-emerald-700">{tsd.beneficiary_count.toLocaleString('id-ID')}</p>
+                  <p className="text-2xl font-bold text-primary-700">{tsd.beneficiary_count.toLocaleString('id-ID')}</p>
                   <p className="text-sm text-gray-600">Penerima Manfaat</p>
                 </div>
               )}
               {tsd.recipient_count > 0 && (
                 <div>
-                  <p className="text-2xl font-bold text-emerald-700">{tsd.recipient_count.toLocaleString('id-ID')}</p>
+                  <p className="text-2xl font-bold text-primary-700">{tsd.recipient_count.toLocaleString('id-ID')}</p>
                   <p className="text-sm text-gray-600">Penerima</p>
                 </div>
               )}
               {tsd.animals_by_type?.kambing > 0 && (
                 <div>
-                  <p className="text-2xl font-bold text-emerald-700">{tsd.animals_by_type.kambing}</p>
+                  <p className="text-2xl font-bold text-primary-700">{tsd.animals_by_type.kambing}</p>
                   <p className="text-sm text-gray-600">Kambing</p>
                 </div>
               )}
               {tsd.animals_by_type?.sapi > 0 && (
                 <div>
-                  <p className="text-2xl font-bold text-emerald-700">{tsd.animals_by_type.sapi}</p>
+                  <p className="text-2xl font-bold text-primary-700">{tsd.animals_by_type.sapi}</p>
                   <p className="text-sm text-gray-600">Sapi</p>
                 </div>
               )}
               {tsd.animals_by_type?.domba > 0 && (
                 <div>
-                  <p className="text-2xl font-bold text-emerald-700">{tsd.animals_by_type.domba}</p>
+                  <p className="text-2xl font-bold text-primary-700">{tsd.animals_by_type.domba}</p>
                   <p className="text-sm text-gray-600">Domba</p>
                 </div>
               )}
               {tsd.total_recipients > 0 && (
                 <div>
-                  <p className="text-2xl font-bold text-emerald-700">{tsd.total_recipients.toLocaleString('id-ID')}</p>
+                  <p className="text-2xl font-bold text-primary-700">{tsd.total_recipients.toLocaleString('id-ID')}</p>
                   <p className="text-sm text-gray-600">Penerima Daging</p>
                 </div>
               )}
             </div>
             {tsd.distribution_areas?.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-emerald-200">
-                <p className="text-sm text-gray-600">Area Distribusi: <span className="font-medium text-gray-900">{tsd.distribution_areas.join(', ')}</span></p>
+              <div className="mt-4 pt-4 border-t border-primary-200">
+                <p className="text-sm text-gray-600">Area Distribusi: <span className="font-medium text-dark">{tsd.distribution_areas.join(', ')}</span></p>
               </div>
             )}
           </div>
@@ -131,13 +131,13 @@ export default function LaporanDetailClient({ report, shareUrl }: { report: Repo
 
         {/* Description */}
         <div className="bg-white shadow-sm -mx-4 sm:-mx-6 md:mx-0 rounded-none md:rounded-lg px-[15px] pt-0 pb-4 md:p-8">
-          <RenderContent html={report.description} className="prose prose-bleed prose-sm md:prose-base max-w-none text-gray-700 prose-img:rounded-lg prose-headings:text-gray-900" />
+          <RenderContent html={report.description} className="prose prose-bleed prose-sm md:prose-base max-w-none text-gray-700 prose-img:rounded-lg prose-headings:text-dark" />
         </div>
 
         {/* Video */}
         {report.videoUrl && getYoutubeEmbedUrl(report.videoUrl) && (
           <div>
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3">Video Kegiatan</h3>
+            <h3 className="text-base md:text-lg font-semibold text-dark mb-3">Video Kegiatan</h3>
             <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
               <iframe
                 src={getYoutubeEmbedUrl(report.videoUrl)!}
@@ -154,7 +154,7 @@ export default function LaporanDetailClient({ report, shareUrl }: { report: Repo
         {/* Gallery */}
         {gallery.length > 0 && (
           <div>
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-3">Galeri Foto</h3>
+            <h3 className="text-base md:text-lg font-semibold text-dark mb-3">Galeri Foto</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {gallery.map((url, index) => (
                 <button
@@ -184,7 +184,7 @@ export default function LaporanDetailClient({ report, shareUrl }: { report: Repo
           </div>
           <Link
             href="/laporan"
-            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
+            className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-light text-sm"
           >
             Lihat Semua Laporan
           </Link>

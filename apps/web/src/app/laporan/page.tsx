@@ -130,9 +130,9 @@ export default async function LaporanPage({
       <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Laporan Kegiatan' }]} />
       <main className="flex-1">
         {/* Hero */}
-        <section className="py-10 bg-gradient-to-br from-emerald-50 to-white border-b border-emerald-100">
+        <section className="py-10 bg-gradient-to-br from-primary-50 to-white border-b border-primary-100">
           <div className="container mx-auto px-4">
-            <h1 className="section-title text-gray-900">Arsip Laporan Kegiatan</h1>
+            <h1 className="section-title text-dark">Arsip Laporan Kegiatan</h1>
             <p className="section-description text-gray-600 mt-1">
               Transparansi penyaluran donasi dan kegiatan sosial yang telah dilaksanakan.
             </p>

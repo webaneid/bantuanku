@@ -171,23 +171,23 @@ export default function PaymentMethodPage() {
     },
     qris: {
       icon: (
-        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6 text-info-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
         </svg>
       ),
-      bgColor: 'bg-blue-100',
-      hoverBgColor: 'group-hover:bg-blue-200',
+      bgColor: 'bg-info-100',
+      hoverBgColor: 'group-hover:bg-info-200',
       title: t('checkout.paymentMethod.card.qrisTitle'),
       description: t('checkout.paymentMethod.card.qrisDesc'),
     },
     payment_gateway: {
       icon: (
-        <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-6 h-6 text-secondary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
         </svg>
       ),
-      bgColor: 'bg-purple-100',
-      hoverBgColor: 'group-hover:bg-purple-200',
+      bgColor: 'bg-secondary-100',
+      hoverBgColor: 'group-hover:bg-secondary-200',
       title: t('checkout.paymentMethod.card.gatewayTitle'),
       description: t('checkout.paymentMethod.card.gatewayDesc'),
     },
@@ -197,7 +197,7 @@ export default function PaymentMethodPage() {
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gray-50 py-8">
+        <main className="min-h-screen bg-light py-8">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto">
               <div className="animate-pulse space-y-4">
@@ -216,12 +216,12 @@ export default function PaymentMethodPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 py-8">
+      <main className="min-h-screen bg-light py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
             {/* Header */}
             <div className="mb-8">
-              <h1 className="section-title text-gray-900 mb-2">
+              <h1 className="section-title text-dark mb-2">
                 {t('checkout.paymentMethod.title')}
               </h1>
               <p className="text-gray-600" style={{ fontSize: '15px' }}>
@@ -247,7 +247,7 @@ export default function PaymentMethodPage() {
                           {config.icon}
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900" style={{ fontSize: '1.1rem' }}>
+                          <h3 className="font-semibold text-dark" style={{ fontSize: '1.1rem' }}>
                             {config.title}
                           </h3>
                           <p className="text-sm text-gray-600">

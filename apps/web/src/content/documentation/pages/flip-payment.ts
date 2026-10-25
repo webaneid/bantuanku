@@ -22,7 +22,7 @@ export const flipPaymentDoc: DocumentationPage = {
             bodyHtml: `
                 <p>Sebelum fitur ini bisa digunakan, Anda harus memiliki akun Flip for Business dan menyalin beberapa kunci rahasia (Kredensial) ke dalam sistem Jaladana.</p>
                 <ol className="list-decimal pl-5 mt-2 space-y-2">
-                    <li>Login ke dashboard Flip for Business di <a href="https://business.flip.id" target="_blank" rel="noreferrer" className="text-blue-600 underline">https://business.flip.id</a>.</li>
+                    <li>Login ke dashboard Flip for Business di <a href="https://business.flip.id" target="_blank" rel="noreferrer" className="text-info-600 underline">https://business.flip.id</a>.</li>
                     <li>Masuk ke menu <strong>Developer</strong> di bilah sebelah kiri, lalu pilih tab <strong>Credentials</strong>.</li>
                     <li>Di sana Anda akan menemukan bagian <strong>Accept Payment</strong>.</li>
                     <li>Catat atau salin dua hal penting berikut:
@@ -32,8 +32,8 @@ export const flipPaymentDoc: DocumentationPage = {
                         </ul>
                     </li>
                 </ol>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 my-4">
-                    <p className="text-sm text-yellow-800">
+                <div className="bg-warning-50 border border-warning-200 rounded-lg p-3 my-4">
+                    <p className="text-sm text-warning-800">
                         <strong>⚠️ Penting:</strong> Di dashboard Flip, Anda akan melihat tab <em>Production</em> (untuk transaksi uang asli) dan <em>Sandbox</em> (untuk ujicoba). Kredensial di kedua tab ini <strong>berbeda</strong>. Pastikan Anda menyalin dari tab yang sesuai dengan kebutuhan Anda saat ini.
                     </p>
                 </div>
@@ -65,7 +65,7 @@ export const flipPaymentDoc: DocumentationPage = {
                     <li>Cari kolom isian <strong>Callback URL</strong> (atau Webhook URL) di bagian <em>Accept Payment</em>.</li>
                     <li>Masukkan URL Webhook sistem Jaladana Anda. Pola umumnya adalah:
                         <br/>
-                        <code className="bg-gray-100 px-2 py-1 rounded text-red-600 block mt-2 mb-2">https://api.domain-anda.com/v1/payments/flip/webhook</code>
+                        <code className="bg-gray-100 px-2 py-1 rounded text-danger-600 block mt-2 mb-2">https://api.domain-anda.com/v1/payments/flip/webhook</code>
                     </li>
                     <li>Simpan pengaturan di Flip.</li>
                 </ol>

@@ -175,12 +175,12 @@ export default function QurbanPage() {
     <>
       <Header />
       <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Qurban' }]} />
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-light">
         {/* Page Header */}
         <section className="py-12 bg-gradient-to-br from-accent-50 to-accent-100">
           <div className="container mx-auto px-4">
             <div className="text-center max-w-3xl mx-auto">
-              <h1 className="section-title text-gray-900 mb-4">
+              <h1 className="section-title text-dark mb-4">
                 {pageTitle || t('qurbanPage.defaults.title')}
               </h1>
               <p className="section-description text-gray-600">
@@ -210,7 +210,7 @@ export default function QurbanPage() {
               <select
                 value={selectedPeriodId}
                 onChange={(e) => setSelectedPeriodId(e.target.value)}
-                className="w-full md:w-64 px-4 py-2.5 border-2 border-gray-200 rounded-lg bg-white text-gray-900 font-medium focus:border-primary-500 focus:outline-none transition-colors"
+                className="w-full md:w-64 px-4 py-2.5 border-2 border-gray-200 rounded-lg bg-white text-dark font-medium focus:border-primary-500 focus:outline-none transition-colors"
               >
                 {periods.map((period) => (
                   <option key={period.id} value={period.id}>
@@ -317,7 +317,7 @@ export default function QurbanPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className="text-xl font-semibold text-dark mb-2">
                 {loadIssue === 'error'
                   ? t('qurbanPage.error.title')
                   : loadIssue === 'no-period'

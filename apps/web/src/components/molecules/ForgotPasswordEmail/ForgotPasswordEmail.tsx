@@ -31,7 +31,7 @@ export function ForgotPasswordEmail() {
   if (sent) {
     return (
       <div className="text-center space-y-3">
-        <h2 className="text-lg font-bold text-gray-900">{t('auth.forgotPassword.emailSentTitle')}</h2>
+        <h2 className="text-lg font-bold text-dark">{t('auth.forgotPassword.emailSentTitle')}</h2>
         <p className="text-gray-600">{t('auth.forgotPassword.emailSentDesc')}</p>
         <p className="text-sm text-gray-500">{t('auth.forgotPassword.emailSentHint')}</p>
       </div>

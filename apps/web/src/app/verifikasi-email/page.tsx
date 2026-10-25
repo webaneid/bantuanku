@@ -52,7 +52,7 @@ function VerifyEmailContent() {
       {status === "form" ? (
         <>
           <div className="text-center mb-6">
-            <h1 className="text-xl font-bold text-gray-900 mb-2">{t("auth.verifyEmail.confirmTitle")}</h1>
+            <h1 className="text-xl font-bold text-dark mb-2">{t("auth.verifyEmail.confirmTitle")}</h1>
             <p className="text-gray-600">{t("auth.verifyEmail.confirmDesc")}</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -81,12 +81,12 @@ function VerifyEmailContent() {
         </>
       ) : (
         <div className="text-center">
-          <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="w-14 h-14 bg-danger-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-danger-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">{t("auth.verifyEmail.errorTitle")}</h1>
+          <h1 className="text-xl font-bold text-dark mb-2">{t("auth.verifyEmail.errorTitle")}</h1>
           <p className="text-gray-600 mb-6">{t("auth.verifyEmail.errorDesc")}</p>
           <Link href="/login">
             <Button variant="outline" fullWidth>{t("auth.verifyEmail.backToLogin")}</Button>
@@ -99,7 +99,7 @@ function VerifyEmailContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-light flex items-center justify-center px-4">
       <Suspense fallback={null}>
         <VerifyEmailContent />
       </Suspense>

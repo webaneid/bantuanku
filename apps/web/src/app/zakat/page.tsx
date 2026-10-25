@@ -201,12 +201,12 @@ export default async function ZakatPage() {
       ) }} />
       <Header />
       <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Zakat' }]} />
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-light">
         {/* Page Header */}
         <section className="py-12 bg-gradient-to-br from-primary-50 to-primary-100">
           <div className="container mx-auto px-4">
             <div className="text-center max-w-3xl mx-auto">
-              <h1 className="section-title text-gray-900 mb-4">
+              <h1 className="section-title text-dark mb-4">
                 {pageTitle}
               </h1>
               <p className="section-description text-gray-600">

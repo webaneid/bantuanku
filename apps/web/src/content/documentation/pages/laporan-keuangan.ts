@@ -28,7 +28,7 @@ export const laporanKeuanganDoc: DocumentationPage = {
                 <p>Sistem Jaladana kini membagi laporan menjadi beberapa kategori spesifik agar mudah dicari:</p>
                 <table className="w-full border-collapse mt-4">
                     <thead>
-                        <tr className="bg-gray-50 border-b">
+                        <tr className="bg-light border-b">
                             <th className="py-2 px-4 text-left font-semibold">Grup Laporan</th>
                             <th className="py-2 px-4 text-left font-semibold">Jenis Laporan & Keterangan</th>
                         </tr>
@@ -102,10 +102,10 @@ export const laporanKeuanganDoc: DocumentationPage = {
             id: "catatan-sistem",
             heading: "Catatan Sistem Pencatatan",
             bodyHtml: `
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 my-2">
-                    <h4 className="font-semibold text-yellow-800 mb-2">Category System vs Double-Entry Ledger</h4>
-                    <p className="text-sm text-yellow-900 mb-2">Sistem pelaporan terbaru saat ini <strong>menitikberatkan pada sistem kategori keuangan (Category System)</strong> yang terbukti jauh lebih praktis dan mudah dipahami oleh Yayasan dibandingkan jurnal murni <em>Double-Entry (Ledger)</em> konvensional.</p>
-                    <p className="text-sm text-yellow-900">Walaupun backend tetap mencatat Ledger Entries secara otomatis untuk kepentingan audit <em>Financial Statement</em> (Neraca Saldo), Anda cukup fokus membaca <strong>Laporan Cash Flow</strong> dan laporan <strong>Per Entitas</strong> untuk urusan operasional harian.</p>
+                <div className="bg-warning-50 border border-warning-200 rounded-lg p-4 my-2">
+                    <h4 className="font-semibold text-warning-800 mb-2">Category System vs Double-Entry Ledger</h4>
+                    <p className="text-sm text-warning-900 mb-2">Sistem pelaporan terbaru saat ini <strong>menitikberatkan pada sistem kategori keuangan (Category System)</strong> yang terbukti jauh lebih praktis dan mudah dipahami oleh Yayasan dibandingkan jurnal murni <em>Double-Entry (Ledger)</em> konvensional.</p>
+                    <p className="text-sm text-warning-900">Walaupun backend tetap mencatat Ledger Entries secara otomatis untuk kepentingan audit <em>Financial Statement</em> (Neraca Saldo), Anda cukup fokus membaca <strong>Laporan Cash Flow</strong> dan laporan <strong>Per Entitas</strong> untuk urusan operasional harian.</p>
                 </div>
             `,
         },

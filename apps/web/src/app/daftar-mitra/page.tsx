@@ -217,10 +217,10 @@ export default function DaftarMitraPage() {
     <>
       <Navbar />
       <Breadcrumb items={[{ label: "Beranda", href: "/" }, { label: "Daftar Mitra" }]} />
-      <main className="min-h-screen bg-gray-50 py-12">
+      <main className="min-h-screen bg-light py-12">
         <div className="max-w-2xl mx-auto px-4">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Daftar Mitra Lembaga</h1>
+            <h1 className="text-3xl font-bold text-dark">Daftar Mitra Lembaga</h1>
             <p className="text-gray-600 mt-2">
               Bergabung sebagai mitra lembaga untuk membuat dan mengelola program di platform kami.
             </p>
@@ -229,11 +229,11 @@ export default function DaftarMitraPage() {
           <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 shadow-sm">
             {/* Identitas Lembaga */}
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Identitas Lembaga</h2>
+              <h2 className="text-lg font-semibold text-dark mb-4">Identitas Lembaga</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nama Lembaga <span className="text-red-500">*</span>
+                    Nama Lembaga <span className="text-danger-500">*</span>
                   </label>
                   <input type="text" name="name" required minLength={3} value={formData.name} onChange={handleChange} className={inputClass} placeholder="Nama lembaga" />
                 </div>
@@ -246,11 +246,11 @@ export default function DaftarMitraPage() {
 
             {/* Penanggung Jawab */}
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Penanggung Jawab</h2>
+              <h2 className="text-lg font-semibold text-dark mb-4">Penanggung Jawab</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nama Penanggung Jawab <span className="text-red-500">*</span>
+                    Nama Penanggung Jawab <span className="text-danger-500">*</span>
                   </label>
                   <input type="text" name="picName" required minLength={2} value={formData.picName} onChange={handleChange} className={inputClass} placeholder="Nama lengkap" />
                 </div>
@@ -263,11 +263,11 @@ export default function DaftarMitraPage() {
 
             {/* Kontak */}
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Kontak</h2>
+              <h2 className="text-lg font-semibold text-dark mb-4">Kontak</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email <span className="text-red-500">*</span>
+                    Email <span className="text-danger-500">*</span>
                   </label>
                   <input type="email" name="email" required value={formData.email} onChange={handleChange} className={inputClass} placeholder="email@lembaga.org" />
                 </div>
@@ -290,7 +290,7 @@ export default function DaftarMitraPage() {
 
             {/* Alamat */}
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Alamat</h2>
+              <h2 className="text-lg font-semibold text-dark mb-4">Alamat</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Detail Alamat</label>
@@ -342,14 +342,14 @@ export default function DaftarMitraPage() {
 
             {/* Rekening Bank */}
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Rekening Bank</h2>
+              <h2 className="text-lg font-semibold text-dark mb-4">Rekening Bank</h2>
               <div className="space-y-4">
                 {bankAccounts.map((acc, index) => (
                   <div key={index} className="p-4 border border-gray-200 rounded-lg space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-700">Rekening {index + 1}</span>
                       {bankAccounts.length > 1 && (
-                        <button type="button" onClick={() => removeBankAccount(index)} className="text-sm text-red-600 hover:text-red-700">Hapus</button>
+                        <button type="button" onClick={() => removeBankAccount(index)} className="text-sm text-danger-600 hover:text-danger-700">Hapus</button>
                       )}
                     </div>
                     <div>
@@ -374,7 +374,7 @@ export default function DaftarMitraPage() {
 
             {/* Dokumen Pendukung */}
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Dokumen Pendukung</h2>
+              <h2 className="text-lg font-semibold text-dark mb-4">Dokumen Pendukung</h2>
               <p className="text-sm text-gray-500 mb-4">Upload dokumen dalam format gambar (JPG/PNG) atau PDF. Maks 5MB gambar, 10MB PDF.</p>
               <div className="space-y-5">
                 {(["ktpUrl", "bankBookUrl", "npwpUrl"] as const).map((field) => {
@@ -389,7 +389,7 @@ export default function DaftarMitraPage() {
                     <div key={field}>
                       <label className="block text-sm font-medium text-gray-700 mb-1">{labels[field]}</label>
                       <div className="flex items-center gap-3">
-                        <label className={`flex-1 flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-colors ${uploaded ? "border-green-400 bg-green-50" : "border-gray-300 hover:border-primary-400 hover:bg-primary-50"} ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}>
+                        <label className={`flex-1 flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-colors ${uploaded ? "border-success-400 bg-success-50" : "border-gray-300 hover:border-primary-400 hover:bg-primary-50"} ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}>
                           <input
                             type="file"
                             className="hidden"
@@ -401,13 +401,13 @@ export default function DaftarMitraPage() {
                               e.target.value = "";
                             }}
                           />
-                          <svg className={`w-4 h-4 flex-shrink-0 ${uploaded ? "text-green-500" : "text-gray-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className={`w-4 h-4 flex-shrink-0 ${uploaded ? "text-success-500" : "text-gray-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             {uploaded
                               ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                             }
                           </svg>
-                          <span className={`text-sm ${uploaded ? "text-green-700 font-medium" : "text-gray-500"}`}>
+                          <span className={`text-sm ${uploaded ? "text-success-700 font-medium" : "text-gray-500"}`}>
                             {isUploading ? "Mengupload..." : uploaded ? "Dokumen terupload ✓" : "Klik untuk upload file"}
                           </span>
                         </label>
@@ -415,7 +415,7 @@ export default function DaftarMitraPage() {
                           <button
                             type="button"
                             onClick={() => setDocumentUrls((prev) => ({ ...prev, [field]: "" }))}
-                            className="text-xs text-red-600 hover:text-red-700 whitespace-nowrap"
+                            className="text-xs text-danger-600 hover:text-danger-700 whitespace-nowrap"
                           >
                             Hapus
                           </button>

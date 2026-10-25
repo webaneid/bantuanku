@@ -138,7 +138,7 @@ export default function ZakatProfesiPage() {
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gray-50 py-8 md:py-12">
+        <main className="min-h-screen bg-light py-8 md:py-12">
           <div className="container mx-auto px-4">
             <div className="text-center py-16">
               <div className="animate-spin w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto"></div>
@@ -162,7 +162,7 @@ export default function ZakatProfesiPage() {
         displayImageOriginal={displayImageOriginal}
         owner={displayMeta?.owner}
       />
-      <main className="min-h-screen bg-gray-50 py-4 lg:py-8">
+      <main className="min-h-screen bg-light py-4 lg:py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             {/* Desktop Feature Image */}
@@ -186,7 +186,7 @@ export default function ZakatProfesiPage() {
               <ZakatOwnerInfo owner={displayMeta?.owner} />
               {/* Header */}
               <div className="mb-6">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                <h2 className="text-2xl md:text-3xl font-bold text-dark mb-2">
                   {displayName}
                 </h2>
                 {displayDescription && (
@@ -199,7 +199,7 @@ export default function ZakatProfesiPage() {
             </div>
 
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">{t('zakatCalculator.profesi.calculatorTitle')}</h2>
+              <h2 className="text-xl font-semibold text-dark">{t('zakatCalculator.profesi.calculatorTitle')}</h2>
             </div>
 
             {/* Calculator Form */}
@@ -302,9 +302,9 @@ export default function ZakatProfesiPage() {
               </div>
 
               {/* Total Penghasilan */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="bg-light border border-gray-200 rounded-lg p-4">
                 <p className="text-sm font-medium text-gray-700 mb-1">{t('zakatCalculator.profesi.totalIncomeLabel')}</p>
-                <p className="text-xl font-bold text-gray-900">{formatCurrency(totalPenghasilan)}</p>
+                <p className="text-xl font-bold text-dark">{formatCurrency(totalPenghasilan)}</p>
               </div>
 
               <div>
@@ -427,7 +427,7 @@ export default function ZakatProfesiPage() {
 
           {relatedZakat.length > 0 && (
             <section className="mt-10">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('zakatCalculator.common.otherZakat')}</h2>
+              <h2 className="text-xl font-semibold text-dark mb-4">{t('zakatCalculator.common.otherZakat')}</h2>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-[0.4rem] lg:gap-4">
                 {relatedZakat.map((item) => (
                   <ZakatCard

@@ -13,7 +13,7 @@ export default function DocumentationView({ slug }: DocumentationViewProps) {
   if (!page) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-light">
       <div className="container py-8 md:py-10">
         <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 mb-6">
           <div className="flex items-center gap-3">
@@ -24,7 +24,7 @@ export default function DocumentationView({ slug }: DocumentationViewProps) {
               className="h-9 w-auto"
             />
             <div>
-              <h1 className="text-lg md:text-xl font-semibold text-gray-900">
+              <h1 className="text-lg md:text-xl font-semibold text-dark">
                 Dokumentasi Jaladana
               </h1>
               <p className="text-sm text-gray-500">Panduan operasional aplikasi</p>
@@ -43,7 +43,7 @@ export default function DocumentationView({ slug }: DocumentationViewProps) {
                   const isCurrentGroup = category.items.some((item) => item.slug === slug);
                   return (
                     <details key={category.id} open={isCurrentGroup} className="group">
-                      <summary className="cursor-pointer list-none text-sm font-medium text-gray-900 pb-2 border-b border-gray-100">
+                      <summary className="cursor-pointer list-none text-sm font-medium text-dark pb-2 border-b border-gray-100">
                         {category.label}
                       </summary>
                       <div className="pt-2 space-y-1">
@@ -55,7 +55,7 @@ export default function DocumentationView({ slug }: DocumentationViewProps) {
                               href={`/documentation/${item.slug}`}
                               className={`block rounded-md px-2.5 py-2 text-sm transition-colors ${active
                                   ? "bg-primary-50 text-primary-700 font-medium"
-                                  : "text-gray-700 hover:bg-gray-50"
+                                  : "text-gray-700 hover:bg-light"
                                 }`}
                             >
                               {item.title}
@@ -72,7 +72,7 @@ export default function DocumentationView({ slug }: DocumentationViewProps) {
 
           <article className="xl:col-span-6">
             <div className="bg-white border border-gray-200 rounded-xl p-5 md:p-7">
-              <h2 className="text-2xl md:text-3xl font-semibold text-gray-900">{page.title}</h2>
+              <h2 className="text-2xl md:text-3xl font-semibold text-dark">{page.title}</h2>
               {page.summary ? (
                 <p className="text-gray-600 mt-2">{page.summary}</p>
               ) : null}
@@ -81,7 +81,7 @@ export default function DocumentationView({ slug }: DocumentationViewProps) {
               <div className="mt-8 space-y-8">
                 {page.sections.map((section) => (
                   <section key={section.id} id={section.id} className="scroll-mt-24">
-                    <h3 className="text-xl font-semibold text-gray-900 mb-3">{section.heading}</h3>
+                    <h3 className="text-xl font-semibold text-dark mb-3">{section.heading}</h3>
                     <RenderContent html={section.bodyHtml} className="prose prose-sm md:prose-base max-w-none text-gray-700" />
                   </section>
                 ))}

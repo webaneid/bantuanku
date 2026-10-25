@@ -198,12 +198,12 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                 {userMenuOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                     <div className="px-4 py-3 border-b border-gray-200">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+                      <p className="text-sm font-semibold text-dark truncate">{user.name}</p>
                       <p className="text-xs text-gray-500 truncate">{user.email}</p>
                     </div>
                     <Link
                       href="/account"
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-light"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,7 +213,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                     </Link>
                     <Link
                       href="/account/transactions"
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-light"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,7 +223,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                     </Link>
                     <Link
                       href="/qurban/savings"
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-light"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -233,7 +233,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                     </Link>
                     <Link
                       href="/account/fundraiser"
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-light"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +243,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                     </Link>
                     <Link
                       href="/account/profile"
-                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-light"
                       onClick={() => setUserMenuOpen(false)}
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

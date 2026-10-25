@@ -17,7 +17,7 @@ import {
 
 export default function TestComponentsPage() {
   return (
-    <main className="min-h-screen bg-gray-50 py-12">
+    <main className="min-h-screen bg-light py-12">
       <div className="container mx-auto px-4">
         <h1 className="text-4xl font-bold mb-8">Atomic Components Demo</h1>
 
@@ -199,7 +199,7 @@ export default function TestComponentsPage() {
               <div className="flex items-center gap-6">
                 <Spinner color="primary" />
                 <Spinner color="gray" />
-                <div className="bg-gray-900 p-4 rounded">
+                <div className="bg-dark p-4 rounded">
                   <Spinner color="white" />
                 </div>
               </div>

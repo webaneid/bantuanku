@@ -81,7 +81,7 @@
 
     &--days {
       background: rgba(white, 0.92);
-      color: $gray-900;
+      color: $dark;
     }
   }
 
@@ -107,7 +107,7 @@
     font-size: $font-lg;
     font-weight: 700;
     line-height: 1.4;
-    color: $gray-900;
+    color: $dark;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     transition: color $transition-base;

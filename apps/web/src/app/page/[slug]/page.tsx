@@ -284,7 +284,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
       <div className="min-h-screen flex flex-col">
         <Header hideOnMobile />
 
-        <main className="flex-1 bg-gray-50">
+        <main className="flex-1 bg-light">
           <div className="hidden lg:block">
             <Breadcrumb items={[
               { label: 'Beranda', href: '/' },
@@ -303,14 +303,14 @@ export default async function StaticPage({ params }: StaticPageProps) {
               <MobileTopBar backHref="/" />
             )}
             <div className="bg-white px-4 py-4">
-              <h1 className="text-xl font-bold text-gray-900">{page.title}</h1>
+              <h1 className="text-xl font-bold text-dark">{page.title}</h1>
             </div>
           </div>
 
         <div className="container pt-0 pb-4 lg:py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <article className="lg:col-span-2 space-y-6">
-              <h1 className="hidden lg:block text-4xl font-bold text-gray-900">{page.title}</h1>
+              <h1 className="hidden lg:block text-4xl font-bold text-dark">{page.title}</h1>
 
               {featureImage && (
                 <img
@@ -331,7 +331,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
               <div className="space-y-4 sticky top-24 -mx-4 sm:-mx-6 md:mx-0">
                 <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                   <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                    <h2 className="text-xl font-semibold text-gray-900">Program Lainnya</h2>
+                    <h2 className="text-xl font-semibold text-dark">Program Lainnya</h2>
                     <Link href="/program" aria-label="Lihat semua program" className="text-gray-700 hover:text-primary-600">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-6-6 6 6-6 6" />
@@ -360,7 +360,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
                               <p className="text-sm text-gray-500 capitalize line-clamp-1">
                                 {item.categoryName || item.category || "Program"}
                               </p>
-                              <h3 className="text-base font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-primary-600">
+                              <h3 className="text-base font-medium text-dark leading-snug line-clamp-2 group-hover:text-primary-600">
                                 {item.title}
                               </h3>
                             </div>
@@ -373,7 +373,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
 
                 <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                   <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                    <h2 className="text-xl font-semibold text-gray-900">Zakat Lainnya</h2>
+                    <h2 className="text-xl font-semibold text-dark">Zakat Lainnya</h2>
                     <Link href="/zakat" aria-label="Lihat semua zakat" className="text-gray-700 hover:text-primary-600">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-6-6 6 6-6 6" />
@@ -402,7 +402,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
                               <p className="text-sm text-gray-500 line-clamp-1">
                                 {getZakatTypeLabel(item.calculatorType)}
                               </p>
-                              <h3 className="text-base font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-primary-600">
+                              <h3 className="text-base font-medium text-dark leading-snug line-clamp-2 group-hover:text-primary-600">
                                 {item.name}
                               </h3>
                             </div>
@@ -415,7 +415,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
 
                 <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                   <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                    <h2 className="text-xl font-semibold text-gray-900">Qurban Lainnya</h2>
+                    <h2 className="text-xl font-semibold text-dark">Qurban Lainnya</h2>
                     <Link href="/qurban" aria-label="Lihat semua qurban" className="text-gray-700 hover:text-primary-600">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-6-6 6 6-6 6" />
@@ -444,7 +444,7 @@ export default async function StaticPage({ params }: StaticPageProps) {
                               <p className="text-sm text-gray-500 line-clamp-1">
                                 {getAnimalTypeLabel(item.animalType || "")}
                               </p>
-                              <h3 className="text-base font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-primary-600">
+                              <h3 className="text-base font-medium text-dark leading-snug line-clamp-2 group-hover:text-primary-600">
                                 {item.name}
                               </h3>
                             </div>

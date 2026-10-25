@@ -84,7 +84,7 @@ export default function RevenueShareDisbursementPanel({
   });
   const statusBadge: Record<string, { label: string; color: string }> = {
     draft: { label: t("account.revenueShareDisbursement.status.draft"), color: "bg-gray-100 text-gray-700" },
-    submitted: { label: t("account.revenueShareDisbursement.status.submitted"), color: "bg-blue-100 text-blue-700" },
+    submitted: { label: t("account.revenueShareDisbursement.status.submitted"), color: "bg-info-100 text-info-700" },
     approved: { label: t("account.revenueShareDisbursement.status.approved"), color: "bg-warning-100 text-warning-700" },
     rejected: { label: t("account.revenueShareDisbursement.status.rejected"), color: "bg-danger-100 text-danger-700" },
     paid: { label: t("account.revenueShareDisbursement.status.paid"), color: "bg-success-100 text-success-700" },
@@ -209,7 +209,7 @@ export default function RevenueShareDisbursementPanel({
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">{t("account.revenueShareDisbursement.historyTitle")}</h3>
+          <h3 className="text-lg font-semibold text-dark">{t("account.revenueShareDisbursement.historyTitle")}</h3>
         </div>
 
         {disbursementsLoading ? (
@@ -220,7 +220,7 @@ export default function RevenueShareDisbursementPanel({
           <>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px]">
-                <thead className="bg-gray-50">
+                <thead className="bg-light">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("account.revenueShareDisbursement.table.number")}</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t("account.revenueShareDisbursement.table.typeCategory")}</th>
@@ -236,13 +236,13 @@ export default function RevenueShareDisbursementPanel({
                     const badge = statusBadge[row.status] || statusBadge.draft;
                     return (
                       <tr key={row.id}>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.disbursementNumber}</td>
+                        <td className="px-6 py-4 text-sm font-medium text-dark">{row.disbursementNumber}</td>
                         <td className="px-6 py-4">
-                          <p className="text-sm font-medium text-gray-900">{disbursementTypeLabel}</p>
+                          <p className="text-sm font-medium text-dark">{disbursementTypeLabel}</p>
                           <p className="text-sm text-gray-500">{categoryLabel}</p>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{row.recipientName}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">{formatRupiahFull(row.amount || 0)}</td>
+                        <td className="px-6 py-4 text-sm text-dark">{row.recipientName}</td>
+                        <td className="px-6 py-4 text-sm text-dark">{formatRupiahFull(row.amount || 0)}</td>
                         <td className="px-6 py-4">
                           <span className={cn("inline-flex px-2.5 py-1 text-xs font-medium rounded-full", badge.color)}>
                             {badge.label}
@@ -269,20 +269,20 @@ export default function RevenueShareDisbursementPanel({
             </div>
 
             {selectedRow && (
-              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-                <p className="text-sm font-semibold text-gray-900 mb-2">{t("account.revenueShareDisbursement.detailTitle")}</p>
+              <div className="px-6 py-4 border-t border-gray-200 bg-light">
+                <p className="text-sm font-semibold text-dark mb-2">{t("account.revenueShareDisbursement.detailTitle")}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mb-4">
                   <div>
                     <p className="text-gray-500">{t("account.revenueShareDisbursement.table.number")}</p>
-                    <p className="font-medium text-gray-900">{selectedRow.disbursementNumber}</p>
+                    <p className="font-medium text-dark">{selectedRow.disbursementNumber}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">{t("account.revenueShareDisbursement.table.status")}</p>
-                    <p className="font-medium text-gray-900">{(statusBadge[selectedRow.status] || statusBadge.draft).label}</p>
+                    <p className="font-medium text-dark">{(statusBadge[selectedRow.status] || statusBadge.draft).label}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">{t("account.revenueShareDisbursement.table.date")}</p>
-                    <p className="font-medium text-gray-900">{formatDateLong(selectedRow.createdAt)}</p>
+                    <p className="font-medium text-dark">{formatDateLong(selectedRow.createdAt)}</p>
                   </div>
                 </div>
 
@@ -306,15 +306,15 @@ export default function RevenueShareDisbursementPanel({
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-gray-500">{t("account.revenueShareDisbursement.recipientBank")}</p>
-                        <p className="font-medium text-gray-900">{selectedRow.recipientBankName || "-"}</p>
+                        <p className="font-medium text-dark">{selectedRow.recipientBankName || "-"}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">{t("account.revenueShareDisbursement.recipientAccount")}</p>
-                        <p className="font-medium text-gray-900">{selectedRow.recipientBankAccount || "-"}</p>
+                        <p className="font-medium text-dark">{selectedRow.recipientBankAccount || "-"}</p>
                       </div>
                       <div>
                         <p className="text-gray-500">{t("account.revenueShareDisbursement.transferredAmount")}</p>
-                        <p className="font-medium text-gray-900">{formatRupiahFull(selectedRow.transferredAmount ?? selectedRow.amount ?? 0)}</p>
+                        <p className="font-medium text-dark">{formatRupiahFull(selectedRow.transferredAmount ?? selectedRow.amount ?? 0)}</p>
                       </div>
                     </div>
 
@@ -351,7 +351,7 @@ export default function RevenueShareDisbursementPanel({
                     type="button"
                     onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                     disabled={page <= 1}
-                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-light"
                   >
                     {t("account.revenueShareDisbursement.previous")}
                   </button>
@@ -359,7 +359,7 @@ export default function RevenueShareDisbursementPanel({
                     type="button"
                     onClick={() => setPage((prev) => Math.min(pagination.totalPages, prev + 1))}
                     disabled={page >= pagination.totalPages}
-                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50"
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-light"
                   >
                     {t("account.revenueShareDisbursement.next")}
                   </button>
@@ -375,11 +375,11 @@ export default function RevenueShareDisbursementPanel({
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowFormModal(false)} />
           <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-xl border border-gray-200 p-6 space-y-5">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">{t("account.revenueShareDisbursement.modal.title")}</h3>
+              <h3 className="text-lg font-semibold text-dark">{t("account.revenueShareDisbursement.modal.title")}</h3>
               <button
                 type="button"
                 onClick={() => setShowFormModal(false)}
-                className="w-8 h-8 rounded-lg border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                className="w-8 h-8 rounded-lg border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-light"
               >
                 ×
               </button>
@@ -388,11 +388,11 @@ export default function RevenueShareDisbursementPanel({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700">{t("account.revenueShareDisbursement.modal.disbursementType")}</label>
-                <input value={disbursementTypeLabel} readOnly className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700" />
+                <input value={disbursementTypeLabel} readOnly className="mt-1 w-full bg-light border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700" />
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">{t("account.revenueShareDisbursement.modal.category")}</label>
-                <input value={categoryLabel} readOnly className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700" />
+                <input value={categoryLabel} readOnly className="mt-1 w-full bg-light border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700" />
               </div>
             </div>
 
@@ -402,7 +402,7 @@ export default function RevenueShareDisbursementPanel({
                 <input
                   readOnly
                   value={availabilityData?.sourceBank ? `${availabilityData.sourceBank.bankName} - ${availabilityData.sourceBank.accountNumber}` : t("account.revenueShareDisbursement.modal.sourceBankFallback")}
-                  className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
+                  className="mt-1 w-full bg-light border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
                 />
               </div>
               <div>
@@ -413,7 +413,7 @@ export default function RevenueShareDisbursementPanel({
                   max={maxAmount}
                   value={form.amount}
                   onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))}
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-dark focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
                 <p className="mt-1 text-xs text-gray-500">{t("account.revenueShareDisbursement.modal.maxAmount", { amount: formatRupiahFull(maxAmount) })}</p>
                 <p className="mt-0.5 text-xs text-gray-500">Minimal pencairan: {formatRupiahFull(MIN_WITHDRAWAL)}</p>
@@ -431,7 +431,7 @@ export default function RevenueShareDisbursementPanel({
                 <input
                   readOnly
                   value={availabilityData?.recipient?.name || "-"}
-                  className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
+                  className="mt-1 w-full bg-light border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
                 />
               </div>
               <div>
@@ -439,7 +439,7 @@ export default function RevenueShareDisbursementPanel({
                 <input
                   readOnly
                   value={availabilityData?.recipient?.contact || "-"}
-                  className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
+                  className="mt-1 w-full bg-light border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
                 />
               </div>
             </div>
@@ -450,7 +450,7 @@ export default function RevenueShareDisbursementPanel({
                 <input
                   readOnly
                   value={availabilityData?.recipient?.bankAccount?.bankName || "-"}
-                  className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
+                  className="mt-1 w-full bg-light border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
                 />
               </div>
               <div>
@@ -458,7 +458,7 @@ export default function RevenueShareDisbursementPanel({
                 <input
                   readOnly
                   value={availabilityData?.recipient?.bankAccount?.accountNumber || "-"}
-                  className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
+                  className="mt-1 w-full bg-light border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
                 />
               </div>
               <div>
@@ -466,7 +466,7 @@ export default function RevenueShareDisbursementPanel({
                 <input
                   readOnly
                   value={availabilityData?.recipient?.bankAccount?.accountHolderName || "-"}
-                  className="mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
+                  className="mt-1 w-full bg-light border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700"
                 />
               </div>
             </div>
@@ -477,7 +477,7 @@ export default function RevenueShareDisbursementPanel({
                 value={form.purpose}
                 onChange={(e) => setForm((prev) => ({ ...prev, purpose: e.target.value }))}
                 rows={2}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-dark focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder={t("account.revenueShareDisbursement.modal.purposePlaceholder")}
               />
             </div>
@@ -488,7 +488,7 @@ export default function RevenueShareDisbursementPanel({
                 value={form.notes}
                 onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
                 rows={2}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-dark focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder={t("account.revenueShareDisbursement.modal.notesPlaceholder")}
               />
             </div>
@@ -503,7 +503,7 @@ export default function RevenueShareDisbursementPanel({
               <button
                 type="button"
                 onClick={() => setShowFormModal(false)}
-                className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 text-gray-700 hover:bg-light"
               >
                 {t("account.revenueShareDisbursement.modal.cancel")}
               </button>

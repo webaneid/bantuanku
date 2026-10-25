@@ -100,12 +100,12 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
     <>
       <Header />
       <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Qurban', href: '/qurban' }, { label: 'Laporan' }]} />
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-light">
         <section className="py-10 bg-gradient-to-br from-accent-50 to-white border-b border-accent-100">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
-                <h1 className="section-title text-gray-900">Laporan Qurban Publik</h1>
+                <h1 className="section-title text-dark">Laporan Qurban Publik</h1>
                 <p className="section-description text-gray-600 mt-1">Ringkas, transparan, dan mudah dicek.</p>
               </div>
               <Link href="/qurban" className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-100">
@@ -128,7 +128,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
               {!hasFilter ? (
                 <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
                   <div className="text-4xl mb-4">🐄🐐</div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">Pilih Periode Terlebih Dahulu</h2>
+                  <h2 className="text-lg font-semibold text-dark mb-2">Pilih Periode Terlebih Dahulu</h2>
                   <p className="text-gray-500 text-sm">Silakan pilih periode qurban pada filter di atas untuk melihat laporan.</p>
                 </div>
               ) : (
@@ -140,7 +140,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
                         <div className="w-10 h-10 bg-info-100 rounded-lg flex items-center justify-center text-2xl">🐐</div>
                         <div>
                           <p className="text-sm text-gray-500">Total Kambing</p>
-                          <p className="text-2xl font-bold text-gray-900">{data.stats.totalGoats}</p>
+                          <p className="text-2xl font-bold text-dark">{data.stats.totalGoats}</p>
                         </div>
                       </div>
                     </div>
@@ -149,7 +149,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
                         <div className="w-10 h-10 bg-success-100 rounded-lg flex items-center justify-center text-2xl">🐄</div>
                         <div>
                           <p className="text-sm text-gray-500">Total Sapi</p>
-                          <p className="text-2xl font-bold text-gray-900">{data.stats.totalCows}</p>
+                          <p className="text-2xl font-bold text-dark">{data.stats.totalCows}</p>
                         </div>
                       </div>
                     </div>
@@ -161,7 +161,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
                       <Link
                         key={t.key}
                         href={buildTabHref(t.key)}
-                        className={`px-4 py-2 rounded-lg border whitespace-nowrap ${tab === t.key ? 'bg-accent-50 text-accent-700 border-accent-200' : 'text-gray-500 border-transparent hover:bg-gray-50'}`}
+                        className={`px-4 py-2 rounded-lg border whitespace-nowrap ${tab === t.key ? 'bg-accent-50 text-accent-700 border-accent-200' : 'text-gray-500 border-transparent hover:bg-light'}`}
                       >
                         {t.label}{t.count !== undefined ? ` (${t.count})` : ''}
                       </Link>
@@ -172,7 +172,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
                   <div className="bg-white border border-gray-200 rounded-xl overflow-hidden p-4">
                     {tab === 'penerimaan' && (
                       <>
-                        <h3 className="font-semibold text-gray-900 mb-4">
+                        <h3 className="font-semibold text-dark mb-4">
                           Tabel Penerimaan Qurban ({data.rows.length})
                         </h3>
                         <QurbanPenerimaanTable rows={data.rows} />
@@ -181,7 +181,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
 
                     {tab === 'penyaluran' && (
                       <>
-                        <h3 className="font-semibold text-gray-900 mb-4">
+                        <h3 className="font-semibold text-dark mb-4">
                           Tabel Penyaluran Qurban ({data.disbursements.length})
                         </h3>
                         <QurbanPenyaluranTable rows={data.disbursements} totalDisbursed={totalDisbursed} />
@@ -190,7 +190,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
 
                     {tab === 'penyembelihan' && (
                       <>
-                        <h3 className="font-semibold text-gray-900 mb-4">
+                        <h3 className="font-semibold text-dark mb-4">
                           Tabel Penyembelihan Qurban ({data.executions.length})
                         </h3>
                         <QurbanPenyembelihanTable rows={data.executions} />
@@ -199,7 +199,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
 
                     {tab === 'kegiatan' && (
                       <>
-                        <h3 className="font-semibold text-gray-900 mb-4">
+                        <h3 className="font-semibold text-dark mb-4">
                           Tabel Laporan Kegiatan Qurban ({data.activities.length})
                         </h3>
                         <QurbanActivityTable activities={data.activities} />

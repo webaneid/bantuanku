@@ -106,12 +106,12 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-6">
           {/* Mobile: setor dulu (aksi utama), riwayat di bawah; desktop: riwayat kiri, setor kanan */}
           <section className="order-2 lg:order-1">
-            <h2 className="mb-3 text-base font-bold text-gray-900">{t('account.qurbanSavingsDetail.historyTitle')}</h2>
+            <h2 className="mb-3 text-base font-bold text-dark">{t('account.qurbanSavingsDetail.historyTitle')}</h2>
             <TransactionList transactions={transactions} />
           </section>
 
           <section className="order-1 lg:order-2">
-            <h2 className="mb-3 text-base font-bold text-gray-900">{t('account.qurbanSavingsDetail.depositTitle')}</h2>
+            <h2 className="mb-3 text-base font-bold text-dark">{t('account.qurbanSavingsDetail.depositTitle')}</h2>
             <div className="rounded-2xl bg-white p-4 shadow-sm lg:p-5">
               <DepositForm
                 savingsId={savings.id}

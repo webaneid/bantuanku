@@ -143,7 +143,7 @@ export default function ZakatPenghasilanPage() {
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gray-50 py-8 md:py-12">
+        <main className="min-h-screen bg-light py-8 md:py-12">
           <div className="container mx-auto px-4">
             <div className="text-center py-16">
               <div className="animate-spin w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto"></div>
@@ -167,7 +167,7 @@ export default function ZakatPenghasilanPage() {
         displayImageOriginal={displayImageOriginal}
         owner={displayMeta?.owner}
       />
-      <main className="min-h-screen bg-gray-50 py-4 lg:py-8">
+      <main className="min-h-screen bg-light py-4 lg:py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             {/* Desktop Feature Image */}
@@ -191,7 +191,7 @@ export default function ZakatPenghasilanPage() {
               <ZakatOwnerInfo owner={displayMeta?.owner} />
               {/* Header */}
               <div className="mb-6">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                <h2 className="text-2xl md:text-3xl font-bold text-dark mb-2">
                   {displayName}
                 </h2>
                 {displayDescription && (
@@ -204,7 +204,7 @@ export default function ZakatPenghasilanPage() {
             </div>
 
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">{t('zakatCalculator.penghasilan.calculatorTitle')}</h2>
+              <h2 className="text-xl font-semibold text-dark">{t('zakatCalculator.penghasilan.calculatorTitle')}</h2>
             </div>
 
             {/* Calculator Form */}
@@ -289,10 +289,10 @@ export default function ZakatPenghasilanPage() {
                     </div>
 
                     {/* Net Income Preview */}
-                    <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="bg-light rounded-lg p-4">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-gray-700">{t('zakatCalculator.penghasilan.netIncome')}</span>
-                        <span className="text-lg font-bold text-gray-900">{formatCurrency(netIncome)}</span>
+                        <span className="text-lg font-bold text-dark">{formatCurrency(netIncome)}</span>
                       </div>
                     </div>
 
@@ -311,18 +311,18 @@ export default function ZakatPenghasilanPage() {
                 <div>
                   {result ? (
                     <div className="bg-white rounded-xl border border-gray-200 p-6">
-                      <h2 className="text-xl font-bold text-gray-900 mb-6">
+                      <h2 className="text-xl font-bold text-dark mb-6">
                         {t('zakatCalculator.common.calculationResult')}
                       </h2>
 
                       <div className="space-y-4 mb-6">
                         <div className="flex justify-between items-center pb-3 border-b border-gray-200">
                           <span className="text-gray-600">{t('zakatCalculator.penghasilan.netIncome')}</span>
-                          <span className="font-semibold text-gray-900">{formatCurrency(result.totalAssets)}</span>
+                          <span className="font-semibold text-dark">{formatCurrency(result.totalAssets)}</span>
                         </div>
                         <div className="flex justify-between items-center pb-3 border-b border-gray-200">
                           <span className="text-gray-600">{t('zakatCalculator.penghasilan.nisabMonthly')}</span>
-                          <span className="font-semibold text-gray-900">{formatCurrency(result.nisabValue)}</span>
+                          <span className="font-semibold text-dark">{formatCurrency(result.nisabValue)}</span>
                         </div>
                         <div className="flex justify-between items-center pb-3 border-b border-gray-200">
                           <span className="text-gray-600">{t('zakatCalculator.common.status')}</span>
@@ -332,7 +332,7 @@ export default function ZakatPenghasilanPage() {
                         </div>
                         {result.isWajib && (
                           <div className="flex justify-between items-center pt-2">
-                            <span className="text-lg font-bold text-gray-900">{t('zakatCalculator.common.zakatToPay')}</span>
+                            <span className="text-lg font-bold text-dark">{t('zakatCalculator.common.zakatToPay')}</span>
                             <span className="text-2xl font-bold text-primary-600">
                               {formatCurrency(result.zakatAmount)}
                             </span>
@@ -402,7 +402,7 @@ export default function ZakatPenghasilanPage() {
 
             {relatedZakat.length > 0 && (
               <section className="mt-10">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('zakatCalculator.common.otherZakat')}</h2>
+                <h2 className="text-xl font-semibold text-dark mb-4">{t('zakatCalculator.common.otherZakat')}</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-[0.4rem] lg:gap-4">
                   {relatedZakat.map((item) => (
                     <ZakatCard

@@ -18,9 +18,9 @@ export default function SavingsListPage() {
   const [savingsList, setSavingsList] = useState<QurbanSavings[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const statusConfig = {
-    active: { label: t("account.qurbanSavings.status.active"), color: "bg-blue-50 text-blue-700 border-blue-200" },
+    active: { label: t("account.qurbanSavings.status.active"), color: "bg-info-50 text-info-700 border-info-200" },
     completed: { label: t("account.qurbanSavings.status.completed"), color: "bg-success-50 text-success-700 border-success-200" },
-    converted: { label: t("account.qurbanSavings.status.converted"), color: "bg-purple-50 text-purple-700 border-purple-200" },
+    converted: { label: t("account.qurbanSavings.status.converted"), color: "bg-info-50 text-info-700 border-info-200" },
     cancelled: { label: t("account.qurbanSavings.status.cancelled"), color: "bg-danger-50 text-danger-700 border-danger-200" },
   };
 
@@ -77,7 +77,7 @@ export default function SavingsListPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-1">{t("account.qurbanSavings.emptyTitle")}</h3>
+            <h3 className="text-base font-semibold text-dark mb-1">{t("account.qurbanSavings.emptyTitle")}</h3>
             <p className="text-sm text-gray-500 mb-5">{t("account.qurbanSavings.emptyDesc")}</p>
             <Link
               href="/qurban"
@@ -92,7 +92,7 @@ export default function SavingsListPage() {
             <div className="hidden lg:block bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-light">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("account.qurbanSavings.table.savingsNumber")}</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t("account.qurbanSavings.table.package")}</th>
@@ -108,16 +108,16 @@ export default function SavingsListPage() {
                       const progress = (savings.currentAmount / savings.targetAmount) * 100;
 
                       return (
-                        <tr key={savings.id} className="hover:bg-gray-50">
+                        <tr key={savings.id} className="hover:bg-light">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{savings.savingsNumber}</div>
+                            <div className="text-sm font-medium text-dark">{savings.savingsNumber}</div>
                             <div className="text-sm text-gray-500">{savings.donorName}</div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900">{savings.targetPackage?.name || '-'}</div>
+                            <div className="text-sm text-dark">{savings.targetPackage?.name || '-'}</div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="text-sm font-semibold text-gray-900 mb-1">{formatRupiahFull(savings.currentAmount)}</div>
+                            <div className="text-sm font-semibold text-dark mb-1">{formatRupiahFull(savings.currentAmount)}</div>
                             <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
                               <div className="bg-primary-600 h-2 rounded-full transition-all" style={{ width: `${Math.min(progress, 100)}%` }} />
                             </div>
@@ -156,7 +156,7 @@ export default function SavingsListPage() {
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold leading-snug text-gray-900">{savings.targetPackage?.name || '-'}</p>
+                          <p className="text-sm font-semibold leading-snug text-dark">{savings.targetPackage?.name || '-'}</p>
                           <p className="mt-0.5 truncate text-xs text-gray-500">{savings.savingsNumber} · {savings.donorName}</p>
                         </div>
                         <span className={cn("flex-shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium", status.color)}>
@@ -165,7 +165,7 @@ export default function SavingsListPage() {
                       </div>
 
                       <div className="mt-4">
-                        <p className="text-lg font-bold text-gray-900">{formatRupiahFull(savings.currentAmount)}</p>
+                        <p className="text-lg font-bold text-dark">{formatRupiahFull(savings.currentAmount)}</p>
                         <div className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
                           <div className="h-full rounded-full bg-primary-600 transition-all" style={{ width: `${Math.min(progress, 100)}%` }} />
                         </div>

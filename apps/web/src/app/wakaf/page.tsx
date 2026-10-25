@@ -142,10 +142,10 @@ export default function WakafPage() {
 
       <main className="flex-1">
         {/* Page Header */}
-        <section className="py-12 bg-gradient-to-br from-violet-50 to-violet-100">
+        <section className="py-12 bg-gradient-to-br from-primary-50 to-primary-100">
           <div className="container mx-auto px-4">
             <div className="text-center max-w-3xl mx-auto">
-              <h1 className="section-title text-gray-900 mb-4">
+              <h1 className="section-title text-dark mb-4">
                 {pageTitle}
               </h1>
               <p className="section-description text-gray-600">
@@ -156,10 +156,10 @@ export default function WakafPage() {
         </section>
 
         {/* Programs Section */}
-        <section className="py-12 bg-gray-50">
+        <section className="py-12 bg-light">
           <div className="container">
             <div className="mb-8">
-              <h2 className="section-title text-gray-900">
+              <h2 className="section-title text-dark">
                 Program Wakaf
               </h2>
               <p className="section-description text-gray-600">
@@ -237,7 +237,7 @@ export default function WakafPage() {
                     <path d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-dark mb-2">
                   Belum Ada Program Wakaf
                 </h3>
                 <p className="text-gray-600">

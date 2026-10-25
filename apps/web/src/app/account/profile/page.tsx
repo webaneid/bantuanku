@@ -436,7 +436,7 @@ export default function ProfilePage() {
       <form onSubmit={handleSubmitProfile} className="space-y-6">
         {/* Basic Info Card */}
         <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">{t("account.profile.basicInfo")}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-dark mb-4 sm:mb-6">{t("account.profile.basicInfo")}</h2>
 
           <div className="space-y-5">
             <div>
@@ -459,38 +459,38 @@ export default function ProfilePage() {
                 type="email"
                 value={user?.email || ""}
                 disabled
-                className="bg-gray-50"
+                className="bg-light"
               />
               <p className="text-xs text-gray-500 mt-1">{t("account.profile.hints.emailImmutable")}</p>
             </div>
 
             <div>
-              <Label htmlFor="jobTitleId">{t("account.profile.labels.jobTitle")} <span className="text-red-500">*</span></Label>
+              <Label htmlFor="jobTitleId">{t("account.profile.labels.jobTitle")} <span className="text-danger-500">*</span></Label>
               <Autocomplete
                 options={jobTitleOptions}
                 value={String(profileData.jobTitleId ?? "")}
                 onChange={(value) => setProfileData(prev => ({ ...prev, jobTitleId: value ? Number(value) : null }))}
                 placeholder={t("account.profile.placeholders.jobTitle")}
               />
-              {!profileData.jobTitleId && <p className="text-xs text-red-500 mt-1">Wajib diisi</p>}
+              {!profileData.jobTitleId && <p className="text-xs text-danger-500 mt-1">Wajib diisi</p>}
             </div>
 
             <div>
-              <Label htmlFor="incomeRangeId">{t("account.profile.labels.incomeRange")} <span className="text-red-500">*</span></Label>
+              <Label htmlFor="incomeRangeId">{t("account.profile.labels.incomeRange")} <span className="text-danger-500">*</span></Label>
               <Autocomplete
                 options={incomeRangeOptions}
                 value={String(profileData.incomeRangeId ?? "")}
                 onChange={(value) => setProfileData(prev => ({ ...prev, incomeRangeId: value ? Number(value) : null }))}
                 placeholder={t("account.profile.placeholders.incomeRange")}
               />
-              {!profileData.incomeRangeId && <p className="text-xs text-red-500 mt-1">Wajib diisi</p>}
+              {!profileData.incomeRangeId && <p className="text-xs text-danger-500 mt-1">Wajib diisi</p>}
             </div>
           </div>
         </div>
 
         {/* Personal Info Card */}
         <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">{t("account.profile.personalInfo")}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-dark mb-4 sm:mb-6">{t("account.profile.personalInfo")}</h2>
 
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -544,19 +544,19 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <Label htmlFor="gender">{t("account.profile.labels.gender")} <span className="text-red-500">*</span></Label>
+                <Label htmlFor="gender">{t("account.profile.labels.gender")} <span className="text-danger-500">*</span></Label>
                 <select
                   id="gender"
                   name="gender"
                   value={profileData.gender}
                   onChange={handleChange}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${!profileData.gender ? "border-red-300" : "border-gray-300"}`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${!profileData.gender ? "border-danger-300" : "border-gray-300"}`}
                 >
                   <option value="">{t("account.profile.placeholders.gender")}</option>
                   <option value="laki-laki">Laki-laki</option>
                   <option value="perempuan">Perempuan</option>
                 </select>
-                {!profileData.gender && <p className="text-xs text-red-500 mt-1">Wajib diisi</p>}
+                {!profileData.gender && <p className="text-xs text-danger-500 mt-1">Wajib diisi</p>}
               </div>
             </div>
           </div>
@@ -564,7 +564,7 @@ export default function ProfilePage() {
 
         {/* Contact Info Card */}
         <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">{t("account.profile.contactInfo")}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-dark mb-4 sm:mb-6">{t("account.profile.contactInfo")}</h2>
 
           <div className="space-y-5">
             <div>
@@ -607,7 +607,7 @@ export default function ProfilePage() {
 
         {/* Address Card */}
         <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
-          <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">{t("account.profile.address")}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-dark mb-4 sm:mb-6">{t("account.profile.address")}</h2>
 
           <div className="space-y-5">
             <div>
@@ -625,14 +625,14 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <Label htmlFor="provinceCode">{t("account.profile.labels.province")} <span className="text-red-500">*</span></Label>
+                <Label htmlFor="provinceCode">{t("account.profile.labels.province")} <span className="text-danger-500">*</span></Label>
                 <Autocomplete
                   options={provinceOptions}
                   value={profileData.provinceCode}
                   onChange={handleProvinceChange}
                   placeholder={t("account.profile.placeholders.province")}
                 />
-                {!profileData.provinceCode && <p className="text-xs text-red-500 mt-1">Wajib diisi</p>}
+                {!profileData.provinceCode && <p className="text-xs text-danger-500 mt-1">Wajib diisi</p>}
               </div>
 
               <div>
@@ -674,7 +674,7 @@ export default function ProfilePage() {
         {/* Bank Accounts Card */}
         <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-900">{t("account.profile.bankAccounts")}</h2>
+            <h2 className="text-lg font-bold text-dark">{t("account.profile.bankAccounts")}</h2>
             <Button type="button" onClick={addBankAccount} size="sm" variant="outline">
               {t("account.profile.addBankAccount")}
             </Button>
@@ -695,7 +695,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => removeBankAccount(index)}
-                      className="text-sm text-red-600 hover:text-red-700"
+                      className="text-sm text-danger-600 hover:text-danger-700"
                     >
                       {t("account.profile.delete")}
                     </button>
@@ -751,7 +751,7 @@ export default function ProfilePage() {
 
       {/* WhatsApp Preferences Card */}
       <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-1">Notifikasi WhatsApp</h2>
+        <h2 className="text-lg font-bold text-dark mb-1">Notifikasi WhatsApp</h2>
         <p className="text-sm text-gray-500 mb-5">
           Atur apakah Anda ingin menerima informasi program, kampanye, dan pesan kebaikan dari kami via WhatsApp.
         </p>
@@ -780,7 +780,7 @@ export default function ProfilePage() {
             <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${!waOptOut ? "translate-x-5" : "translate-x-0"}`} />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-900">{!waOptOut ? "Aktif" : "Nonaktif"}</p>
+            <p className="text-sm font-medium text-dark">{!waOptOut ? "Aktif" : "Nonaktif"}</p>
             <p className="text-xs text-gray-500">
               {!waOptOut
                 ? "Anda akan menerima pesan info program & kebaikan dari kami"
@@ -792,7 +792,7 @@ export default function ProfilePage() {
 
       {/* Change Password Card */}
       <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
-        <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-4 sm:mb-6">{t("account.profile.changePassword")}</h2>
+        <h2 className="text-base sm:text-lg font-bold text-dark mb-4 sm:mb-6">{t("account.profile.changePassword")}</h2>
 
         <form onSubmit={handleSubmitPassword} className="space-y-5">
           <div>

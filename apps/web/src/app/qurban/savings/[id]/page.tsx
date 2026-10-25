@@ -94,7 +94,7 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('account.qurbanSavingsDetail.title')}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-dark">{t('account.qurbanSavingsDetail.title')}</h1>
         <p className="text-sm text-gray-600 mt-1">{savings.savingsNumber}</p>
       </div>
 

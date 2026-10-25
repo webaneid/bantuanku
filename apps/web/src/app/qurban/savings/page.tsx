@@ -51,7 +51,7 @@ export default function SavingsListPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t("account.qurbanSavings.listTitle")}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-dark">{t("account.qurbanSavings.listTitle")}</h1>
           <p className="text-sm text-gray-600 mt-1">
             {t("account.qurbanSavings.totalCount", { count: savingsList.length })}
           </p>
@@ -76,7 +76,7 @@ export default function SavingsListPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
-          <h3 className="text-base font-medium text-gray-900 mb-2">{t("account.qurbanSavings.emptyTitle")}</h3>
+          <h3 className="text-base font-medium text-dark mb-2">{t("account.qurbanSavings.emptyTitle")}</h3>
           <p className="text-sm text-gray-500 mb-6">{t("account.qurbanSavings.emptyDesc")}</p>
           <Link
             href="/qurban/savings/new"
@@ -90,7 +90,7 @@ export default function SavingsListPage() {
           {/* Desktop Table */}
           <div className="hidden sm:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-light">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t("account.qurbanSavings.table.savingsNumber")}
@@ -118,18 +118,18 @@ export default function SavingsListPage() {
                   const progress = (savings.currentAmount / savings.targetAmount) * 100;
 
                   return (
-                    <tr key={savings.id} className="hover:bg-gray-50">
+                    <tr key={savings.id} className="hover:bg-light">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{savings.savingsNumber}</div>
+                        <div className="text-sm font-medium text-dark">{savings.savingsNumber}</div>
                         <div className="text-sm text-gray-500">{savings.donorName}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-dark">
                           {savings.targetPackage?.name || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-semibold text-gray-900 mb-1">
+                        <div className="text-sm font-semibold text-dark mb-1">
                           {formatRupiahFull(savings.currentAmount)}
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
@@ -179,12 +179,12 @@ export default function SavingsListPage() {
                 <Link
                   key={savings.id}
                   href={`/qurban/savings/${savings.id}`}
-                  className="block p-4 hover:bg-gray-50"
+                  className="block p-4 hover:bg-light"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
+                        <p className="text-sm font-semibold text-dark truncate">
                           {savings.savingsNumber}
                         </p>
                         <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border", status.color)}>

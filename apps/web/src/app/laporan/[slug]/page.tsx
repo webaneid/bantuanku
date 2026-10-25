@@ -210,7 +210,7 @@ export default async function LaporanDetailPage({ params }: PageProps) {
       />
       <div className="min-h-screen flex flex-col">
         <Header hideOnMobile />
-        <main className="flex-1 bg-gray-50">
+        <main className="flex-1 bg-light">
           <div className="hidden lg:block">
             <Breadcrumb
               items={[
@@ -233,14 +233,14 @@ export default async function LaporanDetailPage({ params }: PageProps) {
             )}
             <div className="bg-white px-4 py-4 space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-sm font-medium">
+                <span className="px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm font-medium">
                   {getReportReferenceLabel(report.referenceType)}
                 </span>
                 <span className="text-sm text-gray-500">{formatReportDate(report.activityDate)}</span>
               </div>
-              <h1 className="text-xl font-bold text-gray-900">{report.title}</h1>
+              <h1 className="text-xl font-bold text-dark">{report.title}</h1>
               {report.referenceName && (
-                <p className="text-base text-emerald-600 font-medium">{report.referenceName}</p>
+                <p className="text-base text-primary-600 font-medium">{report.referenceName}</p>
               )}
             </div>
           </div>
@@ -255,7 +255,7 @@ export default async function LaporanDetailPage({ params }: PageProps) {
                 <div className="space-y-4 sticky top-24 -mx-4 sm:-mx-6 md:mx-0">
                   <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                     <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                      <h2 className="text-xl font-semibold text-gray-900">Program Lainnya</h2>
+                      <h2 className="text-xl font-semibold text-dark">Program Lainnya</h2>
                       <Link href="/program" aria-label="Lihat semua program" className="text-gray-700 hover:text-primary-600">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-6-6 6 6-6 6" />
@@ -273,7 +273,7 @@ export default async function LaporanDetailPage({ params }: PageProps) {
                               <img src={imageSquare} alt={item.title} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
                               <div className="min-w-0">
                                 <p className="text-sm text-gray-500 capitalize line-clamp-1">{item.categoryName || item.category || 'Program'}</p>
-                                <h3 className="text-base font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-primary-600">{item.title}</h3>
+                                <h3 className="text-base font-medium text-dark leading-snug line-clamp-2 group-hover:text-primary-600">{item.title}</h3>
                               </div>
                             </Link>
                           );
@@ -284,7 +284,7 @@ export default async function LaporanDetailPage({ params }: PageProps) {
 
                   <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                     <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                      <h2 className="text-xl font-semibold text-gray-900">Zakat Lainnya</h2>
+                      <h2 className="text-xl font-semibold text-dark">Zakat Lainnya</h2>
                       <Link href="/zakat" aria-label="Lihat semua zakat" className="text-gray-700 hover:text-primary-600">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-6-6 6 6-6 6" />
@@ -302,7 +302,7 @@ export default async function LaporanDetailPage({ params }: PageProps) {
                               <img src={imageSquare} alt={item.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
                               <div className="min-w-0">
                                 <p className="text-sm text-gray-500 line-clamp-1">{getZakatTypeLabel(item.calculatorType)}</p>
-                                <h3 className="text-base font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-primary-600">{item.name}</h3>
+                                <h3 className="text-base font-medium text-dark leading-snug line-clamp-2 group-hover:text-primary-600">{item.name}</h3>
                               </div>
                             </Link>
                           );
@@ -313,7 +313,7 @@ export default async function LaporanDetailPage({ params }: PageProps) {
 
                   <div className="bg-white shadow-sm rounded-none md:rounded-lg px-[15px] py-4 md:p-4">
                     <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                      <h2 className="text-xl font-semibold text-gray-900">Qurban Lainnya</h2>
+                      <h2 className="text-xl font-semibold text-dark">Qurban Lainnya</h2>
                       <Link href="/qurban" aria-label="Lihat semua qurban" className="text-gray-700 hover:text-primary-600">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-6-6 6 6-6 6" />
@@ -331,7 +331,7 @@ export default async function LaporanDetailPage({ params }: PageProps) {
                               <img src={imageSquare} alt={item.name} className="w-16 h-16 rounded-lg object-cover flex-shrink-0" />
                               <div className="min-w-0">
                                 <p className="text-sm text-gray-500 line-clamp-1">{getAnimalTypeLabel(item.animalType || '')}</p>
-                                <h3 className="text-base font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-primary-600">{item.name}</h3>
+                                <h3 className="text-base font-medium text-dark leading-snug line-clamp-2 group-hover:text-primary-600">{item.name}</h3>
                               </div>
                             </Link>
                           );

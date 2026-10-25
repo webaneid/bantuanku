@@ -38,9 +38,9 @@ export function VerifyEmailNotice({ email, sendStatus }: VerifyEmailNoticeProps)
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       </div>
-      <h2 className="text-xl font-bold text-gray-900">{t('auth.verifyEmail.title')}</h2>
+      <h2 className="text-xl font-bold text-dark">{t('auth.verifyEmail.title')}</h2>
       <p className="text-gray-600">
-        {t('auth.verifyEmail.sentTo')} <span className="font-semibold text-gray-900 break-all">{email}</span>
+        {t('auth.verifyEmail.sentTo')} <span className="font-semibold text-dark break-all">{email}</span>
       </p>
       <p className="text-sm text-gray-500">{t('auth.verifyEmail.instruction')}</p>
       {sendStatus === 'failed' && (

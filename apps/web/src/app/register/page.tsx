@@ -198,21 +198,21 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700 px-4 py-8">
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">{t("auth.register.title")}</h1>
+          <h1 className="text-3xl font-bold text-dark">{t("auth.register.title")}</h1>
           <p className="text-gray-600 mt-2">{t("auth.register.subtitle")}</p>
         </div>
 
         {showLoginPrompt && (
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="mb-6 p-4 bg-warning-50 border border-warning-200 rounded-lg">
             <div className="flex items-start">
-              <svg className="w-5 h-5 text-yellow-600 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-5 h-5 text-warning-600 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-yellow-800 mb-1">
+                <h3 className="text-sm font-semibold text-warning-800 mb-1">
                   {t("auth.register.accountExistsTitle")}
                 </h3>
-                <p className="text-sm text-yellow-700 mb-3">
+                <p className="text-sm text-warning-700 mb-3">
                   {t("auth.register.accountExistsDesc")}
                 </p>
                 <Link href="/login" className="inline-block text-sm font-medium text-primary-600 hover:text-primary-700">
@@ -226,7 +226,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <Label htmlFor="email">
-              {t("auth.register.email")} <span className="text-red-500">*</span>
+              {t("auth.register.email")} <span className="text-danger-500">*</span>
             </Label>
             <Input
               id="email"
@@ -243,7 +243,7 @@ export default function RegisterPage() {
 
           <div>
             <Label htmlFor="phone">
-              {t("auth.register.phone")} <span className="text-red-500">*</span>
+              {t("auth.register.phone")} <span className="text-danger-500">*</span>
             </Label>
             <Input
               id="phone"
@@ -256,13 +256,13 @@ export default function RegisterPage() {
               disabled={showLoginPrompt}
             />
             {isChecking && (
-              <p className="text-xs text-blue-600 mt-1">{t("auth.register.checkingData")}</p>
+              <p className="text-xs text-info-600 mt-1">{t("auth.register.checkingData")}</p>
             )}
           </div>
 
           <div>
             <Label htmlFor="name">
-              {t("auth.register.fullName")} <span className="text-red-500">*</span>
+              {t("auth.register.fullName")} <span className="text-danger-500">*</span>
             </Label>
             <Input
               id="name"
@@ -275,13 +275,13 @@ export default function RegisterPage() {
               disabled={showLoginPrompt}
             />
             {isAutoFilled && (
-              <p className="text-xs text-green-600 mt-1">{t("auth.register.autoFilledName")}</p>
+              <p className="text-xs text-success-600 mt-1">{t("auth.register.autoFilledName")}</p>
             )}
           </div>
 
           <div>
             <Label htmlFor="whatsappNumber">
-              {t("auth.register.whatsapp")} <span className="text-red-500">*</span>
+              {t("auth.register.whatsapp")} <span className="text-danger-500">*</span>
             </Label>
             <div className="space-y-2">
               <div className="flex items-center gap-2 mb-2">
@@ -313,7 +313,7 @@ export default function RegisterPage() {
 
           <div>
             <Label htmlFor="password">
-              {t("auth.register.password")} <span className="text-red-500">*</span>
+              {t("auth.register.password")} <span className="text-danger-500">*</span>
             </Label>
             <Input
               id="password"
@@ -329,7 +329,7 @@ export default function RegisterPage() {
 
           <div>
             <Label htmlFor="confirmPassword">
-              {t("auth.register.confirmPassword")} <span className="text-red-500">*</span>
+              {t("auth.register.confirmPassword")} <span className="text-danger-500">*</span>
             </Label>
             <Input
               id="confirmPassword"

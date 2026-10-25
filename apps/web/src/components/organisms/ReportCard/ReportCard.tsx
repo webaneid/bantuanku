@@ -61,11 +61,11 @@ export function ReportCard({ report }: ReportCardProps) {
 
         {/* Content */}
         <div className="min-w-0 md:p-4 md:space-y-2">
-          <h3 className="text-base font-semibold leading-snug text-gray-900 line-clamp-2 group-hover:text-emerald-600 transition-colors">
+          <h3 className="text-base font-semibold leading-snug text-dark line-clamp-2 group-hover:text-primary-600 transition-colors">
             {report.title}
           </h3>
           {report.referenceName && (
-            <p className="hidden md:block text-sm text-emerald-600 font-medium truncate">{report.referenceName}</p>
+            <p className="hidden md:block text-sm text-primary-600 font-medium truncate">{report.referenceName}</p>
           )}
           <p className="hidden md:block text-sm text-gray-500 line-clamp-2">{stripReportHtml(report.description)}</p>
           <div className="flex items-center gap-1.5 md:gap-3 text-xs text-gray-500 md:text-gray-400 mt-1 md:mt-0 md:pt-1">

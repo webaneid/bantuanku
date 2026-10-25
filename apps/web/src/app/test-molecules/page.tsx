@@ -17,10 +17,10 @@ export default function TestMoleculesPage() {
   const [category, setCategory] = useState('');
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-light py-12">
       <div className="container mx-auto">
         <header className="mb-12 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold text-dark mb-4">
             Molecule Components Test
           </h1>
           <p className="text-lg text-gray-600">
@@ -31,7 +31,7 @@ export default function TestMoleculesPage() {
         <div className="space-y-12">
           {/* FormField Components */}
           <section className="bg-white rounded-xl shadow-sm p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Form Fields</h2>
+            <h2 className="text-2xl font-bold text-dark mb-6">Form Fields</h2>
 
             <div className="space-y-6 max-w-2xl">
               <InputField
@@ -77,7 +77,7 @@ export default function TestMoleculesPage() {
 
           {/* ProgressBar Component */}
           <section className="bg-white rounded-xl shadow-sm p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Progress Bar</h2>
+            <h2 className="text-2xl font-bold text-dark mb-6">Progress Bar</h2>
 
             <div className="space-y-8">
               <div>
@@ -120,7 +120,7 @@ export default function TestMoleculesPage() {
 
           {/* AmountSelector Component */}
           <section className="bg-white rounded-xl shadow-sm p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Amount Selector</h2>
+            <h2 className="text-2xl font-bold text-dark mb-6">Amount Selector</h2>
 
             <div className="space-y-8">
               <div>
@@ -156,7 +156,7 @@ export default function TestMoleculesPage() {
 
           {/* SearchBox Component */}
           <section className="bg-white rounded-xl shadow-sm p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Search Box</h2>
+            <h2 className="text-2xl font-bold text-dark mb-6">Search Box</h2>
 
             <div className="space-y-8">
               <div>
@@ -195,7 +195,7 @@ export default function TestMoleculesPage() {
 
           {/* ShareButtons Component */}
           <section className="bg-white rounded-xl shadow-sm p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Share Buttons</h2>
+            <h2 className="text-2xl font-bold text-dark mb-6">Share Buttons</h2>
 
             <div className="space-y-8">
               <div>
@@ -268,7 +268,7 @@ export default function TestMoleculesPage() {
 
           {/* QuantitySelector Component */}
           <section className="bg-white rounded-xl shadow-sm p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Quantity Selector</h2>
+            <h2 className="text-2xl font-bold text-dark mb-6">Quantity Selector</h2>
 
             <div className="space-y-8">
               <div>
@@ -344,7 +344,7 @@ export default function TestMoleculesPage() {
 
           {/* Combined Example */}
           <section className="bg-white rounded-xl shadow-sm p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <h2 className="text-2xl font-bold text-dark mb-6">
               Combined Example: Donation Form
             </h2>
 

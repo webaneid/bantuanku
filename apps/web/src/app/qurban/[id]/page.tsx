@@ -294,7 +294,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
       />
       <Header hideOnMobile />
 
-      <main className="flex-1 bg-gray-50">
+      <main className="flex-1 bg-light">
         {/* Breadcrumb — desktop only */}
         <div className="hidden lg:block">
           <Breadcrumb items={[
@@ -327,7 +327,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
 
         {/* Mobile: Title + Price + Stock info */}
         <div className="lg:hidden bg-white px-4 py-4 space-y-3">
-          <h1 className="text-xl font-bold text-gray-900">{qurbanPackage.name}</h1>
+          <h1 className="text-xl font-bold text-dark">{qurbanPackage.name}</h1>
           <div className="text-2xl font-bold text-primary-600 mono">
             Rp {(qurbanPackage.price || 0).toLocaleString('id-ID')}
           </div>
@@ -336,11 +336,11 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
               ? t('qurbanDetail.sidebar.pricePer', { unit: t('qurbanDetail.sidebar.unit.animal') })
               : t('qurbanDetail.sidebar.pricePer', { unit: t('qurbanDetail.sidebar.unit.slot') })}
           </div>
-          <div className="p-3 bg-gray-50 rounded-lg">
+          <div className="p-3 bg-light rounded-lg">
             {qurbanPackage.packageType === 'individual' ? (
               <div className="text-sm">
                 <span className="text-gray-600">{t('qurbanDetail.sidebar.stock.available')}</span>{' '}
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-dark">
                   {t('qurbanDetail.sidebar.stock.value', {
                     remaining: qurbanPackage.stock - qurbanPackage.stockSold,
                     total: qurbanPackage.stock,
@@ -351,13 +351,13 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
               <div className="text-sm space-y-1">
                 <div>
                   <span className="text-gray-600">{t('qurbanDetail.sidebar.slot.available')}</span>{' '}
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-dark">
                     {t('qurbanDetail.sidebar.slot.value', { count: qurbanPackage.availableSlots })}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-600">{t('qurbanDetail.sidebar.slot.maxPerAnimal')}</span>{' '}
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-dark">
                     {t('qurbanDetail.sidebar.slot.maxValue', { count: qurbanPackage.maxSlots || 0 })}
                   </span>
                 </div>
@@ -408,7 +408,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
                             className="w-10 h-10 object-contain rounded-lg"
                           />
                         )}
-                        <span className="text-sm font-medium text-gray-900">{ownerName}</span>
+                        <span className="text-sm font-medium text-dark">{ownerName}</span>
                       </div>
                     )}
 
@@ -416,11 +416,11 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
                     <div className="rounded-lg border border-gray-200 p-3 space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">{t('qurbanDetail.tabs.labels.animalType')}</span>
-                        <span className="font-medium text-gray-900">{animalTypeLabel}</span>
+                        <span className="font-medium text-dark">{animalTypeLabel}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">{t('qurbanDetail.tabs.labels.packageType')}</span>
-                        <span className="font-medium text-gray-900">
+                        <span className="font-medium text-dark">
                           {qurbanPackage.packageType === 'individual'
                             ? t('qurbanDetail.tabs.values.packageIndividual')
                             : t('qurbanDetail.tabs.values.packageShared')}
@@ -428,7 +428,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">{t('qurbanDetail.tabs.labels.period')}</span>
-                        <span className="font-medium text-gray-900">{qurbanPackage.periodName || '-'}</span>
+                        <span className="font-medium text-dark">{qurbanPackage.periodName || '-'}</span>
                       </div>
                     </div>
                   </div>
@@ -470,7 +470,7 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
           {relatedQurbanPackages.length > 0 && (
             <section className="mt-10">
               <div className="mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">{t('qurbanDetail.related.title')}</h2>
+                <h2 className="text-2xl font-bold text-dark">{t('qurbanDetail.related.title')}</h2>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {relatedQurbanPackages.map((pkg) => {

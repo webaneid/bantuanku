@@ -74,7 +74,7 @@ export default function ZakatConfirmModal({
 
       <ConfirmModalBlock tone="neutral" className="mb-6">
         <p className="text-sm text-gray-600 mb-1">{t('zakatCalculator.confirm.typeLabel')}</p>
-        <p className="font-semibold text-gray-900" style={{ fontSize: '15px' }}>
+        <p className="font-semibold text-dark" style={{ fontSize: '15px' }}>
           {zakatName}
         </p>
         {quantity && pricePerUnit && (

@@ -13,9 +13,9 @@ export const panduanUploadGambarDoc: DocumentationPage = {
             heading: "Ukuran & Rasio Gambar Ideal",
             bodyHtml: `
                 <p>Saat Anda mengunggah gambar utama untuk berbagai modul (<strong>Campaign, Zakat, Qurban, maupun Halaman/Page</strong>), sangat penting untuk memastikan ukuran dan rasionya sudah sesuai agar tampilan website tetap rapi dan profesional.</p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-4">
-                    <h4 className="font-semibold text-blue-800 mb-2">Penting Diingat:</h4>
-                    <ul className="list-disc pl-5 space-y-1 text-blue-900">
+                <div className="bg-info-50 border border-info-200 rounded-lg p-4 my-4">
+                    <h4 className="font-semibold text-info-800 mb-2">Penting Diingat:</h4>
+                    <ul className="list-disc pl-5 space-y-1 text-info-900">
                         <li><strong>Ukuran Default:</strong> 900 x 498 pixel</li>
                         <li><strong>Rasio:</strong> ± 16:9 (Landscape / Mendatar)</li>
                         <li><strong>Posisi Objek:</strong> Taruh objek penting/wajah/teks di bagian tengah gambar.</li>
@@ -54,8 +54,8 @@ export const panduanUploadGambarDoc: DocumentationPage = {
                     </li>
                     <li>Proses pemotongan menggunakan mode <strong>Cover</strong>, yang artinya gambar akan menutupi seluruh area target. Jika rasio gambar awal tidak sesuai, bagian tepi yang berlebih akan dipangkas.</li>
                 </ol>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 my-4">
-                    <p className="text-sm text-yellow-800">
+                <div className="bg-warning-50 border border-warning-200 rounded-lg p-3 my-4">
+                    <p className="text-sm text-warning-800">
                         <strong> Pengecualian:</strong> Untuk kategori <strong>Financial</strong> (seperti upload Bukti Transfer manual), sistem tidak akan melakukan pemotongan/crop sama sekali untuk menjaga agar bukti pembayaran (nominal dan rekening) tetap terbaca utuh.
                     </p>
                 </div>

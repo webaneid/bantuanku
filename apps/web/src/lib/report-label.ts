@@ -26,11 +26,11 @@ export function formatReportDateShort(dateString: string) {
 
 export function getReportReferenceColor(type: string) {
   switch (type) {
-    case 'campaign': return 'bg-blue-50 text-blue-700';
+    case 'campaign': return 'bg-info-50 text-info-700';
     case 'zakat_period':
-    case 'zakat_disbursement': return 'bg-emerald-50 text-emerald-700';
-    case 'qurban_period': return 'bg-amber-50 text-amber-700';
-    default: return 'bg-gray-50 text-gray-700';
+    case 'zakat_disbursement': return 'bg-primary-50 text-primary-700';
+    case 'qurban_period': return 'bg-warning-50 text-warning-700';
+    default: return 'bg-light text-gray-700';
   }
 }
 

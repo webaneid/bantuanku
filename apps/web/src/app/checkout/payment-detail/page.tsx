@@ -360,7 +360,7 @@ export default function PaymentDetailPage() {
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gray-50 py-8">
+        <main className="min-h-screen bg-light py-8">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto">
               <div className="animate-pulse space-y-4">
@@ -382,12 +382,12 @@ export default function PaymentDetailPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 py-8 pb-24 lg:pb-8">
+      <main className="min-h-screen bg-light py-8 pb-24 lg:pb-8">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             {/* Header */}
             <div className="mb-8">
-              <h1 className="section-title text-gray-900 mb-2">
+              <h1 className="section-title text-dark mb-2">
                 {t('checkout.paymentDetail.title')}
               </h1>
               <p className="text-gray-600" style={{ fontSize: '15px' }}>
@@ -409,7 +409,7 @@ export default function PaymentDetailPage() {
                 {/* Method Selection */}
                 {availableMethods.length > 1 && (
                   <div className="bg-white rounded-lg shadow-sm p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>
+                    <h3 className="font-semibold text-dark mb-4" style={{ fontSize: '1.1rem' }}>
                       {isBankTransfer
                         ? t('checkout.paymentDetail.selectAccount')
                         : t('checkout.paymentDetail.selectQr')}
@@ -425,7 +425,7 @@ export default function PaymentDetailPage() {
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <div className="font-semibold text-gray-900">{method.name}</div>
+                          <div className="font-semibold text-dark">{method.name}</div>
                           {isBankTransfer && method.details?.accountName && (
                             <div className="text-sm text-gray-600 mt-1">
                               {t('checkout.paymentDetail.accountName')}: {method.details.accountName}
@@ -445,7 +445,7 @@ export default function PaymentDetailPage() {
                 {/* Selected Method Details */}
                 {selectedMethod && (
                   <div className="bg-white rounded-lg shadow-sm p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>
+                    <h3 className="font-semibold text-dark mb-4" style={{ fontSize: '1.1rem' }}>
                       {isBankTransfer
                         ? t('checkout.paymentDetail.bankAccountDetail')
                         : t('checkout.paymentDetail.qrisDetail')}
@@ -455,14 +455,14 @@ export default function PaymentDetailPage() {
                       <div className="space-y-4">
                         <div>
                           <label className="text-sm text-gray-600">{t('checkout.paymentDetail.bank')}</label>
-                          <p className="font-semibold text-gray-900 text-lg">
+                          <p className="font-semibold text-dark text-lg">
                             {selectedMethod.details.bankName || selectedMethod.name}
                           </p>
                         </div>
                         <div>
                           <label className="text-sm text-gray-600">{t('checkout.paymentDetail.accountNumber')}</label>
                           <div className="flex items-center gap-2">
-                            <p className="font-mono font-semibold text-gray-900 text-lg">
+                            <p className="font-mono font-semibold text-dark text-lg">
                               {selectedMethod.details.accountNumber}
                             </p>
                             <button
@@ -480,7 +480,7 @@ export default function PaymentDetailPage() {
                         </div>
                         <div>
                           <label className="text-sm text-gray-600">{t('checkout.paymentDetail.accountName')}</label>
-                          <p className="font-semibold text-gray-900 text-lg">
+                          <p className="font-semibold text-dark text-lg">
                             {selectedMethod.details.accountName}
                           </p>
                         </div>
@@ -532,9 +532,9 @@ export default function PaymentDetailPage() {
                 </div>
 
                 {/* Instructions */}
-                <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
-                  <h4 className="font-semibold text-blue-900 mb-3" style={{ fontSize: '1.1rem' }}>{t('checkout.paymentDetail.instructionTitle')}</h4>
-                  <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+                <div className="bg-info-50 rounded-lg p-6 border border-info-200">
+                  <h4 className="font-semibold text-info-900 mb-3" style={{ fontSize: '1.1rem' }}>{t('checkout.paymentDetail.instructionTitle')}</h4>
+                  <ol className="text-sm text-info-800 space-y-2 list-decimal list-inside">
                     {isBankTransfer && (
                       <>
                         <li>{t('checkout.paymentDetail.instructionBank1')}</li>
@@ -556,7 +556,7 @@ export default function PaymentDetailPage() {
 
                 {/* Upload Bukti Pembayaran - Desktop */}
                 <div className="hidden lg:block bg-white rounded-lg shadow-sm p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.1rem' }}>{t('checkout.paymentDetail.uploadTitle')}</h3>
+                  <h3 className="font-semibold text-dark mb-4" style={{ fontSize: '1.1rem' }}>{t('checkout.paymentDetail.uploadTitle')}</h3>
 
                   <div className="space-y-4">
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
@@ -585,7 +585,7 @@ export default function PaymentDetailPage() {
                                 setPaymentProof(null);
                                 setProofPreview(null);
                               }}
-                              className="text-red-600 hover:text-red-700 text-sm"
+                              className="text-danger-600 hover:text-danger-700 text-sm"
                             >
                               {t('checkout.paymentDetail.remove')}
                             </button>
@@ -602,7 +602,7 @@ export default function PaymentDetailPage() {
                                 e.preventDefault();
                                 setPaymentProof(null);
                               }}
-                              className="text-red-600 hover:text-red-700 text-sm"
+                              className="text-danger-600 hover:text-danger-700 text-sm"
                             >
                               {t('checkout.paymentDetail.remove')}
                             </button>
@@ -624,12 +624,12 @@ export default function PaymentDetailPage() {
                     </div>
 
                     {paymentProof && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div className="bg-success-50 border border-success-200 rounded-lg p-3">
                         <div className="flex items-start gap-2">
-                          <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5 text-success-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                          <p className="text-sm text-green-800">
+                          <p className="text-sm text-success-800">
                             {t('checkout.paymentDetail.fileReady')}
                           </p>
                         </div>
@@ -663,7 +663,7 @@ export default function PaymentDetailPage() {
       {/* Mobile Sticky Bottom Bar */}
       {isMounted && createPortal(
         <div className="fixed bottom-0 left-0 right-0 z-[1030] bg-white rounded-t-[20px] shadow-[0_-4px_12px_rgba(0,0,0,0.1)] p-4 lg:hidden">
-          <h3 className="font-semibold text-gray-900 mb-3" style={{ fontSize: '1.1rem' }}>{t('checkout.paymentDetail.uploadTitle')}</h3>
+          <h3 className="font-semibold text-dark mb-3" style={{ fontSize: '1.1rem' }}>{t('checkout.paymentDetail.uploadTitle')}</h3>
 
           <div className="mb-3">
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 text-center hover:border-primary-500 transition-colors">

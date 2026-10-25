@@ -68,7 +68,7 @@ export default function ProgramSelectionModal({
                 <div className="flex justify-between items-start mb-4">
                   <Dialog.Title
                     as="h3"
-                    className="text-lg font-semibold text-gray-900"
+                    className="text-lg font-semibold text-dark"
                   >
                     {t('zakatCalculator.programSelection.title')}
                   </Dialog.Title>
@@ -116,7 +116,7 @@ export default function ProgramSelectionModal({
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start gap-2 mb-2">
-                              <h4 className="font-semibold text-gray-900 line-clamp-2">
+                              <h4 className="font-semibold text-dark line-clamp-2">
                                 {campaign.title}
                               </h4>
                               {campaign.isUrgent && (
@@ -133,7 +133,7 @@ export default function ProgramSelectionModal({
                             <div className="space-y-1">
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">{t('zakatCalculator.programSelection.collected')}</span>
-                                <span className="font-semibold text-gray-900">
+                                <span className="font-semibold text-dark">
                                   {formatRupiahFull(campaign.collected)}
                                 </span>
                               </div>
@@ -158,7 +158,7 @@ export default function ProgramSelectionModal({
                 <div className="mt-6 flex justify-end">
                   <button
                     onClick={onClose}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-dark transition-colors"
                   >
                     {t('zakatCalculator.programSelection.cancel')}
                   </button>

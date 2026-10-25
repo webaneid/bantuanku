@@ -228,7 +228,7 @@ export default function UniversalPaymentInstruction({ transactionId }: { transac
         <div className={cardClass}>
           {isExpired ? (
             <div className="space-y-3">
-              <p className="font-semibold text-red-700">{t('payment.instruction.expired')}</p>
+              <p className="font-semibold text-danger-700">{t('payment.instruction.expired')}</p>
               <p className="text-sm text-gray-600">{t('payment.instruction.expiredHint')}</p>
               <Link
                 href={`/invoice/${transactionId}/payment-method`}
@@ -246,7 +246,7 @@ export default function UniversalPaymentInstruction({ transactionId }: { transac
                       ? t('payment.instruction.vaNumber', { channel: channelName })
                       : t('payment.instruction.payCode')}
                   </p>
-                  <p className="font-mono text-2xl font-bold text-gray-900 break-all">{payment.paymentCode}</p>
+                  <p className="font-mono text-2xl font-bold text-dark break-all">{payment.paymentCode}</p>
                   <button
                     onClick={() => copy(payment.paymentCode!)}
                     className="mt-3 w-full h-12 rounded-lg bg-primary-500 text-white font-semibold hover:bg-primary-600 transition-colors"
@@ -283,7 +283,7 @@ export default function UniversalPaymentInstruction({ transactionId }: { transac
                   {payment.paymentCode && (
                     <div>
                       <p className="text-sm text-gray-600 mb-1">{t('payment.instruction.paymentNumber')}</p>
-                      <p className="font-mono text-lg font-bold text-gray-900">{payment.paymentCode}</p>
+                      <p className="font-mono text-lg font-bold text-dark">{payment.paymentCode}</p>
                     </div>
                   )}
                   {payment.paymentUrl && /^https?:\/\//i.test(payment.paymentUrl) && (
@@ -309,7 +309,7 @@ export default function UniversalPaymentInstruction({ transactionId }: { transac
 
         {!isExpired && steps.length > 0 && (
           <div className={cardClass}>
-            <h2 className="text-base font-semibold text-gray-900 mb-4">{t('payment.instruction.guideTitle')}</h2>
+            <h2 className="text-base font-semibold text-dark mb-4">{t('payment.instruction.guideTitle')}</h2>
             <ol className="space-y-3">
               {steps.map((step, index) => (
                 <li key={index} className="flex gap-3">

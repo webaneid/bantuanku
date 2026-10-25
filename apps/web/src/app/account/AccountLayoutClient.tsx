@@ -161,7 +161,7 @@ export default function AccountLayoutClient({
   const logoutLabel = t("account.layout.nav.logout");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-light">
       {/* Bar atas: tamu di semua ukuran layar; user login hanya di desktop (mobile memakai hero + bar bawah) */}
       <nav className={cn("bg-white border-b border-gray-200 fixed w-full z-30 top-0", user && "hidden lg:block")}>
         <div className="px-4 sm:px-6 lg:px-8">
@@ -170,13 +170,13 @@ export default function AccountLayoutClient({
               <img src={logo} alt={siteName} className="h-8 w-auto" />
             </Link>
             <div className="flex items-center gap-4">
-              <Link href="/" className="text-sm text-gray-600 hover:text-gray-900 hidden sm:block">
+              <Link href="/" className="text-sm text-gray-600 hover:text-dark hidden sm:block">
                 {t("account.layout.backToHome")}
               </Link>
               {user ? (
                 <div className="flex items-center gap-3">
                   <div className="text-right hidden xl:block">
-                    <p className="text-sm font-medium text-gray-900 leading-tight">{user.name}</p>
+                    <p className="text-sm font-medium text-dark leading-tight">{user.name}</p>
                     <p className="text-xs text-gray-500 leading-tight">{user.email}</p>
                   </div>
                   <UserAvatar name={user.name} email={user.email} size={40} />
@@ -202,7 +202,7 @@ export default function AccountLayoutClient({
               <div className="mb-4 flex items-center gap-3 rounded-2xl bg-primary-50 p-3">
                 <UserAvatar name={user.name} email={user.email} size={44} />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-gray-900">{user.name}</p>
+                  <p className="truncate text-sm font-semibold text-dark">{user.name}</p>
                   <p className="truncate text-xs text-gray-500">{user.email}</p>
                 </div>
               </div>
@@ -233,7 +233,7 @@ export default function AccountLayoutClient({
                         "flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-colors",
                         isActive
                           ? "bg-primary-600 text-white shadow-sm"
-                          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                          : "text-gray-700 hover:bg-light hover:text-dark"
                       )}
                     >
                       {item.icon}

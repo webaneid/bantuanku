@@ -11,7 +11,7 @@ import * as fbPixel from '@/lib/fbPixel';
 const actionButtonBase =
   'w-full h-12 px-4 rounded-lg border-2 font-semibold transition-all flex items-center justify-center';
 const primaryActionClass = 'border-primary-500 bg-primary-500 text-white hover:bg-primary-600 hover:border-primary-600';
-const secondaryActionClass = 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50';
+const secondaryActionClass = 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-light';
 
 const heartIcon =
   'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z';
@@ -44,7 +44,7 @@ export function ConfirmModalBlock({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`${tone === 'primary' ? 'bg-primary-50' : 'bg-gray-50'} rounded-lg p-4 ${className}`}>{children}</div>
+    <div className={`${tone === 'primary' ? 'bg-primary-50' : 'bg-light'} rounded-lg p-4 ${className}`}>{children}</div>
   );
 }
 
@@ -129,7 +129,7 @@ export default function ConfirmCartModal({
             >
               <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                 <div className="flex justify-between items-start mb-4">
-                  <Dialog.Title as="h3" className="text-lg font-semibold text-gray-900">
+                  <Dialog.Title as="h3" className="text-lg font-semibold text-dark">
                     {title}
                   </Dialog.Title>
                   <button onClick={onClose} className="text-gray-400 hover:text-gray-500 transition-colors">

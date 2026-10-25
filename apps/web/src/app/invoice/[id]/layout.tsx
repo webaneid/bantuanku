@@ -7,7 +7,7 @@ export default function InvoiceLayout({
 }) {
   return (
     <I18nNamespaces names={['invoice', 'payment']}>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-light">
         {children}
       </div>
     </I18nNamespaces>

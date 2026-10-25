@@ -276,7 +276,7 @@ export default function QurbanActivityTable({ activities }: { activities: Activi
           >
             {/* Modal Header */}
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
-              <h2 className="text-lg font-bold text-gray-900">Detail Laporan Kegiatan</h2>
+              <h2 className="text-lg font-bold text-dark">Detail Laporan Kegiatan</h2>
               <button
                 type="button"
                 onClick={closeDetail}
@@ -290,39 +290,39 @@ export default function QurbanActivityTable({ activities }: { activities: Activi
 
             {/* Modal Body */}
             <div className="px-6 py-6 space-y-6">
-              <h3 className="text-2xl font-bold text-gray-900">{report.title}</h3>
+              <h3 className="text-2xl font-bold text-dark">{report.title}</h3>
 
               <div>
                 <span className="text-xs font-semibold text-gray-500 uppercase">Tanggal Kegiatan</span>
-                <p className="text-gray-900 mt-1">{formatDate(report.activityDate)}</p>
+                <p className="text-dark mt-1">{formatDate(report.activityDate)}</p>
               </div>
 
               {addressParts.length > 0 && (
                 <div>
                   <span className="text-xs font-semibold text-gray-500 uppercase">Lokasi Kegiatan</span>
-                  <p className="text-gray-900 mt-1">{addressParts.join(', ')}</p>
+                  <p className="text-dark mt-1">{addressParts.join(', ')}</p>
                 </div>
               )}
 
               {(tsd.beneficiary_count > 0 || tsd.recipient_count > 0 || tsd.animals_by_type) && (
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-light rounded-lg p-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {tsd.beneficiary_count > 0 && (
                       <div>
                         <span className="text-xs text-gray-500">Jumlah Penerima Manfaat</span>
-                        <p className="font-semibold text-gray-900">{tsd.beneficiary_count}</p>
+                        <p className="font-semibold text-dark">{tsd.beneficiary_count}</p>
                       </div>
                     )}
                     {tsd.recipient_count > 0 && (
                       <div>
                         <span className="text-xs text-gray-500">Jumlah Penerima</span>
-                        <p className="font-semibold text-gray-900">{tsd.recipient_count}</p>
+                        <p className="font-semibold text-dark">{tsd.recipient_count}</p>
                       </div>
                     )}
                     {tsd.distribution_areas?.length > 0 && (
                       <div>
                         <span className="text-xs text-gray-500">Area Distribusi</span>
-                        <p className="font-semibold text-gray-900">{tsd.distribution_areas.join(', ')}</p>
+                        <p className="font-semibold text-dark">{tsd.distribution_areas.join(', ')}</p>
                       </div>
                     )}
                   </div>
@@ -331,25 +331,25 @@ export default function QurbanActivityTable({ activities }: { activities: Activi
                       {tsd.animals_by_type.kambing > 0 && (
                         <div>
                           <span className="text-xs text-gray-500">Kambing</span>
-                          <p className="font-semibold text-gray-900">{tsd.animals_by_type.kambing}</p>
+                          <p className="font-semibold text-dark">{tsd.animals_by_type.kambing}</p>
                         </div>
                       )}
                       {tsd.animals_by_type.sapi > 0 && (
                         <div>
                           <span className="text-xs text-gray-500">Sapi</span>
-                          <p className="font-semibold text-gray-900">{tsd.animals_by_type.sapi}</p>
+                          <p className="font-semibold text-dark">{tsd.animals_by_type.sapi}</p>
                         </div>
                       )}
                       {tsd.animals_by_type.domba > 0 && (
                         <div>
                           <span className="text-xs text-gray-500">Domba</span>
-                          <p className="font-semibold text-gray-900">{tsd.animals_by_type.domba}</p>
+                          <p className="font-semibold text-dark">{tsd.animals_by_type.domba}</p>
                         </div>
                       )}
                       {tsd.total_recipients > 0 && (
                         <div>
                           <span className="text-xs text-gray-500">Penerima Daging</span>
-                          <p className="font-semibold text-gray-900">{tsd.total_recipients}</p>
+                          <p className="font-semibold text-dark">{tsd.total_recipients}</p>
                         </div>
                       )}
                     </div>

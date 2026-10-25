@@ -168,10 +168,10 @@ export default function NewSavingsPage() {
     : t('qurbanDetail.confirmModal.packageType.shared');
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-light py-8">
       <div className="container mx-auto px-4 max-w-2xl">
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('qurbanSavingsCreate.title')}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-dark">{t('qurbanSavingsCreate.title')}</h1>
           <p className="text-sm text-gray-600 mt-1">{t('qurbanSavingsCreate.subtitle')}</p>
         </div>
 
@@ -187,18 +187,18 @@ export default function NewSavingsPage() {
               />
             )}
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900">{qurbanPackage.name}</h3>
+              <h3 className="font-semibold text-dark">{qurbanPackage.name}</h3>
               <p className="text-sm text-gray-600">
                 {animalTypeLabel} - {packageTypeLabel}
               </p>
               <div className="mt-3 space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('qurbanSavingsCreate.packageInfo.packagePrice')}</span>
-                  <span className="font-semibold text-gray-900">{formatRupiahFull(packagePrice)}</span>
+                  <span className="font-semibold text-dark">{formatRupiahFull(packagePrice)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">{t('qurbanSavingsCreate.packageInfo.adminFee')}</span>
-                  <span className="font-semibold text-gray-900">{formatRupiahFull(adminFee)}</span>
+                  <span className="font-semibold text-dark">{formatRupiahFull(adminFee)}</span>
                 </div>
                 {qurbanPackage.packageType === 'shared' && qurbanPackage.maxSlots && (
                   <p className="text-xs text-gray-500">
@@ -206,7 +206,7 @@ export default function NewSavingsPage() {
                   </p>
                 )}
                 <div className="flex justify-between text-base border-t pt-2 mt-2">
-                  <span className="font-semibold text-gray-900">{t('qurbanSavingsCreate.packageInfo.totalTarget')}</span>
+                  <span className="font-semibold text-dark">{t('qurbanSavingsCreate.packageInfo.totalTarget')}</span>
                   <span className="font-bold text-primary-600">{formatRupiahFull(totalTarget)}</span>
                 </div>
               </div>
@@ -225,7 +225,7 @@ export default function NewSavingsPage() {
                 type="text"
                 value={user?.name || ''}
                 disabled
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 text-gray-700"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-light text-gray-700"
               />
             </div>
 
@@ -302,7 +302,7 @@ export default function NewSavingsPage() {
                 type="text"
                 value={formatRupiahFull(installmentAmount)}
                 disabled
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-gray-50 text-gray-900 font-semibold"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-light text-dark font-semibold"
               />
               <p className="text-xs text-gray-500 mt-1">
                 {t('qurbanSavingsCreate.form.installmentAmountHelp', {

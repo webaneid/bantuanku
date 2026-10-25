@@ -26,7 +26,7 @@ export default function ProgressBar({ current, target }: { current: number; targ
       <div className="grid grid-cols-3 gap-4 text-center">
         <div>
           <p className="text-xs text-gray-500 mb-1">{t('account.qurbanSavingsDetail.target')}</p>
-          <p className="font-semibold text-gray-900">{formatCurrency(target)}</p>
+          <p className="font-semibold text-dark">{formatCurrency(target)}</p>
         </div>
         <div>
           <p className="text-xs text-gray-500 mb-1">{t('account.qurbanSavingsDetail.collected')}</p>

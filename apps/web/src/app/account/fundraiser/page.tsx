@@ -69,7 +69,7 @@ function SocialShareButtons({ url, title }: { url: string; title: string }) {
         href={`https://wa.me/?text=${text}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="p-2 rounded-lg hover:bg-green-50 text-green-600 transition-colors"
+        className="p-2 rounded-lg hover:bg-success-50 text-success-600 transition-colors"
         title={t("account.fundraiser.whatsapp")}
       >
         <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor">
@@ -81,7 +81,7 @@ function SocialShareButtons({ url, title }: { url: string; title: string }) {
         href={`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors"
+        className="p-2 rounded-lg hover:bg-info-50 text-info-600 transition-colors"
         title="Facebook"
       >
         <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor">
@@ -93,7 +93,7 @@ function SocialShareButtons({ url, title }: { url: string; title: string }) {
         href={`https://twitter.com/intent/tweet?text=${text}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="p-2 rounded-lg hover:bg-gray-100 text-gray-900 transition-colors"
+        className="p-2 rounded-lg hover:bg-gray-100 text-dark transition-colors"
         title="X"
       >
         <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor">
@@ -105,7 +105,7 @@ function SocialShareButtons({ url, title }: { url: string; title: string }) {
         href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="p-2 rounded-lg hover:bg-blue-50 text-blue-700 transition-colors"
+        className="p-2 rounded-lg hover:bg-info-50 text-info-700 transition-colors"
         title="LinkedIn"
       >
         <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor">
@@ -117,7 +117,7 @@ function SocialShareButtons({ url, title }: { url: string; title: string }) {
         href={`https://threads.net/intent/post?text=${text}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="p-2 rounded-lg hover:bg-gray-100 text-gray-900 transition-colors"
+        className="p-2 rounded-lg hover:bg-gray-100 text-dark transition-colors"
         title="Threads"
       >
         <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="currentColor">
@@ -143,9 +143,9 @@ export default function FundraiserPage() {
   };
 
   const typeBadgeMap: Record<string, { label: string; color: string }> = {
-    campaign: { label: t("account.fundraiser.typeBadge.campaign"), color: "bg-blue-50 text-blue-700" },
-    zakat: { label: t("account.fundraiser.typeBadge.zakat"), color: "bg-green-50 text-green-700" },
-    qurban: { label: t("account.fundraiser.typeBadge.qurban"), color: "bg-orange-50 text-orange-700" },
+    campaign: { label: t("account.fundraiser.typeBadge.campaign"), color: "bg-info-50 text-info-700" },
+    zakat: { label: t("account.fundraiser.typeBadge.zakat"), color: "bg-success-50 text-success-700" },
+    qurban: { label: t("account.fundraiser.typeBadge.qurban"), color: "bg-warning-50 text-warning-700" },
   };
 
   const formatDateShort = (date: string) =>
@@ -289,7 +289,7 @@ export default function FundraiserPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <h2 className="text-xl font-semibold text-dark mb-2">
             {t("account.fundraiser.registerTitle")}
           </h2>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
@@ -417,13 +417,13 @@ export default function FundraiserPage() {
               type="text"
               readOnly
               value={`${webUrl}?ref=${fundraiser.code}`}
-              className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl font-mono text-sm text-gray-700"
+              className="w-full px-3 py-3 bg-light border border-gray-200 rounded-xl font-mono text-sm text-gray-700"
             />
             <div className="mt-3 grid grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="h-12 rounded-lg border-2 border-gray-200 bg-white font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                className="h-12 rounded-lg border-2 border-gray-200 bg-white font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:bg-light"
               >
                 {copied ? t("account.fundraiser.copied") : t("account.fundraiser.copy")}
               </button>
@@ -444,11 +444,11 @@ export default function FundraiserPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="text-sm text-gray-500">{t("account.fundraiser.cards.totalReferral")}</div>
-            <div className="text-2xl font-bold text-gray-900 mt-1">{fundraiser.totalReferrals || 0}</div>
+            <div className="text-2xl font-bold text-dark mt-1">{fundraiser.totalReferrals || 0}</div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="text-sm text-gray-500">{t("account.fundraiser.cards.totalDonation")}</div>
-            <div className="text-lg font-bold text-gray-900 mt-1 break-words">{formatRupiahFull(fundraiser.totalDonationAmount || 0)}</div>
+            <div className="text-lg font-bold text-dark mt-1 break-words">{formatRupiahFull(fundraiser.totalDonationAmount || 0)}</div>
           </div>
           <div className="bg-white rounded-2xl shadow-sm p-4">
             <div className="text-sm text-gray-500">{t("account.fundraiser.cards.totalCommission")}</div>
@@ -510,7 +510,7 @@ export default function FundraiserPage() {
                           <span className={cn("inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full shrink-0", type.color)}>
                             {type.label}
                           </span>
-                          <span className="text-sm font-medium text-gray-900 truncate">{p.name}</span>
+                          <span className="text-sm font-medium text-dark truncate">{p.name}</span>
                         </div>
                         <SocialShareButtons url={shareUrl} title={p.name} />
                       </div>
@@ -527,7 +527,7 @@ export default function FundraiserPage() {
               {/* Info & Bank */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl shadow-sm p-6">
-                  <h3 className="text-base font-semibold text-gray-900 mb-4">{t("account.fundraiser.info.title")}</h3>
+                  <h3 className="text-base font-semibold text-dark mb-4">{t("account.fundraiser.info.title")}</h3>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-500">{t("account.fundraiser.info.commission")}</span>
@@ -545,7 +545,7 @@ export default function FundraiserPage() {
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-sm p-6">
-                  <h3 className="text-base font-semibold text-gray-900 mb-4">{t("account.fundraiser.bankAccount.title")}</h3>
+                  <h3 className="text-base font-semibold text-dark mb-4">{t("account.fundraiser.bankAccount.title")}</h3>
                   {fundraiser.bankAccounts && fundraiser.bankAccounts.length > 0 ? (
                     <div className="space-y-3 text-sm">
                       {fundraiser.bankAccounts.map((acc, i) => (
@@ -574,7 +574,7 @@ export default function FundraiserPage() {
               {/* Referrals */}
               <div className="bg-white rounded-2xl shadow-sm">
                 <div className="p-6 border-b border-gray-200">
-                  <h3 className="text-base font-semibold text-gray-900">{t("account.fundraiser.referrals.title")}</h3>
+                  <h3 className="text-base font-semibold text-dark">{t("account.fundraiser.referrals.title")}</h3>
                 </div>
 
                 {referrals.length === 0 ? (
@@ -593,7 +593,7 @@ export default function FundraiserPage() {
                       {referrals.map((ref) => (
                         <div key={ref.id} className="p-4 space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-gray-900">{ref.productName || "-"}</span>
+                            <span className="text-sm font-medium text-dark">{ref.productName || "-"}</span>
                             <span className={cn(
                               "px-2 py-0.5 text-xs font-medium rounded-full",
                               ref.status === "paid" ? "bg-success-50 text-success-700" : "bg-warning-50 text-warning-700"
@@ -627,9 +627,9 @@ export default function FundraiserPage() {
                           {referrals.map((ref) => (
                             <tr key={ref.id}>
                               <td className="px-6 py-4 text-sm text-gray-500">{formatDateShort(ref.createdAt)}</td>
-                              <td className="px-6 py-4 text-sm text-gray-900">{ref.donorName || "-"}</td>
-                              <td className="px-6 py-4 text-sm text-gray-900">{ref.productName || "-"}</td>
-                              <td className="px-6 py-4 text-sm text-gray-900 text-right">{formatRupiahFull(ref.donationAmount || 0)}</td>
+                              <td className="px-6 py-4 text-sm text-dark">{ref.donorName || "-"}</td>
+                              <td className="px-6 py-4 text-sm text-dark">{ref.productName || "-"}</td>
+                              <td className="px-6 py-4 text-sm text-dark text-right">{formatRupiahFull(ref.donationAmount || 0)}</td>
                               <td className="px-6 py-4 text-sm font-medium text-primary-600 text-right">{formatRupiahFull(ref.commissionAmount || 0)}</td>
                               <td className="px-6 py-4 text-center">
                                 <span className={cn(
@@ -656,7 +656,7 @@ export default function FundraiserPage() {
                             type="button"
                             onClick={() => setReferralPage((p) => Math.max(1, p - 1))}
                             disabled={referralPage <= 1}
-                            className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                            className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-light transition-colors"
                           >
                             {t("account.fundraiser.referrals.previous")}
                           </button>
@@ -664,7 +664,7 @@ export default function FundraiserPage() {
                             type="button"
                             onClick={() => setReferralPage((p) => Math.min(referralPagination.totalPages, p + 1))}
                             disabled={referralPage >= referralPagination.totalPages}
-                            className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                            className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-50 hover:bg-light transition-colors"
                           >
                             {t("account.fundraiser.referrals.next")}
                           </button>

@@ -227,7 +227,7 @@ export default function ProgramListTemplate({
       <section className="py-12 bg-gradient-to-br from-primary-50 to-primary-100">
         <div className="container">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="section-title text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="section-title text-4xl font-bold text-dark mb-4">
               {pageTitle}
             </h1>
             <p className="section-description text-lg text-gray-600">
@@ -269,7 +269,7 @@ export default function ProgramListTemplate({
       )}
 
       {/* Additional Filters */}
-      <section className="py-6 bg-gray-50 border-b border-gray-200">
+      <section className="py-6 bg-light border-b border-gray-200">
         <div className="container">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Search Filter */}
@@ -283,7 +283,7 @@ export default function ProgramListTemplate({
                   placeholder="Cari berdasarkan judul atau deskripsi..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-2.5 pl-10 border-2 border-gray-200 rounded-lg bg-white text-gray-900 focus:border-primary-500 focus:outline-none transition-colors"
+                  className="w-full px-4 py-2.5 pl-10 border-2 border-gray-200 rounded-lg bg-white text-dark focus:border-primary-500 focus:outline-none transition-colors"
                 />
                 <svg
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
@@ -371,7 +371,7 @@ export default function ProgramListTemplate({
       </section>
 
       {/* Programs Grid */}
-      <section className="py-12 bg-gray-50">
+      <section className="py-12 bg-light">
         <div className="container">
           {isLoading ? (
             <div className="text-center py-20">

@@ -134,7 +134,7 @@ export default function ZakatPertanianPage() {
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gray-50 py-8 md:py-12">
+        <main className="min-h-screen bg-light py-8 md:py-12">
           <div className="container mx-auto px-4">
             <div className="text-center py-16">
               <div className="animate-spin w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full mx-auto"></div>
@@ -158,7 +158,7 @@ export default function ZakatPertanianPage() {
         displayImageOriginal={displayImageOriginal}
         owner={displayMeta?.owner}
       />
-      <main className="min-h-screen bg-gray-50 py-4 lg:py-8">
+      <main className="min-h-screen bg-light py-4 lg:py-8">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             {/* Desktop Feature Image */}
@@ -182,7 +182,7 @@ export default function ZakatPertanianPage() {
               <ZakatOwnerInfo owner={displayMeta?.owner} />
               {/* Header */}
               <div className="mb-6">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                <h2 className="text-2xl md:text-3xl font-bold text-dark mb-2">
                   {displayName}
                 </h2>
                 {displayDescription && (
@@ -195,7 +195,7 @@ export default function ZakatPertanianPage() {
             </div>
 
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">{t('zakatCalculator.pertanian.calculatorTitle')}</h2>
+              <h2 className="text-xl font-semibold text-dark">{t('zakatCalculator.pertanian.calculatorTitle')}</h2>
             </div>
 
             {/* Calculator Form */}
@@ -213,7 +213,7 @@ export default function ZakatPertanianPage() {
                       value={formatCurrency(ricePricePerKg)}
                       readOnly
                       disabled
-                      className="w-full pl-14 pr-16 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+                      className="w-full pl-14 pr-16 py-3 border border-gray-300 rounded-lg bg-light text-gray-700 cursor-not-allowed"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">/kg</span>
                   </div>
@@ -266,7 +266,7 @@ export default function ZakatPertanianPage() {
                     {t('zakatCalculator.pertanian.irrigationTypeLabel')}
                   </label>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-light">
                       <input
                         type="radio"
                         name="jenisPengairan"
@@ -275,9 +275,9 @@ export default function ZakatPertanianPage() {
                         onChange={(e) => setJenisPengairan(e.target.value as 'irigasi')}
                         className="w-4 h-4 text-primary-600"
                       />
-                      <span className="text-gray-900">{t('zakatCalculator.pertanian.irrigationOptions.irrigation')}</span>
+                      <span className="text-dark">{t('zakatCalculator.pertanian.irrigationOptions.irrigation')}</span>
                     </label>
-                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-light">
                       <input
                         type="radio"
                         name="jenisPengairan"
@@ -286,7 +286,7 @@ export default function ZakatPertanianPage() {
                         onChange={(e) => setJenisPengairan(e.target.value as 'hujan')}
                         className="w-4 h-4 text-primary-600"
                       />
-                      <span className="text-gray-900">{t('zakatCalculator.pertanian.irrigationOptions.rain')}</span>
+                      <span className="text-dark">{t('zakatCalculator.pertanian.irrigationOptions.rain')}</span>
                     </label>
                   </div>
                 </div>
@@ -431,7 +431,7 @@ export default function ZakatPertanianPage() {
 
             {relatedZakat.length > 0 && (
               <section className="mt-10">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('zakatCalculator.common.otherZakat')}</h2>
+                <h2 className="text-xl font-semibold text-dark mb-4">{t('zakatCalculator.common.otherZakat')}</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-[0.4rem] lg:gap-4">
                   {relatedZakat.map((item) => (
                     <ZakatCard

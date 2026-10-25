@@ -13,12 +13,12 @@ export const kodeUnikDoc: DocumentationPage = {
             heading: "Apa Itu Kode Unik?",
             bodyHtml: `
                 <p><strong>Kode Unik</strong> adalah sistem otomatis penambahan nominal acak berskala sangat kecil (mulai dari Rp 1 hingga Rp 999) pada total tagihan donatur.</p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-4">
-                    <h4 className="font-semibold text-blue-800 mb-2">Contoh Kasus:</h4>
-                    <ul className="list-disc pl-5 space-y-1 text-blue-900 font-mono text-sm">
+                <div className="bg-info-50 border border-info-200 rounded-lg p-4 my-4">
+                    <h4 className="font-semibold text-info-800 mb-2">Contoh Kasus:</h4>
+                    <ul className="list-disc pl-5 space-y-1 text-info-900 font-mono text-sm">
                         <li>Total Donasi: Rp 100.000</li>
                         <li>Kode Unik: Rp 347 <span className="text-gray-500 italic">(Otomatis oleh sistem)</span></li>
-                        <li className="border-t border-blue-200 mt-2 pt-2 font-bold">Total Transfer: Rp 100.347</li>
+                        <li className="border-t border-info-200 mt-2 pt-2 font-bold">Total Transfer: Rp 100.347</li>
                     </ul>
                 </div>
                 <p>Tujuannya adalah untuk <strong>memudahkan Admin Finance dalam mengidentifikasi</strong> transferan siapa yang masuk ke rekening mutasi Bank Yayasan, terutama jika ada dua orang atau lebih yang berdonasi dengan nominal yang sama persis di waktu yang bersamaan.</p>
@@ -31,7 +31,7 @@ export const kodeUnikDoc: DocumentationPage = {
                 <p>Kode unik <strong>TIDAK BERLAKU</strong> dan tidak akan ditambahkan jika donatur memilih metode pembayaran otomatis/payment gateway, karena sistem gateway sudah punya cara pelacakannya sendiri (seperti nomor Virtual Account spesifik atau QRIS).</p>
                 <table className="w-full border-collapse mt-4">
                     <thead>
-                        <tr className="bg-gray-50 border-b">
+                        <tr className="bg-light border-b">
                             <th className="py-2 px-4 text-left font-semibold">Metode Pembayaran</th>
                             <th className="py-2 px-4 text-left font-semibold">Gunakan Kode Unik?</th>
                         </tr>
@@ -39,19 +39,19 @@ export const kodeUnikDoc: DocumentationPage = {
                     <tbody>
                         <tr className="border-b">
                             <td className="py-2 px-4">Manual Bank Transfer</td>
-                            <td className="py-2 px-4 font-bold text-green-600">YA</td>
+                            <td className="py-2 px-4 font-bold text-success-600">YA</td>
                         </tr>
                         <tr className="border-b">
                             <td className="py-2 px-4">Virtual Account (Gateway)</td>
-                            <td className="py-2 px-4 text-red-600">TIDAK</td>
+                            <td className="py-2 px-4 text-danger-600">TIDAK</td>
                         </tr>
                         <tr className="border-b">
                             <td className="py-2 px-4">QRIS</td>
-                            <td className="py-2 px-4 text-red-600">TIDAK</td>
+                            <td className="py-2 px-4 text-danger-600">TIDAK</td>
                         </tr>
                         <tr className="border-b">
                             <td className="py-2 px-4">E-Wallet (Ovo, Dana, Shopee, dll)</td>
-                            <td className="py-2 px-4 text-red-600">TIDAK</td>
+                            <td className="py-2 px-4 text-danger-600">TIDAK</td>
                         </tr>
                     </tbody>
                 </table>
@@ -79,7 +79,7 @@ export const kodeUnikDoc: DocumentationPage = {
             heading: "Laporan Khusus Kode Unik",
             bodyHtml: `
                 <p>Jika Yayasan Anda menjadikan hasil "recehan" dari Kode Unik ini sebagai pemasukan khusus (misal: disedekahkan ke anak yatim, atau dicatat sebagai dana operasional ekstra), Anda bisa melihat total akumulasinya secara langsung.</p>
-                <p>Silakan buka menu <strong><a href="/dashboard/reports/unique-codes" className="text-blue-600 underline">Laporan → Kode Unik Transaksi</a></strong> di Admin Panel.</p>
+                <p>Silakan buka menu <strong><a href="/dashboard/reports/unique-codes" className="text-info-600 underline">Laporan → Kode Unik Transaksi</a></strong> di Admin Panel.</p>
                 <p>Di halaman tersebut, Anda bisa melihat:</p>
                 <ul className="list-disc pl-5 mt-2 space-y-1">
                     <li><strong>Total Pendapatan Kode Unik</strong> (Akumulasi seluruh Rp 100, Rp 200, dst).</li>

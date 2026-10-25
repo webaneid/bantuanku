@@ -53,7 +53,7 @@ function GoogleCallbackContent() {
         </>
       ) : (
         <>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">{t("auth.google.failedTitle")}</h1>
+          <h1 className="text-xl font-bold text-dark mb-2">{t("auth.google.failedTitle")}</h1>
           <p className="text-gray-600 mb-6">{t("auth.google.failedDesc")}</p>
           <Link href="/login">
             <Button variant="outline" fullWidth>{t("auth.verifyEmail.backToLogin")}</Button>
@@ -66,7 +66,7 @@ function GoogleCallbackContent() {
 
 export default function GoogleCallbackPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-light flex items-center justify-center px-4">
       <Suspense fallback={null}>
         <GoogleCallbackContent />
       </Suspense>

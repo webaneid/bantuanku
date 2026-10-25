@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-500 to-primary-700 px-4">
       <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">{t("auth.forgotPassword.title")}</h1>
+          <h1 className="text-3xl font-bold text-dark">{t("auth.forgotPassword.title")}</h1>
           <p className="text-gray-600 mt-2">{t("auth.forgotPassword.subtitle")}</p>
         </div>
 

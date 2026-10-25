@@ -45,7 +45,7 @@
 }
 
 .qurban-card__sold-out {
-  @apply absolute inset-0 flex items-center justify-center bg-gray-900/55 text-sm font-bold uppercase tracking-wide text-white;
+  @apply absolute inset-0 flex items-center justify-center bg-dark/55 text-sm font-bold uppercase tracking-wide text-white;
 }
 
 .qurban-card--sold-out .qurban-card__price-value {
@@ -69,7 +69,7 @@
 }
 
 .qurban-card__name {
-  @apply line-clamp-2 text-sm font-bold leading-snug text-gray-900 md:text-lg;
+  @apply line-clamp-2 text-sm font-bold leading-snug text-dark md:text-lg;
 }
 
 .qurban-card__name a:hover {
@@ -77,7 +77,7 @@
 }
 
 .qurban-card__type {
-  @apply inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-700 md:text-xs;
+  @apply inline-flex items-center rounded-md border border-gray-200 bg-light px-2 py-0.5 text-[11px] font-medium text-gray-700 md:text-xs;
 }
 
 .qurban-card__type--shared {

@@ -152,12 +152,12 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
 
   // Payment status mapping
   const statusConfig = {
-    pending: { label: t('invoice.statusPending'), color: 'bg-yellow-100 text-yellow-800' },
-    processing: { label: t('invoice.statusProcessing'), color: 'bg-blue-100 text-blue-800' },
-    paid: { label: t('invoice.statusPaid'), color: 'bg-green-100 text-green-800' },
-    verified: { label: t('invoice.statusVerified'), color: 'bg-green-100 text-green-800' },
-    partial: { label: t('invoice.statusPartial'), color: 'bg-amber-100 text-amber-800' },
-    expired: { label: t('invoice.statusExpired'), color: 'bg-red-100 text-red-800' },
+    pending: { label: t('invoice.statusPending'), color: 'bg-warning-100 text-warning-800' },
+    processing: { label: t('invoice.statusProcessing'), color: 'bg-info-100 text-info-800' },
+    paid: { label: t('invoice.statusPaid'), color: 'bg-success-100 text-success-800' },
+    verified: { label: t('invoice.statusVerified'), color: 'bg-success-100 text-success-800' },
+    partial: { label: t('invoice.statusPartial'), color: 'bg-warning-100 text-warning-800' },
+    expired: { label: t('invoice.statusExpired'), color: 'bg-danger-100 text-danger-800' },
     cancelled: { label: t('invoice.statusCancelled'), color: 'bg-gray-100 text-gray-800' },
   };
 
@@ -170,7 +170,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
   const invoiceFooterHtml = settings.utilities_invoice_footer?.trim();
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-light py-8">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -185,7 +185,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                     {t('invoice.back')}
                   </Button>
                 </Link>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-3xl font-bold text-dark">
                   {t('invoice.title', { number: transactionNumber })}
                 </h1>
               </div>
@@ -212,8 +212,8 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
             {/* PAID Stamp Overlay */}
             {(displayData.paymentStatus === 'paid' || displayData.paymentStatus === 'verified') && (
               <div className="absolute top-40 left-1/2 transform -translate-x-1/2 -rotate-12 pointer-events-none z-10">
-                <div className="border-8 border-green-500 rounded-lg px-8 py-4 opacity-20">
-                  <span className="text-7xl font-bold text-green-500">
+                <div className="border-8 border-success-500 rounded-lg px-8 py-4 opacity-20">
+                  <span className="text-7xl font-bold text-success-500">
                     {displayData.paymentStatus === 'verified' ? 'VERIFIED' : 'PAID'}
                   </span>
                 </div>
@@ -231,7 +231,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                     className="h-12 w-auto mb-2 object-contain"
                   />
                   {settings.organization_name && (
-                    <p className="font-semibold text-gray-900">{settings.organization_name}</p>
+                    <p className="font-semibold text-dark">{settings.organization_name}</p>
                   )}
                 </div>
                 <div className="text-sm text-gray-700 space-y-1">
@@ -252,9 +252,9 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
 
               {/* To: Donor */}
               <div className="text-right">
-                <h3 className="text-lg font-bold text-gray-900 mb-3">{t('invoice.donor')}</h3>
+                <h3 className="text-lg font-bold text-dark mb-3">{t('invoice.donor')}</h3>
                 <div className="text-sm text-gray-700 space-y-1">
-                  <p className="font-semibold text-gray-900">{displayData.donorName}</p>
+                  <p className="font-semibold text-dark">{displayData.donorName}</p>
                   {typeSpecificData?.on_behalf_of && typeSpecificData.on_behalf_of !== displayData.donorName && (
                     <p className="text-xs text-gray-600">{t('invoice.onBehalfOf', { name: typeSpecificData.on_behalf_of })}</p>
                   )}
@@ -268,7 +268,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
             <div className="grid grid-cols-3 gap-4 mb-8 pb-6 border-b-2 border-gray-200">
               <div>
                 <label className="text-xs text-gray-500 uppercase tracking-wide">{t('invoice.invoiceDate')}</label>
-                <p className="font-semibold text-gray-900 mt-1">
+                <p className="font-semibold text-dark mt-1">
                   {displayData.createdAt
                     ? new Date(displayData.createdAt).toLocaleDateString('id-ID', {
                         day: '2-digit',
@@ -288,7 +288,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
               </div>
               <div className="text-right">
                 <label className="text-xs text-gray-500 uppercase tracking-wide">{uniqueCode > 0 ? t('invoice.totalTransfer') : t('invoice.totalBill')}</label>
-                <p className="text-xl font-bold text-gray-900 mt-1">{formatRupiahFull(uniqueCode > 0 ? transferAmount : totalAmount)}</p>
+                <p className="text-xl font-bold text-dark mt-1">{formatRupiahFull(uniqueCode > 0 ? transferAmount : totalAmount)}</p>
               </div>
             </div>
 
@@ -309,7 +309,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                     <>
                       {/* Main Product */}
                       <tr className="border-b border-gray-100">
-                        <td className="py-4 px-2 text-sm font-medium text-gray-900">
+                        <td className="py-4 px-2 text-sm font-medium text-dark">
                           {productName || t('invoice.donation')}
                         </td>
                         <td className="py-4 px-2 text-sm text-gray-600">
@@ -328,13 +328,13 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                               </div>
                             )}
                         </td>
-                        <td className="py-4 px-2 text-sm text-gray-900 text-center">
+                        <td className="py-4 px-2 text-sm text-dark text-center">
                           {quantity || 1}
                         </td>
-                        <td className="py-4 px-2 text-sm text-gray-900 text-right">
+                        <td className="py-4 px-2 text-sm text-dark text-right">
                           {formatRupiahFull(unitPrice || 0)}
                         </td>
-                        <td className="py-4 px-2 text-sm font-medium text-gray-900 text-right">
+                        <td className="py-4 px-2 text-sm font-medium text-dark text-right">
                           {formatRupiahFull(subtotal || unitPrice || 0)}
                         </td>
                       </tr>
@@ -342,19 +342,19 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                       {/* Admin Fee */}
                       {adminFee !== null && adminFee !== undefined && adminFee > 0 && (
                         <tr className="border-b border-gray-100">
-                          <td className="py-4 px-2 text-sm font-medium text-gray-900">
+                          <td className="py-4 px-2 text-sm font-medium text-dark">
                             {t('invoice.adminFee')}
                           </td>
                           <td className="py-4 px-2 text-sm text-gray-600">
                             {t('invoice.adminFeeDesc')}
                           </td>
-                          <td className="py-4 px-2 text-sm text-gray-900 text-center">
+                          <td className="py-4 px-2 text-sm text-dark text-center">
                             {quantity || 1}
                           </td>
-                          <td className="py-4 px-2 text-sm text-gray-900 text-right">
+                          <td className="py-4 px-2 text-sm text-dark text-right">
                             {formatRupiahFull(adminFee / (quantity || 1))}
                           </td>
-                          <td className="py-4 px-2 text-sm font-medium text-gray-900 text-right">
+                          <td className="py-4 px-2 text-sm font-medium text-dark text-right">
                             {formatRupiahFull(adminFee)}
                           </td>
                         </tr>
@@ -362,17 +362,17 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                     </>
                   ) : (
                     <tr className="border-b border-gray-100">
-                      <td className="py-4 px-2 text-sm font-medium text-gray-900">
+                      <td className="py-4 px-2 text-sm font-medium text-dark">
                         {type === 'qurban' ? t('invoice.qurban') : type === 'zakat' ? t('invoice.zakat') : t('invoice.donation')}
                       </td>
                       <td className="py-4 px-2 text-sm text-gray-600">
                         {t('invoice.transactionType', { type })}
                       </td>
-                      <td className="py-4 px-2 text-sm text-gray-900 text-center">1</td>
-                      <td className="py-4 px-2 text-sm text-gray-900 text-right">
+                      <td className="py-4 px-2 text-sm text-dark text-center">1</td>
+                      <td className="py-4 px-2 text-sm text-dark text-right">
                         {formatRupiahFull(totalAmount)}
                       </td>
-                      <td className="py-4 px-2 text-sm font-medium text-gray-900 text-right">
+                      <td className="py-4 px-2 text-sm font-medium text-dark text-right">
                         {formatRupiahFull(totalAmount)}
                       </td>
                     </tr>
@@ -389,12 +389,12 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                     <>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">{t('invoice.subtotal')}</span>
-                          <span className="font-medium text-gray-900">{formatRupiahFull(subtotal || unitPrice || 0)}</span>
+                          <span className="font-medium text-dark">{formatRupiahFull(subtotal || unitPrice || 0)}</span>
                         </div>
                       {adminFee !== null && adminFee !== undefined && adminFee > 0 && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">{t('invoice.adminFee')}:</span>
-                          <span className="font-medium text-gray-900">{formatRupiahFull(adminFee)}</span>
+                          <span className="font-medium text-dark">{formatRupiahFull(adminFee)}</span>
                         </div>
                       )}
                     </>
@@ -403,7 +403,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                     <>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">{t('invoice.uniqueCode')}</span>
-                        <span className="font-medium text-gray-900">{formatRupiahFull(uniqueCode)}</span>
+                        <span className="font-medium text-dark">{formatRupiahFull(uniqueCode)}</span>
                       </div>
                       <p className="text-xs text-gray-500 italic">
                         {t('invoice.uniqueCodeNote')}
@@ -411,17 +411,17 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                     </>
                   )}
                   <div className="flex justify-between pt-3 border-t-2 border-gray-200">
-                    <span className="text-base font-semibold text-gray-900">{uniqueCode > 0 ? t('invoice.totalTransferLabel') : t('invoice.totalLabel')}</span>
-                    <span className="text-xl font-bold text-gray-900">{formatRupiahFull(uniqueCode > 0 ? transferAmount : totalAmount)}</span>
+                    <span className="text-base font-semibold text-dark">{uniqueCode > 0 ? t('invoice.totalTransferLabel') : t('invoice.totalLabel')}</span>
+                    <span className="text-xl font-bold text-dark">{formatRupiahFull(uniqueCode > 0 ? transferAmount : totalAmount)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">{t('invoice.paid')}</span>
-                    <span className="font-medium text-green-600">
+                    <span className="font-medium text-success-600">
                       {displayData.paidAmount ? formatRupiahFull(displayData.paidAmount) : formatRupiahFull(0)}
                     </span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-gray-200">
-                    <span className="text-base font-semibold text-gray-900">{t('invoice.balance')}</span>
+                    <span className="text-base font-semibold text-dark">{t('invoice.balance')}</span>
                     <span className="text-lg font-bold text-primary-600">
                       {formatRupiahFull(
                         (totalAmount + uniqueCode) - (displayData.paidAmount || 0)
@@ -434,7 +434,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
 
             {/* Notes */}
             {displayData.message && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="mb-6 p-4 bg-light rounded-lg">
                 <h4 className="text-sm font-semibold text-gray-700 mb-1">{t('invoice.notes')}</h4>
                 <p className="text-sm text-gray-600">{displayData.message}</p>
               </div>
@@ -455,11 +455,11 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
 
             {displayData.paymentStatus === 'processing' && (
               <div data-hide-pdf className="mt-8 pt-6 border-t-2 border-gray-200">
-                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                  <p className="text-blue-800 text-center font-bold mb-1">
+                <div className="bg-info-50 border-2 border-info-200 rounded-lg p-4">
+                  <p className="text-info-800 text-center font-bold mb-1">
                     {t('invoice.paymentProofProcessingTitle')}
                   </p>
-                  <p className="text-blue-700 text-sm text-center">
+                  <p className="text-info-700 text-sm text-center">
                     {t('invoice.paymentProofProcessingDesc')}
                   </p>
                 </div>
@@ -468,11 +468,11 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
 
             {(displayData.paymentStatus === 'paid' || displayData.paymentStatus === 'verified') && (
               <div className="mt-8 pt-6 border-t-2 border-gray-200">
-                <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
-                  <p className="text-green-800 text-center font-bold text-lg mb-1">
+                <div className="bg-success-50 border-2 border-success-200 rounded-lg p-4">
+                  <p className="text-success-800 text-center font-bold text-lg mb-1">
                     {t('invoice.paymentVerifiedTitle')}
                   </p>
-                  <p className="text-green-700 text-sm text-center">
+                  <p className="text-success-700 text-sm text-center">
                     {t('invoice.paymentVerifiedDesc')}
                   </p>
                 </div>
@@ -481,7 +481,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
 
             {/* Footer / Terms */}
             <div className="mt-8 pt-6 border-t border-gray-200 mb-5">
-              <h4 className="text-sm font-bold text-gray-900 mb-2">{t('invoice.terms')}</h4>
+              <h4 className="text-sm font-bold text-dark mb-2">{t('invoice.terms')}</h4>
               {invoiceFooterHtml ? (
                 <div
                   className="text-sm text-gray-600 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:ml-4"

@@ -13,7 +13,7 @@ export default function ProgressBar({ current, target }: { current: number; targ
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="text-sm text-gray-500">{t('account.qurbanSavingsDetail.progressTitle')}</p>
-          <p className="mt-1 text-3xl font-bold text-gray-900">{progress.toFixed(1)}%</p>
+          <p className="mt-1 text-3xl font-bold text-dark">{progress.toFixed(1)}%</p>
         </div>
         <p className="text-right text-xs text-gray-500">
           {formatCurrency(current)} / {formatCurrency(target)}
@@ -28,9 +28,9 @@ export default function ProgressBar({ current, target }: { current: number; targ
       </div>
 
       <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl bg-gray-50 px-2 py-3">
+        <div className="rounded-xl bg-light px-2 py-3">
           <p className="mb-1 text-[11px] text-gray-500">{t('account.qurbanSavingsDetail.target')}</p>
-          <p className="text-sm font-semibold text-gray-900">{formatCurrency(target)}</p>
+          <p className="text-sm font-semibold text-dark">{formatCurrency(target)}</p>
         </div>
         <div className="rounded-xl bg-success-50 px-2 py-3">
           <p className="mb-1 text-[11px] text-gray-500">{t('account.qurbanSavingsDetail.collected')}</p>

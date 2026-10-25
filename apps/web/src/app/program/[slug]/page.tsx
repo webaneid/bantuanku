@@ -315,7 +315,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
       <JsonLdScript data={breadcrumbSchema} />
       <Header hideOnMobile />
 
-      <main className="flex-1 bg-gray-50">
+      <main className="flex-1 bg-light">
         {/* Breadcrumb — desktop only */}
         <div className="hidden lg:block">
           <Breadcrumb items={[
@@ -337,7 +337,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
 
         {/* Mobile: Title + Progress + Stats */}
         <div className="lg:hidden bg-white px-4 py-4 space-y-3">
-          <h1 className="text-xl font-bold text-gray-900">{campaign.title}</h1>
+          <h1 className="text-xl font-bold text-dark">{campaign.title}</h1>
           <div className="space-y-2">
             <span className="text-xl font-bold text-primary-600">
               Rp {(campaign.collected || 0).toLocaleString('id-ID')}
@@ -406,7 +406,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
                           className="w-10 h-10 object-contain rounded-lg"
                         />
                         <div className="flex items-center gap-1">
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-sm font-medium text-dark">
                             {campaign.mitraName || campaign.organizationName || settings.organization_name}
                           </span>
                           <svg className="w-4 h-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
@@ -420,7 +420,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
                     <div className="rounded-lg border border-gray-200 p-3 space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">{t('campaignDetail.sidebar.meta.startDate')}</span>
-                        <span className="font-medium text-gray-900">
+                        <span className="font-medium text-dark">
                           {campaign.startDate
                             ? new Date(campaign.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
                             : '-'}
@@ -428,11 +428,11 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">{t('campaignDetail.sidebar.meta.pillar')}</span>
-                        <span className="font-medium text-gray-900">{campaign.pillar || '-'}</span>
+                        <span className="font-medium text-dark">{campaign.pillar || '-'}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">{t('campaignDetail.sidebar.meta.category')}</span>
-                        <span className="font-medium text-gray-900">{categoryLabel || '-'}</span>
+                        <span className="font-medium text-dark">{categoryLabel || '-'}</span>
                       </div>
                       {(campaign.isFeatured || campaign.isUrgent) && (
                         <div className="pt-2 border-t border-gray-100 flex flex-wrap gap-2">
@@ -442,7 +442,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
                             </span>
                           )}
                           {campaign.isUrgent && (
-                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-warning-100 text-warning-700">
                               {t('campaignDetail.sidebar.badges.urgent')}
                             </span>
                           )}
@@ -486,7 +486,7 @@ export default async function CampaignPage({ params }: CampaignPageProps) {
           {relatedCampaigns.length > 0 && (
             <section className="mt-10">
               <div className="mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">{t('campaignDetail.related.title')}</h2>
+                <h2 className="text-2xl font-bold text-dark">{t('campaignDetail.related.title')}</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {relatedCampaigns.map((relatedCampaign) => (

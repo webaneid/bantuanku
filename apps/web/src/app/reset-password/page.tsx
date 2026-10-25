@@ -51,7 +51,7 @@ function ResetPasswordContent() {
     <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
       {done ? (
         <div className="text-center space-y-4">
-          <h1 className="text-xl font-bold text-gray-900">{t("auth.resetPassword.successTitle")}</h1>
+          <h1 className="text-xl font-bold text-dark">{t("auth.resetPassword.successTitle")}</h1>
           <p className="text-gray-600">{t("auth.resetPassword.successDesc")}</p>
           <Link href="/login">
             <Button fullWidth>{t("auth.verifyEmail.goLogin")}</Button>
@@ -59,7 +59,7 @@ function ResetPasswordContent() {
         </div>
       ) : invalid ? (
         <div className="text-center space-y-4">
-          <h1 className="text-xl font-bold text-gray-900">{t("auth.resetPassword.invalidTitle")}</h1>
+          <h1 className="text-xl font-bold text-dark">{t("auth.resetPassword.invalidTitle")}</h1>
           <p className="text-gray-600">{t("auth.resetPassword.invalidDesc")}</p>
           <Link href="/forgot-password">
             <Button variant="outline" fullWidth>{t("auth.resetPassword.requestNew")}</Button>
@@ -68,7 +68,7 @@ function ResetPasswordContent() {
       ) : (
         <>
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">{t("auth.resetPassword.title")}</h1>
+            <h1 className="text-3xl font-bold text-dark">{t("auth.resetPassword.title")}</h1>
             <p className="text-gray-600 mt-2">{t("auth.resetPassword.subtitle")}</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-6">

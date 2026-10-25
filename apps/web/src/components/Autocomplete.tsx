@@ -103,7 +103,7 @@ export default function Autocomplete({
         className={`
           relative w-full px-3 py-2 border rounded-lg cursor-pointer transition-all
           ${isOpen ? "border-primary-500 ring-2 ring-primary-100" : "border-gray-300"}
-          ${disabled ? "bg-gray-50 cursor-not-allowed" : "bg-white hover:border-gray-400"}
+          ${disabled ? "bg-light cursor-not-allowed" : "bg-white hover:border-gray-400"}
         `}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
@@ -150,7 +150,7 @@ export default function Autocomplete({
                   key={option.value}
                   className={`
                     px-3 py-2 cursor-pointer transition-colors
-                    ${option.value === value ? "bg-primary-50 text-primary-700" : "hover:bg-gray-50"}
+                    ${option.value === value ? "bg-primary-50 text-primary-700" : "hover:bg-light"}
                   `}
                   onClick={() => handleSelect(option.value)}
                 >

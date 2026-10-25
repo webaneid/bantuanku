@@ -32,10 +32,10 @@ export const QurbanSection: React.FC<QurbanSectionProps> = ({
   if (itemsWithHandler.length === 0) return null;
 
   return (
-    <section id="section-qurban" className="section-qurban py-16 bg-gradient-to-br from-amber-50 to-orange-50">
+    <section id="section-qurban" className="section-qurban py-16 bg-gradient-to-br from-warning-50 to-warning-50">
       <div className="container">
         <div className="text-center mb-4">
-          <h2 className="section-title text-gray-900">
+          <h2 className="section-title text-dark">
             {title}
           </h2>
           <p className="section-description text-gray-600">
@@ -47,7 +47,7 @@ export const QurbanSection: React.FC<QurbanSectionProps> = ({
 
         <div className="text-center mt-4">
           <Link href="/qurban">
-            <Button size="lg" className="bg-amber-600 hover:bg-amber-700">
+            <Button size="lg" className="bg-warning-600 hover:bg-warning-700">
               Lihat Semua Paket Qurban
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path

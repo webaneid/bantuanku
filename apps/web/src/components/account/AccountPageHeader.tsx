@@ -52,7 +52,7 @@ export function AccountPageHeader({ title, subtitle, backHref, action, className
 
       <div className={cn('hidden lg:flex items-start justify-between gap-4 mb-6', className)}>
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+          <h1 className="text-2xl font-bold text-dark">{title}</h1>
           {subtitle && <p className="text-gray-600 mt-1">{subtitle}</p>}
         </div>
         {action && <div className="flex-shrink-0">{action}</div>}

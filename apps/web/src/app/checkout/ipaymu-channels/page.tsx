@@ -280,7 +280,7 @@ export default function IPaymuChannelsPage() {
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gray-50 py-8">
+        <main className="min-h-screen bg-light py-8">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto">
               <div className="animate-pulse space-y-4">
@@ -299,12 +299,12 @@ export default function IPaymuChannelsPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 py-8 pb-24 lg:pb-8">
+      <main className="min-h-screen bg-light py-8 pb-24 lg:pb-8">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
             {/* Header */}
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl font-bold text-dark mb-2">
                 {t('checkout.ipaymu.title')}
               </h1>
               <p className="text-gray-600" style={{ fontSize: '15px' }}>
@@ -313,7 +313,7 @@ export default function IPaymuChannelsPage() {
             </div>
 
             {/* Amount Summary */}
-            <div className="bg-gradient-to-r from-orange-500 to-orange-400 rounded-lg p-6 mb-6 text-white">
+            <div className="bg-gradient-to-r from-warning-500 to-warning-400 rounded-lg p-6 mb-6 text-white">
               <div className="text-sm mb-2">{t('checkout.ipaymu.amountDue')}</div>
               <div className="text-3xl font-bold mb-2">
                 Rp {totalAmount.toLocaleString(activeLocale)}
@@ -326,12 +326,12 @@ export default function IPaymuChannelsPage() {
             {/* Payment Channel Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 bg-warning-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-warning-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900">{t('checkout.ipaymu.sectionTitle')}</h2>
+                <h2 className="text-lg font-semibold text-dark">{t('checkout.ipaymu.sectionTitle')}</h2>
               </div>
               <p className="text-sm text-gray-600 mb-4">
                 {t('checkout.ipaymu.sectionDesc')}
@@ -342,12 +342,12 @@ export default function IPaymuChannelsPage() {
             <div className="space-y-6">
               {paymentMethods.map((method) => (
                 <div key={method.Code} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4" style={{ fontSize: '1.3rem' }}>{method.Name}</h3>
+                  <h3 className="font-semibold text-dark mb-4" style={{ fontSize: '1.3rem' }}>{method.Name}</h3>
                   <div className="space-y-2">
                     {method.Channels.filter(ch => ch.FeatureStatus === 'active').map((channel) => (
                       <label
                         key={`${method.Code}:${channel.Code}`}
-                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-orange-500 hover:bg-orange-50 transition-colors"
+                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg cursor-pointer hover:border-warning-500 hover:bg-warning-50 transition-colors"
                       >
                         <div className="flex items-center gap-3 flex-1">
                           <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
@@ -357,7 +357,7 @@ export default function IPaymuChannelsPage() {
                             </span>
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900">{channel.Name}</div>
+                            <div className="font-medium text-dark">{channel.Name}</div>
                             {channel.TransactionFee && (
                               <div className="text-sm text-gray-500">
                                 {formatFee(channel.TransactionFee)}
@@ -371,7 +371,7 @@ export default function IPaymuChannelsPage() {
                           value={`${method.Code}:${channel.Code}`}
                           checked={selectedChannel === `${method.Code}:${channel.Code}`}
                           onChange={(e) => setSelectedChannel(e.target.value)}
-                          className="w-5 h-5 text-orange-600 focus:ring-orange-500"
+                          className="w-5 h-5 text-warning-600 focus:ring-warning-500"
                         />
                       </label>
                     ))}

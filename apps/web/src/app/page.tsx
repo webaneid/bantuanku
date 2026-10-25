@@ -495,7 +495,7 @@ export default async function HomePage() {
         <HeroSlider slides={heroSlidesData} showNavigation={false} />
 
         {/* Program Categories */}
-        <section className="categories-section py-12 bg-gray-50">
+        <section className="categories-section py-12 bg-light">
           <div className="container">
             <CategoryGrid categories={serviceCategoriesData} />
           </div>
@@ -520,7 +520,7 @@ export default async function HomePage() {
         <section className="programs-section py-16 bg-white">
           <div className="container">
             <div className="text-center mb-6">
-              <h2 className="section-title text-gray-900">
+              <h2 className="section-title text-dark">
                 {programsSectionData.title}
               </h2>
               <p className="section-description text-gray-600">
@@ -645,7 +645,7 @@ export default async function HomePage() {
         <section className="why-choose-us-section py-16 bg-white">
           <div className="container">
             <div className="text-center mb-4">
-              <h2 className="section-title text-gray-900">
+              <h2 className="section-title text-dark">
                 {whyChooseUsSectionData.title}
               </h2>
               <p className="section-description text-gray-600">
@@ -661,7 +661,7 @@ export default async function HomePage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">{item.title}</h3>
+                  <h3 className="text-lg font-bold text-dark mb-3">{item.title}</h3>
                   <p className="text-xs text-gray-600 leading-relaxed">
                     {item.description}
                   </p>

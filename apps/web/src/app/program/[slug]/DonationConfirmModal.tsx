@@ -79,7 +79,7 @@ export default function DonationConfirmModal({
 
       <ConfirmModalBlock tone="neutral" className="mb-6">
         <p className="text-sm text-gray-600 mb-1">{t('campaignDetail.confirmModal.programLabel')}</p>
-        <p className="font-semibold text-gray-900" style={{ fontSize: '15px' }}>
+        <p className="font-semibold text-dark" style={{ fontSize: '15px' }}>
           {campaignTitle}
         </p>
       </ConfirmModalBlock>

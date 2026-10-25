@@ -2,7 +2,7 @@
 @import '../mixins';
 
 .footer {
-  background: linear-gradient(to bottom, $gray-900, $gray-950);
+  background: linear-gradient(to bottom, $dark, $gray-950);
   color: $gray-300;
   padding: $spacing-16 0 $spacing-8;
 

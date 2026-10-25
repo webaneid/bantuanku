@@ -163,11 +163,11 @@ export default function DonationAmountSelector({
           </div>
 
           {/* Price per day info */}
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-xs text-amber-800">
+          <div className="p-3 bg-warning-50 border border-warning-200 rounded-lg">
+            <p className="text-xs text-warning-800">
               {t('campaignDetail.amountSelector.fidyah.pricePerDay')} <span className="font-semibold">{formatRupiahFull(fidyahPricePerDay)}</span>
             </p>
-            <p className="text-xs text-amber-700 mt-1">
+            <p className="text-xs text-warning-700 mt-1">
               {t('campaignDetail.amountSelector.fidyah.priceHint')}
             </p>
           </div>

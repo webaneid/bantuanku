@@ -73,8 +73,8 @@ export function MobileMenuPanel() {
         </div>
         {user ? (
           <>
-            <div className="px-4 py-3 bg-gray-50 rounded-lg mb-3">
-              <p className="text-sm font-semibold text-gray-900 truncate">{user.name}</p>
+            <div className="px-4 py-3 bg-light rounded-lg mb-3">
+              <p className="text-sm font-semibold text-dark truncate">{user.name}</p>
               <p className="text-xs text-gray-500 truncate">{user.email}</p>
             </div>
             <Link href="/account">

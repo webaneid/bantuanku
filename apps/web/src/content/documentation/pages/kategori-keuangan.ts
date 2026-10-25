@@ -13,9 +13,9 @@ export const kategoriKeuanganDoc: DocumentationPage = {
             heading: "Konsep Dasar: Selamat Tinggal Debit & Kredit!",
             bodyHtml: `
                 <p>Platform Jaladana dirancang untuk memudahkan pengelola lembaga amal (yayasan) dalam mencatat keuangan <strong>tanpa harus mengerti ilmu akuntansi (Debit & Kredit)</strong>. Kami menggunakan sistem <strong>Kategori (Category System)</strong> yang jauh lebih human-friendly.</p>
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 my-4">
-                    <h4 className="font-semibold text-green-800 mb-2">Mengapa Sistem Kategori?</h4>
-                    <ul className="list-disc pl-5 space-y-1 text-green-900">
+                <div className="bg-success-50 border border-success-200 rounded-lg p-4 my-4">
+                    <h4 className="font-semibold text-success-800 mb-2">Mengapa Sistem Kategori?</h4>
+                    <ul className="list-disc pl-5 space-y-1 text-success-900">
                         <li><strong>Lebih Mudah:</strong> Anda hanya perlu memilih "Uang Masuk" atau "Uang Keluar" beserta tujuannya (misal: "Penyaluran ke Fakir").</li>
                         <li><strong>Otomatis Update:</strong> Saldo rekening bank akan bertambah atau berkurang secara otomatis.</li>
                         <li><strong>Laporan Praktis:</strong> Pelacakan dana (Zakat, Campaign, Qurban, Operasional) langsung dikelompokkan berdasarkan kategori.</li>
@@ -31,7 +31,7 @@ export const kategoriKeuanganDoc: DocumentationPage = {
                 <div className="overflow-x-auto mt-4 mb-4">
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr className="bg-gray-50 border-b">
+                            <tr className="bg-light border-b">
                                 <th className="py-2 px-4 text-left font-semibold">Grup</th>
                                 <th className="py-2 px-4 text-left font-semibold">Nama Kategori di Sistem</th>
                                 <th className="py-2 px-4 text-left font-semibold">Keterangan</th>
@@ -40,41 +40,41 @@ export const kategoriKeuanganDoc: DocumentationPage = {
                         <tbody>
                             <tr className="border-b">
                                 <td className="py-2 px-4 font-semibold">Campaign</td>
-                                <td className="py-2 px-4 font-mono text-sm text-blue-600">campaign_donation</td>
+                                <td className="py-2 px-4 font-mono text-sm text-info-600">campaign_donation</td>
                                 <td className="py-2 px-4">Donasi campaign umum / donasi reguler</td>
                             </tr>
                             <tr className="border-b">
                                 <td className="py-2 px-4 font-semibold" rowSpan="5">Zakat</td>
-                                <td className="py-2 px-4 font-mono text-sm text-blue-600">zakat_fitrah</td>
+                                <td className="py-2 px-4 font-mono text-sm text-info-600">zakat_fitrah</td>
                                 <td className="py-2 px-4">Pembayaran Zakat Fitrah</td>
                             </tr>
                             <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-blue-600">zakat_maal</td>
+                                <td className="py-2 px-4 font-mono text-sm text-info-600">zakat_maal</td>
                                 <td className="py-2 px-4">Pembayaran Zakat Maal</td>
                             </tr>
                             <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-blue-600">zakat_profesi</td>
+                                <td className="py-2 px-4 font-mono text-sm text-info-600">zakat_profesi</td>
                                 <td className="py-2 px-4">Pembayaran Zakat Profesi</td>
                             </tr>
                             <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-blue-600">zakat_pertanian</td>
+                                <td className="py-2 px-4 font-mono text-sm text-info-600">zakat_pertanian</td>
                                 <td className="py-2 px-4">Pembayaran Zakat Pertanian</td>
                             </tr>
                             <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-blue-600">zakat_peternakan</td>
+                                <td className="py-2 px-4 font-mono text-sm text-info-600">zakat_peternakan</td>
                                 <td className="py-2 px-4">Pembayaran Zakat Peternakan</td>
                             </tr>
                             <tr className="border-b">
                                 <td className="py-2 px-4 font-semibold" rowSpan="3">Qurban</td>
-                                <td className="py-2 px-4 font-mono text-sm text-blue-600">qurban_payment</td>
+                                <td className="py-2 px-4 font-mono text-sm text-info-600">qurban_payment</td>
                                 <td className="py-2 px-4">Pembayaran lunas hewan Qurban</td>
                             </tr>
                             <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-blue-600">qurban_savings</td>
+                                <td className="py-2 px-4 font-mono text-sm text-info-600">qurban_savings</td>
                                 <td className="py-2 px-4">Tabungan hewan Qurban cicilan</td>
                             </tr>
                             <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-blue-600">qurban_admin_fee</td>
+                                <td className="py-2 px-4 font-mono text-sm text-info-600">qurban_admin_fee</td>
                                 <td className="py-2 px-4">Biaya tambahan administrasi Qurban</td>
                             </tr>
                         </tbody>

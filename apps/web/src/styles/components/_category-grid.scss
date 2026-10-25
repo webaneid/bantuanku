@@ -28,7 +28,7 @@
     padding: $spacing-5;
     background: white;
     border-radius: $radius-xl;
-    box-shadow: 0 4px 16px -2px rgba($gray-900, 0.08);
+    box-shadow: 0 4px 16px -2px rgba($dark, 0.08);
     transition: box-shadow $transition-base, transform $transition-base;
   }
 
@@ -89,7 +89,7 @@
     margin: 0;
     font-size: $font-base;
     font-weight: 700;
-    color: $gray-900;
+    color: $dark;
     transition: color $transition-base;
   }
 

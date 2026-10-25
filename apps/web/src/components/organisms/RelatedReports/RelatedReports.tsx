@@ -18,7 +18,7 @@ export function RelatedReports({ mode, reports }: RelatedReportsProps) {
   return (
     <section className="mt-10" aria-labelledby="related-reports-title">
       <div className="mb-2 md:mb-4 flex items-center justify-between gap-3">
-        <h2 id="related-reports-title" className="text-xl md:text-2xl font-bold text-gray-900">
+        <h2 id="related-reports-title" className="text-xl md:text-2xl font-bold text-dark">
           {mode === 'related' ? t('laporanDetail.related.title') : t('laporanDetail.related.other')}
         </h2>
         <Link href="/laporan" className="text-sm font-medium text-primary-600 hover:text-primary-700 whitespace-nowrap">

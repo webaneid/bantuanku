@@ -29,7 +29,7 @@ export default function KeranjangBantuanPage() {
     return (
       <>
         <Header />
-        <main className="min-h-screen bg-gray-50 py-16">
+        <main className="min-h-screen bg-light py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-md mx-auto text-center">
               <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
@@ -37,7 +37,7 @@ export default function KeranjangBantuanPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <h1 className="section-title text-gray-900 mb-2">
+              <h1 className="section-title text-dark mb-2">
                 {t('keranjang.empty.title')}
               </h1>
               <p className="text-gray-600 mb-8" style={{ fontSize: '15px' }}>
@@ -60,7 +60,7 @@ export default function KeranjangBantuanPage() {
   const removeButton = (cartItemId: string) => (
     <button
       onClick={() => removeFromCart(cartItemId)}
-      className="text-gray-400 hover:text-red-600 transition-colors p-1 -mr-1 flex-shrink-0"
+      className="text-gray-400 hover:text-danger-600 transition-colors p-1 -mr-1 flex-shrink-0"
       aria-label={t('keranjang.item.removeAriaLabel')}
     >
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -72,11 +72,11 @@ export default function KeranjangBantuanPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-gray-50 py-4 md:py-8">
+      <main className="min-h-screen bg-light py-4 md:py-8">
         <div className="container mx-auto px-[15px] md:px-4">
           {/* Page Title — desktop; di mobile judul ada di blok ringkasan */}
           <div className="hidden lg:block mb-8">
-            <h1 className="section-title text-gray-900 mb-2">{t('keranjang.title')}</h1>
+            <h1 className="section-title text-dark mb-2">{t('keranjang.title')}</h1>
             <p className="text-gray-600" style={{ fontSize: '15px' }}>
               {t('keranjang.itemCount', { count: items.length })}
             </p>
@@ -110,33 +110,33 @@ export default function KeranjangBantuanPage() {
                     // Qurban Item Display
                     <div>
                       <div className="flex items-center justify-between gap-3 mb-2">
-                        <span className="inline-block px-3 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">
+                        <span className="inline-block px-3 py-1 text-xs font-medium bg-warning-100 text-warning-700 rounded-full">
                           Qurban {item.qurbanData.animalType === 'cow' ? 'Sapi' : 'Kambing'}
                         </span>
                         {removeButton(item.cartItemId)}
                       </div>
                       <div className="min-w-0">
 
-                        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">
+                        <h3 className="text-base md:text-lg font-semibold text-dark mb-2">
                           <Link href={`/qurban/${item.slug}`} className="hover:text-primary-600 transition-colors">
                             {item.title}
                           </Link>
                         </h3>
 
-                        <div className="bg-amber-50 rounded-lg p-3 mt-3 space-y-2 text-sm">
+                        <div className="bg-warning-50 rounded-lg p-3 mt-3 space-y-2 text-sm">
                           <div className="flex justify-between gap-3">
                             <span className="text-gray-600">{t('keranjang.item.periode')}</span>
-                            <span className="font-medium text-gray-900 text-right">{item.qurbanData.periodName}</span>
+                            <span className="font-medium text-dark text-right">{item.qurbanData.periodName}</span>
                           </div>
                           <div className="flex justify-between gap-3">
                             <span className="text-gray-600">{t('keranjang.item.jenis')}</span>
-                            <span className="font-medium text-gray-900 text-right">
+                            <span className="font-medium text-dark text-right">
                               {item.qurbanData.animalType === 'cow' ? 'Sapi' : 'Kambing'} - {item.qurbanData.packageType === 'individual' ? 'Individu' : 'Patungan'}
                             </span>
                           </div>
                           <div className="flex justify-between gap-3">
                             <span className="text-gray-600">{t('keranjang.item.jumlah')}</span>
-                            <span className="font-medium text-gray-900">{item.qurbanData.quantity} ekor</span>
+                            <span className="font-medium text-dark">{item.qurbanData.quantity} ekor</span>
                           </div>
                         </div>
 
@@ -150,8 +150,8 @@ export default function KeranjangBantuanPage() {
                             <span className="font-medium mono">{formatRupiahFull(item.qurbanData.adminFee * item.qurbanData.quantity)}</span>
                           </div>
                           <div className="border-t border-gray-100 pt-2 mt-2 flex justify-between items-center gap-3">
-                            <span className="font-semibold text-gray-900">{t('keranjang.item.total')}</span>
-                            <span className="text-lg font-bold text-amber-600 mono">{formatRupiahFull(item.amount)}</span>
+                            <span className="font-semibold text-dark">{t('keranjang.item.total')}</span>
+                            <span className="text-lg font-bold text-warning-600 mono">{formatRupiahFull(item.amount)}</span>
                           </div>
                         </div>
                       </div>
@@ -160,32 +160,32 @@ export default function KeranjangBantuanPage() {
                     // Zakat Item Display
                     <div>
                       <div className="flex items-center justify-between gap-3 mb-2">
-                        <span className="inline-block px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full">
+                        <span className="inline-block px-3 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">
                           Zakat {item.zakatData.zakatType.charAt(0).toUpperCase() + item.zakatData.zakatType.slice(1)}
                         </span>
                         {removeButton(item.cartItemId)}
                       </div>
                       <div className="min-w-0">
 
-                        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
+                        <h3 className="text-base md:text-lg font-semibold text-dark mb-2">{item.title}</h3>
 
                         {item.zakatData.quantity && item.zakatData.pricePerUnit ? (
-                          <div className="bg-emerald-50 rounded-lg p-3 mt-3 space-y-2 text-sm">
+                          <div className="bg-primary-50 rounded-lg p-3 mt-3 space-y-2 text-sm">
                             <div className="flex justify-between gap-3">
                               <span className="text-gray-600">Jumlah:</span>
-                              <span className="font-medium text-gray-900">{item.zakatData.quantity} {item.zakatData.zakatType === 'fitrah' ? 'jiwa' : 'unit'}</span>
+                              <span className="font-medium text-dark">{item.zakatData.quantity} {item.zakatData.zakatType === 'fitrah' ? 'jiwa' : 'unit'}</span>
                             </div>
                             <div className="flex justify-between gap-3">
                               <span className="text-gray-600">Per {item.zakatData.zakatType === 'fitrah' ? 'jiwa' : 'unit'}:</span>
-                              <span className="font-medium text-gray-900 mono">{formatRupiahFull(item.zakatData.pricePerUnit)}</span>
+                              <span className="font-medium text-dark mono">{formatRupiahFull(item.zakatData.pricePerUnit)}</span>
                             </div>
-                            <div className="border-t border-emerald-200 pt-2 mt-2 flex justify-between items-center gap-3">
-                              <span className="font-semibold text-gray-900">{t('keranjang.item.total')}</span>
-                              <span className="text-lg font-bold text-emerald-600 mono">{formatRupiahFull(item.amount)}</span>
+                            <div className="border-t border-primary-200 pt-2 mt-2 flex justify-between items-center gap-3">
+                              <span className="font-semibold text-dark">{t('keranjang.item.total')}</span>
+                              <span className="text-lg font-bold text-primary-600 mono">{formatRupiahFull(item.amount)}</span>
                             </div>
                           </div>
                         ) : (
-                          <p className="text-lg font-bold text-emerald-600 mt-2 mono">{formatRupiahFull(item.amount)}</p>
+                          <p className="text-lg font-bold text-primary-600 mt-2 mono">{formatRupiahFull(item.amount)}</p>
                         )}
                       </div>
                     </div>
@@ -204,7 +204,7 @@ export default function KeranjangBantuanPage() {
                       </div>
                       <div className="min-w-0">
 
-                        <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-1">
+                        <h3 className="text-base md:text-lg font-semibold text-dark mb-1">
                           <Link href={`/program/${item.slug}`} className="hover:text-primary-600 transition-colors">
                             {item.title}
                           </Link>
@@ -244,7 +244,7 @@ export default function KeranjangBantuanPage() {
               {/* Clear Cart Button */}
               <button
                 onClick={clearCart}
-                className="text-sm text-red-600 hover:text-red-700 font-medium mt-4"
+                className="text-sm text-danger-600 hover:text-danger-700 font-medium mt-4"
               >
                 {t('keranjang.clearCart')}
               </button>
@@ -253,7 +253,7 @@ export default function KeranjangBantuanPage() {
             {/* Summary Sidebar — desktop saja (mobile memakai blok primary di atas) */}
             <div className="hidden lg:block lg:col-span-1">
               <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 sticky top-24">
-                <h2 className="section-title text-gray-900 mb-6">
+                <h2 className="section-title text-dark mb-6">
                   {t('keranjang.summary.title')}
                 </h2>
 
@@ -268,7 +268,7 @@ export default function KeranjangBantuanPage() {
                             ? item.title.substring(0, 25) + '...'
                             : item.title}
                         </span>
-                        <span className="text-sm font-medium text-gray-900 mono whitespace-nowrap">
+                        <span className="text-sm font-medium text-dark mono whitespace-nowrap">
                           {formatRupiahFull(item.amount)}
                         </span>
                       </div>
@@ -285,7 +285,7 @@ export default function KeranjangBantuanPage() {
                 {/* Total */}
                 <div className="mb-6 pb-6 border-b border-gray-200">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold text-gray-900">
+                    <span className="text-lg font-semibold text-dark">
                       {t('keranjang.summary.totalLabel')}
                     </span>
                     <span className="text-2xl font-bold text-primary-600 mono">

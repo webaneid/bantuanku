@@ -90,12 +90,12 @@ export default async function PublicZakatReportPage({ searchParams }: PageProps)
     <>
       <Header />
       <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Zakat', href: '/zakat' }, { label: 'Laporan' }]} />
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-light">
         <section className="py-10 bg-gradient-to-br from-primary-50 to-white border-b border-primary-100">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
-                <h1 className="section-title text-gray-900">Laporan Zakat Publik</h1>
+                <h1 className="section-title text-dark">Laporan Zakat Publik</h1>
                 <p className="section-description text-gray-600 mt-1">Ringkas, transparan, dan mudah dicek.</p>
               </div>
               <Link href="/zakat" className="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-100">
@@ -120,20 +120,20 @@ export default async function PublicZakatReportPage({ searchParams }: PageProps)
               <div className="bg-white border border-gray-200 rounded-xl p-2 flex gap-2 text-sm font-medium overflow-x-auto">
                 <Link
                   href={buildTabHref('titipan')}
-                  className={`px-4 py-2 rounded-lg border ${tab === 'titipan' ? 'bg-primary-50 text-primary-700 border-primary-200' : 'text-gray-500 border-transparent hover:bg-gray-50'}`}
+                  className={`px-4 py-2 rounded-lg border ${tab === 'titipan' ? 'bg-primary-50 text-primary-700 border-primary-200' : 'text-gray-500 border-transparent hover:bg-light'}`}
                 >
                   Titipan Zakat
                 </Link>
                 <Link
                   href={buildTabHref('kegiatan')}
-                  className={`px-4 py-2 rounded-lg border ${tab === 'kegiatan' ? 'bg-primary-50 text-primary-700 border-primary-200' : 'text-gray-500 border-transparent hover:bg-gray-50'}`}
+                  className={`px-4 py-2 rounded-lg border ${tab === 'kegiatan' ? 'bg-primary-50 text-primary-700 border-primary-200' : 'text-gray-500 border-transparent hover:bg-light'}`}
                 >
                   Laporan Kegiatan
                 </Link>
               </div>
 
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden p-4">
-                <h3 className="font-semibold text-gray-900 mb-4">
+                <h3 className="font-semibold text-dark mb-4">
                   {tab === 'titipan'
                     ? `Tabel Titipan Zakat (${titipanData.rows.length})`
                     : `Tabel Laporan Kegiatan Zakat (${titipanData.activities.length})`}

@@ -14,10 +14,10 @@ export const whatsappNotificationDoc: DocumentationPage = {
             bodyHtml: `
                 <p>Sistem Jaladana terintegrasi dengan WhatsApp (menggunakan layanan GOWA / unofficial WhatsApp Web API) untuk mengirimkan <strong>notifikasi 1-arah secara otomatis</strong>.</p>
                 <p>Notifikasi ini mencakup seluruh siklus hidup donatur, mulai dari pendaftaran akun, tagihan transaksi, konfirmasi pembayaran, pengingat cicilan qurban, hingga laporan penyaluran dana.</p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-4">
-                    <h4 className="font-semibold text-blue-800">Tanpa Biaya Per Pesan (Gratis)</h4>
-                    <p className="text-sm text-blue-900 mt-1">Sistem ini berjalan di atas nomor WhatsApp Anda sendiri melalui metode scan QR Code (GOWA). Karena tidak menggunakan WhatsApp Cloud API resmi berbayar, maka pengiriman pesan ini <strong>100% Gratis</strong> tanpa biaya per template.</p>
-                    <p className="text-sm text-blue-900 mt-1"><strong>Tips Anti-Ban:</strong> Gunakan nomor khusus Yayasan (bukan nomor pribadi) dan sistem kami sudah dilengkapi fitur <em>Delay Antar Pesan</em> untuk menghindari pemblokiran.</p>
+                <div className="bg-info-50 border border-info-200 rounded-lg p-4 my-4">
+                    <h4 className="font-semibold text-info-800">Tanpa Biaya Per Pesan (Gratis)</h4>
+                    <p className="text-sm text-info-900 mt-1">Sistem ini berjalan di atas nomor WhatsApp Anda sendiri melalui metode scan QR Code (GOWA). Karena tidak menggunakan WhatsApp Cloud API resmi berbayar, maka pengiriman pesan ini <strong>100% Gratis</strong> tanpa biaya per template.</p>
+                    <p className="text-sm text-info-900 mt-1"><strong>Tips Anti-Ban:</strong> Gunakan nomor khusus Yayasan (bukan nomor pribadi) dan sistem kami sudah dilengkapi fitur <em>Delay Antar Pesan</em> untuk menghindari pemblokiran.</p>
                 </div>
             `,
         },

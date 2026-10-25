@@ -113,7 +113,7 @@ export default function QurbanConfirmModal({
             )}
           </div>
           <div className="border-t border-gray-300 pt-2 mt-2 flex justify-between">
-            <span className="font-semibold text-gray-900">{t('qurbanDetail.confirmModal.summary.total')}</span>
+            <span className="font-semibold text-dark">{t('qurbanDetail.confirmModal.summary.total')}</span>
             <span className="text-lg font-bold text-primary-600 mono">{formatRupiahFull(total)}</span>
           </div>
         </div>
@@ -121,22 +121,22 @@ export default function QurbanConfirmModal({
 
       <ConfirmModalBlock tone="neutral" className="mb-6">
         <p className="text-sm text-gray-600 mb-1">{t('qurbanDetail.confirmModal.packageLabel')}</p>
-        <p className="font-semibold text-gray-900" style={{ fontSize: '15px' }}>
+        <p className="font-semibold text-dark" style={{ fontSize: '15px' }}>
           {qurbanPackage.name}
         </p>
         <div className="mt-2 text-sm text-gray-600 space-y-1">
           <div className="flex justify-between">
             <span>{t('qurbanDetail.confirmModal.periodLabel')}</span>
-            <span className="font-medium text-gray-900">{orderData.periodName}</span>
+            <span className="font-medium text-dark">{orderData.periodName}</span>
           </div>
           <div className="flex justify-between">
             <span>{t('qurbanDetail.confirmModal.typeLabel')}</span>
-            <span className="font-medium text-gray-900">{animalTypeLabel} - {packageTypeLabel}</span>
+            <span className="font-medium text-dark">{animalTypeLabel} - {packageTypeLabel}</span>
           </div>
           {qurbanPackage.packageType === 'individual' && (
             <div className="flex justify-between">
               <span>{t('qurbanDetail.confirmModal.quantityLabel')}</span>
-              <span className="font-medium text-gray-900">{t('qurbanDetail.confirmModal.quantityValue', { quantity: orderData.quantity })}</span>
+              <span className="font-medium text-dark">{t('qurbanDetail.confirmModal.quantityValue', { quantity: orderData.quantity })}</span>
             </div>
           )}
         </div>
