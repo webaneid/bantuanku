@@ -1,7 +1,7 @@
 import { asc, eq, sql } from "drizzle-orm";
-import { disbursements, transactionPayments } from "@bantuanku/db";
+import { disbursements, transactionPayments, transactions } from "@bantuanku/db";
 import type { Database } from "@bantuanku/db";
-import { loadAccountCatalog, postPaidDisbursement, postVerifiedPayment } from "./cash-book";
+import { loadAccountCatalog, postPaidDisbursement, postPaidTransactionWithoutPayment, postVerifiedPayment } from "./cash-book";
 
 /**
  * Backfill Buku Kas dari riwayat (ADR-0016, docs/arsitektur-buku-kas.md §7). Idempoten.
@@ -11,6 +11,8 @@ import { loadAccountCatalog, postPaidDisbursement, postVerifiedPayment } from ".
 export interface BackfillReport {
   payments: { verified: number; posted: number; skipped: Record<string, number> };
   disbursements: { paid: number; posted: number; skipped: Record<string, number> };
+  /** Kelompok A (D3): transaksi paid tanpa pembayaran terverifikasi, dicatat sintetis */
+  paidWithoutPayment: { candidates: number; posted: number; amount: number; skipped: Record<string, number> };
   entriesInserted: number;
   byComponent: Record<string, { rows: number; amount: number }>;
   byFund: Record<string, { in: number; out: number }>;
@@ -41,6 +43,7 @@ export async function runBackfill(db: Database): Promise<BackfillReport> {
   const report: BackfillReport = {
     payments: { verified: 0, posted: 0, skipped: {} },
     disbursements: { paid: 0, posted: 0, skipped: {} },
+    paidWithoutPayment: { candidates: 0, posted: 0, amount: 0, skipped: {} },
     entriesInserted: 0,
     byComponent: {},
     byFund: {},
@@ -67,6 +70,23 @@ export async function runBackfill(db: Database): Promise<BackfillReport> {
     const r = await postVerifiedPayment(db, p.id, catalog);
     if (r.skipped) bump(report.payments.skipped, r.skipped);
     else report.payments.posted += 1;
+    r.entries.forEach(add);
+  }
+
+  // Kelompok A (D3): transaksi paid tanpa pembayaran terverifikasi → pemasukan sintetis berlabel
+  const noPayment = await db
+    .select({ id: transactions.id })
+    .from(transactions)
+    .where(sql`${transactions.paymentStatus} = 'paid' and not exists (select 1 from transaction_payments p where p.transaction_id = ${transactions.id} and p.status = 'verified')`)
+    .orderBy(asc(transactions.paidAt), asc(transactions.id));
+  report.paidWithoutPayment.candidates = noPayment.length;
+  for (const t of noPayment) {
+    const r = await postPaidTransactionWithoutPayment(db, t.id, catalog);
+    if (r.skipped) bump(report.paidWithoutPayment.skipped, r.skipped);
+    else {
+      report.paidWithoutPayment.posted += 1;
+      report.paidWithoutPayment.amount += r.entries.reduce((a, e) => a + e.amount, 0);
+    }
     r.entries.forEach(add);
   }
 

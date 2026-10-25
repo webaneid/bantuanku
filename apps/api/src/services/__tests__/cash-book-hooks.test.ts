@@ -3,7 +3,7 @@ import { describe, it, expect } from "bun:test";
 import { eq, sql } from "drizzle-orm";
 import { createDb } from "@bantuanku/db/client";
 import { cashAccounts, cashEntries, disbursements, transactionPayments, transactions, users, createId } from "@bantuanku/db";
-import { postPaidDisbursement, postVerifiedPaymentsForTransaction, safePost } from "../cash-book";
+import { postPaidDisbursement, postPaidTransactionWithoutPayment, postVerifiedPaymentsForTransaction, safePost } from "../cash-book";
 
 /**
  * Integrasi posting (DB nyata dengan migrasi 123). Seluruh data uji dibuat DI DALAM transaksi lalu di-rollback,
@@ -23,7 +23,7 @@ async function inRollback(fn: (tx: any) => Promise<void>) {
   }
 }
 
-async function makeTxn(tx: any, v: { productType: string; category: string; total: number; unique?: number; pillar?: string; pm?: string }) {
+async function makeTxn(tx: any, v: { productType: string; category: string; total: number; unique?: number; pillar?: string; pm?: string; nonCash?: boolean }) {
   const id = createId();
   await tx.insert(transactions).values({
     id,
@@ -39,7 +39,7 @@ async function makeTxn(tx: any, v: { productType: string; category: string; tota
     category: v.category,
     paymentMethodId: v.pm,
     paymentStatus: "paid",
-    typeSpecificData: v.pillar ? { pillar: v.pillar } : {},
+    typeSpecificData: { ...(v.pillar ? { pillar: v.pillar } : {}), ...(v.nonCash ? { is_non_cash: true } : {}) },
   } as any);
   return id;
 }
@@ -207,6 +207,44 @@ describe("Buku Kas: safePost", () => {
       await addPayment(tx, t, 1000, "flip", "flip");
       await postVerifiedPaymentsForTransaction(tx, t);
       expect((await entriesOf(tx, t)).length).toBe(1);
+    });
+  });
+});
+
+describe("Buku Kas: paid tanpa pembayaran terverifikasi (D3, kelompok A)", () => {
+  it("dicatat sintetis sebesar total_amount, berlabel, idempoten", async () => {
+    await inRollback(async (tx) => {
+      const t = await makeTxn(tx, { productType: "zakat", category: "zakat_fitrah", total: 4500000, unique: 321, pm: "bank-uji-1" });
+      const r = await postPaidTransactionWithoutPayment(tx, t);
+      expect(r.posted).toBe(1);
+      const rows = await entriesOf(tx, t);
+      expect(rows.length).toBe(1);
+      expect(rows[0]).toMatchObject({ direction: "in", amount: 4500000, component: "pokok", fund: "zakat", fundDetail: "fitrah", refType: "transaction_paid" });
+      expect(rows[0].note).toContain("tanpa pembayaran terverifikasi");
+      expect((await postPaidTransactionWithoutPayment(tx, t)).skipped).toBe("sudah diposting");
+    });
+  });
+
+  it("dilewati bila sudah punya pembayaran verified atau transaksi non-tunai", async () => {
+    await inRollback(async (tx) => {
+      const withPay = await makeTxn(tx, { productType: "campaign", category: "campaign_donation", total: 1000 });
+      await addPayment(tx, withPay, 1000, "flip", "flip");
+      expect((await postPaidTransactionWithoutPayment(tx, withPay)).skipped).toBe("punya pembayaran terverifikasi");
+      const nonCash = await makeTxn(tx, { productType: "qurban", category: "qurban_savings", total: 5000000, nonCash: true });
+      expect((await postPaidTransactionWithoutPayment(tx, nonCash)).skipped).toBe("non-tunai/nominal 0");
+    });
+  });
+
+  it("pembayaran terverifikasi yang datang belakangan membalik baris sintetis (tidak dobel)", async () => {
+    await inRollback(async (tx) => {
+      const t = await makeTxn(tx, { productType: "campaign", category: "campaign_donation", total: 100000, pillar: "sedekah" });
+      await postPaidTransactionWithoutPayment(tx, t);
+      await addPayment(tx, t, 100000, "bank-uji-1");
+      await postVerifiedPaymentsForTransaction(tx, t);
+      const rows = await entriesOf(tx, t);
+      const net = rows.reduce((a: number, r: any) => a + (r.direction === "in" ? r.amount : -r.amount), 0);
+      expect(net).toBe(100000); // sintetis +100000, pembalik -100000, pembayaran nyata +100000
+      expect(rows.some((r: any) => r.component === "koreksi" && r.direction === "out" && r.reversesEntryId)).toBe(true);
     });
   });
 });

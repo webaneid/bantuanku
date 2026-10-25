@@ -164,11 +164,101 @@ export async function postVerifiedPayment(db: Database, paymentId: string, catal
   if (rows.length === 0) return { posted: 0, skipped: "tidak ada nominal", entries: [] };
 
   await db.insert(cashEntries).values(rows).onConflictDoNothing();
+  await reverseSyntheticForTransaction(db, txn.id);
   return {
     posted: rows.length,
     skipped: null,
     entries: rows.map((r) => ({ direction: r.direction, component: r.component as Component, amount: r.amount, fund: r.fund, account: cls.refKey })),
   };
+}
+
+/**
+ * Transaksi `paid` yang SUDAH punya baris sintetis (`transaction_paid`) lalu mendapat pembayaran terverifikasi:
+ * baris sintetis dibalik (entri `koreksi` keluar) supaya uangnya tidak tercatat dua kali.
+ */
+async function reverseSyntheticForTransaction(db: Database, transactionId: string): Promise<void> {
+  const synthetic = await db
+    .select()
+    .from(cashEntries)
+    .where(and(eq(cashEntries.transactionId, transactionId), eq(cashEntries.refType, "transaction_paid")));
+  for (const row of synthetic) {
+    await db
+      .insert(cashEntries)
+      .values({
+        id: createId(),
+        entryDate: new Date(),
+        direction: row.direction === "in" ? "out" : "in",
+        amount: row.amount,
+        component: "koreksi",
+        fund: row.fund,
+        fundDetail: row.fundDetail,
+        cashAccountId: row.cashAccountId,
+        method: row.method,
+        gatewayCode: row.gatewayCode,
+        refType: "adjustment",
+        refId: row.id,
+        transactionId: row.transactionId,
+        campaignId: row.campaignId,
+        reversesEntryId: row.id,
+        note: "Dibalik otomatis: pembayaran terverifikasi kini tercatat untuk transaksi ini",
+      })
+      .onConflictDoNothing();
+  }
+}
+
+/**
+ * Transaksi `paid` TANPA satu pun pembayaran terverifikasi (data eksisting / status diubah manual; keputusan D3, kelompok A):
+ * dicatat sebagai uang masuk sebesar `total_amount` (komponen pokok) dengan label sintetis. Transaksi non-tunai
+ * (`is_non_cash`, nominal 0 seperti konversi tabungan) dilewati. Kode unik tidak diasumsikan diterima.
+ */
+export async function postPaidTransactionWithoutPayment(db: Database, transactionId: string, catalogIn?: AccountCatalog): Promise<PostResult> {
+  const [txn] = await db.select().from(transactions).where(eq(transactions.id, transactionId)).limit(1);
+  if (!txn) return { posted: 0, skipped: "transaksi tidak ditemukan", entries: [] };
+  if (txn.paymentStatus !== "paid") return { posted: 0, skipped: "belum paid", entries: [] };
+  const tsd = (txn.typeSpecificData || {}) as Record<string, any>;
+  if (tsd.is_non_cash === true || !(txn.totalAmount > 0)) return { posted: 0, skipped: "non-tunai/nominal 0", entries: [] };
+
+  const [hasVerified] = await db
+    .select({ id: transactionPayments.id })
+    .from(transactionPayments)
+    .where(and(eq(transactionPayments.transactionId, txn.id), eq(transactionPayments.status, "verified")))
+    .limit(1);
+  if (hasVerified) return { posted: 0, skipped: "punya pembayaran terverifikasi", entries: [] };
+
+  const [already] = await db
+    .select({ id: cashEntries.id })
+    .from(cashEntries)
+    .where(and(eq(cashEntries.refType, "transaction_paid"), eq(cashEntries.refId, txn.id)))
+    .limit(1);
+  if (already) return { posted: 0, skipped: "sudah diposting", entries: [] };
+
+  const pillar = txn.productType === "campaign" ? tsd.pillar ?? (await campaignPillar(db, txn.productId)) : null;
+  const { fund, fundDetail } = fundForTransaction({ productType: txn.productType, category: txn.category, productId: txn.productId, typeSpecificData: tsd, pillar });
+  const catalog = catalogIn || (await loadAccountCatalog(db));
+  const cls = classifyAccount({ paymentMethod: txn.paymentMethodId, gatewayCode: null });
+  const accountId = await getOrCreateCashAccount(db, cls, catalog);
+
+  await db
+    .insert(cashEntries)
+    .values({
+      id: createId(),
+      entryDate: txn.paidAt || txn.createdAt,
+      direction: "in",
+      amount: txn.totalAmount,
+      component: "pokok",
+      fund,
+      fundDetail,
+      cashAccountId: accountId,
+      method: cls.method,
+      gatewayCode: cls.gatewayCode,
+      refType: "transaction_paid",
+      refId: txn.id,
+      transactionId: txn.id,
+      campaignId: txn.productType === "campaign" ? txn.productId : null,
+      note: "Data eksisting: transaksi paid tanpa pembayaran terverifikasi",
+    })
+    .onConflictDoNothing();
+  return { posted: 1, skipped: null, entries: [{ direction: "in", component: "pokok", amount: txn.totalAmount, fund, account: cls.refKey }] };
 }
 
 /** Posting satu pencairan `paid` → baris `out` (pokok) + `out` biaya_transfer bila ada. */

@@ -32,7 +32,7 @@ import { protectTransactionDonor } from "../lib/transaction-privacy";
 import { transactionCreateRateLimit } from "../middleware/ratelimit";
 import { getCookie } from "hono/cookie";
 import { updateBankBalance } from "../utils/bank-balance";
-import { postVerifiedPaymentsForTransaction, safePost } from "../services/cash-book";
+import { postPaidTransactionWithoutPayment, postVerifiedPaymentsForTransaction, safePost } from "../services/cash-book";
 import { sendCAPIEvent } from "../lib/meta-capi";
 import type { Env, Variables } from "../types";
 
@@ -790,6 +790,11 @@ app.put(
         updatedAt: new Date(),
       })
       .where(eq(transactions.id, id));
+
+    // Buku Kas (ADR-0016, D3): admin memaksa status "paid" tanpa catatan pembayaran → dicatat sintetis (berlabel)
+    if (body.paymentStatus === "paid") {
+      await safePost(db as any, `put-paid ${id}`, (d) => postPaidTransactionWithoutPayment(d, id));
+    }
 
     return c.json({
       success: true,

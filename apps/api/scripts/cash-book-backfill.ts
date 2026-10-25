@@ -22,6 +22,7 @@ backfillCashBook(db as any, { apply })
   .then((r) => {
     console.log(apply ? "== BACKFILL (DITULIS) ==" : "== BACKFILL DRY-RUN (tidak ada yang ditulis) ==");
     console.log(`Pembayaran verified: ${r.payments.verified} (diposting ${r.payments.posted}; dilewati ${JSON.stringify(r.payments.skipped)})`);
+    console.log(`Paid tanpa pembayaran (kelompok A): ${r.paidWithoutPayment.candidates} kandidat, diposting ${r.paidWithoutPayment.posted} (Rp ${rupiah(r.paidWithoutPayment.amount)}); dilewati ${JSON.stringify(r.paidWithoutPayment.skipped)}`);
     console.log(`Pencairan paid:      ${r.disbursements.paid} (diposting ${r.disbursements.posted}; dilewati ${JSON.stringify(r.disbursements.skipped)})`);
     console.log(`Baris buku kas baru: ${r.entriesInserted}`);
     console.log("-- per komponen"); for (const [k, v] of Object.entries(r.byComponent)) console.log(`   ${k.padEnd(22)} ${String(v.rows).padStart(4)} baris  Rp ${rupiah(v.amount)}`);

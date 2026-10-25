@@ -51,3 +51,7 @@ Implikasi: (1) **Kelompok A sangat besar** (zakat fitrah paid 66 transaksi Rp 27
 3. Ada dua jalur pencairan `paid` (`updateStatus` dan `markAsPaid`) ditambah penyaluran zakat lama yang membuat baris pencairan langsung berstatus paid; kategori pencairan zakat lama berupa `zakat` (bukan `zakat_to_*`), sehingga aturan dana memakai `disbursement_type` dan `typeSpecificData.asnaf`.
 4. Tabel penghubung bagi hasil (`disbursement_revenue_share_items`) ditulis saat submit pencairan; di produksi terisi (42), jadi bukan gap.
 5. Posting dijalankan di SAVEPOINT agar kegagalan tidak membatalkan transaksi induk (diuji).
+
+### Keputusan kelompok A (2026-10-26)
+
+Pemilik produk memilih **mencatat semua transaksi paid tanpa pembayaran terverifikasi sebagai uang masuk**. Diimplementasikan sebagai pemasukan sintetis berlabel (`ref_type = transaction_paid`) dengan pembalikan otomatis bila pembayaran asli muncul; transaksi non-tunai dikecualikan. Dampak: pada produksi, buku kas akan memuat sekitar Rp 320 jt tambahan yang **tidak** punya bukti pembayaran; tampil di laporan sebagai komponen/catatan "Data eksisting" sehingga dapat difilter dan diperbaiki kelak.

@@ -101,6 +101,10 @@ Pemicu: `transaction_payments.status` menjadi `verified` (rute: `routes/transact
 - **Alokasi jumlah** ke komponen, **kumulatif per transaksi** (mendukung cicilan): `pokok` sampai `total_amount`, berikutnya `kode_unik` sampai `unique_code`, selebihnya `kelebihan` (pembayaran ganda/lebih bayar). **Ketiganya adalah pemasukan** (D1, D6); label komponen hanya untuk penelusuran dan filter. Kode unik hanya muncul bila memang diterima.
 - Pembayaran `rejected`/`pending` tidak diposting. Pembayaran yang kemudian dibatalkan setelah verified → baris pembalik (`reverses_entry_id`).
 
+### 4.1b Transaksi `paid` tanpa pembayaran terverifikasi (D3, kelompok A)
+
+Diputuskan pemilik produk (2026-10-26): **dicatat sebagai uang masuk**. Aturan (`postPaidTransactionWithoutPayment`): transaksi `paid` tanpa satu pun pembayaran `verified` → satu baris `in`, komponen `pokok`, jumlah = `total_amount`, `ref_type = transaction_paid`, tanggal = `paid_at` (atau `created_at`), akun menurut `payment_method_id` (tak dikenal → `unmapped`), catatan "Data eksisting: transaksi paid tanpa pembayaran terverifikasi". Dilewati: transaksi non-tunai (`is_non_cash`, nominal 0, mis. konversi tabungan). Kode unik tidak diasumsikan diterima. Bila kelak transaksi itu mendapat pembayaran terverifikasi, baris sintetis **dibalik otomatis** (`koreksi` keluar) agar tidak dobel. Jalur hidup: `PUT /transactions/:id` yang menyetel `paid` memicu aturan ini; selebihnya ditutup backfill dan `cashbook:check`.
+
 ### 4.2 Pencairan `paid` → `out`
 
 Pemicu: `disbursements.status` menjadi `paid` (`services/disbursement.ts` ±556; `routes/admin/zakat-distributions.ts` ±505; jalur lain lewat grep).
@@ -238,7 +242,7 @@ Perubahan perilaku yang **perlu persetujuan sebelum deploy**: webhook gateway ki
 
 Alat: `npm run cashbook:check` (rekonsiliasi read-only; keluar 2 bila ada pembayaran verified/pencairan paid yang belum masuk buku kas) dan `npm run cashbook:backfill`. Uji: 23 tes `bun` (aturan, backfill, hook posting, savepoint `safePost`) + uji end-to-end approve-payment di API lokal (Rp 25.665 → pokok 25.000 + kode unik 665 di akun BSI, dana campaign/sedekah; data uji dibersihkan).
 
-Tidak dihook (sengaja): `PUT /transactions/:id` yang mengubah status ke `paid` tanpa pembayaran, dan tabel legacy `qurban_payments`/`qurban_orders` (lihat keputusan D3 tentang "paid tanpa pembayaran terverifikasi").
+Hook tambahan (D3): `PUT /transactions/:id` yang menyetel `paid` → pemasukan sintetis (§4.1b). Tidak dihook (sengaja): tabel legacy `qurban_payments`/`qurban_orders` (menunggu bagian 9 audit produksi) dan jalur lain yang memaksa `paid` tanpa pembayaran (ditutup backfill + `cashbook:check`).
 
 ## 9. Keamanan dan izin
 
@@ -269,7 +273,7 @@ Dijawab pemilik produk 2026-10-26 (ringkas):
 |---|---|---|
 | D1 | Kode unik **dicatat sebagai pemasukan** | ✅ |
 | D2 | Hak amil dan pihak lain **sesuai settings** (`revenue_shares`), **tidak boleh hardcode** | ✅ |
-| D3 | Data lama: **diputuskan dari hasil audit produksi** | ⏳ menunggu audit |
+| D3 | Data lama: backfill seluruh riwayat (tanpa cut-off); transaksi **paid tanpa pembayaran terverifikasi dicatat sebagai uang masuk** (sintetis, berlabel, dibalik otomatis bila pembayaran asli muncul) — kelompok A produksi: 51 transaksi, Rp 320.231.250 | ✅ (kelompok A); sisa audit (bagian 4b–11) menunggu |
 | D4 | Setiap gateway = akun kas; uang lewat gateway dianggap sudah masuk; **biaya ditanggung donatur**, tanpa pindah kas dan tanpa biaya gateway; laporan per gateway: percobaan/berhasil/tertunda/gagal + total masuk | ✅ |
 | D5 | **Sisa tetap sisa program**: sisa = masuk − hak pihak lain − disalurkan; tanpa konsep saldo amil dari sisa | ✅ |
 | D6 | Pembayaran ganda atau lebih bayar **menjadi pemasukan seperti kode unik** (komponen `kelebihan`) | ✅ |
