@@ -20,13 +20,16 @@ const COLOR_MAP: Record<string, string> = {
   primary: "border-l-primary-600 text-primary-600",
   success: "border-l-success-600 text-success-600",
   danger: "border-l-danger-600 text-danger-600",
-  warning: "border-l-[#d2aa55] text-[#d2aa55]",
-  info: "border-l-[#296585] text-[#296585]",
+  warning: "border-l-warning-500 text-warning-700",
+  info: "border-l-info-500 text-info-700",
 };
+
+// Kelas statis (Tailwind JIT tidak membaca nama kelas yang dirangkai)
+const GRID_COLS: Record<number, string> = { 1: "md:grid-cols-1", 2: "md:grid-cols-2", 3: "md:grid-cols-3", 4: "md:grid-cols-4" };
 
 export default function ReportSummaryCards({ cards }: ReportSummaryCardsProps) {
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-${Math.min(cards.length, 4)} gap-4 mb-6`}>
+    <div className={`grid grid-cols-1 ${GRID_COLS[Math.min(cards.length, 4)] || GRID_COLS[4]} gap-4 mb-6`}>
       {cards.map((card, i) => {
         const colorClass = COLOR_MAP[card.color] || COLOR_MAP.primary;
         const [borderClass, textClass] = colorClass.split(" ");

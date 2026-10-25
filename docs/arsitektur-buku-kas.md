@@ -263,6 +263,23 @@ Uji: 31 tes `bun` (aturan, backfill, hook, laporan dengan pendekatan selisih + r
 
 Temuan: `/review` pada DB dev menunjukkan 2 transaksi campaign yang dibayar lewat Flip **tanpa bagi hasil** (Rp 400.000), bukti nyata bug webhook (diperbaiki di Fase 2 untuk transaksi baru).
 
+### Status Fase 4 (2026-10-26, selesai di lokal)
+
+UI admin di `apps/admin/src/app/dashboard/cashbook/` (menu sidebar **Keuangan**, role `super_admin` + `admin_finance`), semua membaca API Fase 3 tanpa menghitung ulang di klien:
+
+| Halaman | Path | Isi |
+|---|---|---|
+| Arus Kas | `/dashboard/cashbook` | filter, kartu masuk/keluar, chip komponen, tabel, ekspor Excel, "Penyesuaian manual", aksi "Balik" |
+| Sirkulasi Rekening | `/dashboard/cashbook/accounts` | per akun kas + blok per gateway |
+| Dana per Sumber | `/dashboard/cashbook/funds` | masuk, hak pihak lain, disalurkan, sisa program |
+| Bagi Hasil | `/dashboard/cashbook/revenue-share` | kartu pihak, drill penerima dan transaksi |
+| Per Program | `/dashboard/cashbook/programs` | rincian per produk |
+| Perlu Ditinjau | `/dashboard/cashbook/review` | anomali dan contoh |
+
+Pendukung: `lib/cashbook.ts` (label, rentang tanggal), `components/cashbook/CashbookLayoutNav.tsx`, `CorrectionDialogs.tsx` (`Modal`, bukan `confirm()`). Warna hanya token (`check:colors` 0).
+
+Terverifikasi di browser: semua halaman tampil dan angkanya cocok dengan API; Penyesuaian manual lewat dialog berhasil. **Belum terverifikasi lewat UI: tombol "Balik"** (jalur API diuji `bun`: `cash-book-corrections.test.ts`). Data uji dev sudah dibersihkan.
+
 ## 9. Keamanan dan izin
 
 - Semua route `/admin/cashbook/*` di balik `authMiddleware` + `requireRole("super_admin","admin_finance")`; tulis (koreksi) hanya keduanya, **selalu** tercatat di `audit_logs` (siapa, kapan, nilai sebelum/sesudah).

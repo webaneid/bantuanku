@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
+  auditLogs,
   campaigns,
   cashAccounts,
   cashEntries,
@@ -12,6 +13,7 @@ import {
 } from "@bantuanku/db";
 import type { Database } from "@bantuanku/db";
 import {
+  FUNDS,
   allocatePayment,
   classifyAccount,
   fundForDisbursement,
@@ -345,4 +347,112 @@ export async function safePost(db: Database, label: string, run: (d: Database) =
   } catch (err) {
     console.error(`[cashbook] gagal posting ${label}:`, err);
   }
+}
+
+export class CashBookError extends Error {
+  constructor(message: string, public status: 400 | 404 | 409 = 400) {
+    super(message);
+  }
+}
+
+interface AuditMeta {
+  userId: string;
+  ip?: string | null;
+  userAgent?: string | null;
+}
+
+async function writeAudit(db: Database, meta: AuditMeta, action: string, entityId: string, newData: Record<string, unknown>) {
+  await db.insert(auditLogs).values({
+    userId: meta.userId,
+    action,
+    entity: "cash_entries",
+    entityId,
+    newData,
+    ipAddress: meta.ip || null,
+    userAgent: meta.userAgent ? meta.userAgent.slice(0, 255) : null,
+  } as any);
+}
+
+/** Membalik satu entri (append-only): entri lawan arah dengan jumlah, dana, dan akun yang sama. `note` wajib. */
+export async function reverseEntry(db: Database, entryId: string, note: string, meta: AuditMeta) {
+  const reason = note.trim();
+  if (reason.length < 5) throw new CashBookError("Catatan koreksi wajib diisi (minimal 5 karakter)");
+  const [orig] = await db.select().from(cashEntries).where(eq(cashEntries.id, entryId)).limit(1);
+  if (!orig) throw new CashBookError("Entri tidak ditemukan", 404);
+  if (orig.reversesEntryId) throw new CashBookError("Entri pembalik tidak dapat dibalik lagi", 409);
+  const [already] = await db.select({ id: cashEntries.id }).from(cashEntries).where(eq(cashEntries.reversesEntryId, orig.id)).limit(1);
+  if (already) throw new CashBookError("Entri ini sudah dibalik", 409);
+
+  const [created] = await db
+    .insert(cashEntries)
+    .values({
+      id: createId(),
+      entryDate: new Date(),
+      direction: orig.direction === "in" ? "out" : "in",
+      amount: orig.amount,
+      component: "koreksi",
+      fund: orig.fund,
+      fundDetail: orig.fundDetail,
+      cashAccountId: orig.cashAccountId,
+      method: orig.method,
+      gatewayCode: orig.gatewayCode,
+      refType: "adjustment",
+      refId: orig.id,
+      transactionId: orig.transactionId,
+      campaignId: orig.campaignId,
+      reversesEntryId: orig.id,
+      note: reason,
+      createdBy: meta.userId,
+    })
+    .onConflictDoNothing()
+    .returning();
+  if (!created) throw new CashBookError("Entri ini sudah dibalik", 409);
+  await writeAudit(db, meta, "cashbook.reverse", created.id, { reverses: orig.id, amount: orig.amount, direction: created.direction, note: reason });
+  return created;
+}
+
+export interface AdjustmentInput {
+  direction: "in" | "out";
+  amount: number;
+  fund: string;
+  fundDetail?: string | null;
+  accountId: string;
+  note: string;
+  date?: Date;
+}
+
+/** Penyesuaian manual (mis. uang masuk/keluar yang belum tercatat). `note` wajib; jejak audit. */
+export async function createAdjustment(db: Database, input: AdjustmentInput, meta: AuditMeta) {
+  const reason = input.note.trim();
+  if (reason.length < 5) throw new CashBookError("Catatan koreksi wajib diisi (minimal 5 karakter)");
+  if (!Number.isInteger(input.amount) || input.amount <= 0) throw new CashBookError("Jumlah harus bilangan bulat positif");
+  if (!(FUNDS as readonly string[]).includes(input.fund)) throw new CashBookError("Dana tidak valid");
+  const [account] = await db.select().from(cashAccounts).where(eq(cashAccounts.id, input.accountId)).limit(1);
+  if (!account) throw new CashBookError("Akun kas tidak ditemukan", 404);
+
+  const method = account.kind === "bank" ? "bank_transfer" : account.kind === "qris" ? "qris" : account.kind === "gateway" ? "gateway" : account.kind === "cash" ? "cash" : "other";
+  const id = createId();
+  const [created] = await db
+    .insert(cashEntries)
+    .values({
+      id,
+      entryDate: input.date || new Date(),
+      direction: input.direction,
+      amount: input.amount,
+      component: "koreksi",
+      fund: input.fund,
+      fundDetail: input.fundDetail?.trim() || null,
+      cashAccountId: account.id,
+      method,
+      gatewayCode: account.gatewayCode,
+      refType: "adjustment",
+      refId: id,
+      note: reason,
+      createdBy: meta.userId,
+    })
+    .returning();
+  await writeAudit(db, meta, "cashbook.adjustment", created.id, {
+    direction: created.direction, amount: created.amount, fund: created.fund, accountId: account.id, note: reason,
+  });
+  return created;
 }

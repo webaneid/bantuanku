@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import { success, error, paginated } from "../../lib/response";
+import { z } from "zod";
+import { zValidator } from "@hono/zod-validator";
 import { requireRole } from "../../middleware/auth";
+import { CashBookError, createAdjustment, reverseEntry } from "../../services/cash-book";
 import type { Env, Variables } from "../../types";
 import {
   ReportInputError,
@@ -16,6 +19,8 @@ import {
   revenueShareReport,
   revenueShareTransactions,
 } from "../../services/cash-book-reports";
+import { cashAccounts } from "@bantuanku/db";
+import { startOfDayWIB } from "../../utils/timezone";
 
 /**
  * Laporan Buku Kas (ADR-0016): 5 laporan + daftar "perlu ditinjau". Hanya baca.
@@ -135,5 +140,60 @@ cashbook.get("/programs", (c) =>
 
 // Perlu ditinjau (informasi + celah posting)
 cashbook.get("/review", (c) => guarded(c, async () => success(c, await reviewReport(c.get("db")))));
+
+// ── Koreksi (tulis; selalu dengan catatan dan jejak audit) ──
+const writeMeta = (c: any) => ({
+  userId: c.get("user")!.id as string,
+  ip: c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || null,
+  userAgent: c.req.header("user-agent") || null,
+});
+
+async function guardedWrite(c: any, run: () => Promise<Response>) {
+  try {
+    return await run();
+  } catch (err) {
+    if (err instanceof CashBookError) return error(c, err.message, err.status);
+    console.error("[cashbook] koreksi gagal:", err);
+    return error(c, "Gagal menyimpan koreksi", 500);
+  }
+}
+
+const reverseSchema = z.object({ note: z.string().min(5).max(500) });
+cashbook.post("/entries/:id/reverse", zValidator("json", reverseSchema), (c) =>
+  guardedWrite(c, async () => {
+    const { note } = c.req.valid("json");
+    const created = await reverseEntry(c.get("db"), c.req.param("id"), note, writeMeta(c));
+    return success(c, { id: created.id }, "Entri dibalik", 201);
+  })
+);
+
+const adjustmentSchema = z.object({
+  direction: z.enum(["in", "out"]),
+  amount: z.number().int().positive().max(100_000_000_000),
+  fund: z.string().min(1).max(30),
+  fundDetail: z.string().max(60).optional(),
+  accountId: z.string().min(1).max(60),
+  note: z.string().min(5).max(500),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+cashbook.post("/adjustments", zValidator("json", adjustmentSchema), (c) =>
+  guardedWrite(c, async () => {
+    const body = c.req.valid("json");
+    const created = await createAdjustment(
+      c.get("db"),
+      { ...body, date: body.date ? startOfDayWIB(body.date) : undefined },
+      writeMeta(c)
+    );
+    return success(c, { id: created.id }, "Penyesuaian dicatat", 201);
+  })
+);
+
+// Daftar akun kas untuk pilihan formulir (tanpa statistik)
+cashbook.get("/account-options", (c) =>
+  guarded(c, async () => {
+    const rows = await c.get("db").select({ id: cashAccounts.id, name: cashAccounts.name, kind: cashAccounts.kind }).from(cashAccounts).orderBy(cashAccounts.kind, cashAccounts.name);
+    return success(c, rows);
+  })
+);
 
 export default cashbook;

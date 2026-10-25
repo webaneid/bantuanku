@@ -63,3 +63,8 @@ Pemilik produk memilih **mencatat semua transaksi paid tanpa pembayaran terverif
 3. **Penyaluran zakat/qurban tidak terpetakan ke program** pada level produk (hanya campaign yang membawa `reference_id`); laporan per program menandainya dan Dana per Sumber menampilkan di level dana.
 4. `/review` mengungkap transaksi gateway tanpa bagi hasil (Rp 400.000 di dev). Di produksi jumlahnya kemungkinan besar; menghitung ulang bagi hasil transaksi lama adalah keputusan terpisah (service idempoten).
 5. Pada tampilan Bagi Hasil, "dibayar amil" = pengeluaran operasional (basis tanggal pengeluaran), bukan alokasi per transaksi; dijelaskan di `keterangan`.
+
+### Fase 4 — temuan
+
+1. Uji UI "Balik" lewat otomasi JS tidak menghasilkan entri pembalik (tombol/alasan tidak terkirim); jalur API terbukti oleh tes `bun`. Ulangi manual di browser sebelum dipakai bendahara.
+2. Transaksi "Zakat Fitra 2026/1447 H" di dev dikelompokkan sebagai `zakat_maal` karena pemetaan mencari "fitrah"; periksa nama di produksi (66 transaksi zakat_fitrah) sebelum angka per jenis zakat dipercaya.
