@@ -13,8 +13,6 @@ import {
   Hash,
   MoonStar,
   Beef,
-  Building2,
-  Megaphone,
   Users,
 } from "lucide-react";
 
@@ -44,8 +42,6 @@ const reportNav = [
     group: "Per Entitas",
     items: [
       { label: "Per Program", href: "/dashboard/reports/program", icon: BookOpen },
-      { label: "Per Mitra", href: "/dashboard/reports/mitra", icon: Building2 },
-      { label: "Per Influencer", href: "/dashboard/reports/fundraiser", icon: Megaphone },
       { label: "Per Rekening", href: "/dashboard/reports/rekening", icon: Landmark },
       { label: "Per Donatur", href: "/dashboard/reports/donatur", icon: Users },
     ],

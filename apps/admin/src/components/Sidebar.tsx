@@ -152,8 +152,8 @@ const allMenuItems = [
       { label: "Sirkulasi Rekening", href: "/dashboard/cashbook/accounts", roles: ["super_admin", "admin_finance"] },
       { label: "Dana per Sumber", href: "/dashboard/cashbook/funds", roles: ["super_admin", "admin_finance"] },
       { label: "Bagi Hasil", href: "/dashboard/cashbook/revenue-share", roles: ["super_admin", "admin_finance"] },
-      { label: "Per Mitra", href: "/dashboard/reports/mitra", roles: ["super_admin", "admin_finance"] },
-      { label: "Per Influencer", href: "/dashboard/reports/fundraiser", roles: ["super_admin", "admin_finance"] },
+      { label: "Per Mitra", href: "/dashboard/cashbook/mitra", roles: ["super_admin", "admin_finance"] },
+      { label: "Per Influencer", href: "/dashboard/cashbook/influencer", roles: ["super_admin", "admin_finance"] },
       { label: "Per Program", href: "/dashboard/cashbook/programs", roles: ["super_admin", "admin_finance"] },
       { label: "Perlu Ditinjau", href: "/dashboard/cashbook/review", roles: ["super_admin", "admin_finance"] },
     ],
@@ -215,7 +215,7 @@ export function Sidebar({ variant = "desktop", isOpen = true, onClose }: Sidebar
   const [expandedMenus, setExpandedMenus] = useState<string[]>([
     "Campaigns",
     ...(pathname.startsWith("/dashboard/disbursements") ? ["Disbursements"] : []),
-    ...(pathname.startsWith("/dashboard/cashbook") || pathname.startsWith("/dashboard/reports/fundraiser") || pathname.startsWith("/dashboard/reports/mitra") ? ["Keuangan"] : [])
+    ...(pathname.startsWith("/dashboard/cashbook") ? ["Keuangan"] : [])
   ]);
 
   const isMitra = user?.roles?.includes("mitra") && user.roles.length === 1;

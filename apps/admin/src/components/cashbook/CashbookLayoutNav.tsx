@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeftRight, Landmark, PieChart, HandCoins, BookOpen, ShieldAlert } from "lucide-react";
+import { ArrowLeftRight, Building2, Landmark, Megaphone, PieChart, HandCoins, BookOpen, ShieldAlert } from "lucide-react";
 
 const NAV = [
   { label: "Arus Kas", href: "/dashboard/cashbook", icon: ArrowLeftRight, exact: true },
   { label: "Sirkulasi Rekening", href: "/dashboard/cashbook/accounts", icon: Landmark },
   { label: "Dana per Sumber", href: "/dashboard/cashbook/funds", icon: PieChart },
   { label: "Bagi Hasil", href: "/dashboard/cashbook/revenue-share", icon: HandCoins },
+  { label: "Per Mitra", href: "/dashboard/cashbook/mitra", icon: Building2 },
+  { label: "Per Influencer", href: "/dashboard/cashbook/influencer", icon: Megaphone },
   { label: "Per Program", href: "/dashboard/cashbook/programs", icon: BookOpen },
   { label: "Perlu Ditinjau", href: "/dashboard/cashbook/review", icon: ShieldAlert },
 ];

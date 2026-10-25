@@ -401,12 +401,13 @@ export async function revenueShareRecipients(db: Database, party: Party, range: 
   const nameJoin =
     party === "mitra"
       ? sql`left join mitra r on r.id = rs.mitra_id`
-      : sql`left join fundraisers r on r.id = rs.fundraiser_id left join donatur dn on dn.id = r.donatur_id`;
-  const nameCol = party === "mitra" ? sql`r.name` : sql`coalesce(dn.name, r.code)`;
+      : sql`left join fundraisers r on r.id = rs.fundraiser_id left join donatur dn on dn.id = r.donatur_id left join employees em on em.id = r.employee_id`;
+  const nameCol = party === "mitra" ? sql`r.name` : sql`coalesce(dn.name, em.name, r.code)`;
+  const codeCol = party === "mitra" ? sql`null::text` : sql`r.code`;
 
   const rows = (
     await db.execute(sql`
-      select ${idColumn} as recipient_id, ${nameCol} as recipient_name,
+      select ${idColumn} as recipient_id, ${nameCol} as recipient_name, ${codeCol} as recipient_code,
              coalesce(sum(${amountColumn}), 0)::bigint as hak,
              coalesce(sum((select coalesce(sum(i.allocated_amount), 0)
                            from disbursement_revenue_share_items i
@@ -417,16 +418,45 @@ export async function revenueShareRecipients(db: Database, party: Party, range: 
       join transactions t on t.id = rs.transaction_id and t.payment_status = 'paid'
       ${nameJoin}
       ${whereOf([...shareConds, sql`${idColumn} is not null`, sql`${amountColumn} > 0`])}
-      group by 1, 2
+      group by 1, 2, 3
       order by hak desc`)
   ).rows as any[];
   return rows.map((r) => ({
     recipientId: r.recipient_id,
     name: r.recipient_name,
+    code: r.recipient_code,
     hak: n(r.hak),
     dibayar: n(r.dibayar),
     sisa: n(r.hak) - n(r.dibayar),
     transaksi: n(r.transaksi),
+  }));
+}
+
+/** Riwayat pencairan bagi hasil `paid` untuk satu penerima (mitra / fundraiser). */
+export async function revenueShareDisbursements(db: Database, party: Party, range: Range, recipientId: string) {
+  if (party !== "mitra" && party !== "fundraiser") throw new ReportInputError("riwayat pencairan hanya untuk mitra atau fundraiser");
+  if (!recipientId) throw new ReportInputError("recipientId wajib");
+  const conds: SQL[] = [
+    sql`d.status = 'paid'`,
+    sql`d.recipient_type = ${party}`,
+    sql`d.recipient_id = ${recipientId}`,
+    sql`d.category = ${`revenue_share_${party}`}`,
+    ...rangeSql(sql`d.paid_at`, range),
+  ];
+  const rows = (
+    await db.execute(sql`
+      select d.id, d.disbursement_number, d.amount::bigint as amount, d.purpose, d.paid_at
+      from disbursements d
+      ${whereOf(conds)}
+      order by d.paid_at desc nulls last
+      limit 100`)
+  ).rows as any[];
+  return rows.map((r) => ({
+    id: r.id,
+    disbursementNumber: r.disbursement_number,
+    amount: n(r.amount),
+    purpose: r.purpose,
+    paidAt: r.paid_at,
   }));
 }
 

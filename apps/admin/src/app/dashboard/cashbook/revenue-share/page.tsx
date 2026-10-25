@@ -7,18 +7,10 @@ import ReportFilters from "@/components/reports/ReportFilters";
 import ReportTable from "@/components/reports/ReportTable";
 import { formatRupiah } from "@/lib/format";
 import { formatDateTimeWIB } from "@/lib/timezone";
-import { PARTY_LABEL, STATUS_LABEL, qs, useCashbookRange } from "@/lib/cashbook";
+import StatusBadge from "@/components/cashbook/StatusBadge";
+import { PARTY_LABEL, qs, useCashbookRange } from "@/lib/cashbook";
 
 type Party = { party: string; label: string; hak: number; dibayar: number; sisa: number; keterangan: string; status: string | null };
-
-const STATUS_CLASS: Record<string, string> = {
-  lunas: "bg-success-50 text-success-700",
-  sebagian: "bg-warning-50 text-warning-700",
-  belum: "bg-danger-50 text-danger-700",
-  kosong: "bg-gray-100 text-gray-500",
-};
-const Badge = ({ status }: { status: string | null }) =>
-  status ? <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASS[status] || ""}`}>{STATUS_LABEL[status] || status}</span> : <span className="text-gray-400">-</span>;
 
 const PAGE_SIZE = 20;
 
@@ -76,7 +68,7 @@ export default function CashbookRevenueSharePage() {
               >
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-dark">{PARTY_LABEL[p.party] || p.label}</p>
-                  <Badge status={p.status} />
+                  <StatusBadge status={p.status} />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Hak</p>
                 <p className="mono text-xl font-bold text-primary-700">Rp {formatRupiah(p.hak)}</p>
@@ -150,7 +142,7 @@ export default function CashbookRevenueSharePage() {
             { key: "hak", header: "Hak", align: "right", format: "currency" },
             { key: "dibayar", header: "Ditransfer", align: "right", format: "currency" },
             { key: "sisa", header: "Belum", align: "right", format: "currency" },
-            { key: "status", header: "Status", render: (v) => <Badge status={v} /> },
+            { key: "status", header: "Status", render: (v) => <StatusBadge status={v} /> },
           ]}
         />
       </div>

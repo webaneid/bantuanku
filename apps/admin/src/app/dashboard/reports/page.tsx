@@ -46,8 +46,6 @@ const quickLinks = [
   { label: "Laporan Kode Unik", href: "/dashboard/reports/unique-codes" },
   { label: "Penyembelihan Qurban", href: "/dashboard/reports/qurban-execution" },
   { label: "Per Program", href: "/dashboard/reports/program" },
-  { label: "Per Mitra", href: "/dashboard/reports/mitra" },
-  { label: "Per Influencer", href: "/dashboard/reports/fundraiser" },
   { label: "Per Rekening", href: "/dashboard/reports/rekening" },
   { label: "Per Donatur", href: "/dashboard/reports/donatur" },
 ];

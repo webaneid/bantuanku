@@ -273,10 +273,12 @@ UI admin di `apps/admin/src/app/dashboard/cashbook/` (menu sidebar **Keuangan**,
 | Sirkulasi Rekening | `/dashboard/cashbook/accounts` | per akun kas + blok per gateway |
 | Dana per Sumber | `/dashboard/cashbook/funds` | masuk, hak pihak lain, disalurkan, sisa program |
 | Bagi Hasil | `/dashboard/cashbook/revenue-share` | kartu pihak, drill penerima dan transaksi |
-| Per Mitra | `/dashboard/reports/mitra` | hak, dibayar, sisa per mitra (laporan lama yang sudah diperbaiki: hanya transaksi paid; menunya dipindah ke grup Keuangan, 2026-10-26) |
-| Per Influencer | `/dashboard/reports/fundraiser` | hak, dibayar, sisa per influencer (laporan lama yang sudah diperbaiki membaca `revenue_shares`; hanya menunya yang dipindah ke grup Keuangan, 2026-10-26) |
+| Per Mitra | `/dashboard/cashbook/mitra` | hak, sudah ditransfer, belum per mitra; klik baris → rincian per transaksi + riwayat transfer. Komponen bersama `RecipientsReport` (2026-10-26) |
+| Per Influencer | `/dashboard/cashbook/influencer` | sama dengan Per Mitra untuk influencer (nama dari donatur atau karyawan, plus kode). URL lama `/dashboard/reports/{mitra,fundraiser}` hanya me-redirect |
 | Per Program | `/dashboard/cashbook/programs` | rincian per produk |
 | Perlu Ditinjau | `/dashboard/cashbook/review` | anomali dan contoh |
+
+API tambahan: `GET /admin/cashbook/revenue-share/:party/disbursements?recipientId=` (riwayat pencairan paid; hanya mitra/fundraiser). Per Mitra/Per Influencer memakai `/recipients` + `/transactions` + `/disbursements` (satu sumber dengan Bagi Hasil); endpoint lama `/admin/reports/{mitra,fundraiser}-{summary,detail}` tidak lagi dipakai UI dan dihapus di Fase 7.
 
 Filter tanggal memakai `ReportFilters` dengan `allTimePreset` (tombol **Semua Waktu** mengosongkan tanggal = tanpa batas; API sudah menerima rentang kosong). Bawaan tetap bulan berjalan, jadi bandingkan dengan laporan lama (yang seluruh waktu) lewat Semua Waktu.
 

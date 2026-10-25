@@ -16,6 +16,7 @@ import {
   programsReport,
   reviewReport,
   revenueShareRecipients,
+  revenueShareDisbursements,
   revenueShareReport,
   revenueShareTransactions,
 } from "../../services/cash-book-reports";
@@ -98,6 +99,14 @@ cashbook.get("/revenue-share/:party/recipients", (c) =>
     const q = c.req.query();
     const party = parseParty(c.req.param("party"));
     return success(c, await revenueShareRecipients(c.get("db"), party, parseRange(q.startDate, q.endDate)));
+  })
+);
+
+cashbook.get("/revenue-share/:party/disbursements", (c) =>
+  guarded(c, async () => {
+    const q = c.req.query();
+    const party = parseParty(c.req.param("party"));
+    return success(c, await revenueShareDisbursements(c.get("db"), party, parseRange(q.startDate, q.endDate), q.recipientId || ""));
   })
 );
 
