@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Header, Footer, Breadcrumb } from '@/components/organisms';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
+import { Breadcrumb } from '@/components/organisms/Breadcrumb';
 import { fetchPublicZakatReport } from '@/services/public-reports';
 import ZakatReportFilters from './ZakatReportFilters';
 import ZakatTitipanTable from './ZakatTitipanTable';

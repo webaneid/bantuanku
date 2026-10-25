@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Header, Footer, ZakatCard, Breadcrumb, MobileTopBar } from '@/components/organisms';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
+import { ZakatCard } from '@/components/organisms/ZakatCard';
+import { Breadcrumb } from '@/components/organisms/Breadcrumb';
+import { MobileTopBar } from '@/components/organisms/MobileTopBar';
 import { useAuth } from '@/lib/auth';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchZakatConfig, fetchZakatPeriods, fetchZakatTypes, formatCurrency, getImageUrl, type ZakatPeriod, type ZakatType } from '@/services/zakat';

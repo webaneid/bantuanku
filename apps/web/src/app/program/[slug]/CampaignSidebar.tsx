@@ -9,7 +9,7 @@ import { getImageUrl } from '@/lib/image';
 import { useI18n } from '@/lib/i18n/provider';
 import * as fbPixel from '@/lib/fbPixel';
 import feedbackToast from '@/lib/feedback-toast';
-import { MobileActionSheet } from '@/components/molecules';
+import { MobileActionSheet } from '@/components/molecules/MobileActionSheet';
 import DonationAmountSelector from './DonationAmountSelector';
 import DonationConfirmModal from './DonationConfirmModal';
 

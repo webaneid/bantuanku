@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ZakatCard } from '@/components/organisms';
+import { ZakatCard } from '@/components/organisms/ZakatCard';
 import { getImageUrl, type ZakatType } from '@/services/zakat';
 import { useI18n } from '@/lib/i18n/provider';
 

@@ -62,7 +62,7 @@ Dokumen terkait:
 
 ## Program Optimasi Kecepatan (2026-10-24)
 
-> Hasil terukur (First Load JS gzip, build produksi): beranda 234 → **169 kB**, `/invoice/[id]` 342 → 145 kB, checkout 241 → 193 kB. Target < 150 kB belum tercapai; sisa langkah ada di baris fase 6.
+> Hasil terukur (First Load JS gzip, build produksi): beranda 234 → **139 kB**, `/invoice/[id]` 342 → 145 kB, checkout 241 → 157 kB, `/laporan` 127 kB, `/zakat` 130 kB. Target < 150 kB untuk beranda **tercapai** (fase 8). Sisa langkah ada di bagian "Sisa Optimasi Bundel" di bawah tabel.
 
 Tujuan: halaman publik terbuka secepat mungkin dan ringan untuk VPS. Dikerjakan per fase, tiap fase satu commit.
 
@@ -87,6 +87,18 @@ Tujuan: halaman publik terbuka secepat mungkin dan ringan untuk VPS. Dikerjakan 
 | 5 | Loader `next/image` kustom (`lib/image-loader.ts`, `loader: 'custom'`): media WebP (CDN/GCS/API) dikembalikan apa adanya, Unsplash di-resize lewat parameter URL; `/_next/image` tidak dipakai/dilayani lagi. Upload GCS baru diberi `Cache-Control: public, max-age=31536000, immutable` | Selesai (diuji: 0 request `/_next/image`, 13 gambar termuat, fallback Unsplash) |
 | 6 | Hydration/bundel klien: kamus i18n hanya `id` di bundel klien (kamus `en` dikirim server sebagai props hanya bila locale `en`, lazy saat ganti bahasa); `lib/format.ts` dipisah dari `format-date.ts` (date-fns tak lagi di semua halaman); `lib/auth.ts` memuat axios lazy; `CategoryGrid`/`ZakatCard` jadi server component | Selesai: beranda 194 → 169 kB, checkout 241 → 193 kB, `/program` 199 → 191 kB. Sisa (belum): `ProgramCard`/`Footer`/`Header` masih client (`useI18n`, `useSettings`), React Query di root |
 | 7 | Header `Cache-Control` HTML publik untuk edge (`HTML_EDGE_CACHE=true` saat build, default MATI) + panduan rollout Cloudflare di bawah | Kode selesai & diuji lokal; AKTIVASI menunggu konfigurasi Cloudflare oleh pemilik infrastruktur |
+| 8 | Bundel berdasarkan ukuran nyata (2026-10-25): (a) impor barrel `@/components/organisms`/`molecules` diganti impor langsung di 44 file (barrel menarik `lib/api` + axios 16 kB dan molecules/organisms yang tak dipakai ke setiap halaman); (b) React Query dicabut dari root, dipasang lewat `components/QueryProvider` hanya di layout `/account/fundraiser` dan `/daftar-mitra`; (c) `useSettings()` kini membaca konteks yang diisi layout server (`lib/settings-shell.ts` memilih kunci publik), bukan `fetch` dari browser | Selesai: beranda 169 → 139 kB, checkout 193 → 157 kB, `/zakat` 188 → 130 kB; tidak ada lagi 3 request `/settings` dari browser per halaman, dan HTML server sudah berisi menu header + footer yang benar (sebelumnya menu default sampai fetch klien selesai) |
+
+### Sisa Optimasi Bundel (hasil ukur beranda 139 kB)
+
+Diukur dengan `next build` di salinan folder + `productionBrowserSourceMaps` lalu menjumlahkan `sourcesContent` per paket (skrip analisis; perkiraan, bukan angka eksak): React + runtime Next ±94 kB (tak bisa dikurangi), **kamus `id.ts` 15,8 kB**, Footer 2,8, FeaturedCarousel 2,1, Header 2,0, sisanya kecil.
+
+| Peluang | Perkiraan hemat | Catatan |
+|---------|-----------------|---------|
+| Kirim kamus i18n per namespace (shell `common`/`footer`/`home` ±2 kB, sisanya per rute) | ±13 kB di beranda | Perlu keputusan desain (ADR): tiap rute/layout mendeklarasikan namespace-nya; namespace yang terlewat membuat `t()` menampilkan key. Butuh skrip pemeriksa agar tak ada key hilang |
+| `Footer`/`Header`/`ProgramCard` jadi server component | ±5 kB total | Terbatas: 20 dari 34 halaman pemakai Header/Footer adalah `'use client'` dan tak bisa mengimpor komponen server; harus dipindah ke layout segmen (`hideOnMobile` berbeda per halaman). Untung/rugi rendah dibanding baris di atas |
+
+**Aturan impor (wajib):** di kode aplikasi impor komponen langsung dari foldernya (`@/components/organisms/Header`), jangan dari barrel `@/components/organisms`/`@/components/molecules`. Barrel dipertahankan hanya sebagai indeks; satu impor darinya menarik semua komponen dan dependensinya ke bundel (webpack tidak men-tree-shake modul klien tanpa `sideEffects: false`).
 
 ### Panduan Rollout & Cloudflare (fase 7)
 

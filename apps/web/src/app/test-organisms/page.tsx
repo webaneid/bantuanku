@@ -1,11 +1,8 @@
 import React from 'react';
-import {
-  Header,
-  Footer,
-  ProgramCard,
-  HeroSlider,
-  HeroSlide,
-} from '@/components/organisms';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
+import { ProgramCard } from '@/components/organisms/ProgramCard';
+import { HeroSlider, HeroSlide } from '@/components/organisms/HeroSlider';
 
 const heroSlides: HeroSlide[] = [
   {

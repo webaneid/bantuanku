@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { Header, Footer, Breadcrumb, MobileTopBar, RelatedReports } from '@/components/organisms';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
+import { Breadcrumb } from '@/components/organisms/Breadcrumb';
+import { MobileTopBar } from '@/components/organisms/MobileTopBar';
+import { RelatedReports } from '@/components/organisms/RelatedReports';
 import { getImageUrl, getImageUrlByVariant } from '@/lib/image';
 import { formatReportDate, getReportReferenceLabel } from '@/lib/report-label';
 import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';

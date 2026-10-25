@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ProgramCard } from '@/components/organisms';
+import { ProgramCard } from '@/components/organisms/ProgramCard';
 import { fetchCampaigns, calculateDaysLeft, getImageUrlByVariant } from '@/services/campaigns';
 import { fetchCategories } from '@/services/categories';
 import Autocomplete from '@/components/Autocomplete';

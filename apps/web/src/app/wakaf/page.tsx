@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Header, Footer, ProgramCard, Breadcrumb } from '@/components/organisms';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
+import { ProgramCard } from '@/components/organisms/ProgramCard';
+import { Breadcrumb } from '@/components/organisms/Breadcrumb';
 import { fetchCampaigns, calculateDaysLeft, getImageUrl } from '@/services/campaigns';
 import { fetchPublicSettings } from '@/services/settings';
 

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Header as Navbar, Footer } from "@/components/organisms";
+import { Header as Navbar } from "@/components/organisms/Header";
+import { Footer } from "@/components/organisms/Footer";
 
 export default function DaftarMitraSuksesPage() {
   return (

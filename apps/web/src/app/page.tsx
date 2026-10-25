@@ -2,17 +2,14 @@ import React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import {
-  Header,
-  Footer,
-  ProgramCard,
-  HeroSlider,
-  HeroSlide,
-  FeaturedCarousel,
-  CategoryGrid,
-  QurbanSection,
-  TestimonialSection,
-} from '@/components/organisms';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
+import { ProgramCard } from '@/components/organisms/ProgramCard';
+import { HeroSlider, HeroSlide } from '@/components/organisms/HeroSlider';
+import { FeaturedCarousel } from '@/components/organisms/FeaturedCarousel';
+import { CategoryGrid } from '@/components/organisms/CategoryGrid';
+import { QurbanSection } from '@/components/organisms/QurbanSection';
+import { TestimonialSection } from '@/components/organisms/TestimonialSection';
 import { Button, ProgramBadge } from '@/components/atoms';
 import { fetchCampaigns, calculateDaysLeft, getImageUrlByVariant } from '@/services/campaigns';
 import { fetchPublicSettings } from '@/services/settings';

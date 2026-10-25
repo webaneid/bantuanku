@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import toast from "@/lib/feedback-toast";
 import api from "@/lib/api";
-import { Header as Navbar, Footer, Breadcrumb } from "@/components/organisms";
+import { Header as Navbar } from "@/components/organisms/Header";
+import { Footer } from "@/components/organisms/Footer";
+import { Breadcrumb } from "@/components/organisms/Breadcrumb";
 import Autocomplete from "@/components/Autocomplete";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:50245/v1";

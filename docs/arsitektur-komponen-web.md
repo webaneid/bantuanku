@@ -166,7 +166,7 @@ Catatan layout (2026-10-23): `.header__container` memakai padding kiri-kanan 32p
 
 Sumber data:
 
-- `useSettings()` untuk logo, site name, dan `frontend_header_menu`
+- `useSettings()` untuk logo, site name, dan `frontend_header_menu`. Sejak 2026-10-25 hook ini membaca konteks (`SettingsProvider` di `app/providers.tsx`) yang diisi root layout server dengan `pickShellSettings()` (`lib/settings-shell.ts`); TIDAK ada `fetch` dari browser. Kunci baru yang dibutuhkan komponen klien harus ditambahkan ke `SHELL_SETTING_KEYS`
 - `useCart()` untuk cart count
 - `useAuth()` untuk user menu/logout
 - `useI18n()` untuk label dan language selector
@@ -349,6 +349,7 @@ Isi route tersebut berfungsi sebagai demo komponen, bukan dokumentasi resmi. **S
 8. **Selaraskan hardcoded blue dengan color system.** Beberapa page dan shared component masih memakai `blue-*`; lihat `arsitektur-color.md`.
 9. **Form input sebaiknya punya kontrak accessibility lebih kuat.** Error/help belum selalu dihubungkan dengan `aria-describedby`; id yang stabil akan membantu.
 10. **Gunakan icon library secara konsisten.** Banyak komponen memakai inline SVG manual. Jika web sudah mengadopsi satu icon library, tombol/icon reusable sebaiknya distandarkan.
+11. **Impor komponen langsung dari foldernya, bukan dari barrel** (`@/components/organisms/Header`, bukan `@/components/organisms`). Barrel menarik semua komponen termasuk yang berdependensi berat (axios lewat `lib/api`) ke setiap halaman. Lihat `arsitektur-cache-performance.md` fase 8.
 
 ## Keputusan Arsitektur Saat Ini
 

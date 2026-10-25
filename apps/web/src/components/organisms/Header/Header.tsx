@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/cn';
 import { Button, IconButton } from '@/components/atoms';
-import { SearchBox } from '@/components/molecules';
+import { SearchBox } from '@/components/molecules/SearchBox';
 import { useSettings } from '@/hooks/useSettings';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/lib/auth';

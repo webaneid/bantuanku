@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Header, Footer, Breadcrumb } from '@/components/organisms';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
+import { Breadcrumb } from '@/components/organisms/Breadcrumb';
 import { fetchPublicQurbanReport } from '@/services/public-reports';
 import QurbanReportFilters from './QurbanReportFilters';
 import QurbanPenerimaanTable from './QurbanPenerimaanTable';

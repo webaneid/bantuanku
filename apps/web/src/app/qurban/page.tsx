@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Header, Footer, Breadcrumb } from '@/components/organisms';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
+import { Breadcrumb } from '@/components/organisms/Breadcrumb';
 import { QurbanCard } from '@/components/organisms/QurbanCard/QurbanCard';
 import { fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrlByVariant, type QurbanPackage, type QurbanPeriod } from '@/services/qurban';
 import { fetchPublicSettings } from '@/services/settings';

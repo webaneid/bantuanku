@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
-import { Header, Footer, Breadcrumb, MobileTopBar } from '@/components/organisms';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
+import { Breadcrumb } from '@/components/organisms/Breadcrumb';
+import { MobileTopBar } from '@/components/organisms/MobileTopBar';
 import { fetchZakatTypes, type ZakatType } from '@/services/zakat';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';

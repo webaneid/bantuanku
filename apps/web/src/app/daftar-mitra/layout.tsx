@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
+import { QueryProvider } from '@/components/QueryProvider';
 
 export async function generateMetadata(): Promise<Metadata> {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
@@ -48,5 +49,5 @@ export default function DaftarMitraLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return <QueryProvider>{children}</QueryProvider>;
 }

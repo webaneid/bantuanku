@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input, Button, Label } from "@/components/atoms";
-import { ForgotPasswordEmail } from "@/components/molecules";
+import { ForgotPasswordEmail } from "@/components/molecules/ForgotPasswordEmail";
 import toast from "@/lib/feedback-toast";
 import api from "@/lib/api";
 import { useI18n } from "@/lib/i18n/provider";

@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import '@/styles/globals.scss';
 import { Providers } from './providers';
 import { generateSiteMetadata, fetchSeoSettings, generateOrganizationJsonLd, JsonLdScript } from '@/lib/seo';
+import { pickShellSettings } from '@/lib/settings-shell';
 import { cookies } from 'next/headers';
 import { normalizeLocale, translate, dictionaries, DEFAULT_LOCALE } from '@/lib/i18n';
 
@@ -43,6 +44,7 @@ export default async function RootLayout({
         <Providers
           locale={locale}
           messages={locale === DEFAULT_LOCALE ? undefined : { [locale]: dictionaries[locale] }}
+          settings={pickShellSettings(settings)}
           metaPixelId={settings.meta_pixel_id || null} gtmId={settings.gtm_container_id || null}>{children}</Providers>
       </body>
     </html>

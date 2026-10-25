@@ -1,6 +1,8 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Header, Footer, Breadcrumb } from '@/components/organisms';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
+import { Breadcrumb } from '@/components/organisms/Breadcrumb';
 import ProgramListTemplate from '@/components/templates/ProgramListTemplate';
 import { fetchCategories } from '@/services/categories';
 

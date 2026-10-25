@@ -1,66 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { fetchPublicSettings, PublicSettings } from '@/services/settings';
+import { createContext, useContext } from 'react';
+import type { PublicSettings } from '@/services/settings';
 
-function isIgnorableSettingsError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") return true;
-  if (typeof error !== "object" || error === null) return false;
+const DEFAULT_SETTINGS: PublicSettings = {
+  site_name: '',
+  site_tagline: 'Platform Donasi Terpercaya',
+  organization_logo: '/logo.svg',
+  organization_favicon: '/logo.svg',
+};
 
-  const err = error as any;
-  const name = String(err.name || "");
-  const message = String(err.message || "");
+const SettingsContext = createContext<PublicSettings>(DEFAULT_SETTINGS);
 
-  if (name === "AbortError") return true;
-  if (name === "TypeError" && (message.includes("NetworkError") || message.includes("Failed to fetch"))) {
-    return true;
-  }
-
-  return false;
-}
+/**
+ * Settings publik dari server (root layout, tercache di Next Data Cache dan dibuang oleh
+ * revalidateTag('settings')). Dengan begitu Header/Footer tidak lagi memanggil API dari browser
+ * di setiap halaman, dan HTML dari server sudah berisi logo, menu, dan footer yang benar.
+ */
+export const SettingsProvider = SettingsContext.Provider;
 
 export function useSettings() {
-  const [settings, setSettings] = useState<PublicSettings>({
-    site_name: '',
-    site_tagline: 'Platform Donasi Terpercaya',
-    organization_logo: '/logo.svg',
-    organization_favicon: '/logo.svg',
-  });
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadSettings() {
-      try {
-        setIsLoading(true);
-        const data = await fetchPublicSettings();
-
-        if (isMounted) {
-          setSettings(data);
-          setError(null);
-        }
-      } catch (err) {
-        if (!isIgnorableSettingsError(err)) {
-          console.error('Failed to load settings:', err);
-        }
-        if (isMounted) {
-          setError(err instanceof Error ? err : new Error('Failed to load settings'));
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadSettings();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  return { settings, isLoading, error };
+  const settings = useContext(SettingsContext);
+  return { settings, isLoading: false, error: null as Error | null };
 }

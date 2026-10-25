@@ -8,8 +8,9 @@ import { useCart } from '@/contexts/CartContext';
 import { formatRupiahFull } from '@/lib/format';
 import { useI18n } from '@/lib/i18n/provider';
 import { Button } from '@/components/atoms';
-import { Header, Footer } from '@/components/organisms';
-import { CartSummaryCard } from '@/components/molecules';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
+import { CartSummaryCard } from '@/components/molecules/CartSummaryCard';
 
 export default function KeranjangBantuanPage() {
   const router = useRouter();

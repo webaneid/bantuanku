@@ -1,7 +1,6 @@
 'use client';
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { CartProvider } from '@/contexts/CartContext';
 import { saveReferralCode } from '@/lib/referral';
@@ -9,6 +8,8 @@ import FeedbackToastHost from '@/components/FeedbackToastHost';
 import MetaPixel from '@/components/MetaPixel';
 import GoogleTagManager from '@/components/GoogleTagManager';
 import { I18nProvider } from '@/lib/i18n/provider';
+import { SettingsProvider } from '@/hooks/useSettings';
+import type { PublicSettings } from '@/services/settings';
 import type { Locale, Messages } from '@/lib/i18n/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
@@ -37,29 +38,19 @@ export function Providers({
   messages,
   metaPixelId,
   gtmId,
+  settings,
 }: {
   children: React.ReactNode;
+  /** Settings publik hasil pilihan server (lihat lib/settings-shell). */
+  settings?: PublicSettings;
   locale?: string;
   /** Kamus bahasa aktif bila bukan bahasa default (lihat I18nProvider). */
   messages?: Partial<Record<Locale, Messages>>;
   metaPixelId?: string | null;
   gtmId?: string | null;
 }) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 60 * 1000, // 1 minute
-            refetchOnWindowFocus: false,
-            retry: 1,
-          },
-        },
-      })
-  );
-
   return (
-    <QueryClientProvider client={queryClient}>
+    <SettingsProvider value={settings ?? {}}>
       <I18nProvider initialLocale={locale} initialMessages={messages}>
         <CartProvider>
           <ReferralCapture />
@@ -69,6 +60,6 @@ export function Providers({
           <FeedbackToastHost />
         </CartProvider>
       </I18nProvider>
-    </QueryClientProvider>
+    </SettingsProvider>
   );
 }

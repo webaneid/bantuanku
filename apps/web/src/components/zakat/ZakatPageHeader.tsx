@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Breadcrumb } from '@/components/organisms';
+import { Breadcrumb } from '@/components/organisms/Breadcrumb';
 import ZakatOwnerInfo from './ZakatOwnerInfo';
 import { useI18n } from '@/lib/i18n/provider';
 

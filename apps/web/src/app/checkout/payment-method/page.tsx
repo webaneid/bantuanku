@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Header, Footer } from '@/components/organisms';
+import { Header } from '@/components/organisms/Header';
+import { Footer } from '@/components/organisms/Footer';
 import { Button } from '@/components/atoms';
 import toast from '@/lib/feedback-toast';
 import { useI18n } from '@/lib/i18n/provider';

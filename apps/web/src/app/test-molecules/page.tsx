@@ -1,16 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  InputField,
-  TextareaField,
-  SelectField,
-  ProgressBar,
-  AmountSelector,
-  SearchBox,
-  ShareButtons,
-  QuantitySelector,
-} from '@/components/molecules';
+import { InputField, TextareaField, SelectField } from '@/components/molecules/FormField';
+import { ProgressBar } from '@/components/molecules/ProgressBar';
+import { AmountSelector } from '@/components/molecules/AmountSelector';
+import { SearchBox } from '@/components/molecules/SearchBox';
+import { ShareButtons } from '@/components/molecules/ShareButtons';
+import { QuantitySelector } from '@/components/molecules/QuantitySelector';
 
 export default function TestMoleculesPage() {
   const [amount, setAmount] = useState(100000);
