@@ -36,6 +36,32 @@ if (missingEn.length || missingId.length) {
   for (const k of missingId.slice(0, 20)) console.error(`   id kurang: ${k}`);
 } else console.log(`✓ Paritas id/en: ${idKeys.size} key`);
 
+// ---- 1b. key literal t("ns.key") harus ada di kamus (tsc tidak menangkap ini). Key dinamis (template/variabel) dilewati.
+const idKeySet = new Set(idKeys);
+const hasKeyOrPrefix = (k) => idKeySet.has(k) || [...idKeySet].some((x) => x.startsWith(k + "."));
+const srcFiles = [];
+(function walkSrc(d) {
+  for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+    const p = path.join(d, e.name);
+    if (e.isDirectory()) walkSrc(p);
+    else if (/\.(ts|tsx)$/.test(e.name) && !p.includes(path.join("lib", "i18n"))) srcFiles.push(p);
+  }
+})(path.join(root, "src"));
+const unknownKeys = [];
+const knownNs = new Set(Object.keys(idMessages));
+for (const f of srcFiles) {
+  const t = fs.readFileSync(f, "utf8");
+  for (const m of t.matchAll(/(?:^|[^\w.$])t\(\s*(["'])([A-Za-z][\w]*(?:\.[\w]+)+)\1/g)) {
+    const key = m[2];
+    if (knownNs.has(key.split(".")[0]) && !hasKeyOrPrefix(key)) unknownKeys.push(`${path.relative(root, f)}: ${key}`);
+  }
+}
+if (unknownKeys.length) {
+  failed = true;
+  console.error(`✗ Key tidak ada di kamus: ${unknownKeys.length}`);
+  for (const k of unknownKeys.slice(0, 30)) console.error(`   ${k}`);
+} else console.log("✓ Semua key literal t(\"ns.key\") ada di kamus");
+
 // ---- 2. graf impor
 const nsPattern = new RegExp("[\"'`](" + namespaces.join("|") + ")\\.[A-Za-z0-9_.$]*", "g");
 const files = [];

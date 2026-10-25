@@ -84,6 +84,7 @@ export const qurbanDetail: Messages = {
     quantityValue: "{quantity} head",
     paymentSummary: "Payment Summary",
     summary: {
+      discount: "Discount",
       subtotal: "Subtotal",
       adminFee: "Admin Fee",
       sharedInfo: "Split across {maxSlots} slots (shared package)",
@@ -94,7 +95,6 @@ export const qurbanDetail: Messages = {
       orderNow: "Order Qurban Now",
       addToCartAndView: "Add to Cart & View",
       addToCart: "Add to Cart",
-      browseOther: "Browse Other Qurban Packages",
     },
     toasts: {
       addedToCart: "Qurban package added to cart successfully!",

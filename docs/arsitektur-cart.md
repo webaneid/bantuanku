@@ -11,8 +11,9 @@ Dokumen ini adalah source of truth untuk cart frontend, halaman keranjang, dan c
 | Header cart badge | `apps/web/src/components/organisms/Header/Header.tsx` |
 | Halaman cart | `apps/web/src/app/keranjang-bantuan/page.tsx` |
 | Halaman checkout | `apps/web/src/app/checkout/page.tsx` |
-| Campaign add-to-cart | `apps/web/src/app/program/[slug]/DonationConfirmModal.tsx` |
-| Qurban add-to-cart | `apps/web/src/app/qurban/[id]/QurbanConfirmModal.tsx` |
+| Modal konfirmasi bersama (campaign + qurban) | `apps/web/src/components/organisms/ConfirmCartModal/ConfirmCartModal.tsx` |
+| Campaign add-to-cart | `apps/web/src/app/program/[slug]/DonationConfirmModal.tsx` (pembungkus tipis) |
+| Qurban add-to-cart | `apps/web/src/app/qurban/[id]/QurbanConfirmModal.tsx` (pembungkus tipis) + tombol Keranjang di `QurbanCard` |
 | Zakat add-to-cart | `apps/web/src/components/zakat/ZakatConfirmModal.tsx` |
 | Referral storage | `apps/web/src/lib/referral.ts` |
 | Transaction create API | `apps/api/src/routes/transactions.ts`, `apps/api/src/services/transaction.ts` |
@@ -167,7 +168,9 @@ Modal konfirmasi (disederhanakan 2026-10-24) hanya punya **tiga** tombol, semuan
 | Tambah ke Keranjang & Lihat | `handleGoToCart()`: tambah item lalu `/keranjang-bantuan` |
 | Tambah ke Keranjang | `handleAddAndBrowse()`: tambah item lalu `/program` untuk menambah program lain |
 
-Ketiganya memakai `addItem()` (satu-satunya tempat `addToCart` + Meta Pixel `AddToCart`). Modal qurban dan zakat belum disederhanakan (masih pola lama).
+Ketiganya memakai `addItem()` (satu-satunya tempat `addToCart` + Meta Pixel `AddToCart`).
+
+**Sejak 2026-10-25 modal ini komponen bersama `ConfirmCartModal`** (props: `title`, `chooseActionText`, `item: CartItem`, `browseHref`, `labels`, `toasts`; anak = ringkasan yang disusun dengan `ConfirmModalBlock tone="primary"|"neutral"`). `DonationConfirmModal` dan `QurbanConfirmModal` hanya menyusun item + ringkasan; tombol, kelas, alur, toast, dan Pixel SAMA. Modal zakat (`ZakatConfirmModal`) belum memakainya (gap).
 
 `CartContext` mengekspos `isLoaded`: halaman `/checkout` hanya mengalihkan ke keranjang bila keranjang kosong SETELAH selesai dibaca dari localStorage (sebelumnya `items` kosong di render pertama sehingga muat ulang penuh `/checkout` memantul ke keranjang).
 
@@ -191,12 +194,15 @@ programType = "qurban"
 qurbanData = package/period/quantity/fee detail
 ```
 
-Behavior:
+Behavior (sejak 2026-10-25 identik dengan campaign, via `ConfirmCartModal`; tombol "Cari Paket Qurban Lain" dan tombol ke-4 dihapus):
 
-- add to cart
-- go to cart
-- direct checkout
-- kirim Meta Pixel `AddToCart`
+| Tombol | Aksi |
+|---|---|
+| Order Qurban Sekarang (primary) | tambah item lalu langsung `/checkout` |
+| Tambah ke Keranjang & Lihat | tambah item lalu `/keranjang-bantuan` |
+| Tambah ke Keranjang | tambah item lalu `/qurban` (daftar paket, untuk menambah paket lain) |
+
+Ringkasan modal: blok primary (subtotal, **diskon** bila ada, biaya admin + info slot patungan, total) lalu blok netral (paket, periode, jenis, jumlah). Kartu `QurbanCard` juga punya tombol Keranjang (jumlah 1) yang menambah item dengan hitungan sama tanpa modal.
 
 Karena `cartItemId` qurban berbasis `packagePeriodId`, paket qurban yang sama pada periode yang sama akan replace item lama.
 

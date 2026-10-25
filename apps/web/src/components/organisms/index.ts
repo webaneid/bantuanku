@@ -27,6 +27,7 @@ export type { QurbanCardProps } from './QurbanCard';
 
 // Qurban Carousel
 export { QurbanCarousel } from './QurbanCarousel';
+export { ConfirmCartModal, ConfirmModalBlock } from './ConfirmCartModal';
 export type { QurbanCarouselProps } from './QurbanCarousel';
 
 // Qurban Section

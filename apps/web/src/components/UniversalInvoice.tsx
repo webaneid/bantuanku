@@ -79,10 +79,10 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
         || transactionId;
       const fileName = `Invoice-${txNumber}.pdf`;
       pdf.save(fileName);
-      toast.success(t('invoice.downloadPdfSuccess') || 'PDF berhasil diunduh');
+      toast.success(t('invoice.downloadPdfSuccess'));
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error(t('invoice.downloadPdfFailed') || 'Gagal mengunduh PDF');
+      toast.error(t('invoice.downloadPdfFailed'));
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -202,7 +202,7 @@ export default function UniversalInvoice({ transactionId }: UniversalInvoiceProp
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 )}
-                {isGeneratingPdf ? (t('invoice.generatingPdf') || 'Generating...') : t('invoice.downloadPdf')}
+                {isGeneratingPdf ? t('invoice.generatingPdf') : t('invoice.downloadPdf')}
               </Button>
             </div>
           </div>

@@ -84,6 +84,7 @@ export const qurbanDetail: Messages = {
     quantityValue: "{quantity} ekor",
     paymentSummary: "Rincian Pembayaran",
     summary: {
+      discount: "Diskon",
       subtotal: "Subtotal",
       adminFee: "Biaya Admin",
       sharedInfo: "Dibagi {maxSlots} slot (paket patungan)",
@@ -94,7 +95,6 @@ export const qurbanDetail: Messages = {
       orderNow: "Order Qurban Sekarang",
       addToCartAndView: "Tambah ke Keranjang & Lihat",
       addToCart: "Tambah ke Keranjang",
-      browseOther: "Cari Paket Qurban Lain",
     },
     toasts: {
       addedToCart: "Paket qurban berhasil ditambahkan ke keranjang!",
