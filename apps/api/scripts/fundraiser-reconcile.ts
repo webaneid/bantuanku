@@ -35,6 +35,7 @@ async function main() {
     from fundraisers f order by f.code`;
 
   let bad = 0;
+  console.log(apply ? "-- KONDISI SEBELUM menulis (baris di bawah = yang akan diperbaiki) --" : "-- KONDISI SAAT INI --");
   console.log("kode         | hak(paid)  | kolom_hak  | selisih_hak | saldo_kolom | saldo_seharusnya | selisih_saldo | dicairkan | diajukan");
   const fixes: { id: string; hak: number; saldo: number }[] = [];
   for (const r of rows) {
@@ -90,7 +91,7 @@ async function main() {
         where x.id = fr.id and fr.commission_amount is distinct from x.target`;
       await tx`insert into audit_logs (id, action, entity, entity_id, new_data) values (${Math.random().toString(36).slice(2) + Date.now().toString(36)}, 'fundraiser.reconcile', 'fundraisers', 'all', ${tx.json({ fundraisers: fixes.length, referrals: refs.length })})`;
     });
-    console.log(`\nAPPLY selesai: ${fixes.length} fundraiser, ${refs.length} referral diperbarui.`);
+    console.log(`\nAPPLY selesai: ${fixes.length} fundraiser, ${refs.length} referral diperbarui. Jalankan lagi tanpa --apply: harus "selisih: 0".`);
   }
   await sql.end();
 }
