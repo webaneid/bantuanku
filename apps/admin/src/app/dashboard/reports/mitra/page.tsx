@@ -97,7 +97,7 @@ export default function MitraReportPage() {
         { header: "Mitra", key: "name", width: 30 },
         { header: "Status", key: "status", width: 12 },
         { header: "Program", key: "campaigns", width: 10, format: "number" },
-        { header: "Total Income", key: "income", width: 18, format: "currency" },
+        { header: "Basis Perhitungan", key: "income", width: 18, format: "currency" },
         { header: "Revenue Share", key: "share", width: 18, format: "currency" },
         { header: "Sudah Dibayar", key: "paid", width: 18, format: "currency" },
         { header: "Sisa", key: "balance", width: 18, format: "currency" },
@@ -150,7 +150,7 @@ export default function MitraReportPage() {
                     <tr>
                       <th>Mitra</th>
                       <th className="text-center">Program</th>
-                      <th className="text-right">Total Income</th>
+                      <th className="text-right">Basis Perhitungan</th>
                       <th className="text-right">Revenue Share</th>
                       <th className="text-right">Dibayar</th>
                       <th className="text-right">Sisa</th>

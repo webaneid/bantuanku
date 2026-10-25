@@ -645,3 +645,8 @@
 **Konteks:** `/dashboard/reports/fundraiser` selalu 0 padahal Keuangan → Bagi Hasil menunjukkan hak influencer.
 **Masalah:** `/fundraiser-summary` menjumlahkan `disbursements` (pencairan yang diajukan) sebagai "komisi", jadi hak yang belum diajukan tidak terlihat; `/fundraiser-detail` memakai `commissionAmount` hardcoded 0. Terpisah dari itu, kolom `fundraisers.current_balance` sempat menyertakan komisi transaksi pending (kode lama).
 **Pelajaran:** hak komisi selalu dari `revenue_shares` transaksi paid; pencairan hanyalah pembayaran atas hak itu. Saldo turunan dirapikan dengan `npm run fundraiser:reconcile`.
+
+### [2026-10-26] Laporan mitra menghitung bagi hasil transaksi yang tidak paid
+**Konteks:** audit `/dashboard/reports/mitra` sebelum dipindah ke grup Keuangan.
+**Masalah:** `/mitra-summary` dan `/mitra-detail` menjumlahkan `revenue_shares` tanpa memeriksa `transactions.payment_status = 'paid'`, sehingga transaksi yang kemudian dibatalkan tetap menambah hak mitra; ringkasan detail dihitung dari daftar yang dibatasi 200 baris; kolom "Total Income" sebenarnya basis perhitungan.
+**Pelajaran:** semua laporan hak bagi hasil harus join ke transaksi `paid` dan menghitung ringkasan di SQL, bukan dari daftar berpaginasi. Cek paritas dengan Keuangan → Bagi Hasil setelah memperbaiki.

@@ -2067,7 +2067,7 @@ reportsAdmin.get("/mitra-summary", requireRole("super_admin", "admin_finance"), 
 
     const countMap = Object.fromEntries(campaignCounts.map(c => [c.mitraId, Number(c.count)]));
 
-    // Source of truth: revenue_shares (hasil bagi dari transaksi paid)
+    // Source of truth: revenue_shares dari transaksi PAID saja (sama dengan Buku Kas, ADR-0016)
     const shareRows = await db
       .select({
         mitraId: revenueShares.mitraId,
@@ -2075,7 +2075,9 @@ reportsAdmin.get("/mitra-summary", requireRole("super_admin", "admin_finance"), 
         totalShare: sql<number>`coalesce(sum(${revenueShares.mitraAmount}), 0)`,
       })
       .from(revenueShares)
+      .innerJoin(transactions, eq(transactions.id, revenueShares.transactionId))
       .where(and(
+        eq(transactions.paymentStatus, "paid"),
         sql`${revenueShares.mitraId} IS NOT NULL`,
         sql`${revenueShares.mitraAmount} > 0`
       ))
@@ -2085,13 +2087,13 @@ reportsAdmin.get("/mitra-summary", requireRole("super_admin", "admin_finance"), 
     const paidRows = await db
       .select({
         recipientId: disbursements.recipientId,
-        totalPaid: sql<number>`coalesce(sum(case when ${disbursements.status} = 'paid' then ${disbursements.amount} else 0 end), 0)`,
+        totalPaid: sql<number>`coalesce(sum(${disbursements.amount}), 0)`,
       })
       .from(disbursements)
       .where(and(
         eq(disbursements.recipientType, "mitra"),
         eq(disbursements.category, "revenue_share_mitra"),
-        inArray(disbursements.status, ["submitted", "approved", "paid"])
+        eq(disbursements.status, "paid")
       ))
       .groupBy(disbursements.recipientId);
 
@@ -2161,6 +2163,7 @@ reportsAdmin.get("/mitra-detail", requireRole("super_admin", "admin_finance"), a
     // Source of truth: revenue_shares per transaksi paid
     const shareConds: any[] = [
       eq(revenueShares.mitraId, mitraId),
+      eq(transactions.paymentStatus, "paid"),
       sql`${revenueShares.mitraAmount} > 0`,
     ];
     if (startDate) shareConds.push(gte(revenueShares.calculatedAt, startOfDayWIB(startDate)));
@@ -2178,10 +2181,17 @@ reportsAdmin.get("/mitra-detail", requireRole("super_admin", "admin_finance"), a
         productType: sql<string>`coalesce(${transactions.productType}, '-')`,
       })
       .from(revenueShares)
-      .leftJoin(transactions, eq(revenueShares.transactionId, transactions.id))
+      .innerJoin(transactions, eq(revenueShares.transactionId, transactions.id))
       .where(and(...shareConds))
       .orderBy(desc(revenueShares.calculatedAt))
       .limit(200);
+
+    // Ringkasan dihitung di SQL (daftar di atas dibatasi 200 baris)
+    const [shareAgg] = await db
+      .select({ total: sql<number>`coalesce(sum(${revenueShares.mitraAmount}), 0)` })
+      .from(revenueShares)
+      .innerJoin(transactions, eq(revenueShares.transactionId, transactions.id))
+      .where(and(...shareConds));
 
     // Disbursements to mitra
     const disbConds: any[] = [
@@ -2206,8 +2216,12 @@ reportsAdmin.get("/mitra-detail", requireRole("super_admin", "admin_finance"), a
       .orderBy(desc(disbursements.paidAt))
       .limit(100);
 
-    const totalShare = shares.reduce((s, r) => s + Number(r.mitraAmount), 0);
-    const totalPaid = disbList.reduce((s, d) => s + Number(d.amount), 0);
+    const [paidAgg] = await db
+      .select({ total: sql<number>`coalesce(sum(${disbursements.amount}), 0)` })
+      .from(disbursements)
+      .where(and(...disbConds));
+    const totalShare = Number(shareAgg?.total || 0);
+    const totalPaid = Number(paidAgg?.total || 0);
 
     return success(c, {
       mitra: { id: mitraData.id, name: mitraData.name, status: mitraData.status },

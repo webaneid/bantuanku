@@ -273,6 +273,7 @@ UI admin di `apps/admin/src/app/dashboard/cashbook/` (menu sidebar **Keuangan**,
 | Sirkulasi Rekening | `/dashboard/cashbook/accounts` | per akun kas + blok per gateway |
 | Dana per Sumber | `/dashboard/cashbook/funds` | masuk, hak pihak lain, disalurkan, sisa program |
 | Bagi Hasil | `/dashboard/cashbook/revenue-share` | kartu pihak, drill penerima dan transaksi |
+| Per Mitra | `/dashboard/reports/mitra` | hak, dibayar, sisa per mitra (laporan lama yang sudah diperbaiki: hanya transaksi paid; menunya dipindah ke grup Keuangan, 2026-10-26) |
 | Per Influencer | `/dashboard/reports/fundraiser` | hak, dibayar, sisa per influencer (laporan lama yang sudah diperbaiki membaca `revenue_shares`; hanya menunya yang dipindah ke grup Keuangan, 2026-10-26) |
 | Per Program | `/dashboard/cashbook/programs` | rincian per produk |
 | Perlu Ditinjau | `/dashboard/cashbook/review` | anomali dan contoh |
