@@ -14,7 +14,8 @@
     "sync-payment-status": "node --import tsx/esm scripts/sync-payment-status.ts",
     "cashbook:backfill": "node --import tsx/esm scripts/cash-book-backfill.ts",
     "cashbook:check": "node --import tsx/esm scripts/cash-book-check.ts",
-    "cashbook:parity": "node --import tsx/esm scripts/cash-book-parity.ts"
+    "cashbook:parity": "node --import tsx/esm scripts/cash-book-parity.ts",
+    "fundraiser:reconcile": "node --import tsx/esm scripts/fundraiser-reconcile.ts"
   },
   "dependencies": {
     "@bantuanku/db": "*",
