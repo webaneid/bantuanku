@@ -55,3 +55,11 @@ Implikasi: (1) **Kelompok A sangat besar** (zakat fitrah paid 66 transaksi Rp 27
 ### Keputusan kelompok A (2026-10-26)
 
 Pemilik produk memilih **mencatat semua transaksi paid tanpa pembayaran terverifikasi sebagai uang masuk**. Diimplementasikan sebagai pemasukan sintetis berlabel (`ref_type = transaction_paid`) dengan pembalikan otomatis bila pembayaran asli muncul; transaksi non-tunai dikecualikan. Dampak: pada produksi, buku kas akan memuat sekitar Rp 320 jt tambahan yang **tidak** punya bukti pembayaran; tampil di laporan sebagai komponen/catatan "Data eksisting" sehingga dapat difilter dan diperbaiki kelak.
+
+### Fase 3 — temuan
+
+1. **Identitas paritas** masuk = A(dashboard) − non-tunai + kurang bayar + pokok non-paid + kode unik diterima + kelebihan terbukti tepat pada data dev; ini menjadi uji penerimaan produksi (jalankan `npm run cashbook:parity`; selisih ≠ 0 berarti ada jalur uang yang belum terbaca).
+2. **Rumus hak pihak lain** = `donation_amount − program_amount` berlaku untuk campaign, zakat (= amil_total) dan qurban (= biaya admin penuh); wakaf/fidyah tidak punya bagi hasil (dilewati oleh service), jadi seluruh masuknya menjadi sisa program.
+3. **Penyaluran zakat/qurban tidak terpetakan ke program** pada level produk (hanya campaign yang membawa `reference_id`); laporan per program menandainya dan Dana per Sumber menampilkan di level dana.
+4. `/review` mengungkap transaksi gateway tanpa bagi hasil (Rp 400.000 di dev). Di produksi jumlahnya kemungkinan besar; menghitung ulang bagi hasil transaksi lama adalah keputusan terpisah (service idempoten).
+5. Pada tampilan Bagi Hasil, "dibayar amil" = pengeluaran operasional (basis tanggal pengeluaran), bukan alokasi per transaksi; dijelaskan di `keterangan`.

@@ -190,7 +190,7 @@ Hasil audit menentukan D3: cara memasukkan data lama (semua riwayat atau sebagia
 | **0** | Audit + keputusan | `scripts/audit/*` (siap), ADR-0016 | — | Hasil audit produksi dinilai; D3, D4, D5 terjawab; ADR → Accepted |
 | **1** Fondasi | Skema, service posting, backfill dry-run | `packages/db/migrations/123_create_cash_book.sql`, `packages/db/src/schema/cash-book.ts`, `run-production-manifest.ts`, `apps/api/src/services/cash-book.ts`, `services/cash-book-backfill.ts`, uji `bun:test` | **123** (DB lokal) | Posting idempoten (2× = 0 baris baru); unit test alokasi komponen (cicilan, kode unik, kelebihan, qurban); backfill dry-run pada salinan data: Σ in = Σ verified, Σ out = Σ paid disbursement |
 | **2** Hook posting | Pasang posting di setiap jalur bayar/cair + item bagi hasil selalu ditulis | `routes/transactions.ts`, `routes/payments.ts`, `routes/admin/qurban-savings.ts`, `services/disbursement.ts`, `routes/admin/zakat-distributions.ts`, jalur lain hasil grep | — | Pemeriksa rekonsiliasi = 0 (verified tanpa baris, paid tanpa baris) setelah uji manual semua jalur: transfer, QRIS, tiap gateway, tabungan qurban, input admin, pembatalan |
-| **3** API baca | 5 laporan + review | `routes/admin/cashbook.ts`, `routes/admin/index.ts`, `services/revenue-share-ledger.ts`, `scripts/audit/parity.sql` | — | Paritas: tiap selisih terhadap laporan lama terjelaskan (kode unik, kelebihan, cicilan, dll.); uji batas WIB; paginasi server; `EXPLAIN` memakai indeks; review keamanan |
+| **3** API baca (SELESAI lokal) | 5 laporan + review | `routes/admin/cashbook.ts`, `routes/admin/index.ts`, `services/revenue-share-ledger.ts`, `scripts/audit/parity.sql` | — | Paritas: tiap selisih terhadap laporan lama terjelaskan (kode unik, kelebihan, cicilan, dll.); uji batas WIB; paginasi server; `EXPLAIN` memakai indeks; review keamanan |
 | **4** UI | Menu Keuangan + 5 halaman + 2 formulir | `apps/admin/src/app/dashboard/cashbook/**`, `components/cashbook/*`, `Sidebar.tsx` | — | Cek browser desktop+mobile; `check:colors` 0; ekspor Excel sama dengan layar |
 | **5** Pembelajaran offline | Uji menyeluruh pada salinan data produksi; catat temuan | `docs/buku-kas-pelajaran.md`, `arsitektur-buku-kas.md` | — | Semua angka §12 lolos; daftar pelajaran, perbaikan data eksisting yang diperlukan, dan rencana produksi tertulis |
 
@@ -243,6 +243,25 @@ Perubahan perilaku yang **perlu persetujuan sebelum deploy**: webhook gateway ki
 Alat: `npm run cashbook:check` (rekonsiliasi read-only; keluar 2 bila ada pembayaran verified/pencairan paid yang belum masuk buku kas) dan `npm run cashbook:backfill`. Uji: 23 tes `bun` (aturan, backfill, hook posting, savepoint `safePost`) + uji end-to-end approve-payment di API lokal (Rp 25.665 → pokok 25.000 + kode unik 665 di akun BSI, dana campaign/sedekah; data uji dibersihkan).
 
 Hook tambahan (D3): `PUT /transactions/:id` yang menyetel `paid` → pemasukan sintetis (§4.1b). Tidak dihook (sengaja): tabel legacy `qurban_payments`/`qurban_orders` (menunggu bagian 9 audit produksi) dan jalur lain yang memaksa `paid` tanpa pembayaran (ditutup backfill + `cashbook:check`).
+
+### Status Fase 3 (2026-10-26, selesai di lokal)
+
+API baca `apps/api/src/routes/admin/cashbook.ts` (mount `/admin/cashbook`, role `super_admin` + `admin_finance`) dengan logika di `services/cash-book-reports.ts`. Semua query: parameter terikat, enum whitelist, tanggal batas hari WIB, paginasi server, tanpa `sql.raw`.
+
+| Endpoint | Laporan | Catatan |
+|---|---|---|
+| `GET /entries` | 1. Arus Kas | filter: `startDate,endDate,fund,accountId,method,gateway,direction,component,q,page,limit` (limit maks 200); mengembalikan `summary` (masuk/keluar/netto) dan `byComponent` |
+| `GET /accounts` | 2. Sirkulasi Rekening | per akun kas (masuk, keluar, sirkulasi) + `gateways` (percobaan, berhasil, tertunda, gagal, total berhasil, tingkat berhasil dari SEMUA status pembayaran) + `peringatan` (zakat keluar dari rekening non-zakat) |
+| `GET /funds` | 3. Dana per Sumber | per dana program: `masuk`, `hakPihakLain` (= `donation_amount − program_amount` dari `revenue_shares`), `disalurkan`, `sisa`, + rincian per jenis; `nonProgram` (bagi hasil/operasional/lainnya); `identitas.selisih` harus 0 |
+| `GET /revenue-share`, `/revenue-share/:party/recipients`, `/revenue-share/:party/transactions` | 4. Bagi Hasil | pihak: `amil` (hak = amil_net, dipakai = pengeluaran operasional), `developer`, `mitra`, `fundraiser` (hak vs alokasi pada pencairan paid; status belum/sebagian/lunas) |
+| `GET /programs` | 5. Rincian per Program | per produk (campaign/jenis zakat/paket qurban): masuk, hak, disalurkan (hanya campaign yang terpetakan), sisa |
+| `GET /review` | Perlu ditinjau | belum diposting, akun belum dipetakan, kelebihan, pemasukan sintetis, paid tanpa bagi hasil (+ contoh) |
+
+Alat paritas: `npm run cashbook:parity -- [mulai akhir]` menjelaskan **seluruh** selisih antara laporan lama dan buku kas sebagai identitas (non-tunai, kurang bayar, pokok non-paid, kode unik diterima, kelebihan; keluar: biaya transfer) dan keluar 2 bila tidak cocok. Hasil DB dev: masuk 4.498.001 dan keluar 100.000 terjelaskan penuh.
+
+Uji: 31 tes `bun` (aturan, backfill, hook, laporan dengan pendekatan selisih + rollback, validasi input); uji manual API: tanggal/enum/pihak tak valid → 400, injeksi di `q` aman, `limit` diklamp 200, tanpa token 401.
+
+Temuan: `/review` pada DB dev menunjukkan 2 transaksi campaign yang dibayar lewat Flip **tanpa bagi hasil** (Rp 400.000), bukti nyata bug webhook (diperbaiki di Fase 2 untuk transaksi baru).
 
 ## 9. Keamanan dan izin
 

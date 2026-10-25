@@ -8,6 +8,12 @@ export type Component = "pokok" | "kode_unik" | "kelebihan" | "biaya_transfer" |
 export type AccountKind = "bank" | "qris" | "gateway" | "cash" | "unmapped";
 export type PaymentMethod = "bank_transfer" | "qris" | "gateway" | "cash" | "other";
 
+export const FUNDS = ["zakat", "qurban", "campaign", "wakaf", "fidyah", "operasional", "bagi_hasil", "lainnya"] as const;
+export const COMPONENTS = ["pokok", "kode_unik", "kelebihan", "biaya_transfer", "koreksi"] as const;
+export const METHODS = ["bank_transfer", "qris", "gateway", "cash", "other"] as const;
+/** Dana program (punya hak bagi hasil dan penyaluran); sisanya adalah pengeluaran non-program. */
+export const PROGRAM_FUNDS = ["zakat", "qurban", "campaign", "wakaf", "fidyah"] as const;
+
 export const KNOWN_GATEWAYS = ["flip", "ipaymu", "midtrans", "xendit"] as const;
 
 export interface PostedByComponent {
