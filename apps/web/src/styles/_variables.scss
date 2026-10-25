@@ -10,51 +10,72 @@ $primary-700: #023831;
 $primary-800: #012920;
 $primary-900: #011a17;
 
-$success-50: #f3f8e6;
-$success-100: #dceab3;
-$success-200: #c5dc80;
-$success-300: #aece4d;
-$success-400: #8aae2c;
-$success-500: #678f0c;
-$success-600: #537309;
-$success-700: #4a6a09;
-$success-800: #3d5707;
-$success-900: #2f4405;
-
-$warning-50: #fdf8ed;
-$warning-100: #f7eacc;
-$warning-200: #f1dcab;
-$warning-300: #ebce8a;
-$warning-400: #dfc06f;
-$warning-500: #d2aa55;
-$warning-600: #b8964b;
-$warning-700: #9e7f3f;
-$warning-800: #846833;
-$warning-900: #6a5127;
-
-$danger-50: #fce8ec;
-$danger-100: #f5bdc7;
-$danger-200: #eb8fa0;
-$danger-300: #e16179;
-$danger-400: #b83752;
-$danger-500: #8f132f;
-$danger-600: #7a1028;
-$danger-700: #6b0e23;
-
-$info-50: #e8f1f5;
-$info-100: #bdd8e4;
-$info-200: #92bed3;
-$info-300: #67a4c2;
-$info-400: #4884a3;
-$info-500: #296585;
-$info-600: #225470;
-$info-700: #1e4b63;
-$info-800: #1a4256;
-$info-900: #16394a;
-
-$accent-50: #fdf8ed;
-$accent-500: #d2aa55;
-$accent-700: #9e7f3f;
+// === Token brand (ADR-0015): primary, secondary, light, dark ===
+$light: #f9fafb;
+$dark: #111827;
+$secondary-50: #fdf8ed;
+$secondary-100: #f7eacc;
+$secondary-200: #f1dcab;
+$secondary-300: #ebce8a;
+$secondary-400: #e5c069;
+$secondary-500: #d2aa55;
+$secondary-600: #b8964b;
+$secondary-700: #9e7f3f;
+$secondary-800: #846833;
+$secondary-900: #6a5127;
+// Alias lama accent = secondary
+$accent-50: $secondary-50;
+$accent-100: $secondary-100;
+$accent-200: $secondary-200;
+$accent-300: $secondary-300;
+$accent-400: $secondary-400;
+$accent-500: $secondary-500;
+$accent-600: $secondary-600;
+$accent-700: $secondary-700;
+$accent-800: $secondary-800;
+$accent-900: $secondary-900;
+// === Token semantik (ADR-0015) ===
+// Success = primary; Warning/Danger/Info = palet bawaan Tailwind (amber/red/blue)
+$success-50: $primary-50;
+$success-100: $primary-100;
+$success-200: $primary-200;
+$success-300: $primary-300;
+$success-400: $primary-400;
+$success-500: $primary-500;
+$success-600: $primary-600;
+$success-700: $primary-700;
+$success-800: $primary-800;
+$success-900: $primary-900;
+$warning-50: #fffbeb;
+$warning-100: #fef3c7;
+$warning-200: #fde68a;
+$warning-300: #fcd34d;
+$warning-400: #fbbf24;
+$warning-500: #f59e0b;
+$warning-600: #d97706;
+$warning-700: #b45309;
+$warning-800: #92400e;
+$warning-900: #78350f;
+$danger-50: #fef2f2;
+$danger-100: #fee2e2;
+$danger-200: #fecaca;
+$danger-300: #fca5a5;
+$danger-400: #f87171;
+$danger-500: #ef4444;
+$danger-600: #dc2626;
+$danger-700: #b91c1c;
+$danger-800: #991b1b;
+$danger-900: #7f1d1d;
+$info-50: #eff6ff;
+$info-100: #dbeafe;
+$info-200: #bfdbfe;
+$info-300: #93c5fd;
+$info-400: #60a5fa;
+$info-500: #3b82f6;
+$info-600: #2563eb;
+$info-700: #1d4ed8;
+$info-800: #1e40af;
+$info-900: #1e3a8a;
 
 // Gray Scale
 $gray-50: #f9fafb;

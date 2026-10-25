@@ -79,7 +79,9 @@ Catatan penting:
 - Web SCSS hanya mendefinisikan sebagian shade `accent`: `50`, `500`, dan `700`.
 - Web dan Admin sama-sama memakai base color yang sama, tetapi shade skala 50-900 tidak 100% identik.
 
-## Aturan Pemakaian Warna Web (2026-10-25)
+## Aturan Pemakaian Warna Web (2026-10-25, ADR-0015)
+
+**Empat token brand** (ditentukan klien): `primary`, `secondary` (alias lama `accent`), `light` (`#f9fafb`), `dark` (`#111827`). **Token semantik tetap** (tidak mengikuti brand): `success` = alias `primary`, `warning` = amber Tailwind, `danger` = red Tailwind, `info` = blue Tailwind. Nilai brand sekarang = tenant pertama (default); sumber dari settings via CSS variable = tahap berikutnya (lihat ADR-0015).
 
 **Tidak ada pengaturan warna di admin**: semua warna tertanam di `tailwind.config.js` + `_variables.scss`. Tema per klien lewat admin = belum ada (gap, butuh ADR: token jadi CSS variable dari settings).
 
@@ -88,14 +90,15 @@ Kode web hanya boleh memakai token berikut. Palet bawaan Tailwind (`amber`, `eme
 | Kebutuhan | Token | Pengganti palet liar |
 |---|---|---|
 | Aksi utama, brand, fokus | `primary` | `emerald`, `teal` |
-| Penekanan/aksen, qurban, chip emas | `accent` (= alias `secondary`, emas) | `amber` |
-| Peringatan | `warning` (emas) | `yellow`, `orange` |
-| Sukses | `success` | `green`, `lime` |
-| Error/destruktif | `danger` | `red`, `rose` |
-| Informasi, kotak bantuan | `info` | `blue`, `sky`, `purple` (status "converted") |
+| Penekanan/aksen brand, qurban, chip emas | `secondary` (alias lama `accent`, emas brand) | `amber` |
+| Peringatan | `warning` (amber Tailwind, bukan emas brand) | `yellow`, `orange` |
+| Sukses | `success` (= primary) | `green`, `lime` |
+| Error/destruktif | `danger` (red Tailwind) | `red`, `rose` |
+| Informasi, kotak bantuan | `info` (blue Tailwind) | `blue`, `sky`, `purple` (status "converted") |
+| Latar halaman / teks utama | `light` / `dark` | `gray-50` / `gray-900` (migrasi bertahap) |
 | Netral | `gray` | `slate`, `zinc`, `stone`, `neutral` |
 
-- `secondary` ditambahkan di web (alias persis `accent`) agar konsisten dengan admin. `accent`, `secondary`, dan `warning` semuanya emas `#d2aa55`; pilih `accent`/`secondary` untuk penekanan dan `warning` untuk peringatan.
+- `secondary` ada di web (emas brand `#d2aa55`); `accent` = alias lama. `warning` kini amber Tailwind, terpisah dari emas brand.
 - Halaman qurban memakai emas (`accent`) sebagai aksen: chip Sapi `accent-100/800`, chip Kambing/Domba `primary-100/800`.
 - **Penjaga**: `cd apps/web && npm run check:colors` gagal bila ada file yang jumlah pemakaian palet liarnya NAIK atau file baru memakainya (baseline `apps/web/scripts/colors-baseline.json`). `node scripts/check-colors.mjs --report` menampilkan sisa per palet dan file; setelah memigrasi file, jalankan `--update` (jumlah hanya boleh turun; target 0).
 - Status migrasi: 584 → 284 pemakaian. Selesai: `app/qurban/**`, `QurbanCard`, `app/zakat/**`, `components/zakat`. Sisa terbesar: `UniversalInvoice`, `checkout/**`, `keranjang-bantuan`, `register`, `account/**`, `daftar-mitra`, `laporan/[slug]`, `CampaignSidebar`, konten `documentation`. Pemetaan mekanis: amber→accent, emerald→primary, green→success, red→danger, blue→info, yellow/orange→warning; cek visual per halaman.

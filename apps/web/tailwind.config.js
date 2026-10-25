@@ -1,4 +1,17 @@
 /** @type {import('tailwindcss').Config} */
+const primary = {
+  50: '#e6f4f3',
+  100: '#b3e0dc',
+  200: '#80ccc5',
+  300: '#4db8ae',
+  400: '#1aa497',
+  500: '#035a52',
+  600: '#024741',
+  700: '#023831',
+  800: '#012920',
+  900: '#011a17',
+};
+
 module.exports = {
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,33 +22,14 @@ module.exports = {
     extend: {
       colors: {
         // Primary (Hijau Darunnajah)
-        primary: {
-          50: '#e6f4f3',
-          100: '#b3e0dc',
-          200: '#80ccc5',
-          300: '#4db8ae',
-          400: '#1aa497',
-          500: '#035a52',
-          600: '#024741',
-          700: '#023831',
-          800: '#012920',
-          900: '#011a17',
-        },
-        // Success (Hijau)
-        success: {
-          50: '#f3f8e6',
-          100: '#dceab3',
-          200: '#c5dc80',
-          300: '#aece4d',
-          400: '#97c01a',
-          500: '#678f0c',
-          600: '#537309',
-          700: '#4a6a09',
-          800: '#3e5707',
-          900: '#324406',
-        },
-        // Warning (Emas)
-        warning: {
+        primary,
+        // Success = primary (ADR-0015)
+        success: primary,
+        // === Token brand (ADR-0015): 4 warna yang ditentukan klien — primary, secondary, light, dark ===
+        // Nilai di bawah = brand tenant saat ini; nantinya dibaca dari settings (CSS variable)
+        light: '#f9fafb', // terang: latar halaman/permukaan
+        dark: '#111827', // gelap: teks utama/permukaan gelap
+        secondary: {
           50: '#fdf8ed',
           100: '#f7eacc',
           200: '#f1dcab',
@@ -47,33 +41,7 @@ module.exports = {
           800: '#846833',
           900: '#6a5127',
         },
-        // Danger (Merah)
-        danger: {
-          50: '#fce8ec',
-          100: '#f5bdc7',
-          200: '#ee92a2',
-          300: '#e7677d',
-          400: '#e03c58',
-          500: '#8f132f',
-          600: '#7a1028',
-          700: '#6b0e23',
-          800: '#5c0b1e',
-          900: '#4d0919',
-        },
-        // Info (Biru)
-        info: {
-          50: '#e8f1f5',
-          100: '#bdd8e4',
-          200: '#92bfd3',
-          300: '#67a6c2',
-          400: '#3c8db1',
-          500: '#296585',
-          600: '#225470',
-          700: '#1e4b63',
-          800: '#1a4256',
-          900: '#163949',
-        },
-        // Accent / Secondary (emas, sama dengan Warning). `secondary` = alias `accent` agar konsisten dengan admin
+        // Alias lama `accent` = secondary (dipertahankan untuk kode yang sudah ada)
         accent: {
           50: '#fdf8ed',
           100: '#f7eacc',
@@ -86,17 +54,44 @@ module.exports = {
           800: '#846833',
           900: '#6a5127',
         },
-        secondary: {
-          50: '#fdf8ed',
-          100: '#f7eacc',
-          200: '#f1dcab',
-          300: '#ebce8a',
-          400: '#e5c069',
-          500: '#d2aa55',
-          600: '#b8964b',
-          700: '#9e7f3f',
-          800: '#846833',
-          900: '#6a5127',
+        // === Token semantik (ADR-0015): TIDAK mengikuti brand ===
+        // Success = primary (alias), diisi dari skala primary di bawah lewat tailwind.config
+        // Warning/Danger/Info = palet bawaan Tailwind (amber/red/blue) agar maknanya sama di semua tema
+        warning: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
+        },
+        danger: {
+          50: '#fef2f2',
+          100: '#fee2e2',
+          200: '#fecaca',
+          300: '#fca5a5',
+          400: '#f87171',
+          500: '#ef4444',
+          600: '#dc2626',
+          700: '#b91c1c',
+          800: '#991b1b',
+          900: '#7f1d1d',
+        },
+        info: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
       },
       fontFamily: {
