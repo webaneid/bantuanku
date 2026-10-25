@@ -16,4 +16,16 @@
 
 ## Catatan Tahap Offline
 
-_(diisi saat Fase 1–5 berjalan)_
+### Fase 1 — dry-run pada DB dev (2026-10-26)
+
+Backfill menghasilkan 18 baris dari 11 pembayaran verified + 1 pencairan paid, paritas 0. Angka ini **menjelaskan** selisih antar laporan lama:
+
+| Definisi | Nilai | Arti di buku kas |
+|---|---|---|
+| `dashboard` (Σ total_amount paid) | 4.295.000 | = komponen `pokok` |
+| `financial-statement` (+ semua kode unik) | 4.298.781 | = pokok + kode unik **tercatat** 3.781; yang benar-benar diterima hanya 2.575 (Flip tanpa kode unik) |
+| Pembayaran verified | 4.498.001 | = pokok 4.295.000 + kode_unik 2.575 + kelebihan 200.426 |
+
+Pelajaran: (1) kelebihan 200.426 berasal satu transaksi wakaf yang dibayar 3× (pembayaran ganda) — kini tampak sebagai komponen `kelebihan` yang bisa difilter; (2) `fund = wakaf` tertangkap dari pilar campaign (300.639 termasuk kelebihan itu); (3) metode bayar dikenal semua (4 akun kas: 2 QRIS, 1 bank, flip) pada data dev, produksi mungkin punya `unmapped`; (4) 2 dari 3 transaksi paid tanpa revenue share adalah campaign `sedekah` (perlu dicek penyebabnya di Fase 2/3).
+
+Catatan teknis: `postVerifiedPayment` memakai alokasi kumulatif sehingga **urutan** pembayaran per transaksi penting; backfill mengurutkan per transaksi + `verified_at`.

@@ -11,7 +11,8 @@
     "backfill-qurban-savings-universal": "node --import tsx/esm scripts/backfill-qurban-savings-universal.ts",
     "migrate-shared-orders": "node --import tsx/esm scripts/migrate-shared-orders.ts",
     "sync-group-slots": "node --import tsx/esm scripts/sync-group-slots.ts",
-    "sync-payment-status": "node --import tsx/esm scripts/sync-payment-status.ts"
+    "sync-payment-status": "node --import tsx/esm scripts/sync-payment-status.ts",
+    "cashbook:backfill": "node --import tsx/esm scripts/cash-book-backfill.ts"
   },
   "dependencies": {
     "@bantuanku/db": "*",

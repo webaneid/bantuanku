@@ -1,9 +1,9 @@
 # ADR-0016: Buku Kas dan Hak Bagi Hasil sebagai sumber tunggal laporan keuangan
 
-**Status:** Proposed
+**Status:** Accepted
 **Tanggal:** 2026-10-26
 
-> Keputusan D1, D2, D4, D5, D6, D7, D8, D9 sudah dijawab pemilik produk pada 2026-10-26 dan tercermin di bawah. Yang tersisa hanya D3 (cara memasukkan data lama), ditentukan dari audit produksi dan tidak mengubah model; status menjadi **Accepted** setelah pemilik produk menyetujui. Rencana eksekusi lengkap: `docs/arsitektur-buku-kas.md`.
+> Keputusan D1, D2, D4, D5, D6, D7, D8, D9 sudah dijawab pemilik produk pada 2026-10-26 dan tercermin di bawah. Yang tersisa hanya D3 (cara memasukkan data lama), ditentukan dari audit produksi dan tidak mengubah model. Disetujui pemilik produk untuk dieksekusi (Fase 1 offline) pada 2026-10-26. Rencana eksekusi lengkap: `docs/arsitektur-buku-kas.md`.
 
 ## Context
 

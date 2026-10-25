@@ -1,6 +1,6 @@
 # Arsitektur Buku Kas dan Hak Bagi Hasil (Rencana)
 
-> **Status: RENCANA — belum ada kode.** Keputusan pemilik produk 2026-10-26 sudah masuk (§11); tersisa D3 (cara memasukkan data lama, dari audit produksi) lalu persetujuan ADR-0016. **Pembangunan dilakukan offline (lokal) dulu**; produksi menyusul setelah pelajaran dicatat. Disusun 2026-10-26 sesuai SOP (arsitektur → kode aktual → rencana fase → eksekusi → `tsc` → review keamanan → dokumentasi). Keputusan desain: `docs/decisions/adr-0016-buku-kas-dan-hak-bagi-hasil.md`. Kondisi laporan saat ini: `arsitektur-laporan.md`.
+> **Status: ADR-0016 Accepted; Fase 1 (offline) berjalan.** Keputusan pemilik produk 2026-10-26 sudah masuk (§11); tersisa D3 (cara memasukkan data lama, dari audit produksi) lalu persetujuan ADR-0016. **Pembangunan dilakukan offline (lokal) dulu**; produksi menyusul setelah pelajaran dicatat. Disusun 2026-10-26 sesuai SOP (arsitektur → kode aktual → rencana fase → eksekusi → `tsc` → review keamanan → dokumentasi). Keputusan desain: `docs/decisions/adr-0016-buku-kas-dan-hak-bagi-hasil.md`. Kondisi laporan saat ini: `arsitektur-laporan.md`.
 
 ## 1. Tujuan dan prinsip
 
@@ -61,8 +61,8 @@ Akun dibuat **otomatis (upsert)** saat pertama dipakai atau lewat tombol "Sinkro
 | `entry_date` | timestamptz | `verified_at` pembayaran / `paid_at` pencairan / waktu koreksi (WIB saat ditampilkan) |
 | `direction` | text | `in` \| `out` |
 | `amount` | bigint > 0 | rupiah |
-| `component` | text | `pokok` \| `kode_unik` \| `kelebihan` \| `koreksi` |
-| `fund` | text | `zakat` \| `qurban` \| `campaign` \| `wakaf` \| `fidyah` \| `operasional` \| `lainnya` |
+| `component` | text | `pokok` \| `kode_unik` \| `kelebihan` \| `biaya_transfer` \| `koreksi` |
+| `fund` | text | `zakat` \| `qurban` \| `campaign` \| `wakaf` \| `fidyah` \| `operasional` \| `bagi_hasil` \| `lainnya` |
 | `fund_detail` | text null | slug jenis zakat (`fitrah`, `maal`, …), id campaign, id periode/paket qurban, kategori operasional |
 | `cash_account_id` | text FK `cash_accounts` | |
 | `method` | text | `bank_transfer` \| `qris` \| `gateway` \| `cash` \| `other` |
@@ -106,8 +106,8 @@ Pemicu: `transaction_payments.status` menjadi `verified` (rute: `routes/transact
 Pemicu: `disbursements.status` menjadi `paid` (`services/disbursement.ts` ±556; `routes/admin/zakat-distributions.ts` ±505; jalur lain lewat grep).
 
 - **Akun kas**: `source_bank_id`/`bank_account_id` → akun kas yang sama.
-- **Dana**: `zakat_to_*` → `zakat` (rincian = asnaf); `campaign_to_*` → dana campaign tujuan (`wakaf`/`fidyah`/`campaign` menurut pillar `reference_id`); `qurban_*` → `qurban`; `revenue_share_*` → dana asal bagi hasil tidak dipecah; dicatat `lainnya` dengan rincian `bagi_hasil:mitra|fundraiser|developer`; `operational_*` → `operasional` (rincian = kategori).
-- **Komponen**: `pokok` = `transferred_amount` (atau `amount`); `additional_fees` (biaya transfer bank pada pencairan) menjadi baris `out` terpisah berkomponen `pokok` dan `fund_detail = biaya_transfer`.
+- **Dana**: `zakat_to_*` → `zakat` (rincian = asnaf); `campaign_to_*` → dana campaign tujuan (`wakaf`/`fidyah`/`campaign` menurut pillar `reference_id`); `qurban_*` → `qurban`; `revenue_share_*` → `bagi_hasil` (rincian = `mitra`|`fundraiser`|`developer`; tidak mengurangi dana program karena hak sudah dikurangkan lewat `revenue_shares`); `operational_*` → `operasional` (rincian = kategori).
+- **Komponen**: `pokok` = `transferred_amount` (atau `amount`); `additional_fees` (biaya transfer bank pada pencairan) menjadi baris `out` terpisah berkomponen `biaya_transfer`.
 
 ### 4.3 Gateway dan koreksi
 
@@ -199,6 +199,28 @@ Hasil audit menentukan D3: cara memasukkan data lama (semua riwayat atau sebagia
 | **8** (opsional) | Laporan publik dari buku kas; tampilan PSAK 109 | ADR terpisah |
 
 Urutan dependensi: 0 → 1 → 2 → 3 → 4 → 5 → (persetujuan) → 6 → 7. Fase 3 dan 4 boleh tumpang tindih setelah kontrak API dibekukan.
+
+### Status Fase 1 (2026-10-26, selesai di lokal)
+
+| Item | Hasil |
+|---|---|
+| Migrasi `123_create_cash_book.sql` (+ manifest) dan schema `packages/db/src/schema/cash-book.ts` | terpasang di DB dev; tabel `cash_accounts`, `cash_entries`, indeks, UNIQUE `(ref_type, ref_id, component)` |
+| Aturan murni `apps/api/src/services/cash-book-rules.ts` | `allocatePayment`, `fundForTransaction`, `fundForDisbursement`, `classifyAccount`, `normalizeAccountId` |
+| Service `services/cash-book.ts` | `postVerifiedPayment`, `postPaidDisbursement`, `loadAccountCatalog`, `getOrCreateCashAccount` (idempoten) |
+| Backfill `services/cash-book-backfill.ts` + `apps/api/scripts/cash-book-backfill.ts` (`npm run cashbook:backfill --`) | dry-run default (rollback), `--apply` untuk menulis; keluar kode 2 bila paritas tak 0 |
+| Uji `bun test` (`cash-book-rules.test.ts`, `cash-book.test.ts`) | 15 lulus; paritas, idempoten (2× = 0 baris baru), dry-run tidak meninggalkan baris |
+| Hasil dry-run DB dev | masuk 4.498.001 = Σ verified (selisih 0), keluar 100.000 = Σ paid (selisih 0); komponen: pokok 4.295.000, kode_unik 2.575, kelebihan 200.426 |
+
+Belum ada hook posting (Fase 2): tabel `cash_entries` kosong sampai backfill `--apply` atau hook dipasang.
+
+Menjalankan backfill (lokal):
+
+```bash
+set -a; source apps/api/.env; set +a
+cd apps/api
+npm run cashbook:backfill --            # dry-run: tampil laporan, tidak ada yang ditulis
+npm run cashbook:backfill -- --apply    # menulis baris buku kas (idempoten; aman diulang)
+```
 
 ## 9. Keamanan dan izin
 

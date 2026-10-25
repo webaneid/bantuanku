@@ -214,6 +214,9 @@ const CORE_EXISTING: MigrationEntry[] = [
   {
     file: "packages/db/migrations/122_users_sessions_valid_after.sql",
   },
+  {
+    file: "packages/db/migrations/123_create_cash_book.sql",
+  },
 ];
 
 const args = process.argv.slice(2);
