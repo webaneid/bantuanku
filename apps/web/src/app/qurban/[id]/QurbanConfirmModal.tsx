@@ -98,7 +98,7 @@ export default function QurbanConfirmModal({
           {discountAmount > 0 && (
             <div className="flex justify-between">
               <span className="text-gray-600">{t('qurbanDetail.confirmModal.summary.discount')}</span>
-              <span className="font-medium mono text-red-600">- {formatRupiahFull(discountAmount)}</span>
+              <span className="font-medium mono text-danger-600">- {formatRupiahFull(discountAmount)}</span>
             </div>
           )}
           <div>

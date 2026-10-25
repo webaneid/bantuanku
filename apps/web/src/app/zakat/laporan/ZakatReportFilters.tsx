@@ -78,7 +78,7 @@ export default function ZakatReportFilters({
             placeholder="Semua Periode"
           />
         </div>
-        <button className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Terapkan Filter</button>
+        <button className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700">Terapkan Filter</button>
       </div>
     </form>
   );

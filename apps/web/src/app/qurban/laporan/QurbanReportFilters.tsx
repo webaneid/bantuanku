@@ -58,7 +58,7 @@ export default function QurbanReportFilters({
             placeholder="Semua Periode"
           />
         </div>
-        <button className="px-4 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700">Terapkan Filter</button>
+        <button className="px-4 py-2 rounded-lg bg-accent-600 text-white hover:bg-accent-700">Terapkan Filter</button>
       </div>
     </form>
   );

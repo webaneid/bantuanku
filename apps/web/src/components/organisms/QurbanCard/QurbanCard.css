@@ -28,12 +28,12 @@
 }
 
 .qurban-card__chip--sapi {
-  @apply bg-amber-100 text-amber-800;
+  @apply bg-accent-100 text-accent-800;
 }
 
 .qurban-card__chip--kambing,
 .qurban-card__chip--domba {
-  @apply bg-emerald-100 text-emerald-800;
+  @apply bg-primary-100 text-primary-800;
 }
 
 .qurban-card__chip--badge {
@@ -41,7 +41,7 @@
 }
 
 .qurban-card__chip--discount {
-  @apply absolute right-2 top-2 bg-red-600 text-white md:right-3 md:top-3;
+  @apply absolute right-2 top-2 bg-danger-600 text-white md:right-3 md:top-3;
 }
 
 .qurban-card__sold-out {

@@ -8,7 +8,8 @@
     "start": "next start -p 3003",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "check:i18n": "tsx scripts/check-i18n-namespaces.mjs"
+    "check:i18n": "tsx scripts/check-i18n-namespaces.mjs",
+    "check:colors": "node scripts/check-colors.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",

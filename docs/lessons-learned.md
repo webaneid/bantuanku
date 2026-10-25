@@ -605,3 +605,8 @@
 **Masalah:** modal qurban punya empat tombol amber dan tombol tambah-ke-keranjang tidak berpindah halaman, sedangkan campaign tiga tombol dengan alur lain; ringkasan qurban tidak menampilkan diskon (total tak cocok) dan mencetak "Rp Rp" (`formatRupiahFull` sudah berawalan "Rp"). Pemeriksa baru mendeteksi tiga key hilang di `UniversalInvoice` (`invoice.downloadPdf*`, `generatingPdf`): `t(key) || 'teks'` tidak pernah memakai fallback karena `t` mengembalikan key mentah, jadi pengguna melihat key.
 **Pelajaran:** (1) satu perilaku UI = satu komponen; pembungkus hanya menyusun data. (2) `check:i18n` kini memeriksa key literal `t("ns.key")` ada di kamus; jalankan setiap menambah teks. (3) Jangan menulis `t(key) || 'teks'`: itu hardcode sekaligus mati. (4) Cek `formatRupiahFull` sebelum menambah "Rp" manual.
 
+### [2026-10-25] Warna "liar": `extend` Tailwind membiarkan palet bawaan; kelas `bg-amber-600` pada `<Button>` tidak berefek
+**Konteks:** audit warna web (584 pemakaian palet non-token: blue 149, emerald 116, red 85, green 77, amber 71, orange 50, ...) setelah user bingung asal warna di beberapa halaman.
+**Masalah:** `tailwind.config.js` memakai `theme.extend.colors`, sehingga semua palet bawaan tetap tersedia dan tak ada yang menegur. Web tidak punya `secondary` (hanya admin), `info` tak pernah dipakai, `accent`/`warning` sama-sama emas. Tombol `<Button className="bg-amber-600 ...">` ternyata tetap hijau (kelas varian Button menang urutan CSS), jadi override warna per pemakai tidak bisa diandalkan.
+**Pelajaran:** (1) pakai hanya token; (2) `npm run check:colors` memblokir pemakaian baru (baseline menurun bertahap); (3) ubah warna tombol lewat varian `Button`, bukan `className`; (4) pemetaan mekanis (codemod) lalu cek visual halaman utama.
+

@@ -73,8 +73,20 @@ module.exports = {
           800: '#1a4256',
           900: '#163949',
         },
-        // Accent (sama dengan Warning - Emas)
+        // Accent / Secondary (emas, sama dengan Warning). `secondary` = alias `accent` agar konsisten dengan admin
         accent: {
+          50: '#fdf8ed',
+          100: '#f7eacc',
+          200: '#f1dcab',
+          300: '#ebce8a',
+          400: '#e5c069',
+          500: '#d2aa55',
+          600: '#b8964b',
+          700: '#9e7f3f',
+          800: '#846833',
+          900: '#6a5127',
+        },
+        secondary: {
           50: '#fdf8ed',
           100: '#f7eacc',
           200: '#f1dcab',

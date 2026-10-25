@@ -13,11 +13,11 @@ export default function ProgressBar({ current, target }: { current: number; targ
       <div className="mb-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm text-gray-600">{t('account.qurbanSavingsDetail.progressTitle')}</span>
-          <span className="text-sm font-semibold text-green-600">{progress.toFixed(1)}%</span>
+          <span className="text-sm font-semibold text-success-600">{progress.toFixed(1)}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-4">
           <div
-            className="bg-green-600 h-4 rounded-full transition-all duration-300"
+            className="bg-success-600 h-4 rounded-full transition-all duration-300"
             style={{ width: `${Math.min(progress, 100)}%` }}
           />
         </div>
@@ -30,11 +30,11 @@ export default function ProgressBar({ current, target }: { current: number; targ
         </div>
         <div>
           <p className="text-xs text-gray-500 mb-1">{t('account.qurbanSavingsDetail.collected')}</p>
-          <p className="font-semibold text-green-600">{formatCurrency(current)}</p>
+          <p className="font-semibold text-success-600">{formatCurrency(current)}</p>
         </div>
         <div>
           <p className="text-xs text-gray-500 mb-1">{t('account.qurbanSavingsDetail.remaining')}</p>
-          <p className="font-semibold text-orange-600">{formatCurrency(remaining)}</p>
+          <p className="font-semibold text-warning-600">{formatCurrency(remaining)}</p>
         </div>
       </div>
     </div>

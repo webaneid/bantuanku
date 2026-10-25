@@ -335,8 +335,8 @@ export default function NewSavingsPage() {
             )}
 
             {formData.installmentFrequency === 'weekly' && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
+              <div className="bg-info-50 border border-info-200 rounded-lg p-4">
+                <p className="text-sm text-info-800">
                   <strong>{t('qurbanSavingsCreate.form.weeklyInfoTitle')}</strong>{' '}
                   {t('qurbanSavingsCreate.form.weeklyInfoText')}{' '}
                   <strong>{t('qurbanSavingsCreate.form.weeklyInfoDay')}</strong>
@@ -344,8 +344,8 @@ export default function NewSavingsPage() {
               </div>
             )}
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-xs text-yellow-800">
+            <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
+              <p className="text-xs text-warning-800">
                 <strong>{t('qurbanSavingsCreate.form.noteTitle')}</strong>{' '}
                 {t('qurbanSavingsCreate.form.noteText')}
               </p>

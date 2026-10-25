@@ -80,7 +80,7 @@ export default function DepositForm({
 
       <button
         type="submit"
-        className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
+        className="w-full bg-success-600 text-white py-2 rounded-lg hover:bg-success-700"
       >
         {t('account.qurbanSavingsDetail.form.submit')}
       </button>

@@ -78,11 +78,11 @@ export default function SavingsDetailPage({ params }: { params: { id: string } }
   if (error || !savings) {
     return (
       <div className="max-w-5xl mx-auto space-y-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <p className="text-red-800">{error || t('account.qurbanSavingsDetail.notFound')}</p>
+        <div className="bg-danger-50 border border-danger-200 rounded-lg p-6">
+          <p className="text-danger-800">{error || t('account.qurbanSavingsDetail.notFound')}</p>
           <button
             onClick={() => router.push('/qurban/savings')}
-            className="mt-4 text-red-600 hover:text-red-700 underline"
+            className="mt-4 text-danger-600 hover:text-danger-700 underline"
           >
             {t('account.qurbanSavingsDetail.backToList')}
           </button>

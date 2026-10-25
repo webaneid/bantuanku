@@ -177,7 +177,7 @@ export default function QurbanPage() {
       <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Qurban' }]} />
       <main className="min-h-screen bg-gray-50">
         {/* Page Header */}
-        <section className="py-12 bg-gradient-to-br from-amber-50 to-amber-100">
+        <section className="py-12 bg-gradient-to-br from-accent-50 to-accent-100">
           <div className="container mx-auto px-4">
             <div className="text-center max-w-3xl mx-auto">
               <h1 className="section-title text-gray-900 mb-4">
@@ -189,7 +189,7 @@ export default function QurbanPage() {
               <div className="mt-5">
                 <Link
                   href="/qurban/laporan"
-                  className="inline-flex items-center px-4 py-2 rounded-lg bg-amber-600 text-white font-medium hover:bg-amber-700 transition-colors"
+                  className="inline-flex items-center px-4 py-2 rounded-lg bg-accent-600 text-white font-medium hover:bg-accent-700 transition-colors"
                 >
                   Lihat Laporan Qurban Publik
                 </Link>
@@ -351,18 +351,18 @@ export default function QurbanPage() {
 
           {/* Info Box */}
           {filteredPackages.length > 0 && (
-            <div className="mt-12 bg-amber-50 border border-amber-200 rounded-lg p-6">
+            <div className="mt-12 bg-accent-50 border border-accent-200 rounded-lg p-6">
               <div className="flex items-start gap-3">
-                <svg className="hidden md:block w-5 h-5 text-amber-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="hidden md:block w-5 h-5 text-accent-600 flex-shrink-0 mt-1" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
                 <div className="flex-1">
-                  <h4 className="section-title text-amber-900 mb-3">
+                  <h4 className="section-title text-accent-900 mb-3">
                     {infoTitle || t('qurbanPage.defaults.infoTitle')}
                   </h4>
                   <ul className="!space-y-0 md:!space-y-2 !mb-0 !ml-0">
                     {(infoItems.length > 0 ? infoItems : defaultInfoItems).map((item, index) => (
-                      <li key={index} className="section-description text-amber-800">• {item}</li>
+                      <li key={index} className="section-description text-accent-800">• {item}</li>
                     ))}
                   </ul>
                 </div>

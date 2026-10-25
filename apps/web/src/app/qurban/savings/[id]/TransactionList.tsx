@@ -10,11 +10,11 @@ export default function TransactionList({ transactions }: { transactions: Saving
   const localeTag = locale === 'id' ? 'id-ID' : 'en-US';
   const statusColors: Record<SavingsTransaction['status'], string> = {
     draft: 'bg-gray-100 text-gray-700',
-    processing: 'bg-blue-100 text-blue-800',
-    paid: 'bg-green-100 text-green-800',
-    pending: 'bg-yellow-100 text-yellow-800',
-    verified: 'bg-green-100 text-green-800',
-    rejected: 'bg-red-100 text-red-800',
+    processing: 'bg-info-100 text-info-800',
+    paid: 'bg-success-100 text-success-800',
+    pending: 'bg-warning-100 text-warning-800',
+    verified: 'bg-success-100 text-success-800',
+    rejected: 'bg-danger-100 text-danger-800',
   };
 
   const statusLabels: Record<SavingsTransaction['status'], string> = {
@@ -62,7 +62,7 @@ export default function TransactionList({ transactions }: { transactions: Saving
             <p className="text-sm text-gray-600 mt-2">{tx.notes}</p>
           )}
           {tx.verifiedAt && (
-            <p className="text-xs text-green-600 mt-2">
+            <p className="text-xs text-success-600 mt-2">
               {t('account.qurbanSavingsDetail.verifiedAt', { date: formatDateByLocale(tx.verifiedAt) })}
             </p>
           )}

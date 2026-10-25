@@ -82,10 +82,10 @@ export default function ProgramSelectionModal({
                   </button>
                 </div>
 
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-                  <p className="text-sm text-orange-800 mb-1">{t('zakatCalculator.programSelection.infaqAmountLabel')}</p>
-                  <p className="text-2xl font-bold text-orange-600">{formatRupiahFull(amount)}</p>
-                  <p className="text-xs text-orange-700 mt-1">
+                <div className="bg-warning-50 border border-warning-200 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-warning-800 mb-1">{t('zakatCalculator.programSelection.infaqAmountLabel')}</p>
+                  <p className="text-2xl font-bold text-warning-600">{formatRupiahFull(amount)}</p>
+                  <p className="text-xs text-warning-700 mt-1">
                     {t('zakatCalculator.programSelection.helper')}
                   </p>
                 </div>
@@ -105,7 +105,7 @@ export default function ProgramSelectionModal({
                         <button
                           key={campaign.id}
                           onClick={() => handleSelectProgram(campaign.slug)}
-                          className="w-full flex items-start gap-4 p-4 border border-gray-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all text-left"
+                          className="w-full flex items-start gap-4 p-4 border border-gray-200 rounded-lg hover:border-warning-400 hover:bg-warning-50 transition-all text-left"
                         >
                           {campaign.imageUrl && (
                             <img
@@ -120,12 +120,12 @@ export default function ProgramSelectionModal({
                                 {campaign.title}
                               </h4>
                               {campaign.isUrgent && (
-                                <span className="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded-full whitespace-nowrap">
+                                <span className="px-2 py-0.5 text-xs bg-danger-100 text-danger-700 rounded-full whitespace-nowrap">
                                   {t('zakatCalculator.programSelection.badges.urgent')}
                                 </span>
                               )}
                               {campaign.isFeatured && (
-                                <span className="px-2 py-0.5 text-xs bg-emerald-100 text-emerald-700 rounded-full whitespace-nowrap">
+                                <span className="px-2 py-0.5 text-xs bg-primary-100 text-primary-700 rounded-full whitespace-nowrap">
                                   {t('zakatCalculator.programSelection.badges.featured')}
                                 </span>
                               )}
@@ -139,7 +139,7 @@ export default function ProgramSelectionModal({
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div
-                                  className="bg-gradient-to-r from-emerald-500 to-emerald-600 h-2 rounded-full transition-all"
+                                  className="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full transition-all"
                                   style={{ width: `${Math.min(progress, 100)}%` }}
                                 />
                               </div>

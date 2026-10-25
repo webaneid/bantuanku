@@ -101,7 +101,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
       <Header />
       <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Qurban', href: '/qurban' }, { label: 'Laporan' }]} />
       <main className="min-h-screen bg-gray-50">
-        <section className="py-10 bg-gradient-to-br from-amber-50 to-white border-b border-amber-100">
+        <section className="py-10 bg-gradient-to-br from-accent-50 to-white border-b border-accent-100">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
@@ -137,7 +137,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white border border-gray-200 rounded-xl p-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-2xl">🐐</div>
+                        <div className="w-10 h-10 bg-info-100 rounded-lg flex items-center justify-center text-2xl">🐐</div>
                         <div>
                           <p className="text-sm text-gray-500">Total Kambing</p>
                           <p className="text-2xl font-bold text-gray-900">{data.stats.totalGoats}</p>
@@ -146,7 +146,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
                     </div>
                     <div className="bg-white border border-gray-200 rounded-xl p-5">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-2xl">🐄</div>
+                        <div className="w-10 h-10 bg-success-100 rounded-lg flex items-center justify-center text-2xl">🐄</div>
                         <div>
                           <p className="text-sm text-gray-500">Total Sapi</p>
                           <p className="text-2xl font-bold text-gray-900">{data.stats.totalCows}</p>
@@ -161,7 +161,7 @@ export default async function PublicQurbanReportPage({ searchParams }: PageProps
                       <Link
                         key={t.key}
                         href={buildTabHref(t.key)}
-                        className={`px-4 py-2 rounded-lg border whitespace-nowrap ${tab === t.key ? 'bg-amber-50 text-amber-700 border-amber-200' : 'text-gray-500 border-transparent hover:bg-gray-50'}`}
+                        className={`px-4 py-2 rounded-lg border whitespace-nowrap ${tab === t.key ? 'bg-accent-50 text-accent-700 border-accent-200' : 'text-gray-500 border-transparent hover:bg-gray-50'}`}
                       >
                         {t.label}{t.count !== undefined ? ` (${t.count})` : ''}
                       </Link>

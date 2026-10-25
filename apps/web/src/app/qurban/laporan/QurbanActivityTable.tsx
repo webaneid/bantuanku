@@ -261,7 +261,7 @@ export default function QurbanActivityTable({ activities }: { activities: Activi
       {isLoading && (
         <div className="fixed inset-0 z-[1100] bg-black/30 flex items-center justify-center">
           <div className="bg-white rounded-xl p-6 shadow-xl">
-            <div className="inline-block w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="inline-block w-8 h-8 border-4 border-accent-500 border-t-transparent rounded-full animate-spin"></div>
             <p className="text-gray-600 mt-3">Memuat detail...</p>
           </div>
         </div>

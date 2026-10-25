@@ -91,7 +91,7 @@ export default async function PublicZakatReportPage({ searchParams }: PageProps)
       <Header />
       <Breadcrumb items={[{ label: 'Beranda', href: '/' }, { label: 'Zakat', href: '/zakat' }, { label: 'Laporan' }]} />
       <main className="min-h-screen bg-gray-50">
-        <section className="py-10 bg-gradient-to-br from-emerald-50 to-white border-b border-emerald-100">
+        <section className="py-10 bg-gradient-to-br from-primary-50 to-white border-b border-primary-100">
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
@@ -120,13 +120,13 @@ export default async function PublicZakatReportPage({ searchParams }: PageProps)
               <div className="bg-white border border-gray-200 rounded-xl p-2 flex gap-2 text-sm font-medium overflow-x-auto">
                 <Link
                   href={buildTabHref('titipan')}
-                  className={`px-4 py-2 rounded-lg border ${tab === 'titipan' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'text-gray-500 border-transparent hover:bg-gray-50'}`}
+                  className={`px-4 py-2 rounded-lg border ${tab === 'titipan' ? 'bg-primary-50 text-primary-700 border-primary-200' : 'text-gray-500 border-transparent hover:bg-gray-50'}`}
                 >
                   Titipan Zakat
                 </Link>
                 <Link
                   href={buildTabHref('kegiatan')}
-                  className={`px-4 py-2 rounded-lg border ${tab === 'kegiatan' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'text-gray-500 border-transparent hover:bg-gray-50'}`}
+                  className={`px-4 py-2 rounded-lg border ${tab === 'kegiatan' ? 'bg-primary-50 text-primary-700 border-primary-200' : 'text-gray-500 border-transparent hover:bg-gray-50'}`}
                 >
                   Laporan Kegiatan
                 </Link>

@@ -17,9 +17,9 @@ export default function SavingsListPage() {
   const [savingsList, setSavingsList] = useState<QurbanSavings[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const statusConfig = {
-    active: { label: t("account.qurbanSavings.status.active"), color: "bg-blue-50 text-blue-700 border-blue-200" },
+    active: { label: t("account.qurbanSavings.status.active"), color: "bg-info-50 text-info-700 border-info-200" },
     completed: { label: t("account.qurbanSavings.status.completed"), color: "bg-success-50 text-success-700 border-success-200" },
-    converted: { label: t("account.qurbanSavings.status.converted"), color: "bg-purple-50 text-purple-700 border-purple-200" },
+    converted: { label: t("account.qurbanSavings.status.converted"), color: "bg-info-50 text-info-700 border-info-200" },
     cancelled: { label: t("account.qurbanSavings.status.cancelled"), color: "bg-danger-50 text-danger-700 border-danger-200" },
   };
 
