@@ -64,18 +64,30 @@ export function fundForTransaction(input: {
   return { fund, fundDetail: fund === "campaign" ? normalize(input.pillar ?? tsd.pillar) || null : null };
 }
 
-/** Sumber dana sebuah pencairan dari kategorinya (`zakat_to_*`, `campaign_to_*`, `qurban_*`, `revenue_share_*`, `operational_*`). */
+/**
+ * Sumber dana sebuah pencairan. Kategori utama (`zakat_to_*`, `campaign_to_*`, `qurban_*`, `revenue_share_*`, `operational_*`);
+ * bila kategori generik (mis. `zakat` pada penyaluran zakat lama), dipakai `disbursementType` dan `typeSpecificData`.
+ */
 export function fundForDisbursement(input: {
   category?: string | null;
   pillar?: string | null;
+  disbursementType?: string | null;
+  typeSpecificData?: Record<string, any> | null;
 }): { fund: Fund; fundDetail: string | null } {
   const cat = normalize(input.category);
+  const type = normalize(input.disbursementType);
+  const tsd = input.typeSpecificData || {};
   if (cat.startsWith("zakat_to_")) return { fund: "zakat", fundDetail: cat.slice("zakat_to_".length) };
   if (cat.startsWith("campaign_to_")) return { fund: fundFromPillar(input.pillar), fundDetail: cat.slice("campaign_to_".length) };
   if (cat.startsWith("qurban_")) return { fund: "qurban", fundDetail: cat.slice("qurban_".length) };
   if (cat.startsWith("revenue_share_")) return { fund: "bagi_hasil", fundDetail: cat.slice("revenue_share_".length) };
   if (cat.startsWith("operational_")) return { fund: "operasional", fundDetail: cat.slice("operational_".length) };
-  if (cat === "vendor_general_payment") return { fund: "operasional", fundDetail: "vendor" };
+  if (cat === "vendor_general_payment" || type === "vendor") return { fund: "operasional", fundDetail: "vendor" };
+  if (type === "zakat" || cat === "zakat") return { fund: "zakat", fundDetail: normalize(tsd.asnaf) || null };
+  if (type === "qurban" || cat === "qurban") return { fund: "qurban", fundDetail: null };
+  if (type === "campaign" || cat === "campaign") return { fund: fundFromPillar(input.pillar), fundDetail: null };
+  if (type === "revenue_share") return { fund: "bagi_hasil", fundDetail: null };
+  if (type === "operational") return { fund: "operasional", fundDetail: cat || null };
   return { fund: "lainnya", fundDetail: cat || null };
 }
 

@@ -1,3 +1,5 @@
+import { RevenueShareService } from "../services/revenue-share";
+import { postVerifiedPaymentsForTransaction, safePost } from "../services/cash-book";
 import { loadBrand } from "../lib/brand";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
@@ -664,6 +666,11 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
         })
         .where(eq(transactions.id, txn.id));
 
+      // 2b. Buku Kas (ADR-0016): catat pembayaran yang berhasil (idempoten, tidak membatalkan webhook bila gagal)
+      if (parsed.status === "success") {
+        await safePost(tx as any, `webhook ${payment.id}`, (d) => postVerifiedPaymentsForTransaction(d, txn.id));
+      }
+
       // 3. If payment successful, process completion
       if (parsed.status === "success" && txn.productType === "campaign") {
         const campaign = await tx.query.campaigns.findFirst({
@@ -695,6 +702,16 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
         }
       }
     });
+
+    // Bagi hasil untuk pembayaran gateway (sebelumnya hanya dihitung di approve-payment manual). Idempoten
+    // (RevenueShareService menolak duplikat) dan tidak membatalkan webhook bila gagal (dicatat di log).
+    if (parsed.status === "success" && newPaymentStatus === "paid") {
+      try {
+        await new RevenueShareService(db as any).calculateForPaidTransaction(txn.id);
+      } catch (revenueError) {
+        console.error(`[revenue-share] gagal menghitung bagi hasil untuk transaksi ${txn.id} (webhook):`, revenueError);
+      }
+    }
 
     // Keep qurban savings balance consistent when gateway webhook updates a savings transaction.
     const savingsId = (txn.typeSpecificData as any)?.savings_id;

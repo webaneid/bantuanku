@@ -15,6 +15,7 @@ import {
   type DisbursementActivityReport,
 } from "@bantuanku/db";
 import { updateBankBalance } from "../utils/bank-balance";
+import { postPaidDisbursement, safePost } from "./cash-book";
 
 interface CreateDisbursementDTO {
   disbursement_type: "campaign" | "zakat" | "qurban" | "operational" | "vendor" | "revenue_share";
@@ -496,6 +497,11 @@ export class DisbursementService {
       .where(eq(disbursements.id, id))
       .returning();
 
+    // Buku Kas (ADR-0016): pencairan yang menjadi paid lewat jalur status umum
+    if (data.status === "paid") {
+      await safePost(this.db as any, `disbursement-paid ${id}`, (d) => postPaidDisbursement(d, id));
+    }
+
     return result[0];
   }
 
@@ -578,6 +584,9 @@ export class DisbursementService {
     // Update bank balance (sesuai blueprint COA)
     const totalDeduction = data.transferred_amount + data.additional_fees;
     await updateBankBalance(this.db, data.destination_bank_id, -totalDeduction);
+
+    // Buku Kas (ADR-0016): catat uang keluar
+    await safePost(this.db as any, `disbursement-paid ${id}`, (d) => postPaidDisbursement(d, id));
 
     if (existing.disbursementType === "revenue_share") {
       const paidAmount = Number(existing.amount || 0);

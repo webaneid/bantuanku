@@ -354,6 +354,8 @@ POST /v1/transactions/:id/approve-payment
     └── syncQurbanSavingsBalance() + WhatsApp wa_tpl_savings_deposit (per setoran)
 ```
 
+> **Buku Kas (ADR-0016, sejak 2026-10-26):** setiap pembayaran yang menjadi `verified` (approve manual, webhook gateway, verifikasi setoran tabungan) juga diposting ke `cash_entries` lewat `safePost` (idempoten; gagal posting tidak membatalkan approve). Lihat `arsitektur-buku-kas.md` §8.
+
 > **Penting untuk cicilan / tabungan qurban**: Setiap setoran yang di-approve menaikkan bank balance sebesar `amountVerifiedNow`. Side effect finansial (campaign.collected, revenue share, slot qurban, CAPI) hanya trigger sekali saat status → "paid". Dengan ini, partial payment benar-benar ditangani — tidak lagi auto-`"paid"` meski baru bayar sebagian.
 
 ## Alur Penolakan Pembayaran (reject-payment)

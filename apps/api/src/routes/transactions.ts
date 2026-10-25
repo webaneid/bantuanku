@@ -32,6 +32,7 @@ import { protectTransactionDonor } from "../lib/transaction-privacy";
 import { transactionCreateRateLimit } from "../middleware/ratelimit";
 import { getCookie } from "hono/cookie";
 import { updateBankBalance } from "../utils/bank-balance";
+import { postVerifiedPaymentsForTransaction, safePost } from "../services/cash-book";
 import { sendCAPIEvent } from "../lib/meta-capi";
 import type { Env, Variables } from "../types";
 
@@ -894,6 +895,9 @@ app.post(
             eq(transactionPayments.status, "pending")
           )
         );
+
+      // Buku Kas (ADR-0016): catat pembayaran yang baru terverifikasi (idempoten, tidak membatalkan approve bila gagal)
+      await safePost(tx, `approve-payment ${id}`, (d) => postVerifiedPaymentsForTransaction(d, id));
 
       // Bank balance: update sebesar jumlah yang diverifikasi sekarang (per-installment)
       if (transaction.bankAccountId && amountVerifiedNow > 0) {

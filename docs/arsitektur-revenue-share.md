@@ -301,3 +301,8 @@ Availability = revenue_shares.{partnerAmount}
 4. **`programAmount` = 0 untuk qurban** — tidak ada "program fund" terpisah; penerimaan langsung untuk pembelian hewan.
 5. **Wakaf & Fidyah dikecualikan** — diidentifikasi via `campaign.pillar`, bukan via tipe produk.
 6. **Override commissionPercentage per fundraiser** — field ada di schema `fundraisers` tapi `RevenueShareService` saat ini menggunakan global `amil_fundraiser_percentage`. Override belum diimplementasikan di kalkulasi.
+
+## Perubahan 2026-10-26
+
+Webhook gateway (`routes/payments.ts`) kini memanggil `calculateForPaidTransaction` setelah transaksi sukses (pasca-commit, idempoten, non-fatal). Sebelumnya hanya `approve-payment` manual yang menghitung bagi hasil, sehingga transaksi gateway tidak punya `revenue_shares`. Transaksi lama yang terlewat belum dihitung ulang (keputusan terpisah; fungsi ini idempoten sehingga aman dijalankan ulang per transaksi).
+

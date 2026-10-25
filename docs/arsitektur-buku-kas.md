@@ -90,7 +90,7 @@ Yang dibangun adalah **read model** (service `revenue-share-ledger`): per pihak 
 
 ## 4. Aturan posting (peristiwa → baris buku kas)
 
-Satu fungsi `CashBookService.post*()` dipanggil di dalam transaksi DB yang mengubah status; gagal posting = seluruh perubahan dibatalkan (tidak ada uang tak tercatat).
+Satu fungsi posting (`services/cash-book.ts`) dipanggil di dalam transaksi DB yang mengubah status. **Keputusan Fase 2:** posting dijalankan di dalam SAVEPOINT (`safePost`) dan kegagalannya **tidak membatalkan** verifikasi pembayaran/pencairan yang sah; kegagalan dicatat `[cashbook]` di log dan celahnya ditutup oleh `npm run cashbook:check` + backfill (idempoten). Alasan: uang yang sudah sah tidak boleh tertahan karena pencatatan.
 
 ### 4.1 Pembayaran terverifikasi → `in`
 
@@ -211,7 +211,7 @@ Urutan dependensi: 0 → 1 → 2 → 3 → 4 → 5 → (persetujuan) → 6 → 7
 | Uji `bun test` (`cash-book-rules.test.ts`, `cash-book.test.ts`) | 15 lulus; paritas, idempoten (2× = 0 baris baru), dry-run tidak meninggalkan baris |
 | Hasil dry-run DB dev | masuk 4.498.001 = Σ verified (selisih 0), keluar 100.000 = Σ paid (selisih 0); komponen: pokok 4.295.000, kode_unik 2.575, kelebihan 200.426 |
 
-Belum ada hook posting (Fase 2): tabel `cash_entries` kosong sampai backfill `--apply` atau hook dipasang.
+
 
 Menjalankan backfill (lokal):
 
@@ -221,6 +221,24 @@ cd apps/api
 npm run cashbook:backfill --            # dry-run: tampil laporan, tidak ada yang ditulis
 npm run cashbook:backfill -- --apply    # menulis baris buku kas (idempoten; aman diulang)
 ```
+
+### Status Fase 2 (2026-10-26, selesai di lokal)
+
+Hook posting (semua lewat `safePost`, idempoten):
+
+| Jalur | File | Pemicu |
+|---|---|---|
+| Approve pembayaran manual (transfer/QRIS) | `routes/transactions.ts` (`POST /:id/approve-payment`) | setelah pembayaran `pending`→`verified`, di dalam transaksi DB |
+| Webhook gateway (Flip/iPaymu/Midtrans/Xendit) | `routes/payments.ts` | pembayaran sukses, di dalam transaksi DB |
+| Verifikasi setoran tabungan qurban | `routes/admin/qurban-savings.ts` | setelah `verified` |
+| Pencairan paid (status umum dan `markAsPaid`) | `services/disbursement.ts` | setelah status `paid` |
+| Penyaluran zakat lama | `routes/admin/zakat-distributions.ts` | setelah baris pencairan `paid` dibuat |
+
+Perubahan perilaku yang **perlu persetujuan sebelum deploy**: webhook gateway kini juga memanggil `RevenueShareService.calculateForPaidTransaction` (idempoten, pasca-commit, gagal tidak membatalkan webhook). Sebelumnya bagi hasil hanya dihitung di approve manual, sehingga transaksi yang dibayar lewat gateway tidak punya `revenue_shares` (dan komisi fundraiser/mitra tidak terhitung). Bagi hasil untuk transaksi lama yang terlewat BELUM dihitung ulang (keputusan terpisah).
+
+Alat: `npm run cashbook:check` (rekonsiliasi read-only; keluar 2 bila ada pembayaran verified/pencairan paid yang belum masuk buku kas) dan `npm run cashbook:backfill`. Uji: 23 tes `bun` (aturan, backfill, hook posting, savepoint `safePost`) + uji end-to-end approve-payment di API lokal (Rp 25.665 → pokok 25.000 + kode unik 665 di akun BSI, dana campaign/sedekah; data uji dibersihkan).
+
+Tidak dihook (sengaja): `PUT /transactions/:id` yang mengubah status ke `paid` tanpa pembayaran, dan tabel legacy `qurban_payments`/`qurban_orders` (lihat keputusan D3 tentang "paid tanpa pembayaran terverifikasi").
 
 ## 9. Keamanan dan izin
 

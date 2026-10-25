@@ -1,3 +1,4 @@
+import { postVerifiedPaymentsForTransaction, safePost } from "../../services/cash-book";
 import { Hono } from "hono";
 import { eq, desc, and, or, sql, inArray } from "drizzle-orm";
 import {
@@ -893,6 +894,9 @@ app.post("/:id/transactions/:txId/verify", requireRole("super_admin", "admin_cam
         updatedAt: now,
       })
       .where(eq(transactions.id, payment.transactionId));
+
+    // Buku Kas (ADR-0016): catat setoran yang baru diverifikasi
+    await safePost(db as any, `savings-verify ${txId}`, (d) => postVerifiedPaymentsForTransaction(d, payment.transactionId));
 
     verifiedAmount = Number(payment.amount || tx.totalAmount || 0);
   }

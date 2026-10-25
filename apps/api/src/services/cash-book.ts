@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
   campaigns,
   cashAccounts,
@@ -185,7 +185,12 @@ export async function postPaidDisbursement(db: Database, disbursementId: string,
   if (already.length > 0) return { posted: 0, skipped: "sudah diposting", entries: [] };
 
   const pillar = d.referenceType === "campaign" ? await campaignPillar(db, d.referenceId) : null;
-  const { fund, fundDetail } = fundForDisbursement({ category: d.category, pillar });
+  const { fund, fundDetail } = fundForDisbursement({
+    category: d.category,
+    pillar,
+    disbursementType: d.disbursementType,
+    typeSpecificData: (d.typeSpecificData || null) as Record<string, any> | null,
+  });
 
   const catalog = catalogIn || (await loadAccountCatalog(db));
   const cls = classifyAccount({ paymentMethod: d.sourceBankId || d.bankAccountId || d.destinationBankId, gatewayCode: null });
@@ -222,3 +227,32 @@ export async function postPaidDisbursement(db: Database, disbursementId: string,
 }
 
 
+
+/** Posting semua pembayaran verified milik satu transaksi yang belum diposting (urut waktu → alokasi kumulatif benar). */
+export async function postVerifiedPaymentsForTransaction(db: Database, transactionId: string): Promise<PostResult[]> {
+  const rows = await db
+    .select({ id: transactionPayments.id })
+    .from(transactionPayments)
+    .where(and(eq(transactionPayments.transactionId, transactionId), eq(transactionPayments.status, "verified")))
+    .orderBy(asc(transactionPayments.verifiedAt), asc(transactionPayments.createdAt), asc(transactionPayments.id));
+  if (rows.length === 0) return [];
+  const catalog = await loadAccountCatalog(db);
+  const results: PostResult[] = [];
+  for (const row of rows) results.push(await postVerifiedPayment(db, row.id, catalog));
+  return results;
+}
+
+/**
+ * Menjalankan posting di dalam SAVEPOINT dan menelan kegagalannya (dicatat `[cashbook]` di log).
+ * Alasan: gagal posting tidak boleh membatalkan verifikasi pembayaran/pencairan yang sudah sah. Celah apa pun
+ * ditutup oleh `npm run cashbook:check` dan backfill (idempoten).
+ */
+export async function safePost(db: Database, label: string, run: (d: Database) => Promise<unknown>): Promise<void> {
+  try {
+    await (db as any).transaction(async (sp: Database) => {
+      await run(sp);
+    });
+  } catch (err) {
+    console.error(`[cashbook] gagal posting ${label}:`, err);
+  }
+}

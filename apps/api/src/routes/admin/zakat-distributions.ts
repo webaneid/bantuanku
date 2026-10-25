@@ -5,6 +5,7 @@ import { createId } from "@bantuanku/db";
 import { requireAuth, requireRoles } from "../../middleware/auth";
 import { coordinatorFilter } from "../../middleware/coordinator-filter";
 import { paginated } from "../../lib/response";
+import { postPaidDisbursement, safePost } from "../../services/cash-book";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -519,6 +520,9 @@ app.post("/:id/disburse", requireRoles("super_admin", "admin_campaign"), async (
             paidBy: user!.id,
             paidAt: new Date(),
             approvedAt: existing[0].approvedAt || null,
+          }).returning({ id: disbursements.id }).then(async (rows: Array<{ id: string }>) => {
+            // Buku Kas (ADR-0016): catat penyaluran zakat sebagai uang keluar
+            for (const row of rows) await safePost(db as any, `zakat-distribution ${row.id}`, (d) => postPaidDisbursement(d, row.id));
           });
         }
       }
