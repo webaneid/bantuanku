@@ -37,9 +37,8 @@ export const zakatCalculator: Messages = {
     chooseAction: "Choose your action:",
     actions: {
       payNow: "Pay Now",
-      addAndView: "Add to Cart & View Cart",
+      addAndView: "Add to Cart & View",
       addToCart: "Add to Cart",
-      viewOthers: "View Other Zakat",
     },
     toasts: {
       addedToCart: "Added to cart",

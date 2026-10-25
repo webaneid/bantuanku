@@ -37,9 +37,8 @@ export const zakatCalculator: Messages = {
     chooseAction: "Pilih aksi yang ingin Anda lakukan:",
     actions: {
       payNow: "Bayar Sekarang",
-      addAndView: "Masukkan Keranjang & Lihat Keranjang",
-      addToCart: "Masukkan Keranjang",
-      viewOthers: "Lihat Zakat Lain",
+      addAndView: "Tambah ke Keranjang & Lihat",
+      addToCart: "Tambah ke Keranjang",
     },
     toasts: {
       addedToCart: "Berhasil ditambahkan ke keranjang",

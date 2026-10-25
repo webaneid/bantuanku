@@ -11,10 +11,10 @@ Dokumen ini adalah source of truth untuk cart frontend, halaman keranjang, dan c
 | Header cart badge | `apps/web/src/components/organisms/Header/Header.tsx` |
 | Halaman cart | `apps/web/src/app/keranjang-bantuan/page.tsx` |
 | Halaman checkout | `apps/web/src/app/checkout/page.tsx` |
-| Modal konfirmasi bersama (campaign + qurban) | `apps/web/src/components/organisms/ConfirmCartModal/ConfirmCartModal.tsx` |
+| Modal konfirmasi bersama (campaign + qurban + zakat) | `apps/web/src/components/organisms/ConfirmCartModal/ConfirmCartModal.tsx` |
 | Campaign add-to-cart | `apps/web/src/app/program/[slug]/DonationConfirmModal.tsx` (pembungkus tipis) |
 | Qurban add-to-cart | `apps/web/src/app/qurban/[id]/QurbanConfirmModal.tsx` (pembungkus tipis) + tombol Keranjang di `QurbanCard` |
-| Zakat add-to-cart | `apps/web/src/components/zakat/ZakatConfirmModal.tsx` |
+| Zakat add-to-cart | `apps/web/src/components/zakat/ZakatConfirmModal.tsx` (pembungkus tipis `ConfirmCartModal`) |
 | Referral storage | `apps/web/src/lib/referral.ts` |
 | Transaction create API | `apps/api/src/routes/transactions.ts`, `apps/api/src/services/transaction.ts` |
 
@@ -170,7 +170,7 @@ Modal konfirmasi (disederhanakan 2026-10-24) hanya punya **tiga** tombol, semuan
 
 Ketiganya memakai `addItem()` (satu-satunya tempat `addToCart` + Meta Pixel `AddToCart`).
 
-**Sejak 2026-10-25 modal ini komponen bersama `ConfirmCartModal`** (props: `title`, `chooseActionText`, `item: CartItem`, `browseHref`, `labels`, `toasts`; anak = ringkasan yang disusun dengan `ConfirmModalBlock tone="primary"|"neutral"`). `DonationConfirmModal` dan `QurbanConfirmModal` hanya menyusun item + ringkasan; tombol, kelas, alur, toast, dan Pixel SAMA. Modal zakat (`ZakatConfirmModal`) belum memakainya (gap).
+**Sejak 2026-10-25 modal ini komponen bersama `ConfirmCartModal`** (props: `title`, `chooseActionText`, `item: CartItem`, `browseHref`, `labels`, `toasts`; anak = ringkasan yang disusun dengan `ConfirmModalBlock tone="primary"|"neutral"`). `DonationConfirmModal` dan `QurbanConfirmModal` hanya menyusun item + ringkasan; tombol, kelas, alur, toast, dan Pixel SAMA. `ZakatConfirmModal` juga sudah memakainya (campaign, qurban, zakat = satu modal).
 
 `CartContext` mengekspos `isLoaded`: halaman `/checkout` hanya mengalihkan ke keranjang bila keranjang kosong SETELAH selesai dibaca dari localStorage (sebelumnya `items` kosong di render pertama sehingga muat ulang penuh `/checkout` memantul ke keranjang).
 
@@ -223,11 +223,15 @@ programType = "zakat"
 zakatData = zakat type/period/quantity/price detail
 ```
 
-Behavior:
+Behavior (sejak 2026-10-25 identik dengan campaign dan qurban, via `ConfirmCartModal`; tombol ke-4 "Lihat Zakat Lain" dihapus):
 
-- add to cart
-- go to cart
-- direct checkout
+| Tombol | Aksi |
+|---|---|
+| Bayar Sekarang (primary) | tambah item lalu langsung `/checkout` |
+| Tambah ke Keranjang & Lihat | tambah item lalu `/keranjang-bantuan` |
+| Tambah ke Keranjang | tambah item lalu `/zakat` |
+
+Meta Pixel `AddToCart` kini juga terkirim untuk zakat (sebelumnya tidak ada; `content_ids` = `zakat-campaign-default`).
 
 Karena `cartItemId` zakat memakai `Date.now()`, kalkulasi zakat yang sama bisa menghasilkan beberapa baris cart.
 
