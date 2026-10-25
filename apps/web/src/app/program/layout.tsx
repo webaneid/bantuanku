@@ -1,3 +1,4 @@
+import { I18nNamespaces } from '@/lib/i18n/I18nNamespaces';
 import type { Metadata } from 'next';
 import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
 
@@ -89,7 +90,7 @@ export default async function ProgramLayout({
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      {children}
+      <I18nNamespaces names={['home']}>{children}</I18nNamespaces>
     </>
   );
 }

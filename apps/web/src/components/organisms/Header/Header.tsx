@@ -33,7 +33,7 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
     const { settings, isLoading, error } = useSettings();
     const { getCartCount } = useCart();
     const { user, logout } = useAuth();
-    const { t, locale, setLocale } = useI18n();
+    const { t, locale } = useI18n();
 
     // Use application logo from settings
     const logo = settings.organization_logo || logoProp || '/logo.svg';
@@ -58,7 +58,6 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
 
     const handleLocaleChange = (nextLocale: Locale) => {
       if (nextLocale === locale) return;
-      setLocale(nextLocale);
       document.cookie = `locale=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
       router.refresh();
     };

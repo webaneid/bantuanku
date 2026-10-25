@@ -19,11 +19,10 @@ export function MobileMenuPanel() {
   const router = useRouter();
   const menuItems = useHeaderMenuItems();
   const { user, logout } = useAuth();
-  const { t, locale, setLocale } = useI18n();
+  const { t, locale } = useI18n();
 
   const handleLocaleChange = (nextLocale: Locale) => {
     if (nextLocale === locale) return;
-    setLocale(nextLocale);
     document.cookie = `locale=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
     router.refresh();
   };

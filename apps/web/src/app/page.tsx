@@ -19,6 +19,7 @@ import { fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrlByVariant }
 import { fetchCategories } from '@/services/categories';
 import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
 import { normalizeLocale, translate } from '@/lib/i18n';
+import { I18nNamespaces } from '@/lib/i18n/I18nNamespaces';
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSeoSettings();
@@ -489,6 +490,7 @@ export default async function HomePage() {
   };
 
   return (
+    <I18nNamespaces names={['home', 'qurbanPage', 'qurbanCard']}>
     <div className="min-h-screen flex flex-col">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd) }} />
       <Header />
@@ -745,5 +747,6 @@ export default async function HomePage() {
         }}
       />
     </div>
+    </I18nNamespaces>
   );
 }

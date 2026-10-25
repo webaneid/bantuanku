@@ -1,0 +1,105 @@
+import type { Messages } from "../../types";
+
+export const campaignDetail: Messages = {
+  breadcrumb: {
+    home: "Beranda",
+    program: "Program",
+  },
+  defaultCategory: "Program",
+  related: {
+    title: "Donasi Lain",
+  },
+  sidebar: {
+    mobile: {
+      toggle: "Naik/turunkan panel donasi",
+      chooseAmount: "Pilih nominal",
+      cta: "Donasi",
+    },
+    validation: {
+      selectAmount: "Silakan pilih nominal donasi terlebih dahulu",
+    },
+    meta: {
+      startDate: "Tanggal mulai",
+      pillar: "Pilar",
+      category: "Kategori",
+    },
+    badges: {
+      featured: "Unggulan",
+      urgent: "Mendesak",
+    },
+    progress: "{percent}% dari target Rp {target}",
+    donors: "{count} Donatur",
+    daysLeft: "{days} hari lagi",
+    total: "Total",
+    actions: {
+      payFidyahNow: "BAYAR FIDYAH SEKARANG",
+      payFidyah: "BAYAR FIDYAH",
+      wakafNow: "WAKAF SEKARANG",
+      donateNow: "DONASI SEKARANG",
+      share: "Bagikan",
+      favorite: "Favorit",
+    },
+    help: {
+      title: "Butuh Bantuan?",
+      description: "Jika melihat program ini mencurigakan atau butuh bantuan, hubungi kami.",
+      whatsapp: "Chat WhatsApp",
+    },
+    share: {
+      title: "Bagikan",
+      whatsapp: "WhatsApp",
+      facebook: "Facebook",
+      twitter: "Twitter",
+      threads: "Threads",
+      linkedin: "LinkedIn",
+    },
+  },
+  amountSelector: {
+    chooseWakaf: "Pilih Nominal Wakaf",
+    chooseDonation: "Pilih Nominal Donasi",
+    customPlaceholder: "Nominal lainnya",
+    fidyah: {
+      title: "Hitung Fidyah",
+      personCount: "Jumlah Orang",
+      dayCount: "Jumlah Hari Puasa yang Terlewat",
+      pricePerDay: "Fidyah per hari:",
+      priceHint: "Setara harga 1 mud beras (±0.6 kg)",
+      totalLabel: "Total Fidyah:",
+      calculation: "{personCount} orang × {dayCount} hari × {pricePerDay}",
+    },
+  },
+  confirmModal: {
+    titleWakaf: "Konfirmasi Wakaf",
+    titleDonation: "Konfirmasi Donasi",
+    amountLabelWakaf: "Nominal Wakaf",
+    amountLabelDonation: "Nominal Donasi",
+    programLabel: "Program",
+    chooseAction: "Pilih salah satu opsi di bawah untuk melanjutkan:",
+    actions: {
+      wakafNow: "Wakaf Sekarang",
+      donateNow: "Donasi Sekarang",
+      addToCartAndView: "Tambah ke Keranjang & Lihat",
+      addToCart: "Tambah ke Keranjang",
+    },
+    toasts: {
+      addedToCart: "Program berhasil ditambahkan ke keranjang!",
+      redirectCheckout: "Mengarahkan ke checkout...",
+    },
+  },
+  tabs: {
+    detail: "Detail",
+    updates: "Kabar Terbaru",
+    donors: "Donatur",
+    partners: "Mitra",
+    videoTitle: "Video Campaign",
+    coordinatorLabel: "Penanggung Jawab Program:",
+    coordinatorUnset: "Belum ditentukan",
+    loadingUpdates: "Memuat kabar terbaru...",
+    noUpdates: "Belum ada kabar terbaru",
+    photoAlt: "{title} - Foto {number}",
+    loadingDonors: "Memuat data donatur...",
+    noDonors: "Belum ada donatur",
+    anonymousDonor: "Hamba Allah",
+    donationLabel: "Donasi",
+    noPartners: "Belum ada mitra",
+  },
+};

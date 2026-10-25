@@ -5,7 +5,9 @@ import { Providers } from './providers';
 import { generateSiteMetadata, fetchSeoSettings, generateOrganizationJsonLd, JsonLdScript } from '@/lib/seo';
 import { pickShellSettings } from '@/lib/settings-shell';
 import { cookies } from 'next/headers';
-import { normalizeLocale, translate, dictionaries, DEFAULT_LOCALE } from '@/lib/i18n';
+import { normalizeLocale, translate } from '@/lib/i18n';
+import { pickMessages } from '@/lib/i18n/server';
+import { BASE_NAMESPACES } from '@/lib/i18n/namespaces';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -43,7 +45,7 @@ export default async function RootLayout({
         </a>
         <Providers
           locale={locale}
-          messages={locale === DEFAULT_LOCALE ? undefined : { [locale]: dictionaries[locale] }}
+          messages={pickMessages(locale, BASE_NAMESPACES)}
           settings={pickShellSettings(settings)}
           metaPixelId={settings.meta_pixel_id || null} gtmId={settings.gtm_container_id || null}>{children}</Providers>
       </body>

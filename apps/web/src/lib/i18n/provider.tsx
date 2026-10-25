@@ -1,75 +1,57 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { DEFAULT_LOCALE, normalizeLocale, translateWith } from "./core";
-import { idMessages } from "./locales/id";
 import type { Locale, Messages, TranslateParams } from "./types";
 
 interface I18nContextValue {
   locale: Locale;
-  setLocale: (locale: Locale) => void;
   t: (key: string, params?: TranslateParams) => string;
 }
 
-const I18nContext = createContext<I18nContextValue | undefined>(undefined);
+const LocaleContext = createContext<Locale | undefined>(undefined);
+const MessagesContext = createContext<Messages>({});
 
 /**
- * Bundel klien hanya membawa kamus Indonesia (default + fallback, ikut cache browser). Kamus bahasa lain dikirim server
- * lewat `initialMessages` hanya bila locale aktif bukan default, dan dimuat lazy bila pengguna mengganti bahasa.
+ * Klien tidak membundel kamus apa pun (ADR-0014): server mengirim namespace dasar lewat `messages` di root layout
+ * dan namespace rute lewat `I18nExtend` (lihat `I18nNamespaces`). Pesan sudah digabung server untuk locale aktif.
+ * Ganti bahasa = tulis cookie + `router.refresh()`; locale dan pesan baru datang dari server.
  */
 export function I18nProvider({
   children,
   initialLocale,
-  initialMessages,
+  messages,
 }: {
   children: React.ReactNode;
   initialLocale?: string;
-  initialMessages?: Partial<Record<Locale, Messages>>;
+  messages: Messages;
 }) {
-  const [locale, setLocaleState] = useState<Locale>(normalizeLocale(initialLocale));
-  const [dictionaries, setDictionaries] = useState<Partial<Record<Locale, Messages>>>(() => ({
-    [DEFAULT_LOCALE]: idMessages,
-    ...initialMessages,
-  }));
-
-  const setLocale = useCallback(
-    (nextLocale: Locale) => {
-      const normalized = normalizeLocale(nextLocale);
-      if (dictionaries[normalized] || normalized === DEFAULT_LOCALE) {
-        setLocaleState(normalized);
-        return;
-      }
-      import("./locales/en").then(({ enMessages }) => {
-        setDictionaries((prev) => ({ ...prev, [normalized]: enMessages }));
-        setLocaleState(normalized);
-      });
-    },
-    [dictionaries]
+  return (
+    <LocaleContext.Provider value={normalizeLocale(initialLocale)}>
+      <MessagesContext.Provider value={messages}>{children}</MessagesContext.Provider>
+    </LocaleContext.Provider>
   );
-
-  const t = useCallback(
-    (key: string, params?: TranslateParams) => {
-      return translateWith(dictionaries, idMessages, locale || DEFAULT_LOCALE, key, params);
-    },
-    [locale, dictionaries]
-  );
-
-  const value = useMemo<I18nContextValue>(
-    () => ({
-      locale,
-      setLocale,
-      t,
-    }),
-    [locale, setLocale, t]
-  );
-
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
-export function useI18n() {
-  const context = useContext(I18nContext);
-  if (!context) {
+/** Menambah namespace rute ke pesan milik induk (namespace antar-rute tidak bertabrakan). */
+export function I18nExtend({ messages, children }: { messages: Messages; children: React.ReactNode }) {
+  const parent = useContext(MessagesContext);
+  const merged = useMemo(() => ({ ...parent, ...messages }), [parent, messages]);
+  return <MessagesContext.Provider value={merged}>{children}</MessagesContext.Provider>;
+}
+
+export function useI18n(): I18nContextValue {
+  const locale = useContext(LocaleContext);
+  const messages = useContext(MessagesContext);
+  if (!locale) {
     throw new Error("useI18n must be used within I18nProvider");
   }
-  return context;
+  return useMemo(
+    () => ({
+      locale,
+      t: (key: string, params?: TranslateParams) =>
+        translateWith({ [locale || DEFAULT_LOCALE]: messages }, messages, locale, key, params),
+    }),
+    [locale, messages]
+  );
 }

@@ -21,8 +21,12 @@ File utama:
 | `apps/web/src/lib/i18n/index.ts` | Registry dictionary, normalisasi locale, resolver key, fallback, interpolation |
 | `apps/web/src/lib/i18n/types.ts` | Tipe `Locale`, `Messages`, `TranslateParams` |
 | `apps/web/src/lib/i18n/provider.tsx` | React context client-side untuk `locale`, `setLocale`, dan `t()` |
-| `apps/web/src/lib/i18n/locales/id.ts` | Dictionary Bahasa Indonesia |
-| `apps/web/src/lib/i18n/locales/en.ts` | Dictionary English |
+| `apps/web/src/lib/i18n/locales/id/<namespace>.ts` + `index.ts` | Dictionary Bahasa Indonesia, satu file per namespace (ADR-0014) |
+| `apps/web/src/lib/i18n/locales/en/<namespace>.ts` + `index.ts` | Dictionary English, struktur sama |
+| `apps/web/src/lib/i18n/namespaces.ts` | `BASE_NAMESPACES` (dikirim root layout ke semua halaman) |
+| `apps/web/src/lib/i18n/server.ts` | `pickMessages(locale, names)` — KODE SERVER, menggabungkan `en` di atas `id` |
+| `apps/web/src/lib/i18n/I18nNamespaces.tsx` | Komponen server untuk `layout.tsx` rute: mengumumkan namespace rute |
+| `apps/web/scripts/check-i18n-namespaces.mjs` | Pemeriksa paritas id/en + kelengkapan namespace per halaman |
 | `apps/web/src/app/layout.tsx` | Membaca cookie locale, set `<html lang>`, dan inject provider |
 | `apps/web/src/app/providers.tsx` | Membungkus aplikasi dengan `I18nProvider` |
 | `apps/web/src/components/organisms/Header/Header.tsx` | UI pemilih bahasa dan penulisan cookie |
@@ -157,7 +161,7 @@ Nilai ini dipakai untuk:
 
 `apps/web/src/app/providers.tsx` membungkus aplikasi dalam urutan:
 
-1. `QueryClientProvider`
+1. `SettingsProvider`
 2. `I18nProvider`
 3. `CartProvider`
 4. `ReferralCapture`
@@ -173,14 +177,13 @@ Pemilih bahasa berada di `Header`.
 
 Saat user mengganti bahasa:
 
-1. `setLocale(nextLocale)` mengubah state client.
-2. Browser menulis cookie:
+1. Browser menulis cookie:
 
 ```ts
 document.cookie = `locale=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
 ```
 
-3. `router.refresh()` memaksa server component membaca ulang cookie dan render ulang.
+2. `router.refresh()` memaksa server component membaca ulang cookie dan render ulang.
 
 Catatan implementasi:
 
@@ -252,7 +255,7 @@ Implikasi: label UI bisa berubah bahasa, tetapi formatting angka/tanggal belum k
 | Gap | Dampak |
 |-----|--------|
 | Tidak ada type-safe key | Salah ketik key baru ketahuan saat runtime dan bisa tampil sebagai string key |
-| Tidak ada parity check `id` vs `en` | Dictionary English bisa tertinggal dari Indonesia tanpa gagal build |
+| Parity check `id` vs `en` hanya manual | `npm run check:i18n` ada, tapi belum otomatis di CI |
 | Tidak ada `next-intl`/ICU | Plural, gender, rich message, dan locale formatting harus dibuat manual |
 | Tidak ada route locale | Tidak ada URL kanonis `/en/...`, sulit untuk SEO multi-bahasa |
 | Metadata belum locale-aware | Title/description global bisa tidak sesuai bahasa aktif |
@@ -372,10 +375,20 @@ Prioritas 3: keputusan arsitektur jangka menengah.
 2. `docs/arsitektur-i18n.md` adalah dokumentasi arsitektur resmi.
 3. Blueprint lama yang menyebut desain `next-intl`, `packages/i18n`, atau route `[locale]` tidak boleh dianggap source of truth kecuali implementasinya benar-benar dibuat di kode.
 
-## Pemuatan kamus di bundel klien (2026-10-24)
+## Pemuatan kamus per namespace (ADR-0014, 2026-10-25)
 
-- `lib/i18n/core.ts`: `translateWith(kamus, fallback, locale, key, params)` murni (tanpa impor kamus), `normalizeLocale`, `DEFAULT_LOCALE`.
-- `lib/i18n/index.ts` (KODE SERVER): mengimpor kedua kamus; `translate()` dan `dictionaries`. Jangan diimpor dari komponen klien.
-- `lib/i18n/provider.tsx` (klien): hanya membundel kamus `id` (default + fallback). Kamus bahasa aktif lain dikirim `app/layout.tsx` lewat `Providers messages={...}` hanya bila locale bukan default; ganti bahasa saat sesi memuat `locales/en` lewat `import()` lalu menyetel locale.
-- Menambah bahasa baru: tambahkan ke `Locale`, `dictionaries`, dan cabang lazy di `setLocale`.
+Klien TIDAK membundel kamus apa pun. Server mengirim pesan sebagai props:
 
+- `lib/i18n/core.ts`: `translateWith(...)` murni; di dev memberi `console.warn("[i18n] key tidak ditemukan …")` sekali per key (tanda namespace belum diumumkan).
+- `lib/i18n/index.ts` (KODE SERVER): kedua kamus penuh; `translate()` dan `dictionaries`. Jangan diimpor dari komponen klien.
+- `app/layout.tsx`: `Providers messages={pickMessages(locale, BASE_NAMESPACES)}` (`common`, `footer`).
+- `lib/i18n/provider.tsx` (klien): `I18nProvider` (locale + pesan dari props), `I18nExtend` (menambah namespace rute di atas pesan induk), `useI18n()` → `{ locale, t }`. **Tidak ada `setLocale`**: ganti bahasa = tulis cookie `locale` + `router.refresh()`; layout dirender ulang dengan locale dan pesan baru.
+- Untuk locale non-default, `pickMessages` menggabungkan `en` di atas `id` (key `en` yang belum ada jatuh ke Indonesia) sehingga hanya satu set pesan dikirim.
+
+### Aturan menambah/ memakai namespace
+
+1. Kamus baru = file `<namespace>.ts` di `locales/id/` dan `locales/en/` + daftarkan di kedua `index.ts`.
+2. Komponen klien yang memakai `t("ns.key")` → setiap halaman yang me-render komponen itu harus mengumumkan `ns` di rantai `layout.tsx`-nya: `<I18nNamespaces names={['ns']}>{children}</I18nNamespaces>` (komponen server; untuk layout klien, bungkus dari `layout.tsx` server seperti `app/account/layout.tsx` → `AccountLayoutClient`). Halaman server cukup memakai `translate()` (tak perlu deklarasi).
+3. Jalankan `cd apps/web && npm run check:i18n` — gagal (exit 1) bila ada key yang hilang di `en`/`id` atau namespace yang dipakai namun belum diumumkan. `tsc` TIDAK menangkap ini; key mentah tampil di UI.
+
+Peta deklarasi saat ini (layout → namespace): `account` → account; `auth`, `login`, `register`, `forgot-password`, `reset-password`, `verifikasi-email` → auth; `checkout` → checkout, keranjang, auth, payment; `keranjang-bantuan` → keranjang, checkout; `invoice/[id]` → invoice, payment; `laporan` → laporanDetail; `mitra`, `program`, `wakaf`, `test-organisms` → home; `program/[slug]` → campaignDetail; `qurban` → qurbanPage, qurbanCard; `qurban/[id]` → qurbanDetail; `qurban/savings` → account; `qurban/savings/new` → qurbanSavingsCreate, qurbanDetail; `zakat` → zakatPage; `zakat/calculator` & `zakat/[slug]` → zakatCalculator, zakatDetail; beranda (`app/page.tsx`) → home, qurbanPage, qurbanCard.

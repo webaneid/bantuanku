@@ -350,6 +350,7 @@ Isi route tersebut berfungsi sebagai demo komponen, bukan dokumentasi resmi. **S
 9. **Form input sebaiknya punya kontrak accessibility lebih kuat.** Error/help belum selalu dihubungkan dengan `aria-describedby`; id yang stabil akan membantu.
 10. **Gunakan icon library secara konsisten.** Banyak komponen memakai inline SVG manual. Jika web sudah mengadopsi satu icon library, tombol/icon reusable sebaiknya distandarkan.
 11. **Impor komponen langsung dari foldernya, bukan dari barrel** (`@/components/organisms/Header`, bukan `@/components/organisms`). Barrel menarik semua komponen termasuk yang berdependensi berat (axios lewat `lib/api`) ke setiap halaman. Lihat `arsitektur-cache-performance.md` fase 8.
+12. **Teks `t("ns.key")` di komponen klien butuh namespace diumumkan di `layout.tsx` rutenya** (`<I18nNamespaces names={[…]}>`). Klien tidak membundel kamus. Setelah menambah/memindah komponen atau key, jalankan `npm run check:i18n` di `apps/web` (ADR-0014, `arsitektur-i18n.md`).
 
 ## Keputusan Arsitektur Saat Ini
 

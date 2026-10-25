@@ -1,11 +1,15 @@
+import { I18nNamespaces } from '@/lib/i18n/I18nNamespaces';
+
 export default function InvoiceLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {children}
-    </div>
+    <I18nNamespaces names={['invoice', 'payment']}>
+      <div className="min-h-screen bg-gray-50">
+        {children}
+      </div>
+    </I18nNamespaces>
   );
 }

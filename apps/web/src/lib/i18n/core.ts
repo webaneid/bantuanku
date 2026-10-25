@@ -14,9 +14,18 @@ function getByPath(messages: Messages, path: string): string | Messages | undefi
   }, messages);
 }
 
+const warnedKeys = new Set<string>();
+
+/** Dev saja: key hilang biasanya berarti namespace belum diumumkan di layout rute (ADR-0014). */
+function warnMissingKey(key: string) {
+  if (warnedKeys.has(key)) return;
+  warnedKeys.add(key);
+  console.warn(`[i18n] key tidak ditemukan: "${key}" (cek namespace di layout rute / kamus)`);
+}
+
 /**
  * Terjemahan murni (tanpa mengimpor kamus). Kamus dioper pemanggil supaya bundel klien hanya membawa
- * kamus yang dipakai: server memakai `lib/i18n/index.ts` (kedua kamus), provider klien hanya `id` + kamus aktif.
+ * kamus yang dipakai: server memakai `lib/i18n/index.ts` (kedua kamus), klien hanya pesan yang dikirim server.
  */
 export function translateWith(
   dictionaries: Partial<Record<Locale, Messages>>,
@@ -32,6 +41,8 @@ export function translateWith(
   const value = (typeof localized === "string" ? localized : undefined) ||
     (typeof fallback === "string" ? fallback : undefined) ||
     key;
+
+  if (value === key && process.env.NODE_ENV !== "production") warnMissingKey(key);
 
   if (!params) return value;
 

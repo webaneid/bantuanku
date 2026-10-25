@@ -62,7 +62,7 @@ Dokumen terkait:
 
 ## Program Optimasi Kecepatan (2026-10-24)
 
-> Hasil terukur (First Load JS gzip, build produksi): beranda 234 → **139 kB**, `/invoice/[id]` 342 → 145 kB, checkout 241 → 157 kB, `/laporan` 127 kB, `/zakat` 130 kB. Target < 150 kB untuk beranda **tercapai** (fase 8). Sisa langkah ada di bagian "Sisa Optimasi Bundel" di bawah tabel.
+> Hasil terukur (First Load JS gzip, build produksi): beranda 234 → **122 kB**, `/invoice/[id]` 342 → 128 kB, checkout 241 → 140 kB, `/laporan` 110 kB, `/zakat` 113 kB, `/program` 123 kB. Target < 150 kB untuk beranda **tercapai** (fase 8–9; kamus per namespace = ADR-0014). Sisa langkah ada di bagian "Sisa Optimasi Bundel" di bawah tabel.
 
 Tujuan: halaman publik terbuka secepat mungkin dan ringan untuk VPS. Dikerjakan per fase, tiap fase satu commit.
 
@@ -95,7 +95,7 @@ Diukur dengan `next build` di salinan folder + `productionBrowserSourceMaps` lal
 
 | Peluang | Perkiraan hemat | Catatan |
 |---------|-----------------|---------|
-| Kirim kamus i18n per namespace (shell `common`/`footer`/`home` ±2 kB, sisanya per rute) | ±13 kB di beranda | Perlu keputusan desain (ADR): tiap rute/layout mendeklarasikan namespace-nya; namespace yang terlewat membuat `t()` menampilkan key. Butuh skrip pemeriksa agar tak ada key hilang |
+| ~~Kirim kamus i18n per namespace~~ | **Selesai (fase 9, ADR-0014)**: beranda 139 → 122 kB | Layout rute mengumumkan namespace; pemeriksa `npm run check:i18n`. Lihat `arsitektur-i18n.md` |
 | `Footer`/`Header`/`ProgramCard` jadi server component | ±5 kB total | Terbatas: 20 dari 34 halaman pemakai Header/Footer adalah `'use client'` dan tak bisa mengimpor komponen server; harus dipindah ke layout segmen (`hideOnMobile` berbeda per halaman). Untung/rugi rendah dibanding baris di atas |
 
 **Aturan impor (wajib):** di kode aplikasi impor komponen langsung dari foldernya (`@/components/organisms/Header`), jangan dari barrel `@/components/organisms`/`@/components/molecules`. Barrel dipertahankan hanya sebagai indeks; satu impor darinya menarik semua komponen dan dependensinya ke bundel (webpack tidak men-tree-shake modul klien tanpa `sideEffects: false`).

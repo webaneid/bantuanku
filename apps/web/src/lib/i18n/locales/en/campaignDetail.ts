@@ -1,0 +1,105 @@
+import type { Messages } from "../../types";
+
+export const campaignDetail: Messages = {
+  breadcrumb: {
+    home: "Home",
+    program: "Program",
+  },
+  defaultCategory: "Program",
+  related: {
+    title: "Other Donations",
+  },
+  sidebar: {
+    mobile: {
+      toggle: "Toggle donation panel",
+      chooseAmount: "Choose amount",
+      cta: "Donate",
+    },
+    validation: {
+      selectAmount: "Please select a donation amount first",
+    },
+    meta: {
+      startDate: "Start date",
+      pillar: "Pillar",
+      category: "Category",
+    },
+    badges: {
+      featured: "Featured",
+      urgent: "Urgent",
+    },
+    progress: "{percent}% of target Rp {target}",
+    donors: "{count} Donors",
+    daysLeft: "{days} days left",
+    total: "Total",
+    actions: {
+      payFidyahNow: "PAY FIDYAH NOW",
+      payFidyah: "PAY FIDYAH",
+      wakafNow: "DONATE WAKAF NOW",
+      donateNow: "DONATE NOW",
+      share: "Share",
+      favorite: "Favorite",
+    },
+    help: {
+      title: "Need Help?",
+      description: "If you find this program suspicious or need help, contact us.",
+      whatsapp: "Chat WhatsApp",
+    },
+    share: {
+      title: "Share",
+      whatsapp: "WhatsApp",
+      facebook: "Facebook",
+      twitter: "Twitter",
+      threads: "Threads",
+      linkedin: "LinkedIn",
+    },
+  },
+  amountSelector: {
+    chooseWakaf: "Choose Wakaf Amount",
+    chooseDonation: "Choose Donation Amount",
+    customPlaceholder: "Other amount",
+    fidyah: {
+      title: "Calculate Fidyah",
+      personCount: "Number of People",
+      dayCount: "Missed Fasting Days",
+      pricePerDay: "Fidyah per day:",
+      priceHint: "Equivalent to 1 mud of rice (±0.6 kg)",
+      totalLabel: "Total Fidyah:",
+      calculation: "{personCount} people × {dayCount} days × {pricePerDay}",
+    },
+  },
+  confirmModal: {
+    titleWakaf: "Confirm Wakaf",
+    titleDonation: "Confirm Donation",
+    amountLabelWakaf: "Wakaf Amount",
+    amountLabelDonation: "Donation Amount",
+    programLabel: "Program",
+    chooseAction: "Choose one of the options below to continue:",
+    actions: {
+      wakafNow: "Wakaf Now",
+      donateNow: "Donate Now",
+      addToCartAndView: "Add to Cart & View",
+      addToCart: "Add to Cart",
+    },
+    toasts: {
+      addedToCart: "Program added to cart successfully!",
+      redirectCheckout: "Redirecting to checkout...",
+    },
+  },
+  tabs: {
+    detail: "Detail",
+    updates: "Latest Updates",
+    donors: "Donors",
+    partners: "Partners",
+    videoTitle: "Campaign Video",
+    coordinatorLabel: "Program Coordinator:",
+    coordinatorUnset: "Not set",
+    loadingUpdates: "Loading latest updates...",
+    noUpdates: "No updates yet",
+    photoAlt: "{title} - Photo {number}",
+    loadingDonors: "Loading donors data...",
+    noDonors: "No donors yet",
+    anonymousDonor: "Anonymous",
+    donationLabel: "Donation",
+    noPartners: "No partners yet",
+  },
+};

@@ -10,7 +10,7 @@ import GoogleTagManager from '@/components/GoogleTagManager';
 import { I18nProvider } from '@/lib/i18n/provider';
 import { SettingsProvider } from '@/hooks/useSettings';
 import type { PublicSettings } from '@/services/settings';
-import type { Locale, Messages } from '@/lib/i18n/types';
+import type { Messages } from '@/lib/i18n/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
@@ -44,14 +44,14 @@ export function Providers({
   /** Settings publik hasil pilihan server (lihat lib/settings-shell). */
   settings?: PublicSettings;
   locale?: string;
-  /** Kamus bahasa aktif bila bukan bahasa default (lihat I18nProvider). */
-  messages?: Partial<Record<Locale, Messages>>;
+  /** Namespace dasar untuk locale aktif (lihat I18nProvider / ADR-0014). */
+  messages: Messages;
   metaPixelId?: string | null;
   gtmId?: string | null;
 }) {
   return (
     <SettingsProvider value={settings ?? {}}>
-      <I18nProvider initialLocale={locale} initialMessages={messages}>
+      <I18nProvider initialLocale={locale} messages={messages}>
         <CartProvider>
           <ReferralCapture />
           <MetaPixel pixelId={metaPixelId} />

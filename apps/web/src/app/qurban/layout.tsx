@@ -1,3 +1,4 @@
+import { I18nNamespaces } from '@/lib/i18n/I18nNamespaces';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
@@ -102,7 +103,7 @@ export default async function QurbanLayout({
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
-      {children}
+      <I18nNamespaces names={['qurbanPage', 'qurbanCard']}>{children}</I18nNamespaces>
     </>
   );
 }

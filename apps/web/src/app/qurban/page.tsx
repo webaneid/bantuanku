@@ -61,6 +61,9 @@ export default function QurbanPage() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('');
   const [qurbanPackages, setQurbanPackages] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // 'error' = gagal memuat (API bermasalah); 'no-period' = tidak ada periode qurban aktif; null = normal
+  const [loadIssue, setLoadIssue] = useState<'error' | 'no-period' | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [animalFilter, setAnimalFilter] = useState<'all' | 'sapi' | 'kambing' | 'domba'>('all');
 
   // Page settings state
@@ -95,14 +98,21 @@ export default function QurbanPage() {
         // Set default to first (oldest year) period
         if (sortedPeriods.length > 0) {
           setSelectedPeriodId(sortedPeriods[0].id);
+        } else {
+          setLoadIssue('no-period');
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Failed to fetch periods:', error);
+        setLoadIssue('error');
+        setIsLoading(false);
       }
     };
 
+    setLoadIssue(null);
+    setIsLoading(true);
     loadPeriods();
-  }, []);
+  }, [retryCount]);
 
   // Fetch page settings on mount
   useEffect(() => {
@@ -138,6 +148,7 @@ export default function QurbanPage() {
 
     const loadPackages = async () => {
       setIsLoading(true);
+      setLoadIssue(null);
       try {
         const packagesResponse = await fetchPackagesByPeriod(selectedPeriodId);
         const packages: QurbanPackage[] = packagesResponse.data || [];
@@ -152,13 +163,14 @@ export default function QurbanPage() {
       } catch (error) {
         console.error('Failed to fetch packages:', error);
         setQurbanPackages([]);
+        setLoadIssue('error');
       } finally {
         setIsLoading(false);
       }
     };
 
     loadPackages();
-  }, [selectedPeriodId, organizationName, t]);
+  }, [selectedPeriodId, organizationName, t, retryCount]);
 
   // Filter packages based on selected filters
   const filteredPackages = qurbanPackages.filter((pkg) => {
@@ -318,11 +330,28 @@ export default function QurbanPage() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {t('qurbanPage.empty.title')}
+                {loadIssue === 'error'
+                  ? t('qurbanPage.error.title')
+                  : loadIssue === 'no-period'
+                    ? t('qurbanPage.noPeriod.title')
+                    : t('qurbanPage.empty.title')}
               </h3>
               <p className="text-gray-600">
-                {t('qurbanPage.empty.description')}
+                {loadIssue === 'error'
+                  ? t('qurbanPage.error.description')
+                  : loadIssue === 'no-period'
+                    ? t('qurbanPage.noPeriod.description')
+                    : t('qurbanPage.empty.description')}
               </p>
+              {loadIssue === 'error' && (
+                <button
+                  type="button"
+                  onClick={() => setRetryCount((n) => n + 1)}
+                  className="mt-5 inline-flex items-center px-4 py-2 rounded-lg bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"
+                >
+                  {t('qurbanPage.error.retry')}
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
