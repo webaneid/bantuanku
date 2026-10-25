@@ -1,3 +1,4 @@
+import { loadBrand } from "../lib/brand";
 import { eq, inArray } from "drizzle-orm";
 import { settings } from "@bantuanku/db";
 import type { Database } from "@bantuanku/db";
@@ -33,7 +34,7 @@ export async function sendVerificationEmail(db: Database, env: Env, user: Target
     const base = await getFrontendBase(db, env);
     const brand = await getBrandName(db);
     const url = `${base}/verifikasi-email?token=${encodeURIComponent(token)}`;
-    const mailer = createEmailService(env.RESEND_API_KEY, env.FROM_EMAIL, brand, base, env.ADMIN_URL);
+    const mailer = createEmailService(env.RESEND_API_KEY, env.FROM_EMAIL, brand, base, env.ADMIN_URL, await loadBrand(db));
     return (await mailer.sendEmailVerification({ to: user.email, name: user.name, url })) ? "sent" : "failed";
   } catch (err) {
     console.error("[auth-email] gagal mengirim verifikasi:", err);
@@ -53,7 +54,7 @@ export async function sendPasswordResetEmail(db: Database, env: Env, user: Targe
     const base = await getFrontendBase(db, env);
     const brand = await getBrandName(db);
     const url = `${base}/reset-password?token=${encodeURIComponent(token)}`;
-    const mailer = createEmailService(env.RESEND_API_KEY, env.FROM_EMAIL, brand, base, env.ADMIN_URL);
+    const mailer = createEmailService(env.RESEND_API_KEY, env.FROM_EMAIL, brand, base, env.ADMIN_URL, await loadBrand(db));
     return (await mailer.sendPasswordResetLink({ to: user.email, name: user.name, url })) ? "sent" : "failed";
   } catch (err) {
     console.error("[auth-email] gagal mengirim reset password:", err);

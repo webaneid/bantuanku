@@ -123,7 +123,11 @@ Alur: admin menyimpan lewat `PUT /admin/settings/batch` → API memvalidasi (`br
 - **Dua salinan `lib/brand.ts`** (web kanonik, admin salinan untuk pratinjau) harus identik pada bagian `BRAND-SHARED`; `npm run check:colors` membandingkan keduanya.
 - **SCSS**: jangan `rgba($primary-500, x)` (Sass tidak bisa mengolah `var()`); tulis `rgb(var(--color-primary-500) / x)`.
 - **Gambar OG** (`app/og/route.tsx`) memakai skala brand dari settings. 
-- **Gap**: admin app (`apps/admin`) belum memakai token brand; email transaksional (`apps/api/src/services/email.ts`) masih berwarna tetap; kontras otomatis hanya peringatan di halaman admin (tidak memblokir simpan).
+- **Admin app (2026-10-26)**: `apps/admin` memakai kontrak yang sama: `tailwind.config.ts` dan `_variables.scss` membaca `--color-*`; root layout (server) mengambil settings publik (cache 60 dtk) dan menyuntik `<style id="brand-colors">` lewat `lib/brand-server.ts`. 946 palet liar dimigrasi (blue→info, red/rose→danger, green→success, amber/yellow/orange→warning, emerald→primary, purple/pink→secondary) dan `check:colors` admin berbaseline 0. `gray-50`/`gray-900` → `light`/`dark`. Grafik (recharts) memakai `lib/chart-colors.ts` (brand = CSS variable, semantik = hex Tailwind). **Setelah mengubah `tailwind.config.ts` admin, dev server harus di-restart** (konfigurasi TS tidak dimuat ulang; gejala: "The `bg-light` class does not exist").
+- **Sidebar admin**: gradasi primary gelap berlapis (`primary-900` + overlay `primary-700/60 → dark/90` + cahaya blur `primary-300/25` dan `secondary-500/15`), teks/ikon terang (`text-white/70`, `text-light`), menu aktif = kaca putih bergradasi (`from-white/25 via-white/15 to-white/5` + `backdrop-blur` + cincin + sorot atas), logo di plat putih. Semua warna dari token.
+- **Email transaksional**: warna header/tombol/latar/teks diambil dari brand settings (`EmailService` menerima `Brand`, di-load dengan `loadBrand(db)` di `lib/brand.ts` API). Email tak bisa memakai CSS variable, jadi hex hasil `resolveBrand`. Sebelumnya hijau tetap `#10b981` (bukan brand).
+- **Kontras**: `brandContrast()` (bagian BRAND-SHARED, tiga salinan web/admin/api diperiksa `check:colors`): < 3:1 DITOLAK API (`PUT /batch`, `PATCH`, `POST` menggabungkan nilai baru dengan brand tersimpan) dan menonaktifkan tombol simpan di admin; 3–4,5:1 hanya peringatan.
+- **Gap**: grafik/OG memakai skala brand tetapi PDF/invoice cetak belum diaudit warnanya; kontras hanya mengecek tiga pasangan utama (putih di atas primary, gelap di atas terang, gelap di atas putih).
 
 ## Shade Scale Aktual
 

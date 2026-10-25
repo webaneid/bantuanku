@@ -4,6 +4,7 @@ import { z } from "zod";
 import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 import { createId, disbursements, entityBankAccounts, revenueShares, settings, users } from "@bantuanku/db";
 import { encrypt, decrypt } from "../../lib/encryption";
+import { BRAND_SETTING_KEYS, brandContrast, loadBrand } from "../../lib/brand";
 import { success, error } from "../../lib/response";
 import { requireDeveloper, requireRole } from "../../middleware/auth";
 import { clearTestimonialsCache } from "../testimonials";
@@ -28,6 +29,19 @@ function brandSettingError(key: string, value: string, roles: string[] | undefin
   if (!roles?.includes("super_admin")) return "Hanya super admin yang dapat mengubah warna brand";
   if (!HEX_COLOR.test(value)) return "Warna brand harus berformat hex #rrggbb";
   return null;
+}
+
+/** Setelah perubahan nilai ini, kombinasi 4 warna brand tidak boleh membuat teks/tombol tak terbaca (kontras < 3:1). */
+async function brandContrastError(db: any, changes: Array<{ key: string; value: string }>): Promise<string | null> {
+  const brandChanges = changes.filter((c) => BRAND_COLOR_KEY.test(c.key));
+  if (brandChanges.length === 0) return null;
+  const brand = await loadBrand(db);
+  for (const change of brandChanges) {
+    const name = (Object.keys(BRAND_SETTING_KEYS) as Array<keyof typeof BRAND_SETTING_KEYS>).find((k) => BRAND_SETTING_KEYS[k] === change.key);
+    if (name) brand[name] = change.value.toLowerCase();
+  }
+  const { errors } = brandContrast(brand);
+  return errors.length ? errors.join(" ") : null;
 }
 
 const developerBankAccountSchema = z.object({
@@ -340,7 +354,7 @@ settingsAdmin.patch("/:key", requireRole("super_admin", "admin_finance"), zValid
     return error(c, "Forbidden", 403);
   }
 
-  const brandError = brandSettingError(setting.key, value, user?.roles);
+  const brandError = brandSettingError(setting.key, value, user?.roles) || (await brandContrastError(db, [{ key: setting.key, value }]));
   if (brandError) return error(c, brandError, 400);
 
   await db
@@ -374,7 +388,7 @@ settingsAdmin.post("/", requireRole("super_admin", "admin_finance"), zValidator(
     return error(c, "Forbidden", 403);
   }
 
-  const brandError = brandSettingError(body.key, body.value, user?.roles);
+  const brandError = brandSettingError(body.key, body.value, user?.roles) || (await brandContrastError(db, [{ key: body.key, value: body.value }]));
   if (brandError) return error(c, brandError, 400);
 
   const existing = await db.query.settings.findFirst({
@@ -446,6 +460,8 @@ settingsAdmin.put("/batch", requireRole("super_admin", "admin_finance"), zValida
     const brandError = brandSettingError(settingData.key, settingData.value, user?.roles);
     if (brandError) return error(c, brandError, 400);
   }
+  const contrastError = await brandContrastError(db, body);
+  if (contrastError) return error(c, contrastError, 400);
 
   // Process each setting - update if exists, create if not
   for (const settingData of body) {

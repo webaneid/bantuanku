@@ -1,3 +1,4 @@
+import { loadBrand } from "../../lib/brand";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -625,7 +626,7 @@ campaignsAdmin.patch(
       });
 
       if (creator?.email) {
-        const emailService = createEmailService(c.env.RESEND_API_KEY, c.env.FROM_EMAIL || "", c.env.FROM_NAME, c.env.FRONTEND_URL, c.env.ADMIN_URL);
+        const emailService = createEmailService(c.env.RESEND_API_KEY, c.env.FROM_EMAIL || "", c.env.FROM_NAME, c.env.FRONTEND_URL, c.env.ADMIN_URL, await loadBrand(db));
         await emailService.sendCampaignStatusUpdate({
           adminEmail: creator.email,
           campaignTitle: campaign.title,

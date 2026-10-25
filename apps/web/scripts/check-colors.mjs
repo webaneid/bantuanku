@@ -47,15 +47,18 @@ if (process.argv.includes("--update")) {
   console.log(`Baseline ditulis: ${total} pemakaian di ${Object.keys(counts).length} file`);
   process.exit(0);
 }
-// Dua salinan lib/brand.ts (web & admin) harus identik pada bagian BRAND-SHARED
+// Tiga salinan lib/brand.ts (web kanonik, admin, api) harus identik pada bagian BRAND-SHARED
 const sharedBlock = (f) => {
   const t = fs.readFileSync(f, "utf8");
   return t.slice(t.indexOf("// BRAND-SHARED-START"), t.indexOf("// BRAND-SHARED-END"));
 };
-const adminBrand = path.join(root, "..", "admin/src/lib/brand.ts");
-if (fs.existsSync(adminBrand) && sharedBlock(adminBrand) !== sharedBlock(path.join(src, "lib/brand.ts"))) {
-  console.error("✗ apps/web/src/lib/brand.ts dan apps/admin/src/lib/brand.ts berbeda (bagian BRAND-SHARED harus identik)");
-  process.exit(1);
+const canonical = sharedBlock(path.join(root, "..", "web/src/lib/brand.ts"));
+for (const other of ["admin/src/lib/brand.ts", "api/src/lib/brand.ts"]) {
+  const f = path.join(root, "..", other);
+  if (fs.existsSync(f) && sharedBlock(f) !== canonical) {
+    console.error(`✗ ${other} berbeda dari apps/web/src/lib/brand.ts (bagian BRAND-SHARED harus identik)`);
+    process.exit(1);
+  }
 }
 const baseline = fs.existsSync(baselineFile) ? JSON.parse(fs.readFileSync(baselineFile, "utf8")) : {};
 const bad = Object.entries(counts).filter(([f, n]) => n > (baseline[f] ?? 0));

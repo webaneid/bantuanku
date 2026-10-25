@@ -318,3 +318,8 @@ Batasan: hanya satu browser/perangkat; form lain di admin (mis. settings, mitra,
 |-----------|-----------|
 | `docs/SOP-notifikasi.md` | Diserap ke bagian feedback/notifikasi admin, dikoreksi terhadap implementasi aktual, lalu boleh dihapus |
 | `00-helper-SOP.md` | Diserap ke bagian form/helper reusable, dikoreksi terhadap implementasi aktual, lalu boleh dihapus |
+
+## Sidebar (2026-10-26)
+
+`apps/admin/src/components/Sidebar.tsx` memakai gaya gelap-elegan: latar `bg-primary-900` + lapisan gradasi/cahaya dekoratif (`aria-hidden`), teks putih berkontras, ikon `text-light`, menu aktif berupa kaca putih bergradasi (`backdrop-blur`), submenu dengan garis kiri `border-white/15`, logo pada plat putih supaya logo gelap/berwarna tetap terbaca di latar gelap, logout `text-danger-200`. Semua warna adalah token brand sehingga ikut pengaturan **Settings → Warna Brand**. Kelas `.sidebar*` di `_sidebar.scss` tidak dipakai komponen ini.
+

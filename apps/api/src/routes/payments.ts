@@ -1,3 +1,4 @@
+import { loadBrand } from "../lib/brand";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -711,7 +712,7 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
     // Send email after transaction successfully committed
     if (pendingEmailData && c.env.RESEND_API_KEY) {
       try {
-        const emailService = createEmailService(c.env.RESEND_API_KEY, c.env.FROM_EMAIL || "", c.env.FROM_NAME, c.env.FRONTEND_URL, c.env.ADMIN_URL);
+        const emailService = createEmailService(c.env.RESEND_API_KEY, c.env.FROM_EMAIL || "", c.env.FROM_NAME, c.env.FRONTEND_URL, c.env.ADMIN_URL, await loadBrand(db));
         await emailService.sendPaymentSuccess(pendingEmailData);
       } catch (emailError) {
         // Log email error but don't fail the webhook

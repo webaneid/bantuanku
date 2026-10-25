@@ -1,4 +1,5 @@
 import type { Database } from "@bantuanku/db";
+import { DEFAULT_BRAND, type Brand } from "../lib/brand";
 
 export interface EmailParams {
   to: string;
@@ -49,7 +50,11 @@ export class EmailService {
   private frontendUrl: string;
   private adminUrl: string;
 
-  constructor(apiKey: string, fromEmail: string, fromName: string = "", frontendUrl: string = "", adminUrl: string = "") {
+  private brandColors: Brand;
+
+  /** `brandColors`: warna brand dari settings (lib/brand.loadBrand); email tak bisa memakai CSS variable, jadi hex. */
+  constructor(apiKey: string, fromEmail: string, fromName: string = "", frontendUrl: string = "", adminUrl: string = "", brandColors: Brand = DEFAULT_BRAND) {
+    this.brandColors = brandColors;
     this.apiKey = apiKey;
     this.fromEmail = fromEmail;
     this.fromName = fromName;
@@ -95,12 +100,12 @@ export class EmailService {
         <head>
           <meta charset="utf-8">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: ${this.brandColors.dark}; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #10b981; color: white; padding: 20px; text-align: center; }
-            .content { padding: 20px; background-color: #f9fafb; }
+            .header { background-color: ${this.brandColors.primary}; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: ${this.brandColors.light}; }
             .footer { padding: 20px; text-align: center; font-size: 12px; color: #6b7280; }
-            .button { display: inline-block; padding: 12px 24px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            .button { display: inline-block; padding: 12px 24px; background-color: ${this.brandColors.primary}; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
             .small { font-size: 12px; color: #6b7280; word-break: break-all; }
           </style>
         </head>
@@ -158,12 +163,12 @@ export class EmailService {
         <head>
           <meta charset="utf-8">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: ${this.brandColors.dark}; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #10b981; color: white; padding: 20px; text-align: center; }
-            .content { padding: 20px; background-color: #f9fafb; }
+            .header { background-color: ${this.brandColors.primary}; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: ${this.brandColors.light}; }
             .footer { padding: 20px; text-align: center; font-size: 12px; color: #6b7280; }
-            .button { display: inline-block; padding: 12px 24px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            .button { display: inline-block; padding: 12px 24px; background-color: ${this.brandColors.primary}; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
             .details { background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
             .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
             .detail-label { font-weight: bold; }
@@ -227,13 +232,13 @@ export class EmailService {
         <head>
           <meta charset="utf-8">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: ${this.brandColors.dark}; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #10b981; color: white; padding: 20px; text-align: center; }
-            .content { padding: 20px; background-color: #f9fafb; }
+            .header { background-color: ${this.brandColors.primary}; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: ${this.brandColors.light}; }
             .footer { padding: 20px; text-align: center; font-size: 12px; color: #6b7280; }
-            .button { display: inline-block; padding: 12px 24px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
-            .success-icon { font-size: 48px; text-align: center; color: #10b981; }
+            .button { display: inline-block; padding: 12px 24px; background-color: ${this.brandColors.primary}; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            .success-icon { font-size: 48px; text-align: center; color: ${this.brandColors.primary}; }
             .details { background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
             .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
             .detail-label { font-weight: bold; }
@@ -307,12 +312,12 @@ export class EmailService {
         <head>
           <meta charset="utf-8">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: ${this.brandColors.dark}; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #10b981; color: white; padding: 20px; text-align: center; }
-            .content { padding: 20px; background-color: #f9fafb; }
+            .header { background-color: ${this.brandColors.primary}; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: ${this.brandColors.light}; }
             .footer { padding: 20px; text-align: center; font-size: 12px; color: #6b7280; }
-            .button { display: inline-block; padding: 12px 24px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            .button { display: inline-block; padding: 12px 24px; background-color: ${this.brandColors.primary}; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
             .info-box { background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
           </style>
         </head>
@@ -353,12 +358,12 @@ export class EmailService {
         <head>
           <meta charset="utf-8">
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: ${this.brandColors.dark}; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #10b981; color: white; padding: 20px; text-align: center; }
-            .content { padding: 20px; background-color: #f9fafb; }
+            .header { background-color: ${this.brandColors.primary}; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: ${this.brandColors.light}; }
             .footer { padding: 20px; text-align: center; font-size: 12px; color: #6b7280; }
-            .button { display: inline-block; padding: 12px 24px; background-color: #10b981; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
+            .button { display: inline-block; padding: 12px 24px; background-color: ${this.brandColors.primary}; color: white; text-decoration: none; border-radius: 6px; margin: 10px 0; }
             .details { background-color: white; padding: 15px; border-radius: 8px; margin: 15px 0; }
             .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
             .detail-label { font-weight: bold; }
@@ -409,6 +414,6 @@ export class EmailService {
   }
 }
 
-export function createEmailService(apiKey: string, fromEmail: string, fromName?: string, frontendUrl?: string, adminUrl?: string): EmailService {
-  return new EmailService(apiKey, fromEmail, fromName, frontendUrl, adminUrl);
+export function createEmailService(apiKey: string, fromEmail: string, fromName?: string, frontendUrl?: string, adminUrl?: string, brandColors?: Brand): EmailService {
+  return new EmailService(apiKey, fromEmail, fromName, frontendUrl, adminUrl, brandColors);
 }
