@@ -47,6 +47,16 @@ if (process.argv.includes("--update")) {
   console.log(`Baseline ditulis: ${total} pemakaian di ${Object.keys(counts).length} file`);
   process.exit(0);
 }
+// Dua salinan lib/brand.ts (web & admin) harus identik pada bagian BRAND-SHARED
+const sharedBlock = (f) => {
+  const t = fs.readFileSync(f, "utf8");
+  return t.slice(t.indexOf("// BRAND-SHARED-START"), t.indexOf("// BRAND-SHARED-END"));
+};
+const adminBrand = path.join(root, "..", "admin/src/lib/brand.ts");
+if (fs.existsSync(adminBrand) && sharedBlock(adminBrand) !== sharedBlock(path.join(src, "lib/brand.ts"))) {
+  console.error("✗ apps/web/src/lib/brand.ts dan apps/admin/src/lib/brand.ts berbeda (bagian BRAND-SHARED harus identik)");
+  process.exit(1);
+}
 const baseline = fs.existsSync(baselineFile) ? JSON.parse(fs.readFileSync(baselineFile, "utf8")) : {};
 const bad = Object.entries(counts).filter(([f, n]) => n > (baseline[f] ?? 0));
 if (bad.length) {

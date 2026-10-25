@@ -32,7 +32,7 @@
 
     &:hover:not(:disabled) {
       background: $primary-600;
-      box-shadow: 0 4px 12px rgba($primary-500, 0.3);
+      box-shadow: 0 4px 12px rgb(var(--color-primary-500) / 0.3);
     }
 
     &:active:not(:disabled) {
@@ -59,7 +59,7 @@
 
     &:hover:not(:disabled) {
       background: $success-600;
-      box-shadow: 0 4px 12px rgba($success-500, 0.3);
+      box-shadow: 0 4px 12px rgb(var(--color-primary-500) / 0.3);
     }
 
     &:active:not(:disabled) {

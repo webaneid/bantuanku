@@ -26,7 +26,7 @@
     overflow: hidden;
     background: $dark;
     border-radius: $radius-2xl;
-    box-shadow: 0 12px 32px rgba($dark, 0.14);
+    box-shadow: 0 12px 32px rgb(var(--color-dark) / 0.14);
 
     @include tablet-down {
       height: clamp(480px, 62vh, 600px);
@@ -75,8 +75,8 @@
     inset: 0;
     background: linear-gradient(
       to right,
-      rgba($dark, 0.8),
-      rgba($dark, 0.4)
+      rgb(var(--color-dark) / 0.8),
+      rgb(var(--color-dark) / 0.4)
     );
     z-index: 1;
 
@@ -84,8 +84,8 @@
       background: linear-gradient(
         to bottom,
         transparent 20%,
-        rgba($dark, 0.6) 60%,
-        rgba($dark, 0.95) 100%
+        rgb(var(--color-dark) / 0.6) 60%,
+        rgb(var(--color-dark) / 0.95) 100%
       );
     }
   }
@@ -197,7 +197,7 @@
     display: inline-flex;
     align-items: center;
     gap: $spacing-2;
-    box-shadow: 0 8px 24px rgba($primary-500, 0.4);
+    box-shadow: 0 8px 24px rgb(var(--color-primary-500) / 0.4);
     margin-top: $spacing-2; // Add spacing from description
 
     svg {

@@ -37,7 +37,7 @@
     flex-shrink: 0;
 
     &:hover:not(&--disabled) {
-      background: rgba($primary-500, 0.1);
+      background: rgb(var(--color-primary-500) / 0.1);
       color: $primary-600;
     }
 
@@ -159,7 +159,7 @@
 
     &:focus-within {
       border-color: $primary-500;
-      box-shadow: 0 0 0 3px rgba($primary-500, 0.1);
+      box-shadow: 0 0 0 3px rgb(var(--color-primary-500) / 0.1);
     }
   }
 
@@ -174,7 +174,7 @@
 
       &:hover:not(&--disabled) {
         border-color: $primary-500;
-        background: rgba($primary-500, 0.05);
+        background: rgb(var(--color-primary-500) / 0.05);
       }
     }
 
@@ -200,7 +200,7 @@
     &:focus-within {
       background: white;
       border-color: $primary-500;
-      box-shadow: 0 0 0 3px rgba($primary-500, 0.1);
+      box-shadow: 0 0 0 3px rgb(var(--color-primary-500) / 0.1);
     }
   }
 

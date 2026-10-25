@@ -84,6 +84,10 @@ Halaman admin settings menyimpan konfigurasi melalui `/admin/settings/batch`. Be
 
 Konsekuensinya, kontrak detail setiap setting berada di UI dan service pemakai, bukan dipaksa oleh schema database.
 
+## Warna Brand
+
+Kategori `branding`, key `brand_color_primary|secondary|light|dark` (hex `#rrggbb`, `isPublic = true`). Validasi server di `routes/admin/settings.ts` (`brandSettingError`): hanya `super_admin`, hanya hex; dipakai di `PUT /batch`, `PATCH /:key`, dan `POST /`. UI: `/dashboard/settings/branding`. Konsumsi di web dijelaskan di `arsitektur-color.md`.
+
 ## Catatan Kritis
 
 1. `settings.value` adalah string. Jangan dokumentasikan seolah value tersimpan sebagai native JSON/boolean/number di DB.

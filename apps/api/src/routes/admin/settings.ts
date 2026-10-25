@@ -18,6 +18,18 @@ function isDeveloperOnlySetting(key: string, category?: string | null) {
   return DEVELOPER_ONLY_KEY_PREFIXES.some((prefix) => key.startsWith(prefix));
 }
 
+// Warna brand (ADR-0015): hanya hex #rrggbb (disisipkan ke CSS di web, jadi tidak boleh berisi apa pun selain itu) dan hanya super_admin
+const BRAND_COLOR_KEY = /^brand_color_(primary|secondary|light|dark)$/;
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+/** Pesan error bila `key` adalah warna brand dan nilai/peran tidak sah; null bila boleh. */
+function brandSettingError(key: string, value: string, roles: string[] | undefined): string | null {
+  if (!BRAND_COLOR_KEY.test(key)) return null;
+  if (!roles?.includes("super_admin")) return "Hanya super admin yang dapat mengubah warna brand";
+  if (!HEX_COLOR.test(value)) return "Warna brand harus berformat hex #rrggbb";
+  return null;
+}
+
 const developerBankAccountSchema = z.object({
   id: z.string().optional(),
   bankName: z.string().min(1),
@@ -328,6 +340,9 @@ settingsAdmin.patch("/:key", requireRole("super_admin", "admin_finance"), zValid
     return error(c, "Forbidden", 403);
   }
 
+  const brandError = brandSettingError(setting.key, value, user?.roles);
+  if (brandError) return error(c, brandError, 400);
+
   await db
     .update(settings)
     .set({
@@ -358,6 +373,9 @@ settingsAdmin.post("/", requireRole("super_admin", "admin_finance"), zValidator(
   if (!user?.isDeveloper && isDeveloperOnlySetting(body.key, body.category)) {
     return error(c, "Forbidden", 403);
   }
+
+  const brandError = brandSettingError(body.key, body.value, user?.roles);
+  if (brandError) return error(c, brandError, 400);
 
   const existing = await db.query.settings.findFirst({
     where: eq(settings.key, body.key),
@@ -422,6 +440,11 @@ settingsAdmin.put("/batch", requireRole("super_admin", "admin_finance"), zValida
     if (hasDeveloperOnlyPayload) {
       return error(c, "Forbidden", 403);
     }
+  }
+
+  for (const settingData of body) {
+    const brandError = brandSettingError(settingData.key, settingData.value, user?.roles);
+    if (brandError) return error(c, brandError, 400);
   }
 
   // Process each setting - update if exists, create if not

@@ -89,12 +89,12 @@
 
     &:hover {
       color: $primary-600;
-      background: rgba($primary-500, 0.05);
+      background: rgb(var(--color-primary-500) / 0.05);
     }
 
     &--active {
       color: $primary-600;
-      background: rgba($primary-500, 0.1);
+      background: rgb(var(--color-primary-500) / 0.1);
     }
   }
 
@@ -342,12 +342,12 @@
 
     &:hover {
       color: $primary-600;
-      background: rgba($primary-500, 0.05);
+      background: rgb(var(--color-primary-500) / 0.05);
     }
 
     &--active {
       color: $primary-600;
-      background: rgba($primary-500, 0.1);
+      background: rgb(var(--color-primary-500) / 0.1);
       border-right: 3px solid $primary-600;
     }
   }

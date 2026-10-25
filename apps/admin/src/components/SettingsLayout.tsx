@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { CogIcon, CreditCardIcon, UsersIcon, ScaleIcon, PaintBrushIcon, ChatBubbleLeftRightIcon, MagnifyingGlassIcon, LinkIcon } from "@heroicons/react/24/outline";
+import { CogIcon, CreditCardIcon, UsersIcon, ScaleIcon, PaintBrushIcon, ChatBubbleLeftRightIcon, MagnifyingGlassIcon, LinkIcon, SwatchIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/lib/auth";
 
 const allMenuItems = [
@@ -33,6 +33,12 @@ const allMenuItems = [
     label: "Front-end",
     icon: PaintBrushIcon,
     href: "/dashboard/settings/frontend",
+    roles: ["super_admin"],
+  },
+  {
+    label: "Warna Brand",
+    icon: SwatchIcon,
+    href: "/dashboard/settings/branding",
     roles: ["super_admin"],
   },
   {

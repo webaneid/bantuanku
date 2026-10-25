@@ -1,28 +1,34 @@
 import { ImageResponse } from 'next/og';
 
+import { resolveBrand, scaleFor } from '@/lib/brand';
+
 export const runtime = 'edge';
 
 // Nama lembaga & tagline dari settings (bukan hardcode tenant). Gagal ambil → kosong, bukan nama bawaan.
-async function fetchBrand(): Promise<{ name: string; tagline: string }> {
+async function fetchBrand(): Promise<{ name: string; tagline: string; settings: Record<string, any> }> {
   try {
     const base = (process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1').replace(/\/$/, '');
     const res = await fetch(`${base.endsWith('/v1') ? base : `${base}/v1`}/settings`, {
       next: { revalidate: 300, tags: ['settings'] },
     });
-    if (!res.ok) return { name: '', tagline: '' };
+    if (!res.ok) return { name: '', tagline: '', settings: {} };
     const settings = (await res.json()).data || {};
     return {
       name: settings.organization_name || settings.site_name || '',
       tagline: settings.site_tagline || '',
+      settings,
     };
   } catch {
-    return { name: '', tagline: '' };
+    return { name: '', tagline: '', settings: {} };
   }
 }
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const brand = await fetchBrand();
+  const colors = resolveBrand(brand.settings);
+  const primary = scaleFor('primary', colors);
+  const secondary = scaleFor('secondary', colors);
   const title = searchParams.get('title') || '';
   const subtitle = searchParams.get('subtitle') || brand.tagline;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
@@ -38,7 +44,7 @@ export async function GET(request: Request) {
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'flex-start',
-          background: 'linear-gradient(135deg, #035a52 0%, #024a44 60%, #013d38 100%)',
+          background: `linear-gradient(135deg, ${primary[500]} 0%, ${primary[600]} 60%, ${primary[700]} 100%)`,
           padding: '80px',
           fontFamily: 'sans-serif',
         }}
@@ -81,7 +87,7 @@ export async function GET(request: Request) {
               marginBottom: '28px',
             }}
           >
-            <span style={{ color: '#d2aa55', fontSize: '14px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
+            <span style={{ color: secondary[500], fontSize: '14px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
               {brand.name}
             </span>
           </div>

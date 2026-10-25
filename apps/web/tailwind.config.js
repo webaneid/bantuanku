@@ -1,16 +1,11 @@
 /** @type {import('tailwindcss').Config} */
-const primary = {
-  50: '#e6f4f3',
-  100: '#b3e0dc',
-  200: '#80ccc5',
-  300: '#4db8ae',
-  400: '#1aa497',
-  500: '#035a52',
-  600: '#024741',
-  700: '#023831',
-  800: '#012920',
-  900: '#011a17',
-};
+// Warna brand dibaca dari CSS variable `--color-*` ("r g b") yang disuntik root layout dari settings (src/lib/brand.ts, ADR-0015).
+// Nilai bawaan (tenant pertama) ada di src/lib/brand.ts; di sini hanya pemetaan nama -> variable.
+const SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+const brandVar = (name) => `rgb(var(--color-${name}) / <alpha-value>)`;
+const brandScale = (name) => Object.fromEntries(SHADES.map((s) => [s, brandVar(`${name}-${s}`)]));
+const primary = brandScale('primary');
+const secondary = brandScale('secondary');
 
 module.exports = {
   content: [
@@ -27,33 +22,11 @@ module.exports = {
         success: primary,
         // === Token brand (ADR-0015): 4 warna yang ditentukan klien — primary, secondary, light, dark ===
         // Nilai di bawah = brand tenant saat ini; nantinya dibaca dari settings (CSS variable)
-        light: '#f9fafb', // terang: latar halaman/permukaan
-        dark: '#111827', // gelap: teks utama/permukaan gelap
-        secondary: {
-          50: '#fdf8ed',
-          100: '#f7eacc',
-          200: '#f1dcab',
-          300: '#ebce8a',
-          400: '#e5c069',
-          500: '#d2aa55',
-          600: '#b8964b',
-          700: '#9e7f3f',
-          800: '#846833',
-          900: '#6a5127',
-        },
+        light: brandVar('light'), // terang: latar halaman/permukaan
+        dark: brandVar('dark'), // gelap: teks utama/permukaan gelap
+        secondary,
         // Alias lama `accent` = secondary (dipertahankan untuk kode yang sudah ada)
-        accent: {
-          50: '#fdf8ed',
-          100: '#f7eacc',
-          200: '#f1dcab',
-          300: '#ebce8a',
-          400: '#e5c069',
-          500: '#d2aa55',
-          600: '#b8964b',
-          700: '#9e7f3f',
-          800: '#846833',
-          900: '#6a5127',
-        },
+        accent: secondary,
         // === Token semantik (ADR-0015): TIDAK mengikuti brand ===
         // Success = primary (alias), diisi dari skala primary di bawah lewat tailwind.config
         // Warning/Danger/Info = palet bawaan Tailwind (amber/red/blue) agar maknanya sama di semua tema

@@ -156,7 +156,7 @@
     .share-buttons__button--copied {
       border-color: $success-500;
       color: $success-600;
-      background: rgba($success-500, 0.1);
+      background: rgb(var(--color-primary-500) / 0.1);
     }
   }
 

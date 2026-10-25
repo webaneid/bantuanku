@@ -4,6 +4,7 @@ import '@/styles/globals.scss';
 import { Providers } from './providers';
 import { generateSiteMetadata, fetchSeoSettings, generateOrganizationJsonLd, JsonLdScript } from '@/lib/seo';
 import { pickShellSettings } from '@/lib/settings-shell';
+import { brandCss, resolveBrand } from '@/lib/brand';
 import { cookies } from 'next/headers';
 import { normalizeLocale, translate } from '@/lib/i18n';
 import { pickMessages } from '@/lib/i18n/server';
@@ -27,12 +28,15 @@ export default async function RootLayout({
   const locale = normalizeLocale(cookies().get('locale')?.value);
   const settings = await fetchSeoSettings();
   const organizationSchema = generateOrganizationJsonLd(settings);
+  // Warna brand dari settings (ADR-0015). Hanya angka hasil validasi hex yang masuk ke CSS (resolveBrand menolak nilai lain).
+  const brandStyle = brandCss(resolveBrand(settings));
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const skipToContentText = translate(locale, 'common.skipToContent');
 
   return (
     <html lang={locale} className={inter.variable}>
       <head>
+        <style id="brand-colors" dangerouslySetInnerHTML={{ __html: brandStyle }} />
         <JsonLdScript data={organizationSchema} />
         {/* AI Reference - structured data for AI crawlers */}
         <link rel="ai-reference" type="application/json" href={`${appUrl}/ai-reference`} />

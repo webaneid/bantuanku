@@ -55,7 +55,7 @@
     border-color: $success-500;
 
     &:focus {
-      box-shadow: 0 0 0 3px rgba($success-500, 0.1);
+      box-shadow: 0 0 0 3px rgb(var(--color-primary-500) / 0.1);
       border-color: $success-500;
     }
   }

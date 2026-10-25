@@ -67,7 +67,7 @@
     &.search-box--focused {
       .search-box__input {
         border-color: $primary-500;
-        box-shadow: 0 0 0 3px rgba($primary-500, 0.1);
+        box-shadow: 0 0 0 3px rgb(var(--color-primary-500) / 0.1);
       }
     }
   }
@@ -86,7 +86,7 @@
       .search-box__input {
         background: white;
         border-color: $primary-500;
-        box-shadow: 0 0 0 3px rgba($primary-500, 0.1);
+        box-shadow: 0 0 0 3px rgb(var(--color-primary-500) / 0.1);
       }
     }
   }

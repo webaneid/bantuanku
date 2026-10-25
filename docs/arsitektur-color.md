@@ -105,6 +105,26 @@ Kode web hanya boleh memakai token berikut. Palet bawaan Tailwind (`amber`, `eme
 - Hex di SCSS: `#e5e7eb` (setara `gray-200`, 292×) masih tersebar; ganti `$gray-200`/`theme('colors.gray.200')` bertahap. Warna merek sosial (WhatsApp `#25D366`, Facebook `#1877F2`, dst.) valid.
 - Admin (`apps/admin`) belum diaudit; kemungkinan punya pola serupa.
 
+## Setting Warna Brand (ADR-0015, 2026-10-26)
+
+Empat warna brand diatur di admin: **Settings → Warna Brand** (`/dashboard/settings/branding`, hanya `super_admin`).
+
+| Key (kategori `branding`, `isPublic`) | Nilai | Bawaan (tenant pertama) |
+|---|---|---|
+| `brand_color_primary` | hex `#rrggbb` | `#035a52` |
+| `brand_color_secondary` | hex | `#d2aa55` |
+| `brand_color_light` | hex | `#f9fafb` |
+| `brand_color_dark` | hex | `#111827` |
+
+Alur: admin menyimpan lewat `PUT /admin/settings/batch` → API memvalidasi (`brandSettingError` di `routes/admin/settings.ts`: hanya `super_admin`, hanya hex `#rrggbb`, berlaku di `PUT /batch`, `PATCH /:key`, `POST /`) → web membaca settings publik (Next Data Cache ±5 mnt + invalidasi tag `settings`) → root layout menyuntik `<style id="brand-colors">:root{--color-primary-50:r g b;...}</style>` dari `resolveBrand()` + `brandCss()` (`apps/web/src/lib/brand.ts`). Tailwind membaca `rgb(var(--color-*) / <alpha-value>)`; SCSS memakai `$primary-500 = rgb(var(--color-primary-500))`.
+
+- **Skala 50–900**: `primary`/`secondary` diturunkan dari satu warna dasar (campur putih untuk 50–400, campur hitam untuk 600–900; 500 = warna dasar). Bila warna sama dengan bawaan, dipakai skala bawaan persis (tampilan tenant pertama tidak berubah). `light`/`dark` satu nilai. `success` = skala primary.
+- **Keamanan**: nilai yang masuk CSS hanya angka hasil `resolveBrand` (menolak selain hex valid → bawaan), jadi tidak ada injeksi CSS walau DB diubah langsung; API juga menolak nilai bukan hex.
+- **Dua salinan `lib/brand.ts`** (web kanonik, admin salinan untuk pratinjau) harus identik pada bagian `BRAND-SHARED`; `npm run check:colors` membandingkan keduanya.
+- **SCSS**: jangan `rgba($primary-500, x)` (Sass tidak bisa mengolah `var()`); tulis `rgb(var(--color-primary-500) / x)`.
+- **Gambar OG** (`app/og/route.tsx`) memakai skala brand dari settings. 
+- **Gap**: admin app (`apps/admin`) belum memakai token brand; email transaksional (`apps/api/src/services/email.ts`) masih berwarna tetap; kontras otomatis hanya peringatan di halaman admin (tidak memblokir simpan).
+
 ## Shade Scale Aktual
 
 ### Primary
