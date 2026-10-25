@@ -89,7 +89,7 @@ export default function ZakatProfesiCalculatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-light py-8">
       <div className="container mx-auto px-4 max-w-5xl">
         {/* Header */}
         <div className="mb-8">
@@ -104,7 +104,7 @@ export default function ZakatProfesiCalculatorPage() {
           <div className="flex items-start gap-4">
             <div className="text-5xl">💼</div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Kalkulator Zakat Profesi</h1>
+              <h1 className="text-3xl font-bold text-dark">Kalkulator Zakat Profesi</h1>
               <p className="text-gray-600 mt-2">
                 Hitung zakat dari penghasilan bulanan (gaji, honorarium, atau pendapatan profesi)
               </p>
@@ -209,7 +209,7 @@ export default function ZakatProfesiCalculatorPage() {
             </div>
 
             {/* Info */}
-            <Card className="bg-blue-50 border-blue-200">
+            <Card className="bg-info-50 border-info-200">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Briefcase className="w-4 h-4" />
@@ -268,7 +268,7 @@ export default function ZakatProfesiCalculatorPage() {
 
             {/* Result */}
             {result && (
-              <Card className={nisabStatus ? "bg-success-50 border-success-200" : "bg-gray-50"}>
+              <Card className={nisabStatus ? "bg-success-50 border-success-200" : "bg-light"}>
                 <CardHeader>
                   <CardTitle className="text-base">Hasil Perhitungan</CardTitle>
                 </CardHeader>
@@ -277,19 +277,19 @@ export default function ZakatProfesiCalculatorPage() {
                     <div className="space-y-4">
                       <div>
                         <p className="text-sm text-gray-600">Total Pendapatan:</p>
-                        <p className="text-lg font-semibold text-gray-900">
+                        <p className="text-lg font-semibold text-dark">
                           {formatCurrency(result.income)}
                         </p>
 
                         {formData.paymentMethod === "nett" && (
                           <>
                             <p className="text-sm text-gray-600 mt-2">Pengeluaran:</p>
-                            <p className="text-lg font-semibold text-gray-900">
+                            <p className="text-lg font-semibold text-dark">
                               {formatCurrency(result.expenses)}
                             </p>
 
                             <p className="text-sm text-gray-600 mt-2">Penghasilan Bersih:</p>
-                            <p className="text-lg font-semibold text-gray-900">
+                            <p className="text-lg font-semibold text-dark">
                               {formatCurrency(result.zakatableIncome)}
                             </p>
                           </>

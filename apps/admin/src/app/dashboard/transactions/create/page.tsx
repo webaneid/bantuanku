@@ -445,7 +445,7 @@ export default function CreateTransactionPage() {
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center text-gray-600 hover:text-gray-900"
+          className="flex items-center text-gray-600 hover:text-dark"
         >
           <ArrowLeftIcon className="h-5 w-5 mr-2" />
           Kembali
@@ -641,7 +641,7 @@ export default function CreateTransactionPage() {
                   )}
                 </div>
 
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div className="mt-4 p-4 bg-light rounded-lg">
                   <div className="flex justify-between text-sm mb-2">
                     <span>Subtotal:</span>
                     <span>Rp {subtotal.toLocaleString()}</span>
@@ -679,7 +679,7 @@ export default function CreateTransactionPage() {
                       <button
                         type="button"
                         onClick={() => setIsDonorModalOpen(true)}
-                        className="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        className="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-light"
                       >
                         <PlusIcon className="h-5 w-5 mr-1" />
                         Tambah Baru
@@ -797,14 +797,14 @@ export default function CreateTransactionPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-light"
               disabled={createMutation.isPending}
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              className="px-6 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700 disabled:opacity-50"
               disabled={createMutation.isPending || !formData.product_id}
             >
               {createMutation.isPending ? "Menyimpan..." : "Buat Transaksi"}

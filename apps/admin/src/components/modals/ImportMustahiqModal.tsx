@@ -172,9 +172,9 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
   );
 
   const statusIcon = (status: RowStatus) => {
-    if (status === "valid") return <CheckCircleIcon className="w-4 h-4 text-green-600" />;
-    if (status === "error") return <XCircleIcon className="w-4 h-4 text-red-600" />;
-    return <ExclamationTriangleIcon className="w-4 h-4 text-yellow-600" />;
+    if (status === "valid") return <CheckCircleIcon className="w-4 h-4 text-success-600" />;
+    if (status === "error") return <XCircleIcon className="w-4 h-4 text-danger-600" />;
+    return <ExclamationTriangleIcon className="w-4 h-4 text-warning-600" />;
   };
 
   const statusLabel = (row: RowResult) => {
@@ -207,7 +207,7 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
                 {i > 0 && <div className="w-8 h-px bg-gray-200" />}
                 <span
                   className={`flex items-center gap-1 font-medium ${
-                    active ? "text-primary-600" : done ? "text-green-600" : "text-gray-400"
+                    active ? "text-primary-600" : done ? "text-success-600" : "text-gray-400"
                   }`}
                 >
                   <span
@@ -215,7 +215,7 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
                       active
                         ? "bg-primary-600 text-white"
                         : done
-                        ? "bg-green-600 text-white"
+                        ? "bg-success-600 text-white"
                         : "bg-gray-200 text-gray-500"
                     }`}
                   >
@@ -286,7 +286,7 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
                   isDragging
                     ? "border-primary-400 bg-primary-50"
                     : file
-                    ? "border-green-400 bg-green-50"
+                    ? "border-success-400 bg-success-50"
                     : "border-gray-300 hover:border-gray-400"
                 }`}
                 onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -302,12 +302,12 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
                   onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
                 />
                 <ArrowUpTrayIcon
-                  className={`w-10 h-10 mx-auto mb-3 ${file ? "text-green-500" : "text-gray-400"}`}
+                  className={`w-10 h-10 mx-auto mb-3 ${file ? "text-success-500" : "text-gray-400"}`}
                 />
                 {file ? (
                   <div>
-                    <p className="font-medium text-green-700">{file.name}</p>
-                    <p className="text-sm text-green-600 mt-1">
+                    <p className="font-medium text-success-700">{file.name}</p>
+                    <p className="text-sm text-success-600 mt-1">
                       {(file.size / 1024).toFixed(1)} KB — klik untuk ganti file
                     </p>
                   </div>
@@ -320,7 +320,7 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
               </div>
 
               {errorMsg && (
-                <p className="text-sm text-red-600 flex items-center gap-1">
+                <p className="text-sm text-danger-600 flex items-center gap-1">
                   <XCircleIcon className="w-4 h-4" /> {errorMsg}
                 </p>
               )}
@@ -341,22 +341,22 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
                     key={s.label}
                     className={`p-3 rounded-lg text-center border ${
                       s.color === "green"
-                        ? "bg-green-50 border-green-200"
+                        ? "bg-success-50 border-success-200"
                         : s.color === "red"
-                        ? "bg-red-50 border-red-200"
+                        ? "bg-danger-50 border-danger-200"
                         : s.color === "yellow"
-                        ? "bg-yellow-50 border-yellow-200"
-                        : "bg-gray-50 border-gray-200"
+                        ? "bg-warning-50 border-warning-200"
+                        : "bg-light border-gray-200"
                     }`}
                   >
                     <div
                       className={`text-2xl font-bold ${
                         s.color === "green"
-                          ? "text-green-700"
+                          ? "text-success-700"
                           : s.color === "red"
-                          ? "text-red-700"
+                          ? "text-danger-700"
                           : s.color === "yellow"
-                          ? "text-yellow-700"
+                          ? "text-warning-700"
                           : "text-gray-700"
                       }`}
                     >
@@ -368,7 +368,7 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
               </div>
 
               {previewData.duplicateRows > 0 && (
-                <div className="text-sm p-3 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800">
+                <div className="text-sm p-3 rounded-lg bg-warning-50 border border-warning-200 text-warning-800">
                   {previewData.duplicateRows} mustahiq duplikat (berdasarkan No. Identitas) akan{" "}
                   <strong>{mode === "skip" ? "dilewati" : "diperbarui"}</strong>.
                 </div>
@@ -403,7 +403,7 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
 
               <div className="overflow-auto max-h-72 border border-gray-200 rounded-lg">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 sticky top-0">
+                  <thead className="bg-light sticky top-0">
                     <tr>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Baris</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Status</th>
@@ -417,13 +417,13 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
                       <tr
                         key={row.rowNumber}
                         className={`
-                          ${row.status === "error" ? "bg-red-50" : ""}
-                          ${row.status === "duplicate" ? "bg-yellow-50" : ""}
+                          ${row.status === "error" ? "bg-danger-50" : ""}
+                          ${row.status === "duplicate" ? "bg-warning-50" : ""}
                         `}
                       >
                         <td className="px-3 py-2 text-gray-500">{row.rowNumber}</td>
                         <td className="px-3 py-2">{statusIcon(row.status)}</td>
-                        <td className="px-3 py-2 font-medium text-gray-900">{row.data.name || "-"}</td>
+                        <td className="px-3 py-2 font-medium text-dark">{row.data.name || "-"}</td>
                         <td className="px-3 py-2 text-gray-600">
                           {row.data.asnafCategory ? ASNAF_LABELS[row.data.asnafCategory] ?? row.data.asnafCategory : "-"}
                         </td>
@@ -435,7 +435,7 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
               </div>
 
               {errorMsg && (
-                <p className="text-sm text-red-600 flex items-center gap-1">
+                <p className="text-sm text-danger-600 flex items-center gap-1">
                   <XCircleIcon className="w-4 h-4" /> {errorMsg}
                 </p>
               )}
@@ -445,10 +445,10 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
           {/* Step 3: Result */}
           {step === "result" && commitResult && (
             <div className="text-center space-y-4 py-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <CheckCircleIcon className="w-10 h-10 text-green-600" />
+              <div className="w-16 h-16 bg-success-100 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircleIcon className="w-10 h-10 text-success-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900">Import Selesai</h3>
+              <h3 className="text-lg font-semibold text-dark">Import Selesai</h3>
               <div className="grid grid-cols-4 gap-3 max-w-sm mx-auto">
                 {[
                   { label: "Ditambahkan", value: commitResult.imported, color: "green" },
@@ -460,22 +460,22 @@ export default function ImportMustahiqModal({ isOpen, onClose, onSuccess }: Prop
                     key={s.label}
                     className={`p-3 rounded-lg text-center border ${
                       s.color === "green"
-                        ? "bg-green-50 border-green-200"
+                        ? "bg-success-50 border-success-200"
                         : s.color === "blue"
-                        ? "bg-blue-50 border-blue-200"
+                        ? "bg-info-50 border-info-200"
                         : s.color === "red"
-                        ? "bg-red-50 border-red-200"
-                        : "bg-gray-50 border-gray-200"
+                        ? "bg-danger-50 border-danger-200"
+                        : "bg-light border-gray-200"
                     }`}
                   >
                     <div
                       className={`text-2xl font-bold ${
                         s.color === "green"
-                          ? "text-green-700"
+                          ? "text-success-700"
                           : s.color === "blue"
-                          ? "text-blue-700"
+                          ? "text-info-700"
                           : s.color === "red"
-                          ? "text-red-700"
+                          ? "text-danger-700"
                           : "text-gray-700"
                       }`}
                     >

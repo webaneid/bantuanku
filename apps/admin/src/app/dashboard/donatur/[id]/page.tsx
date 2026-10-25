@@ -188,7 +188,7 @@ export default function ViewDonaturPage() {
             Kembali
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Detail Donatur</h1>
+            <h1 className="text-2xl font-bold text-dark">Detail Donatur</h1>
             <p className="text-sm text-gray-500 mt-1">ID: {donaturData.id}</p>
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function ViewDonaturPage() {
                   {donaturData.name.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <h2 className="text-xl font-bold text-gray-900">{donaturData.name}</h2>
+              <h2 className="text-xl font-bold text-dark">{donaturData.name}</h2>
               <div className="mt-2">
                 {donaturData.isActive ? (
                   <span className="badge badge-success">Aktif</span>
@@ -226,7 +226,7 @@ export default function ViewDonaturPage() {
               ) : (
                 <div className="text-center">
                   {showActivateForm ? (
-                    <div className="space-y-2 text-left bg-gray-50 rounded-lg p-3">
+                    <div className="space-y-2 text-left bg-light rounded-lg p-3">
                       <div>
                         <label className="text-xs text-gray-500 block mb-1">Email</label>
                         <input
@@ -287,7 +287,7 @@ export default function ViewDonaturPage() {
                   <BriefcaseIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-500">Pekerjaan</p>
-                    <p className="font-medium text-gray-900">{donaturData.jobTitleName}</p>
+                    <p className="font-medium text-dark">{donaturData.jobTitleName}</p>
                     {donaturData.jobCategoryName && (
                       <p className="text-xs text-gray-500">{donaturData.jobCategoryName}</p>
                     )}
@@ -300,7 +300,7 @@ export default function ViewDonaturPage() {
                   <CurrencyDollarIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-500">Penghasilan Bulanan</p>
-                    <p className="font-medium text-gray-900">{donaturData.incomeRangeLabel}</p>
+                    <p className="font-medium text-dark">{donaturData.incomeRangeLabel}</p>
                   </div>
                 </div>
               )}
@@ -310,7 +310,7 @@ export default function ViewDonaturPage() {
                   <IdentificationIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-500">Jenis Kelamin</p>
-                    <p className="font-medium text-gray-900 capitalize">{donaturData.gender}</p>
+                    <p className="font-medium text-dark capitalize">{donaturData.gender}</p>
                   </div>
                 </div>
               )}
@@ -320,7 +320,7 @@ export default function ViewDonaturPage() {
                   <CalendarIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-500">Tempat, Tanggal Lahir</p>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-dark">
                       {[donaturData.birthPlace, donaturData.birthDate ? formatDate(donaturData.birthDate) : null].filter(Boolean).join(", ")}
                       {donaturData.birthDate && (() => {
                         const age = Math.floor((Date.now() - new Date(donaturData.birthDate).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
@@ -336,7 +336,7 @@ export default function ViewDonaturPage() {
                   <IdentificationIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-500">NIK</p>
-                    <p className="font-medium text-gray-900">{donaturData.nik}</p>
+                    <p className="font-medium text-dark">{donaturData.nik}</p>
                   </div>
                 </div>
               )}
@@ -346,7 +346,7 @@ export default function ViewDonaturPage() {
                   <IdentificationIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-500">NPWP</p>
-                    <p className="font-medium text-gray-900">{donaturData.npwp}</p>
+                    <p className="font-medium text-dark">{donaturData.npwp}</p>
                   </div>
                 </div>
               )}
@@ -355,7 +355,7 @@ export default function ViewDonaturPage() {
                 <EnvelopeIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-500">Email</p>
-                  <p className="font-medium text-gray-900 break-words">{donaturData.email}</p>
+                  <p className="font-medium text-dark break-words">{donaturData.email}</p>
                 </div>
               </div>
 
@@ -364,7 +364,7 @@ export default function ViewDonaturPage() {
                   <PhoneIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Nomor HP</p>
-                    <p className="font-medium text-gray-900">{donaturData.phone}</p>
+                    <p className="font-medium text-dark">{donaturData.phone}</p>
                   </div>
                 </div>
               )}
@@ -374,7 +374,7 @@ export default function ViewDonaturPage() {
                   <PhoneIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">WhatsApp</p>
-                    <p className="font-medium text-gray-900">{donaturData.whatsappNumber}</p>
+                    <p className="font-medium text-dark">{donaturData.whatsappNumber}</p>
                   </div>
                 </div>
               )}
@@ -401,7 +401,7 @@ export default function ViewDonaturPage() {
                   <MapPinIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Alamat</p>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-dark">
                       {[
                         donaturData.detailAddress,
                         donaturData.villageName,
@@ -419,7 +419,7 @@ export default function ViewDonaturPage() {
                 <CalendarIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm text-gray-500">Bergabung</p>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-dark">
                     {formatDate(donaturData.createdAt)}
                   </p>
                 </div>
@@ -435,7 +435,7 @@ export default function ViewDonaturPage() {
               <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-2">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span>Notif WA</span>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${donaturData.waOptOut ? "bg-gray-100 text-gray-500" : "bg-green-100 text-green-700"}`}>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${donaturData.waOptOut ? "bg-gray-100 text-gray-500" : "bg-success-100 text-success-700"}`}>
                     {donaturData.waOptOut ? "Nonaktif" : "Aktif"}
                   </span>
                 </div>
@@ -483,7 +483,7 @@ export default function ViewDonaturPage() {
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Riwayat Transaksi</h2>
+              <h2 className="text-xl font-bold text-dark">Riwayat Transaksi</h2>
               <p className="text-sm text-gray-500 mt-1">
                 Semua transaksi yang pernah dilakukan
               </p>
@@ -495,7 +495,7 @@ export default function ViewDonaturPage() {
                   {transactionsData.map((transaction: any) => (
                     <div
                       key={transaction.id}
-                      className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-primary-300 transition-colors"
+                      className="bg-light rounded-lg p-4 border border-gray-200 hover:border-primary-300 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
@@ -508,21 +508,21 @@ export default function ViewDonaturPage() {
                             </span>
                           </div>
 
-                          <h3 className="font-semibold text-gray-900 truncate mb-2">
+                          <h3 className="font-semibold text-dark truncate mb-2">
                             {transaction.productName}
                           </h3>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                             <div>
                               <span className="text-gray-500">Tanggal:</span>
-                              <span className="ml-2 text-gray-900">
+                              <span className="ml-2 text-dark">
                                 {formatDate(transaction.createdAt)}
                               </span>
                             </div>
                             {transaction.quantity > 1 && (
                               <div>
                                 <span className="text-gray-500">Qty:</span>
-                                <span className="ml-2 text-gray-900">
+                                <span className="ml-2 text-dark">
                                   {transaction.quantity}
                                 </span>
                               </div>

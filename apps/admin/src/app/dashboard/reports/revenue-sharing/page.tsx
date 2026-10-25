@@ -131,7 +131,7 @@ export default function RevenueSharingReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Laporan Bagi Hasil Amil</h1>
+          <h1 className="text-2xl font-bold text-dark">Laporan Bagi Hasil Amil</h1>
           <p className="text-gray-600 mt-1">Snapshot pembagian amil, platform provider, influencer, dan mitra.</p>
         </div>
         <ExportButton
@@ -144,7 +144,7 @@ export default function RevenueSharingReportPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="card">
             <p className="text-sm font-medium text-gray-600">Total Basis Perhitungan</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900 mono">
+            <p className="mt-2 text-2xl font-bold text-dark mono">
               Rp {formatRupiah(summary?.totalDonationAmount || 0)}
             </p>
           </div>
@@ -171,7 +171,7 @@ export default function RevenueSharingReportPage() {
         {/* Desktop Table */}
         <div className="table-container">
           <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Detail Bagi Hasil</h2>
+            <h2 className="text-lg font-semibold text-dark">Detail Bagi Hasil</h2>
             <span className="text-sm text-gray-600">Total: {totalRows} record</span>
           </div>
 
@@ -196,21 +196,21 @@ export default function RevenueSharingReportPage() {
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50">
+                  <tr key={row.id} className="hover:bg-light">
                     <td className="text-sm text-gray-700">
                       {formatDateWIB(row.calculatedAt, "dd MMM yyyy")}
                     </td>
                     <td>
-                      <div className="text-sm font-medium text-gray-900">{row.transactionNumber || "-"}</div>
+                      <div className="text-sm font-medium text-dark">{row.transactionNumber || "-"}</div>
                       <div className="text-xs text-gray-500">{formatPercent(row.amilPercentage)}</div>
                     </td>
                     <td>
-                      <div className="text-sm text-gray-900">{row.productName || "-"}</div>
+                      <div className="text-sm text-dark">{row.productName || "-"}</div>
                       <div className="text-xs text-gray-500">{productTypeLabels[row.productType || ""] || row.productType || "-"}</div>
                     </td>
-                    <td className="text-right text-sm mono text-gray-900">Rp {formatRupiah(row.donationAmount || 0)}</td>
+                    <td className="text-right text-sm mono text-dark">Rp {formatRupiah(row.donationAmount || 0)}</td>
                     <td className="text-right text-sm mono text-info-700">Rp {formatRupiah(row.developerAmount || 0)}</td>
-                    <td className="text-right text-sm mono text-amber-700">
+                    <td className="text-right text-sm mono text-warning-700">
                       Rp {formatRupiah(row.fundraiserAmount || 0)}
                       {row.fundraiserCode ? <div className="text-[11px] text-gray-500">{row.fundraiserCode}</div> : null}
                     </td>
@@ -219,7 +219,7 @@ export default function RevenueSharingReportPage() {
                       {row.mitraName ? <div className="text-[11px] text-gray-500">{row.mitraName}</div> : null}
                     </td>
                     <td className="text-right text-sm mono font-semibold text-primary-700">Rp {formatRupiah(row.amilNetAmount || 0)}</td>
-                    <td className="text-right text-sm mono text-gray-900">Rp {formatRupiah(row.programAmount || 0)}</td>
+                    <td className="text-right text-sm mono text-dark">Rp {formatRupiah(row.programAmount || 0)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -277,7 +277,7 @@ export default function RevenueSharingReportPage() {
               </div>
               <div className="table-card-row">
                 <span className="table-card-row-label">Influencer</span>
-                <span className="table-card-row-value mono text-amber-700">Rp {formatRupiah(row.fundraiserAmount || 0)}</span>
+                <span className="table-card-row-value mono text-warning-700">Rp {formatRupiah(row.fundraiserAmount || 0)}</span>
               </div>
               <div className="table-card-row">
                 <span className="table-card-row-label">Mitra</span>

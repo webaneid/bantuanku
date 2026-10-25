@@ -88,7 +88,7 @@ export default function EditPageAdminPage() {
   if (!canManage) {
     return (
       <div className="dashboard-container">
-        <h1 className="text-2xl font-bold text-gray-900">Edit Page</h1>
+        <h1 className="text-2xl font-bold text-dark">Edit Page</h1>
         <p className="text-sm text-gray-600 mt-2">Anda tidak memiliki akses ke halaman ini.</p>
       </div>
     );
@@ -98,7 +98,7 @@ export default function EditPageAdminPage() {
     if (!isLoading && !initialData) {
       return (
         <div className="dashboard-container">
-          <h1 className="text-2xl font-bold text-gray-900">Edit Page</h1>
+          <h1 className="text-2xl font-bold text-dark">Edit Page</h1>
           <p className="text-sm text-gray-600 mt-2">Halaman tidak ditemukan.</p>
         </div>
       );

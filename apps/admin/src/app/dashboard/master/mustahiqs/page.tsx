@@ -176,7 +176,7 @@ export default function MustahiqsPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mustahiq Zakat</h1>
+          <h1 className="text-2xl font-bold text-dark">Mustahiq Zakat</h1>
           <p className="text-gray-600 mt-1">Kelola data penerima zakat (mustahiq)</p>
         </div>
         <div className="flex gap-2">
@@ -252,7 +252,7 @@ export default function MustahiqsPage() {
                 <tr key={mustahiq.id}>
                   <td>
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-dark">
                         {mustahiq.name}
                       </div>
                       {mustahiq.mustahiqId && (
@@ -270,7 +270,7 @@ export default function MustahiqsPage() {
                   <td>
                     <div className="text-sm">
                       {mustahiq.phone && (
-                        <div className="text-gray-900">{mustahiq.phone}</div>
+                        <div className="text-dark">{mustahiq.phone}</div>
                       )}
                       {mustahiq.email && (
                         <div className="text-gray-500">{mustahiq.email}</div>

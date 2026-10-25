@@ -187,7 +187,7 @@ export default function ActivityReportsPage() {
                 paginatedReports.map((report: any) => (
                   <tr key={report.id}>
                     <td>
-                      <div className="font-medium text-gray-900">{report.title}</div>
+                      <div className="font-medium text-dark">{report.title}</div>
                     </td>
                     <td>
                       <div className="text-sm text-gray-600">

@@ -152,7 +152,7 @@ export default function GoogleMapsSettingsPage() {
             <div className="space-y-6">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
                     <div className="mb-6">
-                        <h2 className="text-xl font-bold text-gray-900">Testimoni Google Maps</h2>
+                        <h2 className="text-xl font-bold text-dark">Testimoni Google Maps</h2>
                         <p className="text-sm text-gray-500 mt-1">
                             Atur integrasi ulasan Google Maps untuk ditampilkan pada halaman depan website publik.
                         </p>
@@ -162,7 +162,7 @@ export default function GoogleMapsSettingsPage() {
                         {/* Toggle Status */}
                         <div className="flex items-center justify-between pb-6 border-b border-gray-100">
                             <div>
-                                <p className="text-sm font-medium text-gray-900">Status Fitur</p>
+                                <p className="text-sm font-medium text-dark">Status Fitur</p>
                                 <p className="text-sm text-gray-500 mt-0.5">Aktifkan atau nonaktifkan tampilan testimoni di website</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
@@ -185,7 +185,7 @@ export default function GoogleMapsSettingsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Google Places API Key <span className="text-red-500">*</span>
+                                    Google Places API Key <span className="text-danger-500">*</span>
                                 </label>
                                 <input
                                     type="password"
@@ -200,7 +200,7 @@ export default function GoogleMapsSettingsPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Google Place ID <span className="text-red-500">*</span>
+                                    Google Place ID <span className="text-danger-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -248,7 +248,7 @@ export default function GoogleMapsSettingsPage() {
                             <button
                                 onClick={() => resetCacheMutation.mutate()}
                                 disabled={saveMutation.isPending || resetCacheMutation.isPending}
-                                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-light disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 {resetCacheMutation.isPending ? "Resetting..." : "Reset Cache"}
                             </button>

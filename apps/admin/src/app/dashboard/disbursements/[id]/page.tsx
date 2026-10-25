@@ -23,10 +23,10 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-800",
-  submitted: "bg-blue-100 text-blue-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-  paid: "bg-purple-100 text-purple-800",
+  submitted: "bg-info-100 text-info-800",
+  approved: "bg-success-100 text-success-800",
+  rejected: "bg-danger-100 text-danger-800",
+  paid: "bg-secondary-100 text-secondary-800",
 };
 
 export default function DisbursementDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -270,7 +270,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          className="flex items-center gap-2 text-gray-600 hover:text-dark"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           Kembali
@@ -279,7 +279,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Detail Pencairan</h1>
+          <h1 className="text-2xl font-bold text-dark">Detail Pencairan</h1>
           <p className="text-gray-600 mt-1">{disbursement.disbursementNumber}</p>
         </div>
         <span
@@ -295,7 +295,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
         {/* Main Info */}
         <div className="lg:col-span-2 space-y-6">
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Informasi Pencairan</h2>
+            <h2 className="text-lg font-semibold text-dark mb-4">Informasi Pencairan</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Tipe</p>
@@ -319,7 +319,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
           </div>
 
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Penerima</h2>
+            <h2 className="text-lg font-semibold text-dark mb-4">Penerima</h2>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Nama</p>
@@ -348,7 +348,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
           </div>
 
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Tujuan & Deskripsi</h2>
+            <h2 className="text-lg font-semibold text-dark mb-4">Tujuan & Deskripsi</h2>
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-500">Tujuan</p>
@@ -370,29 +370,29 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
           </div>
 
           {disbursement.status === "paid" && (
-            <div className="card bg-green-50 border border-green-200">
-              <h2 className="text-lg font-semibold text-green-900 mb-4">Detail Pembayaran</h2>
+            <div className="card bg-success-50 border border-success-200">
+              <h2 className="text-lg font-semibold text-success-900 mb-4">Detail Pembayaran</h2>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-green-700 font-medium">Total Transfer</p>
-                  <p className="text-green-900">{formatCurrency(disbursement.transferredAmount || disbursement.amount)}</p>
+                  <p className="text-success-700 font-medium">Total Transfer</p>
+                  <p className="text-success-900">{formatCurrency(disbursement.transferredAmount || disbursement.amount)}</p>
                 </div>
                 <div>
-                  <p className="text-green-700 font-medium">Biaya Tambahan</p>
-                  <p className="text-green-900">{formatCurrency(disbursement.additionalFees || 0)}</p>
+                  <p className="text-success-700 font-medium">Biaya Tambahan</p>
+                  <p className="text-success-900">{formatCurrency(disbursement.additionalFees || 0)}</p>
                 </div>
                 <div>
-                  <p className="text-green-700 font-medium">Tanggal Transfer</p>
-                  <p className="text-green-900">{formatDate(disbursement.transferDate)}</p>
+                  <p className="text-success-700 font-medium">Tanggal Transfer</p>
+                  <p className="text-success-900">{formatDate(disbursement.transferDate)}</p>
                 </div>
                 {disbursement.transferProofUrl && (
                   <div className="col-span-2">
-                    <p className="text-green-700 font-medium mb-2">Bukti Transfer</p>
+                    <p className="text-success-700 font-medium mb-2">Bukti Transfer</p>
                     <img
                       src={disbursement.transferProofUrl}
                       alt="Bukti Transfer"
                       style={{ width: "100%", height: "auto" }}
-                      className="rounded-lg border border-green-200"
+                      className="rounded-lg border border-success-200"
                     />
                   </div>
                 )}
@@ -401,16 +401,16 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
           )}
 
           {disbursement.rejectionReason && (
-            <div className="card bg-red-50 border border-red-200">
-              <h2 className="text-lg font-semibold text-red-900 mb-2">Alasan Penolakan</h2>
-              <p className="text-red-700">{disbursement.rejectionReason}</p>
+            <div className="card bg-danger-50 border border-danger-200">
+              <h2 className="text-lg font-semibold text-danger-900 mb-2">Alasan Penolakan</h2>
+              <p className="text-danger-700">{disbursement.rejectionReason}</p>
             </div>
           )}
 
           {showPaymentForm && disbursement.status === "approved" && (
-            <div className="card bg-blue-50 border border-blue-200">
+            <div className="card bg-info-50 border border-info-200">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Form Pembayaran</h2>
+                <h2 className="text-lg font-semibold text-dark">Form Pembayaran</h2>
                 <span className="text-xs text-gray-500">
                   Isi detail pembayaran untuk menyelesaikan pencairan
                 </span>
@@ -418,7 +418,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
               <form onSubmit={handleSubmitPayment} className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rekening Asal <span className="text-red-500">*</span>
+                    Rekening Asal <span className="text-danger-500">*</span>
                   </label>
                   <AdminPaymentMethodList
                     value={paymentData.destination_bank_id}
@@ -442,7 +442,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
                     Rekening yang digunakan untuk melakukan transfer
                   </p>
                   {(disbursement.disbursementType === "zakat" || disbursement.category?.startsWith("zakat_to_")) && (
-                    <p className="text-sm text-orange-600 mt-1">
+                    <p className="text-sm text-warning-600 mt-1">
                       Pencairan zakat harus menggunakan rekening zakat
                     </p>
                   )}
@@ -465,12 +465,12 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
                   ) : employeeFallbackData?.bankAccounts?.length > 0 ? (
                     <div className="space-y-2">
                       {employeeFallbackData.bankAccounts.map((acc: { id: string; bankName: string; accountNumber: string; accountHolderName: string }) => (
-                        <div key={acc.id} className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-                          <p className="font-medium text-gray-900">{acc.bankName} — {acc.accountNumber}</p>
+                        <div key={acc.id} className="bg-warning-50 border border-warning-200 rounded-lg px-3 py-2">
+                          <p className="font-medium text-dark">{acc.bankName} — {acc.accountNumber}</p>
                           <p className="text-sm text-gray-600">a.n. {acc.accountHolderName}</p>
                         </div>
                       ))}
-                      <p className="text-xs text-yellow-700">
+                      <p className="text-xs text-warning-700">
                         Rekening tidak tersimpan di pengajuan ini. Rekening di atas diambil dari data karyawan saat ini.
                       </p>
                     </div>
@@ -482,7 +482,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
                         className="form-input w-full bg-gray-100 text-gray-400"
                         disabled
                       />
-                      <p className="text-xs text-red-500 mt-1">
+                      <p className="text-xs text-danger-500 mt-1">
                         Rekening penerima tidak ditemukan. Pastikan data rekening karyawan sudah diisi.
                       </p>
                     </>
@@ -492,7 +492,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Total Transfer <span className="text-red-500">*</span>
+                      Total Transfer <span className="text-danger-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -505,7 +505,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tanggal Transfer <span className="text-red-500">*</span>
+                      Tanggal Transfer <span className="text-danger-500">*</span>
                     </label>
                     <input
                       type="date"
@@ -535,7 +535,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bukti Transfer <span className="text-red-500">*</span>
+                    Bukti Transfer <span className="text-danger-500">*</span>
                   </label>
                   {paymentData.transfer_proof_url ? (
                     <div className="border border-gray-300 rounded-lg p-4">
@@ -554,7 +554,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
                         <button
                           type="button"
                           onClick={() => setPaymentData({ ...paymentData, transfer_proof_url: "" })}
-                          className="text-red-600 hover:text-red-700 text-sm font-medium whitespace-nowrap"
+                          className="text-danger-600 hover:text-danger-700 text-sm font-medium whitespace-nowrap"
                         >
                           Hapus
                         </button>
@@ -577,7 +577,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
                   )}
                 </div>
 
-                <div className="flex gap-3 pt-4 border-t border-blue-200">
+                <div className="flex gap-3 pt-4 border-t border-info-200">
                   <button
                     type="button"
                     onClick={() => setShowPaymentForm(false)}
@@ -602,7 +602,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
         <div className="space-y-6">
           {/* Actions */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Aksi</h2>
+            <h2 className="text-lg font-semibold text-dark mb-4">Aksi</h2>
             <div className="space-y-2">
               {disbursement.status === "draft" && (
                 <>
@@ -670,7 +670,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
 
           {/* Timeline */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Timeline</h2>
+            <h2 className="text-lg font-semibold text-dark mb-4">Timeline</h2>
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-gray-500">Dibuat</p>
@@ -746,7 +746,7 @@ export default function DisbursementDetailPage({ params }: { params: Promise<{ i
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
             <h3 className="text-lg font-semibold mb-4">Tolak Pencairan</h3>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Alasan Penolakan <span className="text-red-500">*</span>
+              Alasan Penolakan <span className="text-danger-500">*</span>
             </label>
             <textarea
               value={rejectionReason}

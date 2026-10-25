@@ -123,9 +123,9 @@ export default function ZakatPeriodDetailPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      partial: "bg-blue-100 text-blue-800",
-      paid: "bg-green-100 text-green-800",
+      pending: "bg-warning-100 text-warning-800",
+      partial: "bg-info-100 text-info-800",
+      paid: "bg-success-100 text-success-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
@@ -240,64 +240,64 @@ export default function ZakatPeriodDetailPage() {
 
       {/* Stats Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-info-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Muzaki</p>
-              <p className="text-3xl font-bold text-blue-600">{stats.totalMuzaki}</p>
+              <p className="text-3xl font-bold text-info-600">{stats.totalMuzaki}</p>
               <p className="text-xs text-gray-500 mt-1">
                 {stats.paidMuzaki} lunas, {stats.pendingMuzaki} pending
               </p>
             </div>
-            <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-              <Users className="h-6 w-6 text-blue-600" />
+            <div className="h-12 w-12 bg-info-100 rounded-full flex items-center justify-center">
+              <Users className="h-6 w-6 text-info-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-success-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Terkumpul</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-2xl font-bold text-success-600">
                 {formatCurrencyValue(stats.totalAmount)}
               </p>
             </div>
-            <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-green-600" />
+            <div className="h-12 w-12 bg-success-100 rounded-full flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-success-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-secondary-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Penyaluran</p>
-              <p className="text-2xl font-bold text-purple-600">
+              <p className="text-2xl font-bold text-secondary-600">
                 {formatCurrencyValue(totalDisbursed)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {disbursementCount} penyaluran
               </p>
             </div>
-            <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center text-2xl">
+            <div className="h-12 w-12 bg-secondary-100 rounded-full flex items-center justify-center text-2xl">
               📦
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-orange-500">
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-warning-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Sisa</p>
-              <p className="text-2xl font-bold text-orange-600">
+              <p className="text-2xl font-bold text-warning-600">
                 {formatCurrencyValue(stats.paidAmount - totalDisbursed)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 {((1 - (totalDisbursed / stats.paidAmount)) * 100 || 0).toFixed(1)}% dari total
               </p>
             </div>
-            <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center text-2xl">
+            <div className="h-12 w-12 bg-warning-100 rounded-full flex items-center justify-center text-2xl">
               💰
             </div>
           </div>
@@ -312,7 +312,7 @@ export default function ZakatPeriodDetailPage() {
               onClick={() => setActiveTab("muzaki")}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === "muzaki"
-                  ? "border-blue-500 text-blue-600"
+                  ? "border-info-500 text-info-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -322,7 +322,7 @@ export default function ZakatPeriodDetailPage() {
               onClick={() => setActiveTab("penyaluran")}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === "penyaluran"
-                  ? "border-blue-500 text-blue-600"
+                  ? "border-info-500 text-info-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -332,7 +332,7 @@ export default function ZakatPeriodDetailPage() {
               onClick={() => setActiveTab("kegiatan")}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === "kegiatan"
-                  ? "border-blue-500 text-blue-600"
+                  ? "border-info-500 text-info-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -345,7 +345,7 @@ export default function ZakatPeriodDetailPage() {
         {activeTab === "muzaki" && sortedMuzaki.length > 0 && (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-light">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nama Muzaki</th>
@@ -361,7 +361,7 @@ export default function ZakatPeriodDetailPage() {
                   <tr key={m.transaction_id}>
                     <td className="px-4 py-3 text-sm">{index + 1}</td>
                     <td className="px-4 py-3">
-                      <div className="text-sm font-medium text-gray-900">
+                      <div className="text-sm font-medium text-dark">
                         {m.is_anonymous ? "Hamba Allah (Anonim)" : m.muzaki_name}
                       </div>
                     </td>
@@ -396,7 +396,7 @@ export default function ZakatPeriodDetailPage() {
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-gray-50 font-semibold">
+              <tfoot className="bg-light font-semibold">
                 <tr>
                   <td colSpan={4} className="px-4 py-3 text-sm text-right">Total:</td>
                   <td className="px-4 py-3 text-sm">{formatCurrencyValue(stats.totalAmount)}</td>
@@ -436,10 +436,10 @@ export default function ZakatPeriodDetailPage() {
                     <tr key={d.id}>
                       <td>{index + 1}</td>
                       <td>
-                        <div className="font-medium text-gray-900">{d.disbursementNumber}</div>
+                        <div className="font-medium text-dark">{d.disbursementNumber}</div>
                       </td>
                       <td>
-                        <div className="font-medium text-gray-900">{d.recipientName}</div>
+                        <div className="font-medium text-dark">{d.recipientName}</div>
                         {d.recipientContact && (
                           <div className="text-sm text-gray-500">{d.recipientContact}</div>
                         )}
@@ -459,9 +459,9 @@ export default function ZakatPeriodDetailPage() {
                         <span
                           className={`text-xs px-2 py-1 rounded ${
                             d.status === "paid"
-                              ? "bg-green-100 text-green-800"
+                              ? "bg-success-100 text-success-800"
                               : d.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
+                              ? "bg-warning-100 text-warning-800"
                               : "bg-gray-100 text-gray-800"
                           }`}
                         >
@@ -489,7 +489,7 @@ export default function ZakatPeriodDetailPage() {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-gray-50 font-semibold">
+                <tfoot className="bg-light font-semibold">
                   <tr>
                     <td colSpan={4} className="px-4 py-3 text-sm text-right">
                       Total:
@@ -585,7 +585,7 @@ export default function ZakatPeriodDetailPage() {
         {activeTab === "kegiatan" && activityReports.length > 0 && (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-light">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">No</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Judul</th>
@@ -600,7 +600,7 @@ export default function ZakatPeriodDetailPage() {
                   <tr key={report.id}>
                     <td className="px-4 py-3 text-sm">{index + 1}</td>
                     <td className="px-4 py-3 text-sm">
-                      <div className="font-medium text-gray-900">{report.title}</div>
+                      <div className="font-medium text-dark">{report.title}</div>
                       <div className="text-xs text-gray-500 line-clamp-2">{report.description}</div>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
@@ -612,7 +612,7 @@ export default function ZakatPeriodDetailPage() {
                       <span
                         className={`text-xs px-2 py-1 rounded ${
                           report.status === "published"
-                            ? "bg-green-100 text-green-800"
+                            ? "bg-success-100 text-success-800"
                             : "bg-gray-100 text-gray-800"
                         }`}
                       >
@@ -625,7 +625,7 @@ export default function ZakatPeriodDetailPage() {
                     <td className="px-4 py-3 print:hidden">
                       <button
                         onClick={() => router.push(`/dashboard/activity-reports/${report.id}`)}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-info-600 hover:text-info-800"
                         title="Lihat Detail"
                       >
                         <Eye className="h-4 w-4" />

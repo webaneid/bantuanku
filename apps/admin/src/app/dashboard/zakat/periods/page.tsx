@@ -193,11 +193,11 @@ export default function ZakatPeriodsPage() {
   const showMitraColumn = activeTab === "mitra" && showTabs;
 
   return (
-    <main className="flex-1 overflow-y-auto bg-gray-50">
+    <main className="flex-1 overflow-y-auto bg-light">
       <div className="dashboard-container">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Periode Zakat</h1>
+            <h1 className="text-2xl font-bold text-dark">Periode Zakat</h1>
             <p className="text-gray-600 mt-1">Kelola periode penerimaan dan penyaluran zakat</p>
           </div>
           {canEdit && (
@@ -223,7 +223,7 @@ export default function ZakatPeriodsPage() {
                 onClick={() => handleTabChange("internal")}
                 className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === "internal"
-                    ? "border-blue-500 text-blue-600"
+                    ? "border-info-500 text-info-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
@@ -233,7 +233,7 @@ export default function ZakatPeriodsPage() {
                 onClick={() => handleTabChange("mitra")}
                 className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === "mitra"
-                    ? "border-blue-500 text-blue-600"
+                    ? "border-info-500 text-info-600"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
@@ -292,7 +292,7 @@ export default function ZakatPeriodsPage() {
               {periods.map((period: any) => (
                 <tr key={period.id}>
                   <td>
-                    <div className="font-medium text-gray-900">{period.name}</div>
+                    <div className="font-medium text-dark">{period.name}</div>
                     {period.hijriYear && (
                       <div className="text-sm text-gray-500">{period.hijriYear}</div>
                     )}
@@ -313,7 +313,7 @@ export default function ZakatPeriodsPage() {
                   </td>
                   <td>
                     {period.executionDate ? (
-                      <span className="text-orange-600 font-medium">
+                      <span className="text-warning-600 font-medium">
                         {formatDateWIB(period.executionDate, "dd MMM yyyy")}
                       </span>
                     ) : (
@@ -325,7 +325,7 @@ export default function ZakatPeriodsPage() {
                       period.status === "executed" ? "bg-success-50 text-success-700" :
                       period.status === "active" ? "bg-primary-50 text-primary-700" :
                       period.status === "closed" ? "bg-gray-100 text-gray-700" :
-                      "bg-yellow-50 text-yellow-700"
+                      "bg-warning-50 text-warning-700"
                     }`}>
                       {period.status === "executed" ? "Tersalurkan" :
                        period.status === "active" ? "Aktif" :
@@ -389,7 +389,7 @@ export default function ZakatPeriodsPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Jenis Zakat <span className="text-red-500">*</span>
+                    Jenis Zakat <span className="text-danger-500">*</span>
                   </label>
                   <Autocomplete
                     options={zakatTypes.map((t: any) => ({ value: t.id, label: t.name }))}
@@ -402,7 +402,7 @@ export default function ZakatPeriodsPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Nama Periode <span className="text-red-500">*</span>
+                    Nama Periode <span className="text-danger-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -417,7 +417,7 @@ export default function ZakatPeriodsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Tahun Masehi <span className="text-red-500">*</span>
+                      Tahun Masehi <span className="text-danger-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -442,7 +442,7 @@ export default function ZakatPeriodsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Tanggal Mulai <span className="text-red-500">*</span>
+                      Tanggal Mulai <span className="text-danger-500">*</span>
                     </label>
                     <input
                       type="date"
@@ -454,7 +454,7 @@ export default function ZakatPeriodsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Tanggal Selesai <span className="text-red-500">*</span>
+                      Tanggal Selesai <span className="text-danger-500">*</span>
                     </label>
                     <input
                       type="date"
@@ -517,7 +517,7 @@ export default function ZakatPeriodsPage() {
                       setShowModal(false);
                       resetForm();
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-light"
                   >
                     Batal
                   </button>
@@ -538,7 +538,7 @@ export default function ZakatPeriodsPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
               <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">Hapus Periode</h2>
+                <h2 className="text-xl font-bold text-dark">Hapus Periode</h2>
               </div>
               <div className="p-6">
                 <p className="text-sm text-gray-700">Hapus periode ini?</p>

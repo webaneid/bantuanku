@@ -456,7 +456,7 @@ export default function CampaignForm({ draftKey, onSubmit, initialData, isLoadin
           {!isMitra && initialData?.mitraId && (
             <div className="form-field">
               <label className="form-label">Mitra</label>
-              <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+              <div className="px-3 py-2 bg-info-50 border border-info-200 rounded-lg text-sm text-info-800">
                 {initialData.mitraName || initialData.mitraId}
               </div>
             </div>
@@ -671,7 +671,7 @@ export default function CampaignForm({ draftKey, onSubmit, initialData, isLoadin
           {/* Campaign Unggulan (hidden for mitra) */}
           {!isMitra && (
             <div className="form-field">
-              <div className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between py-2 px-4 bg-light rounded-lg">
                 <div>
                   <label htmlFor="isFeatured" className="form-label mb-0 cursor-pointer">
                     Campaign Unggulan
@@ -696,7 +696,7 @@ export default function CampaignForm({ draftKey, onSubmit, initialData, isLoadin
           {/* Campaign Mendesak (hidden for mitra) */}
           {!isMitra && (
             <div className="form-field">
-              <div className="flex items-center justify-between py-2 px-4 bg-amber-50 rounded-lg border border-amber-200">
+              <div className="flex items-center justify-between py-2 px-4 bg-warning-50 rounded-lg border border-warning-200">
                 <div>
                   <label htmlFor="isUrgent" className="form-label mb-0 cursor-pointer">
                     Campaign Mendesak
@@ -712,7 +712,7 @@ export default function CampaignForm({ draftKey, onSubmit, initialData, isLoadin
                     className="sr-only peer"
                     {...register("isUrgent")}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-warning-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-warning-600"></div>
                 </label>
               </div>
             </div>
@@ -721,9 +721,9 @@ export default function CampaignForm({ draftKey, onSubmit, initialData, isLoadin
           {/* Broadcast WA — hanya muncul saat status = active dan belum pernah dipublish */}
           {!isMitra && status === "active" && !isAlreadyPublished && (
             <div className="form-field">
-              <div className="flex items-center justify-between py-2 px-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex items-center justify-between py-2 px-4 bg-success-50 rounded-lg border border-success-200">
                 <div>
-                  <label htmlFor="broadcastWa" className="form-label mb-0 cursor-pointer text-green-800">
+                  <label htmlFor="broadcastWa" className="form-label mb-0 cursor-pointer text-success-800">
                     Sebarkan ke donatur via WhatsApp
                   </label>
                   <p className="text-xs text-gray-500 mt-1">
@@ -738,7 +738,7 @@ export default function CampaignForm({ draftKey, onSubmit, initialData, isLoadin
                     checked={broadcastWa}
                     onChange={(e) => setBroadcastWa(e.target.checked)}
                   />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-success-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-success-600"></div>
                 </label>
               </div>
             </div>

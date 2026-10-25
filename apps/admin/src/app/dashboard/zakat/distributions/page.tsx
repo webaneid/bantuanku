@@ -130,12 +130,12 @@ export default function ZakatDistributionsPage() {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto bg-gray-50">
+    <main className="flex-1 overflow-y-auto bg-light">
       <div className="dashboard-container">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Penyaluran Zakat</h1>
+          <h1 className="text-2xl font-bold text-dark">Penyaluran Zakat</h1>
           <p className="text-gray-600 mt-1">Kelola penyaluran dana zakat kepada 8 asnaf</p>
         </div>
         {canCreate && (
@@ -213,7 +213,7 @@ export default function ZakatDistributionsPage() {
                 <tr key={distribution.id}>
                   <td>
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-dark">
                         {distribution.recipientName || "N/A"}
                       </div>
                       <div className="text-sm text-gray-500">
@@ -222,12 +222,12 @@ export default function ZakatDistributionsPage() {
                     </div>
                   </td>
                   <td>
-                    <div className="font-medium text-gray-900 capitalize">
+                    <div className="font-medium text-dark capitalize">
                       {distribution.typeSpecificData?.asnaf || distribution.referenceName || "N/A"}
                     </div>
                   </td>
                   <td>
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm text-dark">
                       {distribution.typeSpecificData?.zakatTypeName || "N/A"}
                     </div>
                   </td>

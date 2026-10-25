@@ -73,7 +73,7 @@ export default function DashboardLayout({
         />
       )}
 
-      <main className="flex-1 overflow-y-auto bg-gray-50">
+      <main className="flex-1 overflow-y-auto bg-light">
         {/* Mobile top bar */}
         <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 mobile-topbar">
           <button

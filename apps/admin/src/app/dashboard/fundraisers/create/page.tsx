@@ -120,7 +120,7 @@ export default function CreateFundraiserPage() {
           <ArrowLeftIcon className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tambah Influencer</h1>
+          <h1 className="text-2xl font-bold text-dark">Tambah Influencer</h1>
           <p className="text-gray-600">Daftarkan donatur atau employee sebagai influencer</p>
         </div>
       </div>

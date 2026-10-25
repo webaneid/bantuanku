@@ -87,7 +87,7 @@
   &__value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: $gray-900;
+    color: $dark;
     line-height: 1.2;
     font-variant-numeric: tabular-nums;
   }
@@ -145,7 +145,7 @@
   &__title {
     font-size: 1rem;
     font-weight: 600;
-    color: $gray-900;
+    color: $dark;
   }
 
   &__body {
@@ -178,7 +178,7 @@
     white-space: nowrap;
 
     &:hover {
-      color: $gray-900;
+      color: $dark;
     }
 
     &--active {
@@ -249,7 +249,7 @@
   &__name {
     font-size: 0.875rem;
     font-weight: 600;
-    color: $gray-900;
+    color: $dark;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -272,7 +272,7 @@
   &__amount {
     font-size: 0.875rem;
     font-weight: 600;
-    color: $gray-900;
+    color: $dark;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
@@ -333,7 +333,7 @@
   &__title {
     font-size: 0.875rem;
     font-weight: 600;
-    color: $gray-900;
+    color: $dark;
   }
 
   &__desc {
@@ -382,7 +382,7 @@
   &__value {
     font-size: 1.125rem;
     font-weight: 700;
-    color: $gray-900;
+    color: $dark;
     line-height: 1.2;
   }
 
@@ -426,7 +426,7 @@
   &__value {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: $gray-900;
+    color: $dark;
     font-variant-numeric: tabular-nums;
   }
 }

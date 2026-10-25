@@ -170,7 +170,7 @@ export default function EditMitraPage({ params }: { params: Promise<{ id: string
       <div className="mb-6">
         <button
           onClick={() => router.push(`/dashboard/mitra/${id}`)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          className="flex items-center gap-2 text-gray-600 hover:text-dark"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           Kembali
@@ -179,7 +179,7 @@ export default function EditMitraPage({ params }: { params: Promise<{ id: string
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Mitra</h1>
+          <h1 className="text-2xl font-bold text-dark">Edit Mitra</h1>
           <p className="text-gray-600 mt-1">Perbarui data lembaga mitra</p>
         </div>
       </div>
@@ -458,7 +458,7 @@ export default function EditMitraPage({ params }: { params: Promise<{ id: string
             <button
               type="button"
               onClick={() => router.push(`/dashboard/mitra/${id}`)}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-light"
             >
               Batal
             </button>
@@ -472,7 +472,7 @@ export default function EditMitraPage({ params }: { params: Promise<{ id: string
           </div>
 
           {updateMutation.isError && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm">
               Gagal memperbarui mitra. Silakan periksa data dan coba lagi.
             </div>
           )}

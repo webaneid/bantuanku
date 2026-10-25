@@ -152,7 +152,7 @@ export default function ProgramReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Laporan Per Program</h1>
+          <h1 className="text-2xl font-bold text-dark">Laporan Per Program</h1>
           <p className="text-gray-600 mt-1">Performa keuangan setiap program/campaign</p>
         </div>
         <ExportButton
@@ -193,7 +193,7 @@ export default function ProgramReportPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="card">
             <p className="text-sm font-medium text-gray-600">Total Program</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">{summary.campaignCount}</p>
+            <p className="mt-2 text-2xl font-bold text-dark">{summary.campaignCount}</p>
           </div>
           <div className="card">
             <p className="text-sm font-medium text-gray-600">Pemasukan Periode</p>
@@ -232,9 +232,9 @@ export default function ProgramReportPage() {
                     {campaigns.map((c) => {
                       const pct = c.goal > 0 ? Math.min(100, (c.collected / c.goal) * 100) : 0;
                       return (
-                        <tr key={c.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedId(c.id)}>
+                        <tr key={c.id} className="hover:bg-light cursor-pointer" onClick={() => setSelectedId(c.id)}>
                           <td>
-                            <div className="text-sm font-medium text-gray-900">{c.title}</div>
+                            <div className="text-sm font-medium text-dark">{c.title}</div>
                             <div className="text-xs text-gray-500">{c.category} · {c.donorCount} donatur</div>
                           </td>
                           <td className="text-right text-sm mono">Rp {formatRupiah(c.goal)}</td>
@@ -327,7 +327,7 @@ export default function ProgramReportPage() {
             ) : detailData ? (
               <>
                 <div className="card mb-4">
-                  <h2 className="text-lg font-bold text-gray-900 mb-2">{detailData.campaign.title}</h2>
+                  <h2 className="text-lg font-bold text-dark mb-2">{detailData.campaign.title}</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div><span className="text-gray-500">Target:</span> <span className="mono font-medium">Rp {formatRupiah(detailData.campaign.goal)}</span></div>
                     <div><span className="text-gray-500">Terkumpul:</span> <span className="mono font-medium text-success-600">Rp {formatRupiah(detailData.campaign.collected)}</span></div>
@@ -339,7 +339,7 @@ export default function ProgramReportPage() {
                 {/* Income Table */}
                 <div className="table-container mb-6">
                   <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">Pemasukan ({detailData.income.length})</h3>
+                    <h3 className="text-lg font-semibold text-dark">Pemasukan ({detailData.income.length})</h3>
                   </div>
                   <table className="table">
                     <thead>
@@ -361,7 +361,7 @@ export default function ProgramReportPage() {
                       ))}
                     </tbody>
                     {detailData.income.length > 0 && (
-                      <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                      <tfoot className="bg-light border-t-2 border-gray-300">
                         <tr>
                           <td colSpan={3} className="font-bold">TOTAL</td>
                           <td className="text-right font-bold text-success-600 mono">Rp {formatRupiah(detailData.summary.totalIncome)}</td>
@@ -375,7 +375,7 @@ export default function ProgramReportPage() {
                 {/* Expense Table */}
                 <div className="table-container">
                   <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">Pengeluaran ({detailData.expense.length})</h3>
+                    <h3 className="text-lg font-semibold text-dark">Pengeluaran ({detailData.expense.length})</h3>
                   </div>
                   <table className="table">
                     <thead>
@@ -399,7 +399,7 @@ export default function ProgramReportPage() {
                       ))}
                     </tbody>
                     {detailData.expense.length > 0 && (
-                      <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                      <tfoot className="bg-light border-t-2 border-gray-300">
                         <tr>
                           <td colSpan={4} className="font-bold">TOTAL</td>
                           <td className="text-right font-bold text-danger-600 mono">Rp {formatRupiah(detailData.summary.totalExpense)}</td>

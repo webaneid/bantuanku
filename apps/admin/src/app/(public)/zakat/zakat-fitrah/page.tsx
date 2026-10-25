@@ -63,7 +63,7 @@ export default function ZakatFitrahCalculatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-light py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header */}
         <div className="mb-8">
@@ -78,7 +78,7 @@ export default function ZakatFitrahCalculatorPage() {
           <div className="flex items-start gap-4">
             <div className="text-5xl">🌾</div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Kalkulator Zakat Fitrah</h1>
+              <h1 className="text-3xl font-bold text-dark">Kalkulator Zakat Fitrah</h1>
               <p className="text-gray-600 mt-2">
                 Hitung zakat fitrah yang wajib dikeluarkan sebelum Sholat Idul Fitri
               </p>
@@ -165,7 +165,7 @@ export default function ZakatFitrahCalculatorPage() {
             </div>
 
             {/* Who Must Pay */}
-            <Card className="bg-blue-50 border-blue-200">
+            <Card className="bg-info-50 border-info-200">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <Users className="w-4 h-4" />

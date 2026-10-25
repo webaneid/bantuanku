@@ -180,7 +180,7 @@ export default function ZakatDonationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pembayaran Zakat</h1>
+          <h1 className="text-2xl font-bold text-dark">Pembayaran Zakat</h1>
           <p className="text-gray-600 mt-1">Semua transaksi pembayaran zakat</p>
         </div>
         <button
@@ -290,12 +290,12 @@ export default function ZakatDonationsPage() {
               transactions.map((transaction: any) => (
                 <tr key={transaction.id}>
                   <td>
-                    <div className="font-mono text-sm font-semibold text-gray-900">
+                    <div className="font-mono text-sm font-semibold text-dark">
                       {transaction.transactionNumber}
                     </div>
                   </td>
                   <td>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-dark">
                       {transaction.donorName}
                       {transaction.isAnonymous && (
                         <span className="ml-2 text-xs text-warning-600 font-normal">(Anonim)</span>
@@ -306,7 +306,7 @@ export default function ZakatDonationsPage() {
                     )}
                   </td>
                   <td>
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm text-dark">
                       {transaction.productName}
                     </div>
                   </td>

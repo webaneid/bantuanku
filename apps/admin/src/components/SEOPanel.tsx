@@ -445,11 +445,11 @@ function CharBar({ current, min, max }: { current: number; min: number; max: num
     <div className="flex items-center gap-2 mt-1">
       <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${isOver ? "bg-red-500" : isGood ? "bg-green-500" : "bg-yellow-500"}`}
+          className={`h-full rounded-full transition-all ${isOver ? "bg-danger-500" : isGood ? "bg-success-500" : "bg-warning-500"}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className={`text-xs font-mono ${isOver ? "text-red-600" : isGood ? "text-green-600" : "text-gray-500"}`}>
+      <span className={`text-xs font-mono ${isOver ? "text-danger-600" : isGood ? "text-success-600" : "text-gray-500"}`}>
         {current}/{max}
       </span>
     </div>
@@ -461,11 +461,11 @@ function CharBar({ current, min, max }: { current: number; min: number; max: num
 function CheckItem({ check }: { check: SEOCheck }) {
   const icon =
     check.status === "good" ? (
-      <CheckCircleIcon className="w-4 h-4 text-green-500 flex-shrink-0" />
+      <CheckCircleIcon className="w-4 h-4 text-success-500 flex-shrink-0" />
     ) : check.status === "ok" ? (
-      <ExclamationTriangleIcon className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+      <ExclamationTriangleIcon className="w-4 h-4 text-warning-500 flex-shrink-0" />
     ) : (
-      <XCircleIcon className="w-4 h-4 text-red-500 flex-shrink-0" />
+      <XCircleIcon className="w-4 h-4 text-danger-500 flex-shrink-0" />
     );
 
   return (
@@ -481,17 +481,17 @@ function CheckItem({ check }: { check: SEOCheck }) {
 function ScoreBadge({ score }: { score: SEOScoreResult }) {
   const bgClass =
     score.color === "green"
-      ? "bg-green-100 text-green-800 border-green-300"
+      ? "bg-success-100 text-success-800 border-success-300"
       : score.color === "orange"
-        ? "bg-yellow-100 text-yellow-800 border-yellow-300"
-        : "bg-red-100 text-red-800 border-red-300";
+        ? "bg-warning-100 text-warning-800 border-warning-300"
+        : "bg-danger-100 text-danger-800 border-danger-300";
 
   const label =
     score.color === "green" ? "Bagus" : score.color === "orange" ? "Perlu Perbaikan" : "Buruk";
 
   return (
     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-sm font-semibold rounded-full border ${bgClass}`}>
-      <span className={`w-2 h-2 rounded-full ${score.color === "green" ? "bg-green-500" : score.color === "orange" ? "bg-yellow-500" : "bg-red-500"}`} />
+      <span className={`w-2 h-2 rounded-full ${score.color === "green" ? "bg-success-500" : score.color === "orange" ? "bg-warning-500" : "bg-danger-500"}`} />
       {score.overall}/100 — {label}
     </div>
   );
@@ -520,10 +520,10 @@ function SERPPreview({
   return (
     <div className="border border-gray-200 rounded-lg p-3 bg-white">
       <p className="text-xs text-gray-500 mb-1.5 font-medium">Preview Google</p>
-      <p className="text-blue-700 text-base leading-snug font-medium truncate" title={displayTitle}>
+      <p className="text-info-700 text-base leading-snug font-medium truncate" title={displayTitle}>
         {displayTitle.length > SEO_TITLE_MAX ? displayTitle.slice(0, SEO_TITLE_MAX) + "..." : displayTitle}
       </p>
-      <p className="text-green-700 text-xs truncate mt-0.5">{displayUrl}</p>
+      <p className="text-success-700 text-xs truncate mt-0.5">{displayUrl}</p>
       <p className="text-gray-600 text-sm mt-1 line-clamp-2 leading-snug">
         {displayDesc.length > META_DESC_MAX ? displayDesc.slice(0, META_DESC_MAX) + "..." : displayDesc}
       </p>
@@ -550,7 +550,7 @@ function CollapsibleSection({
     <div className="border-t border-gray-200">
       <button
         type="button"
-        className="flex items-center justify-between w-full py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900"
+        className="flex items-center justify-between w-full py-2.5 text-sm font-medium text-gray-700 hover:text-dark"
         onClick={() => setOpen(!open)}
       >
         <span className="flex items-center gap-1.5">
@@ -585,7 +585,7 @@ function OgImagePicker({
       <label className="block text-xs font-medium text-gray-600 mb-1">OG Image</label>
       {displayUrl ? (
         <div className="flex items-start gap-2">
-          <div className="w-[20%] flex-shrink-0 rounded-md overflow-hidden border border-gray-200 bg-gray-50" style={{ aspectRatio: "1200/630" }}>
+          <div className="w-[20%] flex-shrink-0 rounded-md overflow-hidden border border-gray-200 bg-light" style={{ aspectRatio: "1200/630" }}>
             <img
               src={displayUrl}
               alt="OG Image preview"
@@ -614,7 +614,7 @@ function OgImagePicker({
       ) : (
         <button
           type="button"
-          className="w-full flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-4 text-gray-400 hover:border-primary-400 hover:text-primary-500 transition-colors"
+          className="w-full flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-gray-300 bg-light py-4 text-gray-400 hover:border-primary-400 hover:text-primary-500 transition-colors"
           onClick={() => setShowMedia(true)}
           disabled={disabled}
         >
@@ -719,7 +719,7 @@ export default function SEOPanel({
   const effectiveDesc = seo.metaDescription || contentData.description || "";
 
   return (
-    <div className="border border-gray-200 rounded-lg bg-gray-50 overflow-hidden">
+    <div className="border border-gray-200 rounded-lg bg-light overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5 bg-white border-b border-gray-200">
         <MagnifyingGlassIcon className="w-4 h-4 text-gray-500" />

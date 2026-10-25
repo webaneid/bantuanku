@@ -295,7 +295,7 @@ export default function QurbanGroupsPage() {
                 <h3 className="font-semibold mb-3">Daftar Anggota</h3>
                 <div className="space-y-3">
                   {groupMembers.map((member, idx) => (
-                    <div key={member.order_id} className="bg-gray-50 rounded-lg p-3">
+                    <div key={member.order_id} className="bg-light rounded-lg p-3">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <p className="font-medium">

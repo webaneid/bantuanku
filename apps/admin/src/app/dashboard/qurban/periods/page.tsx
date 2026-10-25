@@ -211,7 +211,7 @@ export default function PeriodsPage() {
                 {periodsData?.data?.map((period: Period) => (
                   <tr key={period.id}>
                     <td>
-                      <div className="font-medium text-gray-900">{period.name}</div>
+                      <div className="font-medium text-dark">{period.name}</div>
                     </td>
                     <td className="text-sm">{period.hijriYear} H</td>
                     <td className="text-sm text-gray-600">

@@ -191,7 +191,7 @@ export default function ViewMustahiqPage() {
             Kembali
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Detail Mustahiq</h1>
+            <h1 className="text-2xl font-bold text-dark">Detail Mustahiq</h1>
             <p className="text-sm text-gray-500 mt-1">ID: {mustahiqData.id}</p>
           </div>
         </div>
@@ -217,23 +217,23 @@ export default function ViewMustahiqPage() {
                       e.currentTarget.style.display = 'none';
                       const parent = e.currentTarget.parentElement;
                       if (parent) {
-                        parent.innerHTML = `<div class="w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center"><span class="text-3xl font-bold text-white">${mustahiqData.name.charAt(0).toUpperCase()}</span></div>`;
+                        parent.innerHTML = `<div class="w-24 h-24 bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-full flex items-center justify-center"><span class="text-3xl font-bold text-white">${mustahiqData.name.charAt(0).toUpperCase()}</span></div>`;
                       }
                     }}
                   />
                 </div>
               ) : (
-                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-full mx-auto mb-4 flex items-center justify-center">
                   <span className="text-3xl font-bold text-white">
                     {mustahiqData.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}
               
-              <h2 className="text-xl font-bold text-gray-900">{mustahiqData.name}</h2>
+              <h2 className="text-xl font-bold text-dark">{mustahiqData.name}</h2>
               
               <div className="mt-2 space-y-2">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-secondary-100 text-secondary-800">
                   {getAsnafLabel(mustahiqData.asnafCategory)}
                 </span>
                 <div>
@@ -252,7 +252,7 @@ export default function ViewMustahiqPage() {
                   <UserIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">ID Mustahiq</p>
-                    <p className="font-medium text-gray-900">{mustahiqData.mustahiqId}</p>
+                    <p className="font-medium text-dark">{mustahiqData.mustahiqId}</p>
                   </div>
                 </div>
               )}
@@ -262,7 +262,7 @@ export default function ViewMustahiqPage() {
                   <EnvelopeIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium text-gray-900 break-words">{mustahiqData.email}</p>
+                    <p className="font-medium text-dark break-words">{mustahiqData.email}</p>
                   </div>
                 </div>
               )}
@@ -272,7 +272,7 @@ export default function ViewMustahiqPage() {
                   <PhoneIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Nomor HP</p>
-                    <p className="font-medium text-gray-900">{mustahiqData.phone}</p>
+                    <p className="font-medium text-dark">{mustahiqData.phone}</p>
                   </div>
                 </div>
               )}
@@ -282,7 +282,7 @@ export default function ViewMustahiqPage() {
                   <MapPinIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Alamat</p>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-dark">
                       {getFullAddress()}
                     </p>
                   </div>
@@ -294,7 +294,7 @@ export default function ViewMustahiqPage() {
                   <UserIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">NIK / KTP</p>
-                    <p className="font-medium text-gray-900">{mustahiqData.nationalId}</p>
+                    <p className="font-medium text-dark">{mustahiqData.nationalId}</p>
                   </div>
                 </div>
               )}
@@ -304,7 +304,7 @@ export default function ViewMustahiqPage() {
                   <CalendarIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Tempat, Tanggal Lahir</p>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-dark">
                       {[mustahiqData.birthPlace, mustahiqData.dateOfBirth ? formatDate(mustahiqData.dateOfBirth) : null].filter(Boolean).join(", ")}
                     </p>
                   </div>
@@ -316,7 +316,7 @@ export default function ViewMustahiqPage() {
                   <UserIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Jenis Kelamin</p>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-dark">
                       {mustahiqData.gender === "male" ? "Laki-laki" : mustahiqData.gender === "female" ? "Perempuan" : mustahiqData.gender}
                     </p>
                   </div>
@@ -328,7 +328,7 @@ export default function ViewMustahiqPage() {
                   <UserIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Nama Ibu Kandung</p>
-                    <p className="font-medium text-gray-900">{mustahiqData.motherName}</p>
+                    <p className="font-medium text-dark">{mustahiqData.motherName}</p>
                   </div>
                 </div>
               )}
@@ -338,7 +338,7 @@ export default function ViewMustahiqPage() {
                   <UsersIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Status Perkawinan</p>
-                    <p className="font-medium text-gray-900">{getMaritalStatusLabel(mustahiqData.maritalStatus)}</p>
+                    <p className="font-medium text-dark">{getMaritalStatusLabel(mustahiqData.maritalStatus)}</p>
                   </div>
                 </div>
               )}
@@ -348,7 +348,7 @@ export default function ViewMustahiqPage() {
                   <UsersIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Jumlah Tanggungan</p>
-                    <p className="font-medium text-gray-900">{mustahiqData.dependents} orang</p>
+                    <p className="font-medium text-dark">{mustahiqData.dependents} orang</p>
                   </div>
                 </div>
               )}
@@ -358,7 +358,7 @@ export default function ViewMustahiqPage() {
                   <BriefcaseIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Pekerjaan</p>
-                    <p className="font-medium text-gray-900">{mustahiqData.jobTitle.name}</p>
+                    <p className="font-medium text-dark">{mustahiqData.jobTitle.name}</p>
                   </div>
                 </div>
               )}
@@ -368,7 +368,7 @@ export default function ViewMustahiqPage() {
                   <CurrencyDollarIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Penghasilan Bulanan</p>
-                    <p className="font-medium text-gray-900">{mustahiqData.incomeRange.label}</p>
+                    <p className="font-medium text-dark">{mustahiqData.incomeRange.label}</p>
                   </div>
                 </div>
               )}
@@ -378,7 +378,7 @@ export default function ViewMustahiqPage() {
                   <BuildingLibraryIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Rekening Bank</p>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-dark">
                       {mustahiqData.bankName} - {mustahiqData.bankAccount}
                     </p>
                     {mustahiqData.bankAccountName && (
@@ -394,7 +394,7 @@ export default function ViewMustahiqPage() {
                 <CalendarIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm text-gray-500">Terdaftar</p>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-dark">
                     {formatDate(mustahiqData.createdAt)}
                   </p>
                 </div>
@@ -411,7 +411,7 @@ export default function ViewMustahiqPage() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white">
+            <div className="bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-lg p-4 text-white">
               <div className="flex items-center gap-2 mb-2">
                 <BanknotesIcon className="w-5 h-5" />
                 <span className="text-sm opacity-90">Dana Diterima</span>
@@ -431,7 +431,7 @@ export default function ViewMustahiqPage() {
           {/* Transactions Card */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-sm text-gray-500 mb-2">Total Transaksi</h3>
-            <p className="text-3xl font-bold text-purple-600">
+            <p className="text-3xl font-bold text-secondary-600">
               {ledgerData?.length || 0} transaksi
             </p>
           </div>
@@ -441,7 +441,7 @@ export default function ViewMustahiqPage() {
         <div className="lg:col-span-2">
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Riwayat Penerimaan Zakat</h2>
+              <h2 className="text-xl font-bold text-dark">Riwayat Penerimaan Zakat</h2>
               <p className="text-sm text-gray-500 mt-1">
                 Semua bantuan yang pernah diterima
               </p>
@@ -453,19 +453,19 @@ export default function ViewMustahiqPage() {
                   {distributionsData.map((distribution: any) => (
                     <div
                       key={distribution.id}
-                      className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-purple-300 transition-colors"
+                      className="bg-light rounded-lg p-4 border border-gray-200 hover:border-secondary-300 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-gray-900">
+                            <h3 className="font-semibold text-dark">
                               {distribution.zakatType || "Zakat"}
                             </h3>
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                               distribution.status === 'completed' 
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-success-100 text-success-800'
                                 : distribution.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-warning-100 text-warning-800'
                                 : 'bg-gray-100 text-gray-800'
                             }`}>
                               {distribution.status === 'completed' ? 'Selesai' : 
@@ -477,14 +477,14 @@ export default function ViewMustahiqPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                             <div>
                               <span className="text-gray-500">Tanggal:</span>
-                              <span className="ml-2 text-gray-900">
+                              <span className="ml-2 text-dark">
                                 {formatDate(distribution.distributionDate || distribution.createdAt)}
                               </span>
                             </div>
                             {distribution.distributionType && (
                               <div>
                                 <span className="text-gray-500">Tipe:</span>
-                                <span className="ml-2 text-gray-900 capitalize">
+                                <span className="ml-2 text-dark capitalize">
                                   {distribution.distributionType}
                                 </span>
                               </div>
@@ -499,7 +499,7 @@ export default function ViewMustahiqPage() {
                         </div>
 
                         <div className="text-right flex-shrink-0">
-                          <div className="text-xl font-bold text-purple-600">
+                          <div className="text-xl font-bold text-secondary-600">
                             {formatCurrency(Number(distribution.amount))}
                           </div>
                         </div>

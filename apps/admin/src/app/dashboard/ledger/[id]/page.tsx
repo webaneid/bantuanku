@@ -198,7 +198,7 @@ export default function DisbursementDetailPage() {
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          className="flex items-center gap-2 text-gray-600 hover:text-dark"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           Kembali
@@ -207,7 +207,7 @@ export default function DisbursementDetailPage() {
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Detail Catatan Ledger</h1>
+          <h1 className="text-2xl font-bold text-dark">Detail Catatan Ledger</h1>
           <p className="text-gray-600 mt-1 mono">{disbursement.referenceId}</p>
         </div>
         <div className="flex gap-2">
@@ -220,36 +220,36 @@ export default function DisbursementDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Basic Info */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Umum</h3>
+            <h3 className="text-lg font-semibold text-dark mb-4">Informasi Umum</h3>
             <div className="space-y-4">
               <div className="flex justify-between py-3 border-b border-gray-100">
                 <span className="text-sm text-gray-600">Campaign</span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-dark">
                   {disbursement.campaign?.title || "-"}
                 </span>
               </div>
               <div className="flex justify-between py-3 border-b border-gray-100">
                 <span className="text-sm text-gray-600">Jumlah</span>
-                <span className="text-sm font-semibold text-gray-900 mono">
+                <span className="text-sm font-semibold text-dark mono">
                   Rp {formatRupiah(disbursement.amount)}
                 </span>
               </div>
               <div className="flex justify-between py-3 border-b border-gray-100">
                 <span className="text-sm text-gray-600">Akun Beban</span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-dark">
                   {disbursement.expenseAccount?.code} - {disbursement.expenseAccount?.name}
                 </span>
               </div>
               <div className="flex justify-between py-3 border-b border-gray-100">
                 <span className="text-sm text-gray-600">Tujuan</span>
-                <span className="text-sm font-medium text-gray-900 text-right max-w-md">
+                <span className="text-sm font-medium text-dark text-right max-w-md">
                   {disbursement.purpose}
                 </span>
               </div>
               {disbursement.description && (
                 <div className="py-3">
                   <span className="text-sm text-gray-600 block mb-2">Deskripsi</span>
-                  <p className="text-sm text-gray-900">{disbursement.description}</p>
+                  <p className="text-sm text-dark">{disbursement.description}</p>
                 </div>
               )}
             </div>
@@ -257,11 +257,11 @@ export default function DisbursementDetailPage() {
 
           {/* Recipient Info */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Penerima</h3>
+            <h3 className="text-lg font-semibold text-dark mb-4">Penerima</h3>
             <div className="space-y-4">
               <div className="flex justify-between py-3 border-b border-gray-100">
                 <span className="text-sm text-gray-600">Nama</span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-dark">
                   {disbursement.recipientName}
                 </span>
               </div>
@@ -269,13 +269,13 @@ export default function DisbursementDetailPage() {
                 <>
                   <div className="flex justify-between py-3 border-b border-gray-100">
                     <span className="text-sm text-gray-600">Bank</span>
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-dark">
                       {disbursement.recipientBank}
                     </span>
                   </div>
                   <div className="flex justify-between py-3 border-b border-gray-100">
                     <span className="text-sm text-gray-600">No. Rekening</span>
-                    <span className="text-sm font-medium text-gray-900 mono">
+                    <span className="text-sm font-medium text-dark mono">
                       {disbursement.recipientAccount}
                     </span>
                   </div>
@@ -284,7 +284,7 @@ export default function DisbursementDetailPage() {
               {disbursement.recipientPhone && (
                 <div className="flex justify-between py-3">
                   <span className="text-sm text-gray-600">Telepon</span>
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="text-sm font-medium text-dark">
                     {disbursement.recipientPhone}
                   </span>
                 </div>
@@ -295,7 +295,7 @@ export default function DisbursementDetailPage() {
           {/* Evidence Section */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Bukti Pendukung</h3>
+              <h3 className="text-lg font-semibold text-dark">Bukti Pendukung</h3>
               {disbursement.status === "draft" && (
                 <button
                   onClick={() => setIsMediaLibraryOpen(true)}
@@ -308,11 +308,11 @@ export default function DisbursementDetailPage() {
             </div>
 
             {/* Info Box */}
-            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2">
+            <div className="mb-4 p-4 bg-info-50 border border-info-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-info-900 mb-2">
                 💰 Bukti Catatan Ledger (Financial Documents Only)
               </h4>
-              <div className="space-y-2 text-sm text-blue-800">
+              <div className="space-y-2 text-sm text-info-800">
                 <p className="text-xs mb-2">
                   Upload dokumen yang membuktikan dana telah dicairkan/digunakan sesuai tujuan:
                 </p>
@@ -327,12 +327,12 @@ export default function DisbursementDetailPage() {
                   </ul>
                 </div>
               </div>
-              <div className="mt-3 p-2 bg-blue-100 rounded">
-                <p className="text-xs text-blue-900 font-medium">
+              <div className="mt-3 p-2 bg-info-100 rounded">
+                <p className="text-xs text-info-900 font-medium">
                   ⚠️ Minimal 1 bukti finansial wajib diupload sebelum submit
                 </p>
               </div>
-              <div className="mt-2 text-xs text-blue-700">
+              <div className="mt-2 text-xs text-info-700">
                 <p>
                   📸 <em>Untuk dokumentasi kegiatan/foto program, gunakan modul <strong>Laporan Kegiatan</strong> (coming soon)</em>
                 </p>
@@ -349,9 +349,9 @@ export default function DisbursementDetailPage() {
                   if (typeEvidences.length === 0) return null;
 
                   const typeLabels: Record<string, { label: string; icon: string; color: string }> = {
-                    receipt: { label: "Nota/Struk/Kwitansi", icon: "🧾", color: "bg-green-50 border-green-200" },
-                    invoice: { label: "Invoice/Transfer", icon: "📄", color: "bg-blue-50 border-blue-200" },
-                    document: { label: "Dokumen Pendukung", icon: "📋", color: "bg-yellow-50 border-yellow-200" },
+                    receipt: { label: "Nota/Struk/Kwitansi", icon: "🧾", color: "bg-success-50 border-success-200" },
+                    invoice: { label: "Invoice/Transfer", icon: "📄", color: "bg-info-50 border-info-200" },
+                    document: { label: "Dokumen Pendukung", icon: "📋", color: "bg-warning-50 border-warning-200" },
                   };
 
                   return (
@@ -368,7 +368,7 @@ export default function DisbursementDetailPage() {
                           >
                             <PaperClipIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
+                              <p className="text-sm font-medium text-dark truncate">
                                 {evidence.title}
                               </p>
                               <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -418,7 +418,7 @@ export default function DisbursementDetailPage() {
         <div className="space-y-6">
           {/* Actions */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Aksi</h3>
+            <h3 className="text-lg font-semibold text-dark mb-4">Aksi</h3>
             <div className="space-y-2">
               {disbursement.status === "draft" && (
                 <>
@@ -481,9 +481,9 @@ export default function DisbursementDetailPage() {
               )}
 
               {disbursement.status === "rejected" && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm font-medium text-red-900 mb-1">Ditolak</p>
-                  <p className="text-sm text-red-700">{disbursement.rejectionReason}</p>
+                <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg">
+                  <p className="text-sm font-medium text-danger-900 mb-1">Ditolak</p>
+                  <p className="text-sm text-danger-700">{disbursement.rejectionReason}</p>
                 </div>
               )}
             </div>
@@ -491,11 +491,11 @@ export default function DisbursementDetailPage() {
 
           {/* Timeline */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Timeline</h3>
+            <h3 className="text-lg font-semibold text-dark mb-4">Timeline</h3>
             <div className="space-y-4">
               <div>
                 <p className="text-xs text-gray-500 uppercase">Created</p>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-dark">
                   {formatDateWIB(disbursement.createdAt, "dd MMM yyyy HH:mm")}
                 </p>
                 {disbursement.creator && (
@@ -506,7 +506,7 @@ export default function DisbursementDetailPage() {
               {disbursement.submittedAt && (
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Submitted</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-dark">
                     {formatDateWIB(disbursement.submittedAt, "dd MMM yyyy HH:mm")}
                   </p>
                   {disbursement.submitter && (
@@ -518,7 +518,7 @@ export default function DisbursementDetailPage() {
               {disbursement.approvedAt && (
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Approved</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-dark">
                     {formatDateWIB(disbursement.approvedAt, "dd MMM yyyy HH:mm")}
                   </p>
                   {disbursement.approver && (
@@ -530,7 +530,7 @@ export default function DisbursementDetailPage() {
               {disbursement.rejectedAt && (
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Rejected</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-dark">
                     {formatDateWIB(disbursement.rejectedAt, "dd MMM yyyy HH:mm")}
                   </p>
                   {disbursement.rejecter && (
@@ -542,7 +542,7 @@ export default function DisbursementDetailPage() {
               {disbursement.paidAt && (
                 <div>
                   <p className="text-xs text-gray-500 uppercase">Paid</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-dark">
                     {formatDateWIB(disbursement.paidAt, "dd MMM yyyy HH:mm")}
                   </p>
                   {disbursement.payer && (
@@ -559,7 +559,7 @@ export default function DisbursementDetailPage() {
           {/* Notes */}
           {disbursement.notes && (
             <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Catatan Internal</h3>
+              <h3 className="text-lg font-semibold text-dark mb-4">Catatan Internal</h3>
               <p className="text-sm text-gray-700">{disbursement.notes}</p>
             </div>
           )}

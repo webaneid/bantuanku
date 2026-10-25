@@ -13,7 +13,7 @@ export default function DraftRestoreBanner({ savedAt, onRestore, onDiscard }: Dr
   return (
     <div
       role="status"
-      className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+      className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-900"
     >
       <p>
         Ditemukan cadangan otomatis dari <strong>{formatDateTimeWIB(new Date(savedAt))}</strong> yang belum

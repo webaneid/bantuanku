@@ -188,8 +188,8 @@ export default function CashFlowReportPage() {
       case 'zakat_donation': return 'bg-success-50 text-success-700';
       case 'disbursement': return 'bg-info-50 text-info-700';
       case 'zakat_distribution': return 'bg-accent-50 text-accent-700';
-      case 'qurban_disbursement': return 'bg-purple-50 text-purple-700';
-      case 'campaign_disbursement': return 'bg-blue-50 text-blue-700';
+      case 'qurban_disbursement': return 'bg-secondary-50 text-secondary-700';
+      case 'campaign_disbursement': return 'bg-info-50 text-info-700';
       case 'qurban_payment': return 'bg-info-50 text-info-700';
       case 'qurban_savings_deposit': return 'bg-success-50 text-success-700';
       case 'qurban_savings_withdrawal': return 'bg-warning-50 text-warning-700';
@@ -236,7 +236,7 @@ export default function CashFlowReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mutasi Kas & Bank</h1>
+          <h1 className="text-2xl font-bold text-dark">Mutasi Kas & Bank</h1>
           <p className="text-gray-600 mt-1">
             Pergerakan uang masuk dan keluar berdasarkan data transaksi.
           </p>
@@ -334,7 +334,7 @@ export default function CashFlowReportPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="card">
             <p className="text-sm font-medium text-gray-600">Saldo Awal</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900 mono">
+            <p className="mt-2 text-2xl font-bold text-dark mono">
               {formatRupiah(summary.openingBalance)}
             </p>
           </div>
@@ -367,7 +367,7 @@ export default function CashFlowReportPage() {
         {/* Transactions Table */}
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-dark">
               Daftar Transaksi ({summary.transactionCount})
             </h2>
           </div>
@@ -399,10 +399,10 @@ export default function CashFlowReportPage() {
                     {transactions.map((transaction, index) => (
                       <tr
                         key={`${transaction.type}-${transaction.id}-${transaction.date}-${index}`}
-                        className="hover:bg-gray-50 cursor-pointer"
+                        className="hover:bg-light cursor-pointer"
                         onClick={() => setSelectedTransaction(transaction)}
                       >
-                        <td className="text-sm text-gray-900">
+                        <td className="text-sm text-dark">
                           {new Date(transaction.date).toLocaleString('id-ID', {
                             dateStyle: 'short',
                             timeStyle: 'short',
@@ -415,7 +415,7 @@ export default function CashFlowReportPage() {
                             {mapTypeLabel(transaction.type, transaction.zakatTypeName)}
                           </span>
                         </td>
-                        <td className="text-sm text-gray-900">
+                        <td className="text-sm text-dark">
                           {transaction.description}
                         </td>
                         <td className="text-right text-sm font-medium text-success-600 mono">
@@ -550,7 +550,7 @@ export default function CashFlowReportPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-900">Detail Transaksi</h3>
+                <h3 className="text-lg font-semibold text-dark">Detail Transaksi</h3>
                 <button
                   type="button"
                   onClick={() => setSelectedTransaction(null)}
@@ -563,7 +563,7 @@ export default function CashFlowReportPage() {
               <div className="p-6 space-y-4">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Tanggal</p>
-                  <p className="mt-1 text-gray-900">
+                  <p className="mt-1 text-dark">
                     {new Date(selectedTransaction.date).toLocaleString('id-ID')}
                   </p>
                 </div>
@@ -577,7 +577,7 @@ export default function CashFlowReportPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Deskripsi</p>
-                  <p className="mt-1 text-gray-900">{selectedTransaction.description}</p>
+                  <p className="mt-1 text-dark">{selectedTransaction.description}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -595,13 +595,13 @@ export default function CashFlowReportPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Akun</p>
-                  <p className="mt-1 text-gray-900">
+                  <p className="mt-1 text-dark">
                     {selectedTransaction.accountCode} - {selectedTransaction.account}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Metode Bayar</p>
-                  <p className="mt-1 text-gray-900">{selectedTransaction.paymentMethod}</p>
+                  <p className="mt-1 text-dark">{selectedTransaction.paymentMethod}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600">Bukti Transfer</p>

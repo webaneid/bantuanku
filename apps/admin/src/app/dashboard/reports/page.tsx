@@ -95,7 +95,7 @@ export default function ReportsPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6 no-print">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Laporan</h1>
+          <h1 className="text-2xl font-bold text-dark">Dashboard Laporan</h1>
           <p className="text-gray-600 mt-1">Ringkasan keuangan dan akses cepat semua laporan</p>
         </div>
       </div>
@@ -146,25 +146,25 @@ export default function ReportsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="card">
           <p className="text-sm text-gray-600">Donasi</p>
-          <p className="text-xl font-bold text-gray-900 mt-1">{summary.donationCount}</p>
+          <p className="text-xl font-bold text-dark mt-1">{summary.donationCount}</p>
         </div>
         <div className="card">
           <p className="text-sm text-gray-600">Pencairan</p>
-          <p className="text-xl font-bold text-gray-900 mt-1">{summary.disbursementCount}</p>
+          <p className="text-xl font-bold text-dark mt-1">{summary.disbursementCount}</p>
         </div>
         <div className="card">
           <p className="text-sm text-gray-600">Donatur Unik</p>
-          <p className="text-xl font-bold text-gray-900 mt-1">{summary.uniqueDonors}</p>
+          <p className="text-xl font-bold text-dark mt-1">{summary.uniqueDonors}</p>
         </div>
         <div className="card">
           <p className="text-sm text-gray-600">Campaign Aktif</p>
-          <p className="text-xl font-bold text-gray-900 mt-1">{summary.activeCampaigns}/{summary.totalCampaigns}</p>
+          <p className="text-xl font-bold text-dark mt-1">{summary.activeCampaigns}/{summary.totalCampaigns}</p>
         </div>
       </div>
 
       <div className={`card mb-8 border ${consistencyData?.hasMismatch ? "border-danger-200 bg-danger-50" : "border-success-200 bg-success-50"}`}>
         <div className="flex items-center justify-between gap-4 mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Consistency Check Kategori COA</h2>
+          <h2 className="text-lg font-semibold text-dark">Consistency Check Kategori COA</h2>
           <div className="flex items-center gap-3">
             <Link
               href={`/dashboard/reports/category-audit?startDate=${startDate}&endDate=${endDate}`}
@@ -214,13 +214,13 @@ export default function ReportsPage() {
       </div>
 
       <div className="card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Links Laporan</h2>
+        <h2 className="text-lg font-semibold text-dark mb-4">Quick Links Laporan</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {quickLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="px-4 py-3 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-primary-200"
+              className="px-4 py-3 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-light hover:border-primary-200"
             >
               {link.label}
             </Link>

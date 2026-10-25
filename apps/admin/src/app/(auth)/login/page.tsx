@@ -79,7 +79,7 @@ export default function LoginPage() {
               className="h-12 w-auto mx-auto object-contain"
             />
           ) : (
-            <h1 className="text-3xl font-bold text-gray-900">{organizationName || 'Admin'}</h1>
+            <h1 className="text-3xl font-bold text-dark">{organizationName || 'Admin'}</h1>
           )}
           <p className="text-gray-600 mt-2">Admin Dashboard</p>
         </div>
@@ -135,7 +135,7 @@ export default function LoginPage() {
                 localStorage.clear();
                 window.location.reload();
               }}
-              className="text-xs text-red-600 hover:underline"
+              className="text-xs text-danger-600 hover:underline"
             >
               Stuck? Click here to reset
             </button>

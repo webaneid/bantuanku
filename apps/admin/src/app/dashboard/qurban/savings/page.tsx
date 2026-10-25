@@ -419,8 +419,7 @@ export default function QurbanSavingsPage() {
           {!isMitra && (
             <Link
               href="/dashboard/qurban/savings/pending-deposits"
-              className="btn btn-md relative"
-              style={{ backgroundColor: "#d2aa55", color: "white" }}
+              className="btn btn-md relative bg-secondary-500 text-white"
             >
               <CheckCircle className="h-4 w-4" />
               Verifikasi Setoran
@@ -488,7 +487,7 @@ export default function QurbanSavingsPage() {
                   <tr key={saving.id}>
                     <td>
                       <div>
-                        <div className="mono text-sm text-gray-900">{saving.savingsNumber}</div>
+                        <div className="mono text-sm text-dark">{saving.savingsNumber}</div>
                         <div className="text-xs text-gray-500">
                           {formatDateWIB(saving.createdAt, "dd MMM yyyy")}
                         </div>
@@ -496,13 +495,13 @@ export default function QurbanSavingsPage() {
                     </td>
                     <td>
                       <div>
-                        <div className="font-medium text-gray-900">{saving.donorName}</div>
+                        <div className="font-medium text-dark">{saving.donorName}</div>
                         <div className="text-sm text-gray-600">{saving.donorPhone}</div>
                       </div>
                     </td>
                     <td>
                       <div>
-                        <div className="font-medium text-gray-900">{saving.periodName}</div>
+                        <div className="font-medium text-dark">{saving.periodName}</div>
                         {saving.packageName && (
                           <div className="text-sm text-gray-600">{saving.packageName}</div>
                         )}
@@ -702,7 +701,7 @@ export default function QurbanSavingsPage() {
                       </button>
                     </div>
                     {!savingsFormData.donorName && (
-                      <p className="text-xs text-red-600 mt-1">* Wajib pilih donatur dari list atau klik tombol "Baru"</p>
+                      <p className="text-xs text-danger-600 mt-1">* Wajib pilih donatur dari list atau klik tombol "Baru"</p>
                     )}
                   </div>
                   {savingsFormData.donorName && (
@@ -773,7 +772,7 @@ export default function QurbanSavingsPage() {
                           type="text"
                           readOnly
                           value={`Rp ${formatRupiah(packageBasePrice)}`}
-                          className="w-full px-3 py-2 border rounded-lg bg-gray-50 text-gray-700"
+                          className="w-full px-3 py-2 border rounded-lg bg-light text-gray-700"
                         />
                       </div>
                       <div>
@@ -782,7 +781,7 @@ export default function QurbanSavingsPage() {
                           type="text"
                           readOnly
                           value={`Rp ${formatRupiah(packageAdminFee)}`}
-                          className="w-full px-3 py-2 border rounded-lg bg-gray-50 text-gray-700"
+                          className="w-full px-3 py-2 border rounded-lg bg-light text-gray-700"
                         />
                         {selectedPackage.packageType === "shared" && (
                           <p className="text-xs text-gray-500 mt-1">
@@ -855,7 +854,7 @@ export default function QurbanSavingsPage() {
                       type="text"
                       readOnly
                       value={`Rp ${formatRupiah(calculatedInstallmentAmount)}`}
-                      className="w-full px-3 py-2 border rounded-lg bg-gray-50 text-gray-900 font-semibold"
+                      className="w-full px-3 py-2 border rounded-lg bg-light text-dark font-semibold"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Rp {formatRupiah(Number(savingsFormData.targetAmount) || 0)} ÷ {savingsFormData.installmentCount} kali = Rp {formatRupiah(calculatedInstallmentAmount)}/cicilan
@@ -876,8 +875,8 @@ export default function QurbanSavingsPage() {
                     </div>
                   )}
                   {savingsFormData.installmentFrequency === 'weekly' && (
-                    <div className="col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm text-blue-800">
+                    <div className="col-span-2 bg-info-50 border border-info-200 rounded-lg p-3">
+                      <p className="text-sm text-info-800">
                         <strong>Cicilan Mingguan:</strong> Notifikasi akan dikirim setiap hari <strong>Senin</strong>
                       </p>
                     </div>

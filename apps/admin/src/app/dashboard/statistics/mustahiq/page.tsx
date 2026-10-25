@@ -21,8 +21,9 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { todayWIBDateInput } from "@/lib/timezone";
+import { CHART, CHART_PALETTE } from "@/lib/chart-colors";
 
-const PIE_COLORS = ["#035a52", "#d2aa55", "#296585", "#e74c3c", "#8b5cf6", "#f59e0b", "#10b981", "#6366f1"];
+const PIE_COLORS = CHART_PALETTE;
 
 const ASNAF_LABELS: Record<string, string> = {
   fakir: "Fakir",
@@ -50,7 +51,7 @@ function CustomBarTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-sm">
-      <p className="font-medium text-gray-900">{label}</p>
+      <p className="font-medium text-dark">{label}</p>
       <p className="text-primary-600">{payload[0]?.value?.toLocaleString("id-ID")} mustahiq</p>
     </div>
   );
@@ -114,7 +115,7 @@ export default function StatistikMustahiqPage() {
   const genderPieData = genderStats.map((g: any, idx: number) => ({
     name: g.gender === "male" ? "Laki-laki" : g.gender === "female" ? "Perempuan" : g.gender,
     value: g.count,
-    fill: idx === 0 ? "#035a52" : "#d2aa55",
+    fill: idx === 0 ? CHART.primary : CHART.secondary,
   }));
 
   // Bar data: Province stats
@@ -134,7 +135,7 @@ export default function StatistikMustahiqPage() {
     return (
       <div className="dashboard-container">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Statistik Mustahiq</h1>
+          <h1 className="text-2xl font-bold text-dark">Statistik Mustahiq</h1>
         </div>
         <div className="dashboard-kpi-grid">
           {[...Array(2)].map((_, i) => (
@@ -149,7 +150,7 @@ export default function StatistikMustahiqPage() {
     <div className="dashboard-container">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Statistik Mustahiq</h1>
+        <h1 className="text-2xl font-bold text-dark">Statistik Mustahiq</h1>
         <p className="text-gray-600 mt-1">Rangkuman statistik mustahiq zakat</p>
       </div>
 
@@ -287,7 +288,7 @@ export default function StatistikMustahiqPage() {
                   <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
                   <YAxis type="category" dataKey="name" width={160} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
                   <Tooltip content={<CustomBarTooltip />} />
-                  <Bar dataKey="value" fill="#d2aa55" radius={[0, 4, 4, 0]} barSize={20} />
+                  <Bar dataKey="value" fill={CHART.secondary} radius={[0, 4, 4, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

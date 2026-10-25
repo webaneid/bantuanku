@@ -50,11 +50,11 @@ export default function DiscountDetailPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <Tag className="w-5 h-5 text-primary-600" />
-        <h1 className="text-xl font-bold text-gray-900">{d.name}</h1>
+        <h1 className="text-xl font-bold text-dark">{d.name}</h1>
         <div className="ml-auto flex gap-2">
           <Link
             href={`/dashboard/qurban/discounts/${id}/edit`}
-            className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
+            className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-light"
           >
             <Edit2 className="w-4 h-4" />
             Edit
@@ -62,7 +62,7 @@ export default function DiscountDetailPage() {
           {d.isActive && (
             <button
               onClick={() => setConfirmOpen(true)}
-              className="flex items-center gap-1 px-3 py-1.5 border border-yellow-300 text-yellow-700 rounded-lg text-sm hover:bg-yellow-50"
+              className="flex items-center gap-1 px-3 py-1.5 border border-warning-300 text-warning-700 rounded-lg text-sm hover:bg-warning-50"
             >
               <Power className="w-4 h-4" />
               Nonaktifkan
@@ -110,7 +110,7 @@ export default function DiscountDetailPage() {
           <div>
             <dt className="text-gray-500">Status</dt>
             <dd>
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${d.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${d.isActive ? "bg-success-100 text-success-700" : "bg-gray-100 text-gray-600"}`}>
                 {d.isActive ? "Aktif" : "Nonaktif"}
               </span>
             </dd>
@@ -125,7 +125,7 @@ export default function DiscountDetailPage() {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm p-6">
-        <h2 className="text-base font-semibold text-gray-900 mb-4">
+        <h2 className="text-base font-semibold text-dark mb-4">
           Riwayat Penggunaan ({usages.length})
         </h2>
         {usages.length === 0 ? (

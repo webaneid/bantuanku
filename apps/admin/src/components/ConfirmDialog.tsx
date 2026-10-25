@@ -15,14 +15,14 @@ type ConfirmDialogProps = {
 };
 
 const VARIANT_CLASSES = {
-  danger: "bg-red-600 hover:bg-red-700 focus:ring-red-500",
-  warning: "bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500",
+  danger: "bg-danger-600 hover:bg-danger-700 focus:ring-danger-500",
+  warning: "bg-warning-600 hover:bg-warning-700 focus:ring-warning-500",
   primary: "bg-primary-600 hover:bg-primary-700 focus:ring-primary-500",
 };
 
 const ICON_CLASSES = {
-  danger: "bg-red-100 text-red-600",
-  warning: "bg-yellow-100 text-yellow-600",
+  danger: "bg-danger-100 text-danger-600",
+  warning: "bg-warning-100 text-warning-600",
   primary: "bg-primary-100 text-primary-600",
 };
 
@@ -63,7 +63,7 @@ export function ConfirmDialog({
             <ExclamationTriangleIcon className="w-5 h-5" />
           </div>
           <div>
-            <h2 id="confirm-dialog-title" className="text-base font-semibold text-gray-900">
+            <h2 id="confirm-dialog-title" className="text-base font-semibold text-dark">
               {title}
             </h2>
             <p id="confirm-dialog-message" className="mt-1 text-sm text-gray-600">
@@ -71,12 +71,12 @@ export function ConfirmDialog({
             </p>
           </div>
         </div>
-        <div className="flex gap-3 justify-end px-6 py-4 border-t bg-gray-50 rounded-b-lg">
+        <div className="flex gap-3 justify-end px-6 py-4 border-t bg-light rounded-b-lg">
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 disabled:opacity-50"
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white hover:bg-light disabled:opacity-50"
           >
             Batal
           </button>

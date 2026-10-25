@@ -22,7 +22,7 @@
   &-title {
     font-size: 1.875rem;
     font-weight: 700;
-    color: $gray-900;
+    color: $dark;
     margin-bottom: $spacing-xs;
     line-height: 1.2;
 
@@ -80,7 +80,7 @@
   &-title {
     font-size: 1.125rem;
     font-weight: 600;
-    color: $gray-900;
+    color: $dark;
     margin-bottom: $spacing-md;
     padding-bottom: $spacing-sm;
     border-bottom: 2px solid $gray-200;
@@ -116,7 +116,7 @@
 }
 
 .form-sidebar {
-  background: $gray-50;
+  background: $light;
   border: 1px solid $gray-200;
   border-radius: $radius-lg;
   padding: $spacing-lg;

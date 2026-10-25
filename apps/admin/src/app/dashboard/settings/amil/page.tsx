@@ -283,11 +283,11 @@ export default function AmilSettingsPage() {
                 min="0"
                 max="12.5"
                 step="0.1"
-                className={`form-input ${zakatOverLimit ? "border-red-500" : ""}`}
+                className={`form-input ${zakatOverLimit ? "border-danger-500" : ""}`}
                 value={form.zakatPercentage}
                 onChange={(e) => setForm({ ...form, zakatPercentage: e.target.value })}
               />
-              <p className={`text-xs ${zakatOverLimit ? "text-red-600" : "text-gray-500"}`}>
+              <p className={`text-xs ${zakatOverLimit ? "text-danger-600" : "text-gray-500"}`}>
                 Maksimal 12.5%. Lebih dari 12.5% tidak diperbolehkan.
               </p>
             </div>

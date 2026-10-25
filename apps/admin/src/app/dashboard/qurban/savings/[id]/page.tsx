@@ -304,11 +304,11 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active": return "bg-green-100 text-green-800";
-      case "completed": return "bg-blue-100 text-blue-800";
-      case "converted": return "bg-purple-100 text-purple-800";
-      case "paused": return "bg-yellow-100 text-yellow-800";
-      case "cancelled": return "bg-red-100 text-red-800";
+      case "active": return "bg-success-100 text-success-800";
+      case "completed": return "bg-info-100 text-info-800";
+      case "converted": return "bg-secondary-100 text-secondary-800";
+      case "paused": return "bg-warning-100 text-warning-800";
+      case "cancelled": return "bg-danger-100 text-danger-800";
       default: return "bg-gray-100 text-gray-800";
     }
   };
@@ -343,7 +343,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
           <p className="text-gray-600 mb-6">ID: {savingsId}</p>
           <button
             onClick={() => router.push("/dashboard/qurban/savings")}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
+            className="bg-info-600 hover:bg-info-700 text-white px-6 py-3 rounded-lg"
           >
             Kembali ke Daftar Tabungan
           </button>
@@ -406,7 +406,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Terkumpul</span>
-                <span className="font-bold text-2xl text-green-600">
+                <span className="font-bold text-2xl text-success-600">
                   {formatPrice(savings.currentAmount)}
                 </span>
               </div>
@@ -423,7 +423,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
-                    className="bg-green-500 h-3 rounded-full transition-all"
+                    className="bg-success-500 h-3 rounded-full transition-all"
                     style={{ width: `${progress}%` }}
                   />
                 </div>
@@ -451,7 +451,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
               {!isMitra && savings.status === "active" && (
                 <button
                   onClick={() => setShowAddDepositModal(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                  className="bg-success-600 hover:bg-success-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
                 >
                   <Plus className="h-4 w-4" />
                   Tambah Setoran
@@ -482,7 +482,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
                             href={trx.paymentProofUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-blue-600 hover:underline mt-1 block"
+                            className="text-xs text-info-600 hover:underline mt-1 block"
                           >
                             Lihat Bukti Transfer
                           </a>
@@ -502,14 +502,14 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
                       <div className="flex gap-2 mt-3">
                         <button
                           onClick={() => handleVerifyDeposit(trx.id)}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
+                          className="flex-1 bg-success-600 hover:bg-success-700 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
                         >
                           <Check className="h-4 w-4" />
                           Verifikasi
                         </button>
                         <button
                           onClick={() => handleRejectDeposit(trx.id)}
-                          className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
+                          className="flex-1 bg-danger-600 hover:bg-danger-700 text-white px-3 py-2 rounded text-sm flex items-center justify-center gap-1"
                         >
                           <XCircle className="h-4 w-4" />
                           Tolak
@@ -548,7 +548,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Konversi Status */}
           {savings.convertedOrderId && (
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+            <div className="bg-secondary-50 border border-secondary-200 rounded-lg p-6">
               <h3 className="font-semibold mb-2">Status Konversi</h3>
               <p className="text-sm text-gray-700">
                 Tabungan ini telah dikonversi menjadi order dengan ID:
@@ -561,7 +561,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
           {!isMitra && savings.status === "completed" && !savings.convertedOrderId && (
             <button
               onClick={() => handleConvertToOrder()}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2"
+              className="w-full bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2"
             >
               <ArrowRight className="h-5 w-5" />
               Konversi ke Order
@@ -570,7 +570,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Notes */}
           {savings.notes && (
-            <div className="bg-gray-50 rounded-lg p-6">
+            <div className="bg-light rounded-lg p-6">
               <h3 className="font-semibold mb-2">Catatan</h3>
               <p className="text-sm text-gray-700">{savings.notes}</p>
             </div>
@@ -663,7 +663,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
                   <button
                     type="button"
                     onClick={() => setShowMediaLibrary(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    className="px-4 py-2 bg-info-600 text-white rounded-lg hover:bg-info-700"
                   >
                     Pilih File
                   </button>
@@ -691,7 +691,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
 
               </div>
 
-              <div className="flex gap-3 justify-end px-6 py-4 border-t bg-gray-50">
+              <div className="flex gap-3 justify-end px-6 py-4 border-t bg-light">
                 <button
                   type="button"
                   onClick={() => {
@@ -704,13 +704,13 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
                       notes: "",
                     });
                   }}
-                  className="px-4 py-2 border rounded-lg hover:bg-gray-50 bg-white"
+                  className="px-4 py-2 border rounded-lg hover:bg-light bg-white"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  className="px-4 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700"
                 >
                   Simpan
                 </button>

@@ -152,7 +152,7 @@ export default function PenghasilanBulananPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Penghasilan Bulanan</h1>
+          <h1 className="text-2xl font-bold text-dark">Penghasilan Bulanan</h1>
           <p className="text-gray-600 mt-1">Kelola data range penghasilan bulanan untuk donatur</p>
         </div>
         {!isCreating && (
@@ -313,7 +313,7 @@ export default function PenghasilanBulananPage() {
                 ) : (
                   <tr key={range.id}>
                     <td className="text-center text-gray-500">{range.displayOrder}</td>
-                    <td className="font-medium text-gray-900">{range.label}</td>
+                    <td className="font-medium text-dark">{range.label}</td>
                     <td className="text-gray-500 text-sm">{range.description || "-"}</td>
                     <td>
                       <span

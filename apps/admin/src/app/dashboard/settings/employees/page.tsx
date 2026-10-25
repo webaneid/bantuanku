@@ -133,7 +133,7 @@ export default function EmployeesActivationPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Aktivasi Karyawan</h2>
+            <h2 className="text-lg font-semibold text-dark">Aktivasi Karyawan</h2>
             <p className="text-sm text-gray-600 mt-1">
               Aktifkan karyawan sebagai user untuk memberikan akses ke admin panel
             </p>
@@ -152,7 +152,7 @@ export default function EmployeesActivationPage() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3">
-                      <h3 className="text-base font-medium text-gray-900">{employee.name}</h3>
+                      <h3 className="text-base font-medium text-dark">{employee.name}</h3>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-warning-100 text-warning-800">
                         Belum Diaktivasi
                       </span>
@@ -186,7 +186,7 @@ export default function EmployeesActivationPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 bg-success-100 rounded-full mb-4">
                 <UserPlusIcon className="w-8 h-8 text-success-600" />
               </div>
-              <h3 className="text-base font-medium text-gray-900 mb-1">
+              <h3 className="text-base font-medium text-dark mb-1">
                 Semua Karyawan Sudah Diaktivasi
               </h3>
               <p className="text-sm text-gray-600">
@@ -202,7 +202,7 @@ export default function EmployeesActivationPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-dark">
                 Aktifkan Karyawan sebagai User
               </h2>
               <button
@@ -216,8 +216,8 @@ export default function EmployeesActivationPage() {
 
             <form onSubmit={handleSubmit}>
               <div className="p-6 space-y-4">
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-gray-900">{selectedEmployee.name}</p>
+                <div className="bg-light border border-gray-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-dark">{selectedEmployee.name}</p>
                   <p className="text-xs text-gray-600 mt-1">
                     {selectedEmployee.position}
                     {selectedEmployee.department && ` · ${selectedEmployee.department}`}
@@ -296,8 +296,8 @@ export default function EmployeesActivationPage() {
                   </p>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-xs text-blue-800">
+                <div className="bg-info-50 border border-info-200 rounded-lg p-4">
+                  <p className="text-xs text-info-800">
                     <strong>Catatan:</strong> Setelah diaktivasi, karyawan dapat login ke admin
                     panel menggunakan email dan password yang Anda tentukan.
                   </p>

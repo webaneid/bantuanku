@@ -126,7 +126,7 @@ export default function DisbursementsPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pencairan Dana</h1>
+          <h1 className="text-2xl font-bold text-dark">Pencairan Dana</h1>
           <p className="text-gray-600 mt-1">{isCoordinator ? "Daftar pencairan dana untuk Anda" : isMitra ? "Daftar pencairan dana program Anda" : isEmployeeOnly ? "Daftar pencairan dana untuk Anda" : "Kelola semua pencairan dana"}</p>
         </div>
         <Link
@@ -246,10 +246,10 @@ export default function DisbursementsPage() {
                 {disbursements.map((d: any) => (
                   <tr key={d.id}>
                     <td>
-                      <div className="font-medium text-gray-900">{d.disbursementNumber}</div>
+                      <div className="font-medium text-dark">{d.disbursementNumber}</div>
                     </td>
                     <td>
-                      <div className="font-medium text-gray-900">{formatDisbursementType(d.disbursementType)}</div>
+                      <div className="font-medium text-dark">{formatDisbursementType(d.disbursementType)}</div>
                       <div className="text-sm text-gray-500">{getCategoryLabel(d.category)}</div>
                     </td>
                     <td>{d.recipientName}</td>
@@ -334,14 +334,14 @@ export default function DisbursementsPage() {
                 <button
                   onClick={() => setPage(page - 1)}
                   disabled={page === 1}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-light disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Sebelumnya
                 </button>
                 <button
                   onClick={() => setPage(page + 1)}
                   disabled={page === pagination.totalPages}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-light disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Selanjutnya
                 </button>

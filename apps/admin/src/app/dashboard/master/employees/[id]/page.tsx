@@ -318,7 +318,7 @@ export default function ViewEmployeePage() {
             Kembali
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Detail Karyawan</h1>
+            <h1 className="text-2xl font-bold text-dark">Detail Karyawan</h1>
             <p className="text-sm text-gray-500 mt-1">ID: {employeeData.id}</p>
           </div>
         </div>
@@ -343,23 +343,23 @@ export default function ViewEmployeePage() {
                       e.currentTarget.style.display = 'none';
                       const parent = e.currentTarget.parentElement;
                       if (parent) {
-                        parent.innerHTML = `<div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center"><span class="text-3xl font-bold text-white">${employeeData.name.charAt(0).toUpperCase()}</span></div>`;
+                        parent.innerHTML = `<div class="w-24 h-24 bg-gradient-to-br from-info-500 to-info-600 rounded-full flex items-center justify-center"><span class="text-3xl font-bold text-white">${employeeData.name.charAt(0).toUpperCase()}</span></div>`;
                       }
                     }}
                   />
                 </div>
               ) : (
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-info-500 to-info-600 rounded-full mx-auto mb-4 flex items-center justify-center">
                   <span className="text-3xl font-bold text-white">
                     {employeeData.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}
               
-              <h2 className="text-xl font-bold text-gray-900">{employeeData.name}</h2>
+              <h2 className="text-xl font-bold text-dark">{employeeData.name}</h2>
               
               <div className="mt-2 space-y-2">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-info-100 text-info-800">
                   {employeeData.position}
                 </span>
                 {employeeData.department && (
@@ -388,7 +388,7 @@ export default function ViewEmployeePage() {
                     <span>Akun Aktif</span>
                   </div>
                   {showRoleForm ? (
-                    <div className="space-y-2 text-left bg-gray-50 rounded-lg p-3">
+                    <div className="space-y-2 text-left bg-light rounded-lg p-3">
                       <div>
                         <label className="text-xs text-gray-500 block mb-1">Role</label>
                         <select
@@ -436,7 +436,7 @@ export default function ViewEmployeePage() {
               ) : (
                 <div className="text-center">
                   {showActivateForm ? (
-                    <div className="space-y-2 text-left bg-gray-50 rounded-lg p-3">
+                    <div className="space-y-2 text-left bg-light rounded-lg p-3">
                       <div>
                         <label className="text-xs text-gray-500 block mb-1">Email</label>
                         <input
@@ -511,7 +511,7 @@ export default function ViewEmployeePage() {
                   <UserIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">ID Karyawan</p>
-                    <p className="font-medium text-gray-900">{employeeData.employeeId}</p>
+                    <p className="font-medium text-dark">{employeeData.employeeId}</p>
                   </div>
                 </div>
               )}
@@ -521,7 +521,7 @@ export default function ViewEmployeePage() {
                   <EnvelopeIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium text-gray-900 break-words">{employeeData.email}</p>
+                    <p className="font-medium text-dark break-words">{employeeData.email}</p>
                   </div>
                 </div>
               )}
@@ -531,7 +531,7 @@ export default function ViewEmployeePage() {
                   <PhoneIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Nomor HP</p>
-                    <p className="font-medium text-gray-900">{employeeData.phone}</p>
+                    <p className="font-medium text-dark">{employeeData.phone}</p>
                   </div>
                 </div>
               )}
@@ -541,7 +541,7 @@ export default function ViewEmployeePage() {
                   <MapPinIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Alamat</p>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-dark">
                       {getFullAddress()}
                     </p>
                   </div>
@@ -553,7 +553,7 @@ export default function ViewEmployeePage() {
                   <CalendarIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Tanggal Bergabung</p>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-dark">
                       {formatDate(employeeData.joinDate)}
                     </p>
                   </div>
@@ -569,15 +569,15 @@ export default function ViewEmployeePage() {
                     {employeeData.bankAccounts?.length > 0 ? (
                       <div className="space-y-2 mt-1">
                         {employeeData.bankAccounts.map((acc: { id: string; bankName: string; accountNumber: string; accountHolderName: string }, idx: number) => (
-                          <div key={acc.id ?? idx} className="bg-gray-50 rounded-lg px-3 py-2">
-                            <p className="font-medium text-gray-900">{acc.bankName} — {acc.accountNumber}</p>
+                          <div key={acc.id ?? idx} className="bg-light rounded-lg px-3 py-2">
+                            <p className="font-medium text-dark">{acc.bankName} — {acc.accountNumber}</p>
                             <p className="text-sm text-gray-600">a.n. {acc.accountHolderName}</p>
                           </div>
                         ))}
                       </div>
                     ) : (
                       <>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-dark">
                           {employeeData.bankName} - {employeeData.bankAccount}
                         </p>
                         {employeeData.bankAccountName && (
@@ -602,7 +602,7 @@ export default function ViewEmployeePage() {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 gap-4">
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 text-white">
+            <div className="bg-gradient-to-br from-info-500 to-info-600 rounded-lg p-4 text-white">
               <div className="flex items-center gap-2 mb-2">
                 <BriefcaseIcon className="w-5 h-5" />
                 <span className="text-sm opacity-90">Program Ditangani</span>
@@ -610,7 +610,7 @@ export default function ViewEmployeePage() {
               <p className="text-2xl font-bold">{totalPrograms}</p>
             </div>
 
-            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-4 text-white">
+            <div className="bg-gradient-to-br from-success-500 to-success-600 rounded-lg p-4 text-white">
               <div className="flex items-center gap-2 mb-2">
                 <DocumentTextIcon className="w-5 h-5" />
                 <span className="text-sm opacity-90">Laporan Dibuat</span>
@@ -618,7 +618,7 @@ export default function ViewEmployeePage() {
               <p className="text-2xl font-bold">{totalReports}</p>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white">
+            <div className="bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-lg p-4 text-white">
               <div className="flex items-center gap-2 mb-2">
                 <BanknotesIcon className="w-5 h-5" />
                 <span className="text-sm opacity-90">Distribusi Zakat</span>
@@ -626,12 +626,12 @@ export default function ViewEmployeePage() {
               <p className="text-2xl font-bold">{totalDistributions}x</p>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm p-4 border-2 border-purple-100">
+            <div className="bg-white rounded-lg shadow-sm p-4 border-2 border-secondary-100">
               <div className="flex items-center gap-2 mb-2">
-                <BanknotesIcon className="w-5 h-5 text-purple-600" />
+                <BanknotesIcon className="w-5 h-5 text-secondary-600" />
                 <span className="text-sm text-gray-600">Total Distribusi</span>
               </div>
-              <p className="text-2xl font-bold text-purple-600">
+              <p className="text-2xl font-bold text-secondary-600">
                 {formatCurrency(totalDistributionAmount)}
               </p>
             </div>
@@ -644,7 +644,7 @@ export default function ViewEmployeePage() {
           {totalPrograms > 0 && (
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">Program yang Ditangani</h2>
+                <h2 className="text-xl font-bold text-dark">Program yang Ditangani</h2>
                 <p className="text-sm text-gray-500 mt-1">
                   Daftar program/kampanye yang menjadi tanggung jawab
                 </p>
@@ -656,18 +656,18 @@ export default function ViewEmployeePage() {
                     {programsData.map((program: any) => (
                       <div
                         key={program.id}
-                        className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer"
+                        className="bg-light rounded-lg p-4 border border-gray-200 hover:border-info-300 transition-colors cursor-pointer"
                         onClick={() => router.push(`/dashboard/campaigns/${program.id}`)}
                       >
                         <div className="flex items-start justify-between gap-4 mb-3">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 mb-1 hover:text-blue-600">
+                            <h3 className="font-semibold text-dark mb-1 hover:text-info-600">
                               {program.title || program.name}
                             </h3>
                             {program.status && (
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                                 program.status === 'active' 
-                                  ? 'bg-green-100 text-green-800'
+                                  ? 'bg-success-100 text-success-800'
                                   : 'bg-gray-100 text-gray-800'
                               }`}>
                                 {program.status}
@@ -676,7 +676,7 @@ export default function ViewEmployeePage() {
                           </div>
                           <div className="text-right">
                             <p className="text-xs text-gray-500 mb-1">Total Laporan</p>
-                            <p className="text-lg font-bold text-blue-600">{program.totalReports}x</p>
+                            <p className="text-lg font-bold text-info-600">{program.totalReports}x</p>
                           </div>
                         </div>
 
@@ -684,7 +684,7 @@ export default function ViewEmployeePage() {
                         <div className="mt-3 pt-3 border-t border-gray-200">
                           <div className="bg-white rounded-md p-3">
                             <p className="text-xs text-gray-500 mb-1">Dana yang Disalurkan</p>
-                            <p className="text-lg font-semibold text-blue-600">
+                            <p className="text-lg font-semibold text-info-600">
                               {formatCurrency(program.totalReceived || 0)}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
@@ -695,7 +695,7 @@ export default function ViewEmployeePage() {
 
                         {/* Action hint */}
                         <div className="mt-3 pt-3 border-t border-gray-200">
-                          <p className="text-xs text-blue-600 hover:text-blue-700">
+                          <p className="text-xs text-info-600 hover:text-info-700">
                             Klik untuk lihat detail program →
                           </p>
                         </div>
@@ -715,7 +715,7 @@ export default function ViewEmployeePage() {
           {/* Activity Reports Section */}
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Laporan Kegiatan</h2>
+              <h2 className="text-xl font-bold text-dark">Laporan Kegiatan</h2>
               <p className="text-sm text-gray-500 mt-1">
                 Riwayat laporan kegiatan yang telah dibuat
               </p>
@@ -727,25 +727,25 @@ export default function ViewEmployeePage() {
                   {reportsData.map((report: any) => (
                     <div
                       key={report.id}
-                      className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-green-300 transition-colors"
+                      className="bg-light rounded-lg p-4 border border-gray-200 hover:border-success-300 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-gray-900 mb-2">
+                          <h3 className="font-semibold text-dark mb-2">
                             {report.title}
                           </h3>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                             <div>
                               <span className="text-gray-500">Tanggal:</span>
-                              <span className="ml-2 text-gray-900">
+                              <span className="ml-2 text-dark">
                                 {formatDate(report.activityDate || report.createdAt)}
                               </span>
                             </div>
                             {report.campaignTitle && (
                               <div>
                                 <span className="text-gray-500">Kampanye:</span>
-                                <span className="ml-2 text-gray-900">
+                                <span className="ml-2 text-dark">
                                   {report.campaignTitle}
                                 </span>
                               </div>
@@ -776,7 +776,7 @@ export default function ViewEmployeePage() {
           {/* Zakat Distributions Section */}
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Distribusi Zakat</h2>
+              <h2 className="text-xl font-bold text-dark">Distribusi Zakat</h2>
               <p className="text-sm text-gray-500 mt-1">
                 Riwayat distribusi zakat yang telah dilakukan
               </p>
@@ -788,20 +788,20 @@ export default function ViewEmployeePage() {
                   {distributionsData.map((distribution: any) => (
                     <div
                       key={distribution.id}
-                      className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-purple-300 transition-colors cursor-pointer"
+                      className="bg-light rounded-lg p-4 border border-gray-200 hover:border-secondary-300 transition-colors cursor-pointer"
                       onClick={() => router.push(`/dashboard/zakat/distributions/${distribution.id}`)}
                     >
                       <div className="flex items-start justify-between gap-4 mb-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-semibold text-gray-900 hover:text-purple-600">
+                            <h3 className="font-semibold text-dark hover:text-secondary-600">
                               {distribution.zakatTypeName || "Zakat"}
                             </h3>
                             <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                               distribution.status === 'completed' 
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-success-100 text-success-800'
                                 : distribution.status === 'pending'
-                                ? 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-warning-100 text-warning-800'
                                 : 'bg-gray-100 text-gray-800'
                             }`}>
                               {distribution.status === 'completed' ? 'Selesai' : 
@@ -813,20 +813,20 @@ export default function ViewEmployeePage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                             <div>
                               <span className="text-gray-500">Tanggal:</span>
-                              <span className="ml-2 text-gray-900">
+                              <span className="ml-2 text-dark">
                                 {formatDate(distribution.distributionDate || distribution.createdAt)}
                               </span>
                             </div>
                             <div>
                               <span className="text-gray-500">Penerima:</span>
-                              <span className="ml-2 text-gray-900">
+                              <span className="ml-2 text-dark">
                                 {distribution.recipientName || distribution.recipientCategory || '-'}
                               </span>
                             </div>
                             {distribution.distributionType && (
                               <div>
                                 <span className="text-gray-500">Tipe:</span>
-                                <span className="ml-2 text-gray-900 capitalize">
+                                <span className="ml-2 text-dark capitalize">
                                   {distribution.distributionType}
                                 </span>
                               </div>
@@ -845,7 +845,7 @@ export default function ViewEmployeePage() {
                       <div className="mt-3 pt-3 border-t border-gray-200">
                         <div className="bg-white rounded-md p-3">
                           <p className="text-xs text-gray-500 mb-1">Dana yang Disalurkan</p>
-                          <p className="text-lg font-semibold text-purple-600">
+                          <p className="text-lg font-semibold text-secondary-600">
                             {formatCurrency(distribution.totalFromLedger || Number(distribution.amount) || 0)}
                           </p>
                           <p className="text-xs text-gray-400 mt-1">
@@ -856,7 +856,7 @@ export default function ViewEmployeePage() {
 
                       {/* Action hint */}
                       <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs text-purple-600 hover:text-purple-700">
+                        <p className="text-xs text-secondary-600 hover:text-secondary-700">
                           Klik untuk lihat detail distribusi →
                         </p>
                       </div>

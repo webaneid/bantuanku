@@ -1,5 +1,11 @@
 import type { Config } from "tailwindcss";
 
+const SHADES = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900];
+const brandVar = (name: string) => `rgb(var(--color-${name}) / <alpha-value>)`;
+const brandScale = (name: string) => Object.fromEntries(SHADES.map((s) => [s, brandVar(`${name}-${s}`)]));
+const primary = brandScale("primary");
+const secondary = brandScale("secondary");
+
 export default {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -9,96 +15,49 @@ export default {
   theme: {
     extend: {
       colors: {
-        // PRIMARY: Hijau Darunnajah
-        primary: {
-          50: '#e6f2f1',
-          100: '#cce3e1',  // Hijau light
-          200: '#99c7c3',
-          300: '#66aba5',
-          400: '#338f87',
-          500: '#035a52',  // Base hijau
-          600: '#025850',  // Hijau 2
-          700: '#024842',
-          800: '#023834',
-          900: '#012826',
-        },
-        // SECONDARY/ACCENT: Emas
-        secondary: {
-          50: '#faf7f0',
-          100: '#dccfb4',  // Emas light
-          200: '#d9c49a',
-          300: '#d6b980',
-          400: '#d4af6b',
-          500: '#d2aa55',  // Base emas
-          600: '#a88843',  // Emas 2
-          700: '#8a6f37',
-          800: '#6c562b',
-          900: '#4e3d1f',
-        },
-        // Keep secondary same as accent for backward compatibility
-        accent: {
-          50: '#faf7f0',
-          100: '#dccfb4',
-          200: '#d9c49a',
-          300: '#d6b980',
-          400: '#d4af6b',
-          500: '#d2aa55',
-          600: '#a88843',
-          700: '#8a6f37',
-          800: '#6c562b',
-          900: '#4e3d1f',
-        },
-        // SUCCESS: Aksen hijau
-        success: {
-          50: '#f3f7e8',
-          100: '#e6efd1',
-          200: '#cddfa3',
-          300: '#b4cf75',
-          400: '#9bbf47',
-          500: '#678f0c',  // Aksen sukses
-          600: '#52720a',
-          700: '#3e5508',
-          800: '#293805',
-          900: '#151c03',
-        },
-        // DANGER: Merah
-        danger: {
-          50: '#fceaed',
-          100: '#f9d5db',
-          200: '#f3abb7',
-          300: '#ed8193',
-          400: '#e7576f',
-          500: '#8f132f',  // Danger red
-          600: '#720f26',
-          700: '#560b1c',
-          800: '#390813',
-          900: '#1d0409',
-        },
-        // WARNING: Emas (same as secondary)
+        // === Token brand (ADR-0015): dibaca dari CSS variable yang disuntik root layout dari settings (src/lib/brand.ts) ===
+        primary,
+        secondary,
+        accent: secondary, // alias lama
+        light: brandVar("light"),
+        dark: brandVar("dark"),
+        // === Semantik: success = primary; warning/danger/info = palet bawaan Tailwind (tidak mengikuti brand) ===
+        success: primary,
         warning: {
-          50: '#faf7f0',
-          100: '#dccfb4',
-          200: '#d9c49a',
-          300: '#d6b980',
-          400: '#d4af6b',
-          500: '#d2aa55',
-          600: '#a88843',
-          700: '#8a6f37',
-          800: '#6c562b',
-          900: '#4e3d1f',
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
         },
-        // INFO: Biru tua
+        danger: {
+          50: '#fef2f2',
+          100: '#fee2e2',
+          200: '#fecaca',
+          300: '#fca5a5',
+          400: '#f87171',
+          500: '#ef4444',
+          600: '#dc2626',
+          700: '#b91c1c',
+          800: '#991b1b',
+          900: '#7f1d1d',
+        },
         info: {
-          50: '#e9f1f5',
-          100: '#d3e3eb',
-          200: '#a7c7d7',
-          300: '#7babc3',
-          400: '#4f8faf',
-          500: '#296585',  // Biru tua
-          600: '#21516a',
-          700: '#193d50',
-          800: '#102835',
-          900: '#08141b',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#3b82f6',
+          600: '#2563eb',
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
         },
         gray: {
           50: '#f9fafb',
@@ -114,9 +73,9 @@ export default {
         },
       },
       backgroundImage: {
-        'gradient-gold': 'linear-gradient(135deg, #d2aa55 0%, #a88843 100%)',
-        'gradient-green': 'linear-gradient(135deg, #02756b 0%, #035a52 100%)',
-        'gradient-blue': 'linear-gradient(135deg, #296585 0%, #21516a 100%)',
+        'gradient-gold': 'linear-gradient(135deg, rgb(var(--color-secondary-500)) 0%, rgb(var(--color-secondary-600)) 100%)',
+        'gradient-green': 'linear-gradient(135deg, rgb(var(--color-primary-400)) 0%, rgb(var(--color-primary-500)) 100%)',
+        'gradient-blue': 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
       },
     },
   },

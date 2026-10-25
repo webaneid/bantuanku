@@ -114,7 +114,7 @@ export default function FundraiserReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Laporan Per Influencer</h1>
+          <h1 className="text-2xl font-bold text-dark">Laporan Per Influencer</h1>
           <p className="text-gray-600 mt-1">Tracking komisi dan referral per influencer</p>
         </div>
         <ExportButton onExportExcel={handleExportSummary} onPrint={() => window.print()} />
@@ -125,7 +125,7 @@ export default function FundraiserReportPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="card">
             <p className="text-sm font-medium text-gray-600">Jumlah Influencer</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">{summary.fundraiserCount}</p>
+            <p className="mt-2 text-2xl font-bold text-dark">{summary.fundraiserCount}</p>
           </div>
           <div className="card">
             <p className="text-sm font-medium text-gray-600">Total Komisi</p>
@@ -161,9 +161,9 @@ export default function FundraiserReportPage() {
                   </thead>
                   <tbody>
                     {fundraisers.map((f) => (
-                      <tr key={f.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedId(f.id)}>
+                      <tr key={f.id} className="hover:bg-light cursor-pointer" onClick={() => setSelectedId(f.id)}>
                         <td>
-                          <div className="text-sm font-medium text-gray-900">{f.name}</div>
+                          <div className="text-sm font-medium text-dark">{f.name}</div>
                           <div className="text-xs text-gray-500">{f.code} · {f.status}</div>
                         </td>
                         <td className="text-center text-sm">{f.totalReferrals}</td>
@@ -247,7 +247,7 @@ export default function FundraiserReportPage() {
             ) : detailData ? (
               <>
                 <div className="card mb-4">
-                  <h2 className="text-lg font-bold text-gray-900 mb-2">{detailData.fundraiser.name} ({detailData.fundraiser.code})</h2>
+                  <h2 className="text-lg font-bold text-dark mb-2">{detailData.fundraiser.name} ({detailData.fundraiser.code})</h2>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div><span className="text-gray-500">Total Referral:</span> <span className="font-medium">{detailData.summary.totalReferrals}</span></div>
                     <div><span className="text-gray-500">Total Komisi:</span> <span className="mono font-medium text-primary-600">Rp {formatRupiah(detailData.summary.totalCommission)}</span></div>
@@ -259,7 +259,7 @@ export default function FundraiserReportPage() {
                 {/* Referrals */}
                 <div className="table-container mb-6">
                   <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">Daftar Referral ({detailData.referrals.length})</h3>
+                    <h3 className="text-lg font-semibold text-dark">Daftar Referral ({detailData.referrals.length})</h3>
                   </div>
                   <table className="table">
                     <thead>
@@ -291,7 +291,7 @@ export default function FundraiserReportPage() {
                 {/* Disbursements */}
                 <div className="table-container">
                   <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">Riwayat Pembayaran Komisi ({detailData.disbursements.length})</h3>
+                    <h3 className="text-lg font-semibold text-dark">Riwayat Pembayaran Komisi ({detailData.disbursements.length})</h3>
                   </div>
                   <table className="table">
                     <thead>

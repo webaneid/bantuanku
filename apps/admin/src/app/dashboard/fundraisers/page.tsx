@@ -22,7 +22,7 @@ const statusOptions = [
 const statusBadgeMap: Record<string, string> = {
   pending: "bg-warning-50 text-warning-700",
   active: "bg-success-50 text-success-700",
-  suspended: "bg-red-50 text-red-700",
+  suspended: "bg-danger-50 text-danger-700",
 };
 
 const getStatusBadgeClass = (status: string) => {
@@ -115,7 +115,7 @@ export default function FundraisersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Influencer</h1>
+          <h1 className="text-2xl font-bold text-dark">Influencer</h1>
           <p className="text-gray-600 mt-1">Kelola influencer dan referral</p>
         </div>
         <button
@@ -133,7 +133,7 @@ export default function FundraisersPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-500">Total Influencer</div>
-            <div className="text-2xl font-bold text-gray-900">{statsData.totalFundraisers || 0}</div>
+            <div className="text-2xl font-bold text-dark">{statsData.totalFundraisers || 0}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-500">Aktif</div>
@@ -141,7 +141,7 @@ export default function FundraisersPage() {
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-500">Total Referral</div>
-            <div className="text-2xl font-bold text-gray-900">{statsData.totalReferrals || 0}</div>
+            <div className="text-2xl font-bold text-dark">{statsData.totalReferrals || 0}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-500">Total Donasi</div>
@@ -215,10 +215,10 @@ export default function FundraisersPage() {
               fundraisers.map((f: any) => (
                 <tr key={f.id}>
                   <td>
-                    <span className="font-mono text-sm font-semibold text-gray-900">{f.code}</span>
+                    <span className="font-mono text-sm font-semibold text-dark">{f.code}</span>
                   </td>
                   <td>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-dark">
                       {f.donaturName || f.employeeName || "-"}
                     </div>
                   </td>

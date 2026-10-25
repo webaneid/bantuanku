@@ -260,30 +260,50 @@ export function Sidebar({ variant = "desktop", isOpen = true, onClose }: Sidebar
     })
     .filter((item) => !item.submenu || item.submenu.length > 0);
 
-  const containerBase =
-    "bg-white border-gray-200 flex flex-col w-64";
+  // Tampilan menu (gradasi primary gelap + kaca putih untuk menu aktif). Warna hanya dari token brand.
+  const containerBase = "relative isolate overflow-hidden flex flex-col w-64 text-white bg-primary-900";
+  const desktopClasses = "h-screen hidden lg:flex";
+  const mobileClasses = isOpen ? "fixed inset-y-0 left-0 z-50 shadow-2xl" : "hidden";
 
-  const desktopClasses = "h-screen border-r hidden lg:flex";
-  const mobileClasses = isOpen
-    ? "fixed inset-y-0 left-0 z-50 shadow-xl border-r"
-    : "hidden";
+  const linkBase =
+    "group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200";
+  const linkIdle = "text-white/70 hover:bg-white/10 hover:text-white";
+  // Aktif: kaca putih bergradasi (blur + cincin tipis + sorot atas)
+  const linkActive =
+    "text-white font-semibold bg-gradient-to-r from-white/25 via-white/15 to-white/5 backdrop-blur-md ring-1 ring-white/25 shadow-[0_6px_18px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.35)]";
+  const iconBase = "w-5 h-5 shrink-0 transition-colors";
+  const iconClass = (active?: boolean) => `${iconBase} ${active ? "text-light" : "text-light/80 group-hover:text-light"}`;
+
+  const subBase = "flex items-center px-3 py-2 rounded-lg text-sm transition-all duration-200";
+  const subIdle = "text-white/60 hover:bg-white/10 hover:text-white";
+  const subActive =
+    "text-white font-medium bg-gradient-to-r from-white/20 to-white/5 ring-1 ring-white/20";
 
   return (
     <div
       className={`${containerBase} ${variant === "desktop" ? desktopClasses : mobileClasses}`}
       role="navigation"
     >
+      {/* Lapisan dekoratif: gradasi gelap berlapis dan cahaya lembut */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-700/60 via-primary-900/40 to-dark/90" />
+        <div className="absolute -top-24 -left-20 h-72 w-72 rounded-full bg-primary-300/25 blur-3xl" />
+        <div className="absolute -bottom-32 -right-24 h-80 w-80 rounded-full bg-secondary-500/15 blur-3xl" />
+      </div>
+
       {/* Logo */}
-      <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+      <div className="p-6 border-b border-white/10 flex items-center justify-between">
         {organizationLogo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={organizationLogo}
-            alt={organizationName}
-            className="h-10 w-auto object-contain"
-          />
+          <div className="rounded-xl bg-white/90 px-3 py-2 shadow-lg shadow-black/20 ring-1 ring-white/40">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={organizationLogo}
+              alt={organizationName}
+              className="h-8 w-auto object-contain"
+            />
+          </div>
         ) : (
-          <div className="h-10 w-10 rounded-md bg-primary-50 text-primary-700 flex items-center justify-center font-semibold text-lg">
+          <div className="h-10 w-10 rounded-xl bg-white/15 text-white ring-1 ring-white/25 flex items-center justify-center font-semibold text-lg">
             {organizationName.charAt(0).toUpperCase()}
           </div>
         )}
@@ -292,7 +312,7 @@ export function Sidebar({ variant = "desktop", isOpen = true, onClose }: Sidebar
             type="button"
             onClick={onClose}
             aria-label="Tutup menu"
-            className="p-2 text-gray-500 hover:text-gray-700"
+            className="p-2 text-white/70 hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -300,22 +320,22 @@ export function Sidebar({ variant = "desktop", isOpen = true, onClose }: Sidebar
       </div>
 
       {/* User Info */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-white/10">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-            <span className="text-primary-600 font-semibold">
+          <div className="w-10 h-10 rounded-full bg-white/15 ring-1 ring-white/25 flex items-center justify-center">
+            <span className="text-white font-semibold">
               {user?.name?.charAt(0) || "A"}
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
-            <p className="text-xs text-gray-500 truncate">{user?.roles?.[0]}</p>
+            <p className="text-sm font-medium text-white truncate">{user?.name}</p>
+            <p className="text-xs text-white/60 truncate">{user?.roles?.[0]}</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4">
+      <nav className="flex-1 overflow-y-auto p-4 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.25)_transparent]">
         <ul className="space-y-1">
           {menuItems.map((item) => {
             const hasSubmenu = item.submenu && item.submenu.length > 0;
@@ -331,35 +351,27 @@ export function Sidebar({ variant = "desktop", isOpen = true, onClose }: Sidebar
                     <button
                       type="button"
                       onClick={() => toggleSubmenu(item.label)}
-                      className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-colors ${
-                        isSubmenuActive
-                          ? "bg-primary-50 text-primary-600"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
+                      className={`${linkBase} justify-between w-full ${isSubmenuActive ? linkActive : linkIdle}`}
                     >
-                      <div className="flex items-center space-x-3">
-                        <Icon className="w-5 h-5" />
+                      <div className="flex items-center gap-3">
+                        <Icon className={iconClass(isSubmenuActive)} />
                         <span className="font-medium">{item.label}</span>
                       </div>
                       {isExpanded ? (
-                        <ChevronDown className="w-4 h-4" />
+                        <ChevronDown className="w-4 h-4 text-light/70" />
                       ) : (
-                        <ChevronRight className="w-4 h-4" />
+                        <ChevronRight className="w-4 h-4 text-light/70" />
                       )}
                     </button>
                     {isExpanded && (
-                      <ul className="mt-1 ml-4 space-y-1">
+                      <ul className="mt-1 ml-6 pl-3 border-l border-white/15 space-y-1">
                         {item.submenu.map((subItem) => {
                           const isSubActive = isUrlActive(subItem.href);
                           return (
                             <li key={subItem.href}>
                               <Link
                                 href={subItem.href}
-                                className={`flex items-center px-4 py-2 rounded-lg text-sm transition-colors ${
-                                  isSubActive
-                                    ? "bg-primary-50 text-primary-600 font-medium"
-                                    : "text-gray-600 hover:bg-gray-50"
-                                }`}
+                                className={`${subBase} ${isSubActive ? subActive : subIdle}`}
                               >
                                 {subItem.label}
                               </Link>
@@ -372,13 +384,9 @@ export function Sidebar({ variant = "desktop", isOpen = true, onClose }: Sidebar
                 ) : (
                   <Link
                     href={item.href}
-                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                      isActive
-                        ? "bg-primary-50 text-primary-600"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
+                    className={`${linkBase} ${isActive ? linkActive : linkIdle}`}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon className={iconClass(isActive)} />
                     <span className="font-medium">{item.label}</span>
                   </Link>
                 )}
@@ -389,24 +397,20 @@ export function Sidebar({ variant = "desktop", isOpen = true, onClose }: Sidebar
       </nav>
 
       {/* Profile & Logout */}
-      <div className="p-4 border-t border-gray-200 space-y-1">
+      <div className="p-4 border-t border-white/10 space-y-1">
         <Link
           href="/dashboard/profile"
-          className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-            pathname === "/dashboard/profile"
-              ? "bg-primary-50 text-primary-600"
-              : "text-gray-700 hover:bg-gray-50"
-          }`}
+          className={`${linkBase} ${pathname === "/dashboard/profile" ? linkActive : linkIdle}`}
         >
-          <User className="w-5 h-5" />
+          <User className={iconClass(pathname === "/dashboard/profile")} />
           <span className="font-medium">Profile</span>
         </Link>
         <button
           type="button"
           onClick={logout}
-          className="flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 w-full transition-colors"
+          className={`${linkBase} w-full text-danger-200 hover:bg-danger-500/25 hover:text-white`}
         >
-          <LogOut className="w-5 h-5" />
+          <LogOut className={`${iconBase} text-danger-200 group-hover:text-white`} />
           <span className="font-medium">Logout</span>
         </button>
       </div>

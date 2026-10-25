@@ -85,7 +85,7 @@ export default function LedgerPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Ledger</h1>
+          <h1 className="text-2xl font-bold text-dark">Ledger</h1>
           <p className="text-gray-600 mt-1">Kelola catatan transaksi keuangan</p>
         </div>
         <button
@@ -124,7 +124,7 @@ export default function LedgerPage() {
             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
               statusFilter === tab.key
                 ? "bg-primary-600 text-white"
-                : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+                : "bg-white text-gray-700 border border-gray-200 hover:bg-light"
             }`}
           >
             {tab.label}
@@ -152,12 +152,12 @@ export default function LedgerPage() {
             {ledger.map((entry: any) => (
               <tr key={entry.id}>
                 <td>
-                  <div className="font-mono text-sm font-medium text-gray-900">
+                  <div className="font-mono text-sm font-medium text-dark">
                     {entry.referenceId}
                   </div>
                 </td>
                 <td>
-                  <div className="font-medium text-gray-900">
+                  <div className="font-medium text-dark">
                     {entry.campaign?.title || "-"}
                   </div>
                   <div className="text-sm text-gray-500">
@@ -165,7 +165,7 @@ export default function LedgerPage() {
                   </div>
                 </td>
                 <td>
-                  <div className="text-sm text-gray-900">
+                  <div className="text-sm text-dark">
                     {entry.recipientName || "-"}
                   </div>
                   {entry.recipientBank && (
@@ -178,7 +178,7 @@ export default function LedgerPage() {
                   Rp {formatRupiah(entry.amount)}
                 </td>
                 <td>
-                  <div className="text-sm text-gray-900">
+                  <div className="text-sm text-dark">
                     {entry.expenseAccount?.name || "-"}
                   </div>
                   <div className="text-xs text-gray-500 mono">

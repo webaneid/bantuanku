@@ -105,7 +105,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                   onClick={() => router.push(item.href)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-l-4 ${active
                       ? "bg-primary-50 text-primary-700 border-primary-600 font-medium"
-                      : "bg-white text-gray-700 border-transparent hover:bg-gray-50"
+                      : "bg-white text-gray-700 border-transparent hover:bg-light"
                     }`}
                 >
                   <Icon className={`w-5 h-5 ${active ? "text-primary-600" : "text-gray-400"}`} />

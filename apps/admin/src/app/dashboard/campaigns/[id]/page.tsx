@@ -171,7 +171,7 @@ export default function ViewCampaignPage() {
             Kembali
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Detail Campaign</h1>
+            <h1 className="text-2xl font-bold text-dark">Detail Campaign</h1>
             <p className="text-sm text-gray-500 mt-1">
               ID: {campaignData.id}
             </p>
@@ -207,7 +207,7 @@ export default function ViewCampaignPage() {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                <h2 className="text-3xl font-bold text-dark mb-2">
                   {campaignData.title}
                 </h2>
                 <p className="text-lg text-gray-600">
@@ -227,7 +227,7 @@ export default function ViewCampaignPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Target Donasi</p>
-                  <p className="text-lg font-semibold text-gray-900">
+                  <p className="text-lg font-semibold text-dark">
                     {formatCurrency(Number(campaignData.goal))}
                   </p>
                 </div>
@@ -238,7 +238,7 @@ export default function ViewCampaignPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Terkumpul</p>
-                  <p className="text-lg font-semibold text-gray-900">
+                  <p className="text-lg font-semibold text-dark">
                     {formatCurrency(Number(campaignData.collected || 0))}
                   </p>
                 </div>
@@ -249,7 +249,7 @@ export default function ViewCampaignPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Total Donatur</p>
-                  <p className="text-lg font-semibold text-gray-900">
+                  <p className="text-lg font-semibold text-dark">
                     {campaignData.donorCount || 0} orang
                   </p>
                 </div>
@@ -260,7 +260,7 @@ export default function ViewCampaignPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Progress</p>
-                  <p className="text-lg font-semibold text-gray-900">
+                  <p className="text-lg font-semibold text-dark">
                     {progress.toFixed(1)}%
                   </p>
                 </div>
@@ -281,7 +281,7 @@ export default function ViewCampaignPage() {
           {/* Content */}
           {campaignData.content && (
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
+              <h3 className="text-xl font-bold text-dark mb-4">
                 Deskripsi Lengkap
               </h3>
               <div
@@ -294,7 +294,7 @@ export default function ViewCampaignPage() {
           {/* Additional Images */}
           {campaignData.images && campaignData.images.length > 0 && (
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
+              <h3 className="text-xl font-bold text-dark mb-4">
                 Galeri Gambar
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -314,7 +314,7 @@ export default function ViewCampaignPage() {
           {/* Video */}
           {campaignData.videoUrl && (
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
+              <h3 className="text-xl font-bold text-dark mb-4">
                 Video Campaign
               </h3>
               <div className="aspect-video rounded-lg overflow-hidden">
@@ -331,7 +331,7 @@ export default function ViewCampaignPage() {
           {/* Tabs Section: Laporan */}
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="px-6 pt-6 pb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Laporan</h2>
+              <h2 className="text-2xl font-bold text-dark">Laporan</h2>
             </div>
             {/* Tab Headers */}
             <div className="border-b border-gray-200">
@@ -374,13 +374,13 @@ export default function ViewCampaignPage() {
               {/* Tab 1: Keuangan */}
               {activeTab === "keuangan" && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold text-gray-900">Penyaluran</h3>
+                  <h3 className="text-lg font-bold text-dark">Penyaluran</h3>
 
                   {/* Progress Bar - Penyaluran dari Total Pendapatan */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">Total Pendapatan</span>
-                      <span className="text-sm font-semibold text-gray-900">
+                      <span className="text-sm font-semibold text-dark">
                         {formatCurrency(Number(campaignData.collected || 0))}
                       </span>
                     </div>
@@ -407,16 +407,16 @@ export default function ViewCampaignPage() {
 
                   {/* History Penyaluran */}
                   <div className="mt-8">
-                    <h4 className="text-base font-semibold text-gray-900 mb-4">Riwayat Penyaluran</h4>
+                    <h4 className="text-base font-semibold text-dark mb-4">Riwayat Penyaluran</h4>
 
                     {disbursementsData && disbursementsData.length > 0 ? (
                       <div className="space-y-3">
                         {disbursementsData.map((disbursement: any) => (
-                          <div key={disbursement.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                          <div key={disbursement.id} className="bg-light rounded-lg p-4 border border-gray-200">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h5 className="font-semibold text-gray-900">{disbursement.purpose}</h5>
+                                  <h5 className="font-semibold text-dark">{disbursement.purpose}</h5>
                                   <span className="badge badge-success text-xs">Paid</span>
                                 </div>
                                 <p className="text-sm text-gray-600 mb-2">
@@ -443,7 +443,7 @@ export default function ViewCampaignPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="text-center py-12 bg-light rounded-lg border border-gray-200">
                         <p className="text-gray-500">Belum ada penyaluran untuk campaign ini</p>
                       </div>
                     )}
@@ -454,7 +454,7 @@ export default function ViewCampaignPage() {
               {/* Tab 2: Laporan Kegiatan */}
               {activeTab === "laporan" && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-bold text-gray-900">Timeline Kegiatan</h3>
+                  <h3 className="text-lg font-bold text-dark">Timeline Kegiatan</h3>
 
                   {activityReports && activityReports.length > 0 ? (
                     <div className="relative">
@@ -468,9 +468,9 @@ export default function ViewCampaignPage() {
                             <div className="absolute left-0 top-0 w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center">
                               <div className="w-3 h-3 bg-white rounded-full"></div>
                             </div>
-                            <div className="bg-gray-50 rounded-lg p-4">
+                            <div className="bg-light rounded-lg p-4">
                               <div className="flex items-start justify-between mb-2">
-                                <h4 className="font-semibold text-gray-900">{report.title}</h4>
+                                <h4 className="font-semibold text-dark">{report.title}</h4>
                                 <span className="text-xs text-gray-500">
                                   {new Date(report.activityDate).toLocaleDateString("id-ID", {
                                     day: "numeric",
@@ -504,7 +504,7 @@ export default function ViewCampaignPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <div className="text-center py-12 bg-light rounded-lg">
                       <p className="text-gray-500">Belum ada laporan kegiatan untuk campaign ini</p>
                     </div>
                   )}
@@ -515,7 +515,7 @@ export default function ViewCampaignPage() {
               {activeTab === "donatur" && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-gray-900">Daftar Donatur</h3>
+                    <h3 className="text-lg font-bold text-dark">Daftar Donatur</h3>
                     <span className="text-sm text-gray-500">
                       Total: {transactionsData?.length || 0} donasi
                     </span>
@@ -524,7 +524,7 @@ export default function ViewCampaignPage() {
                   {transactionsData && transactionsData.length > 0 ? (
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-light">
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Nama
@@ -542,11 +542,11 @@ export default function ViewCampaignPage() {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {transactionsData.map((donation: any) => (
-                            <tr key={donation.id} className="hover:bg-gray-50">
+                            <tr key={donation.id} className="hover:bg-light">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
                                   <div>
-                                    <div className="text-sm font-medium text-gray-900">
+                                    <div className="text-sm font-medium text-dark">
                                       {donation.donorName || "Anonim"}
                                     </div>
                                     {donation.donorEmail && (
@@ -556,7 +556,7 @@ export default function ViewCampaignPage() {
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-semibold text-gray-900">
+                                <div className="text-sm font-semibold text-dark">
                                   {formatCurrency(Number(donation.totalAmount || donation.amount || 0))}
                                 </div>
                               </td>
@@ -589,7 +589,7 @@ export default function ViewCampaignPage() {
                       </table>
                     </div>
                   ) : (
-                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <div className="text-center py-12 bg-light rounded-lg">
                       <p className="text-gray-500">Belum ada donatur untuk campaign ini</p>
                     </div>
                   )}
@@ -603,7 +603,7 @@ export default function ViewCampaignPage() {
         <div className="space-y-6">
           {/* Campaign Info */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
+            <h3 className="text-lg font-bold text-dark mb-4">
               Informasi Campaign
             </h3>
             <div className="space-y-4">
@@ -611,7 +611,7 @@ export default function ViewCampaignPage() {
                 <TagIcon className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm text-gray-500">Kategori</p>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-dark">
                     {campaignData.categoryName || "-"}
                   </p>
                 </div>
@@ -636,7 +636,7 @@ export default function ViewCampaignPage() {
                 <CalendarIcon className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm text-gray-500">Tanggal Mulai</p>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-dark">
                     {formatDate(campaignData.startDate)}
                   </p>
                 </div>
@@ -646,7 +646,7 @@ export default function ViewCampaignPage() {
                 <CalendarIcon className="w-5 h-5 text-gray-400 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm text-gray-500">Tanggal Selesai</p>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-dark">
                     {formatDate(campaignData.endDate)}
                   </p>
                 </div>
@@ -657,7 +657,7 @@ export default function ViewCampaignPage() {
                   <TagIcon className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm text-gray-500">Pilar</p>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-dark">
                       {campaignData.pillar}
                     </p>
                   </div>
@@ -668,7 +668,7 @@ export default function ViewCampaignPage() {
 
           {/* Features */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
+            <h3 className="text-lg font-bold text-dark mb-4">
               Status & Fitur
             </h3>
             <div className="space-y-3">
@@ -693,19 +693,19 @@ export default function ViewCampaignPage() {
 
           {/* Timestamps */}
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
+            <h3 className="text-lg font-bold text-dark mb-4">
               Riwayat
             </h3>
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-gray-500">Dibuat</p>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-dark">
                   {formatDate(campaignData.createdAt)}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Terakhir Diperbarui</p>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-dark">
                   {formatDate(campaignData.updatedAt)}
                 </p>
               </div>

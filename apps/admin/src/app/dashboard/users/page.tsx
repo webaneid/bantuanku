@@ -35,9 +35,9 @@ export default function UsersPage() {
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, string> = {
-      active: "bg-green-100 text-green-800",
+      active: "bg-success-100 text-success-800",
       inactive: "bg-gray-100 text-gray-800",
-      suspended: "bg-red-100 text-red-800",
+      suspended: "bg-danger-100 text-danger-800",
     };
 
     return (
@@ -78,19 +78,19 @@ export default function UsersPage() {
                         </span>
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                        <div className="text-sm font-medium text-dark">{user.name}</div>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <div className="text-sm text-gray-900">{user.email}</div>
+                    <div className="text-sm text-dark">{user.email}</div>
                   </td>
                   <td>
                     <div className="flex flex-wrap gap-1">
                       {user.roles?.map((role: any) => (
                         <span
                           key={role.id}
-                          className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded"
+                          className="px-2 py-0.5 text-xs font-medium bg-info-100 text-info-800 rounded"
                         >
                           {role.name}
                         </span>
@@ -143,7 +143,7 @@ export default function UsersPage() {
                     {user.roles?.map((role: any) => (
                       <span
                         key={role.id}
-                        className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded"
+                        className="px-2 py-0.5 text-xs font-medium bg-info-100 text-info-800 rounded"
                       >
                         {role.name}
                       </span>

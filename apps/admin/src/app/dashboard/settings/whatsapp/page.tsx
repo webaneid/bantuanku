@@ -912,7 +912,7 @@ export default function WhatsAppSettingsPage() {
                     <button
                       type="button"
                       onClick={() => removeAdminNumber(i)}
-                      className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md text-sm"
+                      className="px-3 py-2 text-danger-600 hover:bg-danger-50 rounded-md text-sm"
                     >
                       Hapus
                     </button>
@@ -929,17 +929,17 @@ export default function WhatsAppSettingsPage() {
             </div>
 
             {/* Connection status */}
-            <div className="flex items-center gap-4 mb-6 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-4 mb-6 p-3 bg-light rounded-lg">
               <div className="flex items-center gap-2">
                 <SignalIcon className="w-5 h-5 text-gray-400" />
                 <span className="text-sm font-medium">Status Koneksi:</span>
                 {connectionStatus === "unknown" && <span className="text-sm text-gray-400">Belum dicek</span>}
-                {connectionStatus === "checking" && <span className="text-sm text-yellow-600">Memeriksa...</span>}
+                {connectionStatus === "checking" && <span className="text-sm text-warning-600">Memeriksa...</span>}
                 {connectionStatus === "connected" && (
-                  <span className="text-sm text-green-600 font-medium">Connected</span>
+                  <span className="text-sm text-success-600 font-medium">Connected</span>
                 )}
                 {connectionStatus === "disconnected" && (
-                  <span className="text-sm text-red-600 font-medium">Disconnected</span>
+                  <span className="text-sm text-danger-600 font-medium">Disconnected</span>
                 )}
               </div>
               <button
@@ -1013,7 +1013,7 @@ export default function WhatsAppSettingsPage() {
                       [group.title]: !isOpen,
                     }))
                   }
-                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-light transition-colors"
                 >
                   <h3 className="text-sm font-semibold text-gray-800">{group.title}</h3>
                   <div className="flex items-center gap-2">
@@ -1237,7 +1237,7 @@ export default function WhatsAppSettingsPage() {
                     key={log.phone}
                     className="border rounded-lg overflow-hidden"
                   >
-                    <div className="bg-gray-50 px-4 py-2 flex items-center justify-between">
+                    <div className="bg-light px-4 py-2 flex items-center justify-between">
                       <div>
                         <span className="text-sm font-medium">{log.profileName || "Unknown"}</span>
                         <span className="text-xs text-gray-400 ml-2">{log.phone}</span>
@@ -1393,8 +1393,8 @@ function TemplateCard({
 
       {/* Preview */}
       {showPreview && (
-        <div className="mt-3 p-4 bg-green-50 rounded-lg border border-green-200">
-          <p className="text-xs text-green-700 font-medium mb-2">Preview (dengan data contoh):</p>
+        <div className="mt-3 p-4 bg-success-50 rounded-lg border border-success-200">
+          <p className="text-xs text-success-700 font-medium mb-2">Preview (dengan data contoh):</p>
           <pre className="text-sm whitespace-pre-wrap text-gray-800 font-sans">
             {renderPreview(value)}
           </pre>

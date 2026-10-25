@@ -71,7 +71,7 @@ export default function ZakatDashboardPage() {
 
   if (isLoadingStats || isLoadingTypes) {
     return (
-      <main className="flex-1 overflow-y-auto bg-gray-50">
+      <main className="flex-1 overflow-y-auto bg-light">
         <div className="dashboard-container">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
@@ -87,12 +87,12 @@ export default function ZakatDashboardPage() {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto bg-gray-50">
+    <main className="flex-1 overflow-y-auto bg-light">
       <div className="dashboard-container">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard Zakat</h1>
+            <h1 className="text-2xl font-bold text-dark">Dashboard Zakat</h1>
             <p className="text-gray-600 mt-1">
               Kelola dan pantau dana zakat yang masuk dan tersalurkan
             </p>
@@ -127,22 +127,22 @@ export default function ZakatDashboardPage() {
           </div>
 
           {/* Total Dana Tersalurkan */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 shadow-sm border border-orange-200 hover:shadow-md transition-all duration-300">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-600 opacity-5 rounded-full -mr-16 -mt-16"></div>
+          <div className="relative overflow-hidden bg-gradient-to-br from-warning-50 to-warning-100 rounded-2xl p-6 shadow-sm border border-warning-200 hover:shadow-md transition-all duration-300">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-warning-600 opacity-5 rounded-full -mr-16 -mt-16"></div>
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
                 <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                  <ArrowUpCircleIcon className="h-6 w-6 text-orange-600" />
+                  <ArrowUpCircleIcon className="h-6 w-6 text-warning-600" />
                 </div>
-                <span className="text-xs font-medium text-orange-700 bg-orange-200 px-3 py-1 rounded-full">
+                <span className="text-xs font-medium text-warning-700 bg-warning-200 px-3 py-1 rounded-full">
                   Tersalurkan
                 </span>
               </div>
-              <p className="text-sm font-medium text-orange-900 mb-1">Dana Tersalurkan</p>
-              <p className="text-2xl font-bold text-orange-900 mb-2">
+              <p className="text-sm font-medium text-warning-900 mb-1">Dana Tersalurkan</p>
+              <p className="text-2xl font-bold text-warning-900 mb-2">
                 {formatCurrency(stats.distributions.disbursedAmount)}
               </p>
-              <p className="text-xs text-orange-700">
+              <p className="text-xs text-warning-700">
                 {stats.distributions.disbursedCount} penyaluran
               </p>
             </div>
@@ -182,8 +182,8 @@ export default function ZakatDashboardPage() {
                   Pending
                 </span>
               </div>
-              <p className="text-sm font-medium text-gray-900 mb-1">Dana Pending</p>
-              <p className="text-2xl font-bold text-gray-900 mb-2">
+              <p className="text-sm font-medium text-dark mb-1">Dana Pending</p>
+              <p className="text-2xl font-bold text-dark mb-2">
                 {formatCurrency(stats.donations.pendingAmount)}
               </p>
               <p className="text-xs text-gray-700">
@@ -225,7 +225,7 @@ export default function ZakatDashboardPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="text-2xl">{type.icon}</span>
-                            <h3 className="font-semibold text-gray-900">{type.name}</h3>
+                            <h3 className="font-semibold text-dark">{type.name}</h3>
                           </div>
                           <p className="text-xs text-gray-500 mt-1 line-clamp-2">
                             {type.description?.replace(/<[^>]*>/g, '') || ''}
@@ -272,7 +272,7 @@ export default function ZakatDashboardPage() {
                     <div className="text-xs text-gray-500 uppercase font-medium">
                       {item.category}
                     </div>
-                    <div className="text-lg font-bold text-gray-900 mt-1">
+                    <div className="text-lg font-bold text-dark mt-1">
                       {formatCurrency(item.totalAmount)}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">{item.count} penyaluran</div>
@@ -311,7 +311,7 @@ export default function ZakatDashboardPage() {
                       className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
                     >
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-dark">
                           {donation.donorName}
                           {donation.isAnonymous && (
                             <span className="text-xs text-gray-500 ml-2">(Anonim)</span>
@@ -362,7 +362,7 @@ export default function ZakatDashboardPage() {
                       className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
                     >
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-dark">
                           {distribution.recipientName}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">

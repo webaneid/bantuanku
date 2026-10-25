@@ -203,7 +203,7 @@ export default function CategoriesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Kategori Campaign</h1>
+          <h1 className="text-2xl font-bold text-dark">Kategori Campaign</h1>
           <p className="text-gray-600 mt-1">Kelola kategori untuk campaign fundraising</p>
         </div>
         <button
@@ -239,7 +239,7 @@ export default function CategoriesPage() {
               categoriesData.map((category) => (
                 <tr key={category.id}>
                   <td>
-                    <div className="font-medium text-gray-900">{category.name}</div>
+                    <div className="font-medium text-dark">{category.name}</div>
                   </td>
                   <td>
                     <div className="text-sm text-gray-600 mono">{category.slug}</div>
@@ -345,7 +345,7 @@ export default function CategoriesPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-dark">
                 {editingCategory ? "Edit Kategori" : "Tambah Kategori"}
               </h2>
             </div>
@@ -423,7 +423,7 @@ export default function CategoriesPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Hapus Kategori</h2>
+              <h2 className="text-xl font-bold text-dark">Hapus Kategori</h2>
             </div>
             <div className="p-6">
               <p className="text-sm text-gray-700">

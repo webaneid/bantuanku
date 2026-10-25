@@ -111,7 +111,7 @@ export default function MitraReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Laporan Per Mitra</h1>
+          <h1 className="text-2xl font-bold text-dark">Laporan Per Mitra</h1>
           <p className="text-gray-600 mt-1">Settlement statement per mitra lembaga</p>
         </div>
         <ExportButton onExportExcel={handleExportSummary} onPrint={() => window.print()} />
@@ -122,7 +122,7 @@ export default function MitraReportPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="card">
             <p className="text-sm font-medium text-gray-600">Jumlah Mitra</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">{summary.mitraCount}</p>
+            <p className="mt-2 text-2xl font-bold text-dark">{summary.mitraCount}</p>
           </div>
           <div className="card">
             <p className="text-sm font-medium text-gray-600">Total Revenue Share</p>
@@ -158,9 +158,9 @@ export default function MitraReportPage() {
                   </thead>
                   <tbody>
                     {mitras.map((m) => (
-                      <tr key={m.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedId(m.id)}>
+                      <tr key={m.id} className="hover:bg-light cursor-pointer" onClick={() => setSelectedId(m.id)}>
                         <td>
-                          <div className="text-sm font-medium text-gray-900">{m.name}</div>
+                          <div className="text-sm font-medium text-dark">{m.name}</div>
                           <div className="text-xs text-gray-500">{m.status}</div>
                         </td>
                         <td className="text-center text-sm">{m.campaignCount}</td>
@@ -245,7 +245,7 @@ export default function MitraReportPage() {
             ) : detailData ? (
               <>
                 <div className="card mb-4">
-                  <h2 className="text-lg font-bold text-gray-900 mb-2">{detailData.mitra.name}</h2>
+                  <h2 className="text-lg font-bold text-dark mb-2">{detailData.mitra.name}</h2>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div><span className="text-gray-500">Total Share:</span> <span className="mono font-medium text-primary-600">Rp {formatRupiah(detailData.summary.totalShare)}</span></div>
                     <div><span className="text-gray-500">Dibayar:</span> <span className="mono font-medium text-success-600">Rp {formatRupiah(detailData.summary.totalPaid)}</span></div>
@@ -256,7 +256,7 @@ export default function MitraReportPage() {
                 {/* Revenue Shares Table */}
                 <div className="table-container mb-6">
                   <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">Settlement Statement ({detailData.revenueShares.length})</h3>
+                    <h3 className="text-lg font-semibold text-dark">Settlement Statement ({detailData.revenueShares.length})</h3>
                   </div>
                   <table className="table">
                     <thead>
@@ -286,7 +286,7 @@ export default function MitraReportPage() {
                 {/* Disbursements Table */}
                 <div className="table-container">
                   <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">Riwayat Pembayaran ({detailData.disbursements.length})</h3>
+                    <h3 className="text-lg font-semibold text-dark">Riwayat Pembayaran ({detailData.disbursements.length})</h3>
                   </div>
                   <table className="table">
                     <thead>

@@ -44,9 +44,9 @@ export default function DonationInvoicePage({
   const siteName = siteSettings?.site_name || '';
 
   const statusBadgeMap: Record<string, string> = {
-    pending: "bg-amber-50 text-amber-700 border border-amber-200",
-    success: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    failed: "bg-rose-50 text-rose-700 border border-rose-200",
+    pending: "bg-warning-50 text-warning-700 border border-warning-200",
+    success: "bg-primary-50 text-primary-700 border border-primary-200",
+    failed: "bg-danger-50 text-danger-700 border border-danger-200",
     expired: "bg-gray-100 text-gray-700 border border-gray-200",
   };
 
@@ -56,8 +56,8 @@ export default function DonationInvoicePage({
 
     if (code.startsWith("bank-")) {
       return (
-        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-sm font-semibold text-gray-900 mb-2">Transfer Bank</p>
+        <div className="p-3 bg-light rounded-lg border border-gray-200">
+          <p className="text-sm font-semibold text-dark mb-2">Transfer Bank</p>
           <div className="space-y-1 text-sm text-gray-700">
             <div className="flex">
               <span className="w-32 font-medium">Bank:</span>
@@ -113,7 +113,7 @@ export default function DonationInvoicePage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="min-h-screen bg-light py-10 px-4">
         <div className="max-w-3xl mx-auto space-y-4">
           <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
           <div className="h-80 bg-gray-200 rounded animate-pulse"></div>
@@ -124,9 +124,9 @@ export default function DonationInvoicePage({
 
   if (error || !donation) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-light px-4">
         <div className="bg-white rounded-lg shadow p-8 max-w-lg w-full text-center border border-gray-200">
-          <p className="text-lg font-semibold text-gray-900 mb-2">Invoice tidak ditemukan</p>
+          <p className="text-lg font-semibold text-dark mb-2">Invoice tidak ditemukan</p>
           <p className="text-sm text-gray-600">
             Pastikan tautan invoice sudah benar atau hubungi admin {siteName}.
           </p>
@@ -139,12 +139,12 @@ export default function DonationInvoicePage({
 
   return (
     <>
-    <div className="min-h-screen bg-gray-50 py-10 px-4 print:bg-white">
+    <div className="min-h-screen bg-light py-10 px-4 print:bg-white">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-start justify-between mb-6 print:hidden">
           <div>
             <p className="text-sm font-semibold text-primary-600">{siteName}</p>
-            <h1 className="text-2xl font-bold text-gray-900">Invoice Donasi</h1>
+            <h1 className="text-2xl font-bold text-dark">Invoice Donasi</h1>
             <p className="text-sm text-gray-600 mt-1">Nomor: {donation.referenceId}</p>
           </div>
           <div className="flex gap-2">
@@ -170,7 +170,7 @@ export default function DonationInvoicePage({
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 print:shadow-none print:border-0">
           <div className="flex items-start justify-between border-b border-gray-200 pb-4 mb-4">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900">INVOICE</h2>
+              <h2 className="text-3xl font-bold text-dark">INVOICE</h2>
               <p className="text-sm text-gray-500 mt-1">
                 {donation.campaign?.pillar === "wakaf"
                   ? "Tanda Terima Wakaf"
@@ -181,7 +181,7 @@ export default function DonationInvoicePage({
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Nomor Referensi</p>
-              <p className="text-lg font-mono font-bold text-gray-900">{donation.referenceId}</p>
+              <p className="text-lg font-mono font-bold text-dark">{donation.referenceId}</p>
               <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full mt-2 capitalize ${badgeClass}`}>
                 {donation.paymentStatus}
               </span>
@@ -192,7 +192,7 @@ export default function DonationInvoicePage({
             <div>
               <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Donatur</h3>
               <div className="space-y-1">
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-semibold text-dark">
                   {donation.isAnonymous ? "Hamba Allah" : donation.donorName}
                 </p>
                 {!donation.isAnonymous && donation.donorEmail && (
@@ -205,7 +205,7 @@ export default function DonationInvoicePage({
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Campaign</h3>
-              <p className="text-lg font-semibold text-gray-900">{donation.campaign?.title || "-"}</p>
+              <p className="text-lg font-semibold text-dark">{donation.campaign?.title || "-"}</p>
               {donation.campaign?.category && (
                 <p className="text-sm text-gray-600 mt-1">Kategori: {donation.campaign.category.name}</p>
               )}
@@ -217,17 +217,17 @@ export default function DonationInvoicePage({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Nominal Donasi</span>
-                <span className="font-mono font-semibold text-gray-900">Rp {formatRupiah(donation.amount)}</span>
+                <span className="font-mono font-semibold text-dark">Rp {formatRupiah(donation.amount)}</span>
               </div>
               {donation.feeAmount > 0 && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Biaya Admin</span>
-                  <span className="font-mono text-gray-900">Rp {formatRupiah(donation.feeAmount)}</span>
+                  <span className="font-mono text-dark">Rp {formatRupiah(donation.feeAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between pt-2 border-t border-gray-200">
-                <span className="font-semibold text-gray-900">Total</span>
-                <span className="font-mono font-bold text-lg text-gray-900">Rp {formatRupiah(donation.totalAmount)}</span>
+                <span className="font-semibold text-dark">Total</span>
+                <span className="font-mono font-bold text-lg text-dark">Rp {formatRupiah(donation.totalAmount)}</span>
               </div>
             </div>
           </div>
@@ -237,30 +237,30 @@ export default function DonationInvoicePage({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className={donation.paymentMethodId?.startsWith("bank-") ? "md:col-span-2" : ""}>
                 <p className="text-sm text-gray-500 mb-1">Metode Pembayaran</p>
-                <div className="text-sm font-medium text-gray-900">{renderPaymentMethod()}</div>
+                <div className="text-sm font-medium text-dark">{renderPaymentMethod()}</div>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Status</p>
-                <p className="text-sm font-medium text-gray-900 capitalize">{donation.paymentStatus}</p>
+                <p className="text-sm font-medium text-dark capitalize">{donation.paymentStatus}</p>
               </div>
               {donation.paidAt && (
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Tanggal Pembayaran</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-dark">
                     {formatDateWIB(donation.paidAt, "dd MMMM yyyy, HH:mm")}
                   </p>
                 </div>
               )}
               <div>
                 <p className="text-sm text-gray-500 mb-1">Tanggal Donasi</p>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-dark">
                   {formatDateWIB(donation.createdAt, "dd MMMM yyyy, HH:mm")}
                 </p>
               </div>
               {donation.expiredAt && donation.paymentStatus === "pending" && (
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Kadaluarsa</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-dark">
                     {formatDateWIB(donation.expiredAt, "dd MMMM yyyy, HH:mm")}
                   </p>
                 </div>
@@ -283,11 +283,11 @@ export default function DonationInvoicePage({
                 {donation.evidences.map((evidence: any) => (
                   <div
                     key={evidence.id}
-                    className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                    className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-light hover:bg-gray-100 transition-colors"
                   >
                     <PaperClipIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-dark truncate">
                         {evidence.title}
                       </p>
                       <p className="text-xs text-gray-500">
@@ -331,7 +331,7 @@ export default function DonationInvoicePage({
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">{proofModal.title}</h3>
+              <h3 className="text-lg font-semibold text-dark">{proofModal.title}</h3>
               <button
                 onClick={() => setProofModal({ open: false, url: "", title: "" })}
                 className="text-gray-400 hover:text-gray-500"

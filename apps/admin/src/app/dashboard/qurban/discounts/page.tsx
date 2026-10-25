@@ -30,11 +30,11 @@ function getStatusBadge(discount: Discount) {
   const end = new Date(discount.endDate);
 
   if (!discount.isActive) return { label: "Nonaktif", color: "bg-gray-100 text-gray-700" };
-  if (now < start) return { label: "Belum Berlaku", color: "bg-yellow-100 text-yellow-700" };
-  if (now > end) return { label: "Kadaluarsa", color: "bg-red-100 text-red-700" };
+  if (now < start) return { label: "Belum Berlaku", color: "bg-warning-100 text-warning-700" };
+  if (now > end) return { label: "Kadaluarsa", color: "bg-danger-100 text-danger-700" };
   if (discount.maxUsage !== null && discount.usageCount >= discount.maxUsage)
-    return { label: "Habis", color: "bg-orange-100 text-orange-700" };
-  return { label: "Aktif", color: "bg-green-100 text-green-700" };
+    return { label: "Habis", color: "bg-warning-100 text-warning-700" };
+  return { label: "Aktif", color: "bg-success-100 text-success-700" };
 }
 
 const EMPTY_CONFIRM = { open: false, title: "", message: "", action: null as null | { type: "deactivate" | "delete"; id: string } };
@@ -89,7 +89,7 @@ export default function QurbanDiscountsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Tag className="w-6 h-6 text-primary-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Diskon & Voucher Qurban</h1>
+          <h1 className="text-2xl font-bold text-dark">Diskon & Voucher Qurban</h1>
         </div>
         <Link
           href="/dashboard/qurban/discounts/new"
@@ -154,15 +154,15 @@ export default function QurbanDiscountsPage() {
               {discounts.map((d) => {
                 const status = getStatusBadge(d);
                 return (
-                  <tr key={d.id} className="hover:bg-gray-50">
-                    <td className="py-3 font-medium text-gray-900">
+                  <tr key={d.id} className="hover:bg-light">
+                    <td className="py-3 font-medium text-dark">
                       <Link href={`/dashboard/qurban/discounts/${d.id}`} className="hover:text-primary-600">
                         {d.name}
                       </Link>
                     </td>
                     <td className="py-3">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        d.type === "automatic" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                        d.type === "automatic" ? "bg-info-100 text-info-700" : "bg-secondary-100 text-secondary-700"
                       }`}>
                         {d.type === "automatic" ? "Otomatis" : "Voucher"}
                       </span>
@@ -207,7 +207,7 @@ export default function QurbanDiscountsPage() {
                                 action: { type: "deactivate", id: d.id },
                               })
                             }
-                            className="p-1 hover:text-yellow-600 text-gray-400"
+                            className="p-1 hover:text-warning-600 text-gray-400"
                             title="Nonaktifkan"
                           >
                             <Power className="w-4 h-4" />
@@ -223,7 +223,7 @@ export default function QurbanDiscountsPage() {
                                 action: { type: "delete", id: d.id },
                               })
                             }
-                            className="p-1 hover:text-red-600 text-gray-400"
+                            className="p-1 hover:text-danger-600 text-gray-400"
                             title="Hapus"
                           >
                             <Trash2 className="w-4 h-4" />

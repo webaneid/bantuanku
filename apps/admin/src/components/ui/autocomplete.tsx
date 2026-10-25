@@ -106,7 +106,7 @@ export function Autocomplete<T>({
       <div
         className={`
           flex items-center gap-2 px-3 py-2 border rounded-md bg-white cursor-pointer
-          ${disabled ? "bg-gray-50 cursor-not-allowed" : "hover:border-gray-400"}
+          ${disabled ? "bg-light cursor-not-allowed" : "hover:border-gray-400"}
           ${isOpen ? "border-primary-500 ring-2 ring-primary-100" : "border-gray-300"}
         `}
         onClick={handleInputClick}
@@ -165,7 +165,7 @@ export function Autocomplete<T>({
                   onClick={() => handleSelect(option)}
                   className={`
                     px-3 py-2 cursor-pointer transition-colors
-                    ${isSelected ? "bg-primary-50 text-primary-700 font-medium" : "hover:bg-gray-50"}
+                    ${isSelected ? "bg-primary-50 text-primary-700 font-medium" : "hover:bg-light"}
                   `}
                 >
                   {optionLabel}

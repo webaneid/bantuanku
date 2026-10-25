@@ -148,7 +148,7 @@ export default function PaymentModal({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Konfirmasi Pembayaran</h2>
+              <h2 className="text-xl font-semibold text-dark">Konfirmasi Pembayaran</h2>
               <p className="text-sm text-gray-500 mt-1">
                 Kepada: {disbursement.recipientName}
               </p>
@@ -166,7 +166,7 @@ export default function PaymentModal({
             {/* Payment Method */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Metode Pembayaran <span className="text-red-500">*</span>
+                Metode Pembayaran <span className="text-danger-500">*</span>
               </label>
               <Autocomplete
                 options={paymentMethodOptions}
@@ -181,14 +181,14 @@ export default function PaymentModal({
             {requiresSourceAccount && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Sumber Rekening <span className="text-red-500">*</span>
+                  Sumber Rekening <span className="text-danger-500">*</span>
                 </label>
                 {isLoadingBankAccounts ? (
                   <div className="form-input w-full text-gray-500 text-sm">
                     Loading rekening...
                   </div>
                 ) : bankAccountOptions.length === 0 ? (
-                  <div className="form-input w-full text-red-500 text-sm">
+                  <div className="form-input w-full text-danger-500 text-sm">
                     Tidak ada rekening bank. Silakan tambahkan di Settings → Payments.
                   </div>
                 ) : (
@@ -241,7 +241,7 @@ export default function PaymentModal({
             {/* Transaction Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tanggal Transaksi <span className="text-red-500">*</span>
+                Tanggal Transaksi <span className="text-danger-500">*</span>
               </label>
               <input
                 type="date"
@@ -255,7 +255,7 @@ export default function PaymentModal({
             {/* Payment Proof */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Bukti Pembayaran {formData.paymentMethod === "transfer_bank" && <span className="text-red-500">*</span>}
+                Bukti Pembayaran {formData.paymentMethod === "transfer_bank" && <span className="text-danger-500">*</span>}
               </label>
               {formData.proofUrl ? (
                 <div className="border border-gray-300 rounded-lg p-4 flex items-center justify-between">
@@ -266,14 +266,14 @@ export default function PaymentModal({
                       className="w-16 h-16 object-cover rounded"
                     />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Bukti transfer uploaded</p>
+                      <p className="text-sm font-medium text-dark">Bukti transfer uploaded</p>
                       <p className="text-xs text-gray-500">{formData.proofUrl.split("/").pop()}</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, proofUrl: "" })}
-                    className="text-red-600 hover:text-red-700 text-sm font-medium"
+                    className="text-danger-600 hover:text-danger-700 text-sm font-medium"
                   >
                     Hapus
                   </button>
@@ -307,23 +307,23 @@ export default function PaymentModal({
             </div>
 
             {/* Summary */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">Ringkasan Pembayaran</h4>
+            <div className="bg-light rounded-lg p-4 border border-gray-200">
+              <h4 className="text-sm font-semibold text-dark mb-3">Ringkasan Pembayaran</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Nominal:</span>
-                  <span className="font-semibold text-gray-900 mono">
+                  <span className="font-semibold text-dark mono">
                     Rp {disbursement.amount.toLocaleString("id-ID")}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Penerima:</span>
-                  <span className="font-medium text-gray-900">{disbursement.recipientName}</span>
+                  <span className="font-medium text-dark">{disbursement.recipientName}</span>
                 </div>
                 {disbursement.recipientBank && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Bank:</span>
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-dark">
                       {disbursement.recipientBank} - {disbursement.recipientAccount}
                     </span>
                   </div>

@@ -243,7 +243,7 @@ export default function EmployeesPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
+          <h1 className="text-2xl font-bold text-dark">Employees</h1>
           <p className="text-gray-600 mt-1">Kelola data karyawan</p>
         </div>
         <div className="flex gap-2">
@@ -323,10 +323,10 @@ export default function EmployeesPage() {
                     {employee.employeeId && (
                       <div className="text-xs text-gray-500 mono">{employee.employeeId}</div>
                     )}
-                    <div className="font-medium text-gray-900">{employee.name}</div>
+                    <div className="font-medium text-dark">{employee.name}</div>
                   </td>
                   <td>
-                    <div className="text-sm text-gray-900">{employee.position}</div>
+                    <div className="text-sm text-dark">{employee.position}</div>
                     {employee.employmentType && (
                       <div className="text-xs text-gray-500">{employee.employmentType}</div>
                     )}
@@ -337,7 +337,7 @@ export default function EmployeesPage() {
                     </span>
                   </td>
                   <td>
-                    <div className="text-sm text-gray-900">{employee.email || "-"}</div>
+                    <div className="text-sm text-dark">{employee.email || "-"}</div>
                     {employee.phone && (
                       <div className="text-xs text-gray-500">{employee.phone}</div>
                     )}
@@ -528,7 +528,7 @@ export default function EmployeesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Posisi <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Posisi <span className="text-danger-500">*</span></label>
                 <input
                   type="text"
                   className="form-input"

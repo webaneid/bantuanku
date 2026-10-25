@@ -121,7 +121,7 @@ export default function DeveloperSettingsPage() {
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === "info"
                   ? "border-primary-600 text-primary-700"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
+                  : "border-transparent text-gray-600 hover:text-dark"
               }`}
               onClick={() => setActiveTab("info")}
             >
@@ -133,7 +133,7 @@ export default function DeveloperSettingsPage() {
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === "rekening"
                     ? "border-primary-600 text-primary-700"
-                    : "border-transparent text-gray-600 hover:text-gray-900"
+                    : "border-transparent text-gray-600 hover:text-dark"
                 }`}
                 onClick={() => setActiveTab("rekening")}
               >
@@ -146,7 +146,7 @@ export default function DeveloperSettingsPage() {
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === "pendapatan"
                     ? "border-primary-600 text-primary-700"
-                    : "border-transparent text-gray-600 hover:text-gray-900"
+                    : "border-transparent text-gray-600 hover:text-dark"
                 }`}
                 onClick={() => setActiveTab("pendapatan")}
               >
@@ -166,7 +166,7 @@ export default function DeveloperSettingsPage() {
                 className="h-20 w-auto mx-auto"
               />
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Webane Indonesia</h2>
+                <h2 className="text-xl font-semibold text-dark">Webane Indonesia</h2>
                 <p className="text-sm text-gray-600 mt-1">
                   JalaDana Versi 1.0.1 - Februari 2026
                 </p>
@@ -174,7 +174,7 @@ export default function DeveloperSettingsPage() {
             </div>
 
             <div className="rounded-lg border border-gray-200 p-5">
-              <h3 className="text-base font-semibold text-gray-900 mb-2">About Webane</h3>
+              <h3 className="text-base font-semibold text-dark mb-2">About Webane</h3>
               <p className="text-sm text-gray-700 leading-6">
                 Webane Indonesia adalah software house dan konsultan digital yang
                 berfokus pada pengembangan aplikasi web, mobile, automasi bisnis,
@@ -184,7 +184,7 @@ export default function DeveloperSettingsPage() {
             </div>
 
             <div className="rounded-lg border border-gray-200 p-5">
-              <h3 className="text-base font-semibold text-gray-900 mb-4">Resources</h3>
+              <h3 className="text-base font-semibold text-dark mb-4">Resources</h3>
               <div className="flex flex-col sm:flex-row gap-3">
                 <a
                   href="https://webane.com"
@@ -210,7 +210,7 @@ export default function DeveloperSettingsPage() {
         {isDeveloper && activeTab === "rekening" && (
           <div className="rounded-lg border border-gray-200 p-5 space-y-5">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Rekening Platform Provider</h3>
+              <h3 className="text-base font-semibold text-dark">Rekening Platform Provider</h3>
               <p className="text-sm text-gray-600 mt-1">
                 Kelola rekening penerimaan platform provider.
               </p>
@@ -244,7 +244,7 @@ export default function DeveloperSettingsPage() {
         {isDeveloper && activeTab === "pendapatan" && (
           <div className="rounded-lg border border-gray-200 p-5 space-y-5">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Pendapatan Platform Provider</h3>
+              <h3 className="text-base font-semibold text-dark">Pendapatan Platform Provider</h3>
               <p className="text-sm text-gray-600 mt-1">
                 Periode bulanan dihitung dari tanggal 20 ke tanggal 20 bulan berikutnya.
               </p>
@@ -255,7 +255,7 @@ export default function DeveloperSettingsPage() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full border border-gray-200 rounded-lg">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-light">
                     <tr>
                       <th className="text-left text-xs font-semibold text-gray-600 px-4 py-3">Bulan</th>
                       <th className="text-right text-xs font-semibold text-gray-600 px-4 py-3">Revenue Share</th>
@@ -274,14 +274,14 @@ export default function DeveloperSettingsPage() {
                     ) : (
                       developerIncomeQuery.data.map((row: any) => (
                         <tr key={`${row.month}-${row.periodStart}`} className="border-t border-gray-200">
-                          <td className="px-4 py-3 text-sm text-gray-900 capitalize">{row.month}</td>
-                          <td className="px-4 py-3 text-sm text-right text-gray-900 mono">
+                          <td className="px-4 py-3 text-sm text-dark capitalize">{row.month}</td>
+                          <td className="px-4 py-3 text-sm text-right text-dark mono">
                             Rp {Number(row.revenueShare || 0).toLocaleString("id-ID")}
                           </td>
-                          <td className="px-4 py-3 text-sm text-right text-gray-900 mono">
+                          <td className="px-4 py-3 text-sm text-right text-dark mono">
                             Rp {Number(row.disbursements || 0).toLocaleString("id-ID")}
                           </td>
-                          <td className="px-4 py-3 text-sm text-right font-semibold text-gray-900 mono">
+                          <td className="px-4 py-3 text-sm text-right font-semibold text-dark mono">
                             Rp {Number(row.saldo || 0).toLocaleString("id-ID")}
                           </td>
                           <td className="px-4 py-3 text-sm text-center">

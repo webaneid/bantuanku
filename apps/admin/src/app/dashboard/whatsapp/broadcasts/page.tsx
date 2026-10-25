@@ -46,12 +46,12 @@ type CampaignDetail = {
 };
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  pending: { label: "Menunggu", className: "bg-yellow-100 text-yellow-800" },
-  processing: { label: "Berjalan", className: "bg-blue-100 text-blue-800" },
-  completed: { label: "Selesai", className: "bg-green-100 text-green-800" },
-  failed: { label: "Gagal", className: "bg-red-100 text-red-800" },
+  pending: { label: "Menunggu", className: "bg-warning-100 text-warning-800" },
+  processing: { label: "Berjalan", className: "bg-info-100 text-info-800" },
+  completed: { label: "Selesai", className: "bg-success-100 text-success-800" },
+  failed: { label: "Gagal", className: "bg-danger-100 text-danger-800" },
   cancelled: { label: "Dibatalkan", className: "bg-gray-100 text-gray-700" },
-  paused: { label: "Dijeda (WA Logout)", className: "bg-orange-100 text-orange-800" },
+  paused: { label: "Dijeda (WA Logout)", className: "bg-warning-100 text-warning-800" },
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -325,12 +325,12 @@ export default function BroadcastsPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Broadcast WhatsApp</h1>
+          <h1 className="text-2xl font-bold text-dark">Broadcast WhatsApp</h1>
           <p className="text-sm text-gray-500 mt-1">Kirim pesan massal ke donatur secara terjadwal.</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700"
+          className="flex items-center gap-2 bg-success-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-success-700"
         >
           <Plus size={16} /> Buat Broadcast
         </button>
@@ -338,7 +338,7 @@ export default function BroadcastsPage() {
 
       {/* Success banner */}
       {successMessage && (
-        <div className="mb-4 flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 rounded-lg px-4 py-3 text-sm">
+        <div className="mb-4 flex items-center gap-2 bg-success-50 border border-success-200 text-success-800 rounded-lg px-4 py-3 text-sm">
           <CheckCircle2 size={16} className="shrink-0" />
           {successMessage}
         </div>
@@ -352,7 +352,7 @@ export default function BroadcastsPage() {
           <div className="p-8 text-center text-gray-400">Belum ada broadcast.</div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600 text-xs uppercase">
+            <thead className="bg-light text-gray-600 text-xs uppercase">
               <tr>
                 <th className="px-4 py-3 text-left">Nama</th>
                 <th className="px-4 py-3 text-left">Tipe</th>
@@ -367,12 +367,12 @@ export default function BroadcastsPage() {
               {jobs.map((job) => {
                 const statusInfo = STATUS_LABELS[job.status] || { label: job.status, className: "bg-gray-100 text-gray-700" };
                 return (
-                  <tr key={job.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-gray-900">{job.name}</td>
+                  <tr key={job.id} className="hover:bg-light">
+                    <td className="px-4 py-3 font-medium text-dark">{job.name}</td>
                     <td className="px-4 py-3 text-gray-600">{TYPE_LABELS[job.type] || job.type}</td>
                     <td className="px-4 py-3 text-gray-600">{AUDIENCE_LABELS[job.audienceScope] || job.audienceScope}</td>
-                    <td className="px-4 py-3 text-center text-green-700 font-medium">{job.sentCount}</td>
-                    <td className="px-4 py-3 text-center text-red-600">{job.failedCount}</td>
+                    <td className="px-4 py-3 text-center text-success-700 font-medium">{job.sentCount}</td>
+                    <td className="px-4 py-3 text-center text-danger-600">{job.failedCount}</td>
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusInfo.className}`}>
                         {statusInfo.label}
@@ -380,11 +380,11 @@ export default function BroadcastsPage() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-2">
-                        <Link href={`/dashboard/whatsapp/broadcasts/${job.id}`} className="text-blue-600 hover:text-blue-800" title="Detail">
+                        <Link href={`/dashboard/whatsapp/broadcasts/${job.id}`} className="text-info-600 hover:text-info-800" title="Detail">
                           <Eye size={16} />
                         </Link>
                         {["pending", "processing"].includes(job.status) && (
-                          <button onClick={() => cancelMutation.mutate(job.id)} className="text-red-500 hover:text-red-700" title="Batalkan">
+                          <button onClick={() => cancelMutation.mutate(job.id)} className="text-danger-500 hover:text-danger-700" title="Batalkan">
                             <XCircle size={16} />
                           </button>
                         )}
@@ -413,7 +413,7 @@ export default function BroadcastsPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-5">Buat Broadcast Baru</h2>
+            <h2 className="text-lg font-bold text-dark mb-5">Buat Broadcast Baru</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
               {/* Left — Form */}
@@ -424,7 +424,7 @@ export default function BroadcastsPage() {
                   <select
                     value={form.type}
                     onChange={(e) => handleTypeChange(e.target.value as CreateForm["type"])}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-success-500"
                   >
                     <option value="campaign_new">Program Baru — broadcast saat campaign baru publish</option>
                     <option value="reengagement">Re-engagement — donatur tidak aktif 62+ hari</option>
@@ -440,12 +440,12 @@ export default function BroadcastsPage() {
                 {needsCampaign && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Pilih Campaign {form.type === "campaign_new" && <span className="text-red-500">*</span>}
+                      Pilih Campaign {form.type === "campaign_new" && <span className="text-danger-500">*</span>}
                     </label>
                     <select
                       value={form.referenceId}
                       onChange={handleCampaignSelect}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-success-500"
                     >
                       <option value="">-- Pilih campaign aktif --</option>
                       {campaignOptions.map((opt) => (
@@ -453,7 +453,7 @@ export default function BroadcastsPage() {
                       ))}
                     </select>
                     {campaignDetail && (
-                      <div className="mt-1 text-xs text-green-700 space-y-0.5">
+                      <div className="mt-1 text-xs text-success-700 space-y-0.5">
                         <p>✓ {campaignDetail.title}</p>
                         {campaignDetail.targetAmount && <p className="text-gray-500">Target: {formatTarget(campaignDetail.targetAmount)}</p>}
                       </div>
@@ -466,7 +466,7 @@ export default function BroadcastsPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Template Key</label>
                     {AUTO_TEMPLATE_KEYS[form.type] ? (
-                      <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-500 font-mono">
+                      <div className="w-full border border-gray-200 bg-light rounded-lg px-3 py-2 text-sm text-gray-500 font-mono">
                         {form.templateKey || AUTO_TEMPLATE_KEYS[form.type]}
                       </div>
                     ) : (
@@ -474,7 +474,7 @@ export default function BroadcastsPage() {
                         type="text"
                         value={form.templateKey}
                         onChange={(e) => setForm((f) => ({ ...f, templateKey: e.target.value }))}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-success-500"
                         placeholder="cth: wa_tpl_campaign_new"
                       />
                     )}
@@ -490,7 +490,7 @@ export default function BroadcastsPage() {
                       rows={6}
                       value={form.contentOverride}
                       onChange={(e) => setForm((f) => ({ ...f, contentOverride: e.target.value }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-success-500"
                       placeholder={"Assalamu'alaikum {customer_name},\n\n{store_name} mengucapkan terima kasih atas kepercayaan Anda..."}
                     />
                     <div className="mt-2">
@@ -515,12 +515,12 @@ export default function BroadcastsPage() {
 
                 {/* Nama Broadcast */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nama Broadcast <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nama Broadcast <span className="text-danger-500">*</span></label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-success-500"
                     placeholder="cth: Broadcast Program Ramadhan 2026"
                   />
                 </div>
@@ -531,7 +531,7 @@ export default function BroadcastsPage() {
                   <select
                     value={form.audienceScope}
                     onChange={(e) => setForm((f) => ({ ...f, audienceScope: e.target.value as CreateForm["audienceScope"] }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-success-500"
                   >
                     <option value="all">Semua donatur aktif</option>
                     <option value="campaign_donors">Donatur campaign tertentu</option>
@@ -540,7 +540,7 @@ export default function BroadcastsPage() {
                 </div>
 
                 {/* Estimasi */}
-                <div className={`rounded-lg px-3 py-2 text-sm border ${estimateLoading ? "bg-gray-50 border-gray-200 text-gray-400" : estimate ? "bg-blue-50 border-blue-200 text-blue-800" : "bg-gray-50 border-gray-200 text-gray-400"}`}>
+                <div className={`rounded-lg px-3 py-2 text-sm border ${estimateLoading ? "bg-light border-gray-200 text-gray-400" : estimate ? "bg-info-50 border-info-200 text-info-800" : "bg-light border-gray-200 text-gray-400"}`}>
                   {estimateLoading ? "Menghitung estimasi..." : estimate
                     ? `~${estimate.count.toLocaleString("id-ID")} penerima · ${estimate.batches} batch · selesai ±${estimate.estimatedHours} jam`
                     : "Pilih audience untuk melihat estimasi"}
@@ -554,7 +554,7 @@ export default function BroadcastsPage() {
                       type="number" min={1} max={500}
                       value={form.batchSize}
                       onChange={(e) => setForm((f) => ({ ...f, batchSize: parseInt(e.target.value) || 50 }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-success-500"
                     />
                   </div>
                   <div>
@@ -563,22 +563,22 @@ export default function BroadcastsPage() {
                       type="number" min={1} max={1440}
                       value={form.batchIntervalMinutes}
                       onChange={(e) => setForm((f) => ({ ...f, batchIntervalMinutes: parseInt(e.target.value) || 60 }))}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-success-500"
                     />
                   </div>
                 </div>
 
                 {formError && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
+                  <div className="bg-danger-50 border border-danger-200 rounded-lg px-3 py-2 text-sm text-danger-700">
                     {formError}
                   </div>
                 )}
 
                 <div className="flex justify-end gap-3 pt-2">
-                  <button type="button" onClick={() => { setShowCreate(false); resetForm(); }} className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                  <button type="button" onClick={() => { setShowCreate(false); resetForm(); }} className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-light">
                     Batal
                   </button>
-                  <button type="submit" disabled={createMutation.isPending} className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
+                  <button type="submit" disabled={createMutation.isPending} className="px-4 py-2 text-sm bg-success-600 text-white rounded-lg hover:bg-success-700 disabled:opacity-50">
                     {createMutation.isPending ? "Menyimpan..." : "Buat & Antri"}
                   </button>
                 </div>
@@ -588,11 +588,11 @@ export default function BroadcastsPage() {
               <div>
                 <p className="text-sm font-medium text-gray-700 mb-2">Preview Pesan</p>
                 {previewContent ? (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-gray-800 whitespace-pre-wrap font-mono leading-relaxed">
+                  <div className="bg-success-50 border border-success-200 rounded-xl p-4 text-sm text-gray-800 whitespace-pre-wrap font-mono leading-relaxed">
                     {previewContent}
                   </div>
                 ) : (
-                  <div className="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-400 text-sm">
+                  <div className="bg-light border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-400 text-sm">
                     {form.type === "manual_free"
                       ? "Tulis pesan untuk melihat preview"
                       : needsCampaign

@@ -88,7 +88,7 @@ export default function CategoryAuditPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Audit Kategori COA</h1>
+          <h1 className="text-2xl font-bold text-dark">Audit Kategori COA</h1>
           <p className="text-gray-600 mt-1">Detail mismatch kategori dari transactions dan disbursements</p>
         </div>
       </div>
@@ -205,7 +205,7 @@ export default function CategoryAuditPage() {
                         {row.source}
                       </span>
                     </td>
-                    <td className="text-sm font-medium text-gray-900">{row.referenceNumber || row.id}</td>
+                    <td className="text-sm font-medium text-dark">{row.referenceNumber || row.id}</td>
                     <td>
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-danger-100 text-danger-700">
                         {row.category}

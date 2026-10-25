@@ -162,7 +162,7 @@ export default function SEOSettingsPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">SEO Halaman</h2>
+          <h2 className="text-xl font-bold text-dark">SEO Halaman</h2>
           <p className="text-sm text-gray-600 mt-1">
             Kelola SEO untuk halaman-halaman arsip dan homepage
           </p>
@@ -192,10 +192,10 @@ export default function SEOSettingsPage() {
                     <span
                       className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold text-white ${
                         score >= 80
-                          ? "bg-green-500"
+                          ? "bg-success-500"
                           : score >= 50
-                          ? "bg-yellow-500"
-                          : "bg-red-500"
+                          ? "bg-warning-500"
+                          : "bg-danger-500"
                       }`}
                     >
                       {score}
@@ -208,7 +208,7 @@ export default function SEOSettingsPage() {
         </div>
 
         {/* Active Page Info */}
-        <div className="p-6 bg-gray-50 border-b border-gray-200">
+        <div className="p-6 bg-light border-b border-gray-200">
           <div className="text-sm text-gray-600">{activePage.description}</div>
         </div>
 

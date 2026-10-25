@@ -309,7 +309,7 @@ export default function CampaignsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Campaigns</h1>
+          <h1 className="text-2xl font-bold text-dark">Campaigns</h1>
           <p className="text-gray-600 mt-1">Kelola campaign fundraising</p>
         </div>
         {canCreateCampaign() && (
@@ -349,7 +349,7 @@ export default function CampaignsPage() {
                   {bulkSetFeaturedMutation.isPending ? "Processing..." : "Jadikan Unggulan"}
                 </button>
                 <button
-                  className="btn btn-sm bg-amber-600 hover:bg-amber-700 text-white"
+                  className="btn btn-sm bg-warning-600 hover:bg-warning-700 text-white"
                   onClick={handleBulkSetUrgent}
                   disabled={bulkSetUrgentMutation.isPending}
                 >
@@ -452,7 +452,7 @@ export default function CampaignsPage() {
                   )}
                   <td>
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-dark">
                         {campaign.title}
                       </div>
                       <div className="text-sm text-gray-500 capitalize">
@@ -469,7 +469,7 @@ export default function CampaignsPage() {
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5">
                       <div
-                        className="bg-green-500 h-1.5 rounded-full transition-all"
+                        className="bg-success-500 h-1.5 rounded-full transition-all"
                         style={{ width: `${Math.min(progress, 100)}%` }}
                       ></div>
                     </div>

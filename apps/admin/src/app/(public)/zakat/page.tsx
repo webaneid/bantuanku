@@ -26,7 +26,7 @@ export default function ZakatPublicPage() {
             <span className="text-sm font-medium text-gray-700">Kalkulator Zakat</span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-dark mb-6">
             Hitung Zakat Anda dengan Mudah
           </h1>
 
@@ -49,7 +49,7 @@ export default function ZakatPublicPage() {
                 <Calculator className="w-5 h-5 text-gray-400 group-hover:text-primary-600 transition-colors" />
               </div>
 
-              <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
+              <h3 className="text-xl font-bold text-dark mb-2 group-hover:text-primary-600 transition-colors">
                 {type.name}
               </h3>
 
@@ -67,7 +67,7 @@ export default function ZakatPublicPage() {
 
         {/* Info Section */}
         <div className="max-w-4xl mx-auto mt-16 bg-white rounded-2xl p-8 shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Tentang Zakat</h2>
+          <h2 className="text-2xl font-bold text-dark mb-4">Tentang Zakat</h2>
 
           <div className="space-y-4 text-gray-600">
             <p>
@@ -77,7 +77,7 @@ export default function ZakatPublicPage() {
 
             <div className="grid md:grid-cols-2 gap-6 mt-6">
               <div className="border-l-4 border-primary-500 pl-4">
-                <h3 className="font-semibold text-gray-900 mb-2">Nisab</h3>
+                <h3 className="font-semibold text-dark mb-2">Nisab</h3>
                 <p className="text-sm">
                   Batas minimum harta yang wajib dizakati. Nisab zakat maal adalah 85 gram emas
                   atau setara 595 gram perak.
@@ -85,7 +85,7 @@ export default function ZakatPublicPage() {
               </div>
 
               <div className="border-l-4 border-primary-500 pl-4">
-                <h3 className="font-semibold text-gray-900 mb-2">Haul</h3>
+                <h3 className="font-semibold text-dark mb-2">Haul</h3>
                 <p className="text-sm">
                   Masa kepemilikan harta selama 1 tahun hijriyah (354 hari). Harta yang telah
                   mencapai nisab dan haul wajib dizakati sebesar 2.5%.
@@ -97,7 +97,7 @@ export default function ZakatPublicPage() {
 
         {/* 8 Asnaf Section */}
         <div className="max-w-4xl mx-auto mt-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+          <h2 className="text-2xl font-bold text-dark mb-6 text-center">
             8 Golongan Penerima Zakat (Asnaf)
           </h2>
 

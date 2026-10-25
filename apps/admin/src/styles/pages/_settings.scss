@@ -47,7 +47,7 @@
   cursor: pointer;
 
   &:hover {
-    color: $gray-900;
+    color: $dark;
     border-color: $gray-300;
   }
 
@@ -111,7 +111,7 @@
   gap: 0.5rem;
   font-size: 1rem;
   font-weight: 500;
-  color: $gray-900;
+  color: $dark;
 }
 
 .payment-provider-description {
@@ -123,7 +123,7 @@
 .payment-provider-config {
   margin-top: 1.5rem;
   padding: 1rem;
-  background-color: $gray-50;
+  background-color: $light;
   border: 1px solid $gray-200;
   border-radius: $radius-lg;
 
@@ -146,7 +146,7 @@
   .form-section-title {
     font-size: 0.875rem;
     font-weight: 600;
-    color: $gray-900;
+    color: $dark;
     margin-bottom: 1rem;
     text-transform: uppercase;
     letter-spacing: 0.025em;
@@ -206,7 +206,7 @@
 .settings-card-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: $gray-900;
+  color: $dark;
 }
 
 .settings-card-subtitle {
@@ -229,7 +229,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  background-color: $gray-50;
+  background-color: $light;
   border-radius: $radius-lg;
 
   input[type="checkbox"] {
@@ -267,7 +267,7 @@
     h5 {
       font-size: 1rem;
       font-weight: 600;
-      color: $gray-900;
+      color: $dark;
       margin: 0;
     }
 
@@ -293,7 +293,7 @@
       }
 
       .detail-value {
-        color: $gray-900;
+        color: $dark;
         font-weight: 500;
 
         &.account-number {
@@ -321,7 +321,7 @@
   .zakat-section-title {
     font-size: 0.875rem;
     font-weight: 600;
-    color: $gray-900;
+    color: $dark;
     margin-bottom: 1rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -347,7 +347,7 @@
   .section-title {
     font-size: 1rem;
     font-weight: 500;
-    color: $gray-900;
+    color: $dark;
     margin: 0;
   }
 
@@ -375,7 +375,7 @@
   .add-new-title {
     font-size: 1rem;
     font-weight: 500;
-    color: $gray-900;
+    color: $dark;
     margin-bottom: 1rem;
   }
 

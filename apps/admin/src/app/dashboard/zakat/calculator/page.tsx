@@ -298,9 +298,9 @@ export default function ZakatCalculatorPage() {
             </div>
 
             {/* Jumlah Harta Simpanan */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="bg-light border border-gray-200 rounded-lg p-4">
               <p className="text-sm font-medium text-gray-700 mb-1">f. Jumlah Harta Simpanan (A+B+C+D+E)</p>
-              <p className="text-xl font-bold text-gray-900">Rp {formatRupiah(jumlahHarta)}</p>
+              <p className="text-xl font-bold text-dark">Rp {formatRupiah(jumlahHarta)}</p>
             </div>
 
             <div className="form-group">
@@ -322,7 +322,7 @@ export default function ZakatCalculatorPage() {
               <p className="text-sm font-medium text-primary-900 mb-1">h. Harta simpanan kena zakat (F-G, jika nisab)</p>
               <p className="text-xl font-bold text-primary-700">Rp {formatRupiah(hartaBersih)}</p>
               {hartaBersih < nishabEmas && (
-                <p className="text-xs text-orange-600 mt-2">
+                <p className="text-xs text-warning-600 mt-2">
                   Belum mencapai nishab (Rp {formatRupiah(nishabEmas)})
                 </p>
               )}
@@ -367,8 +367,8 @@ export default function ZakatCalculatorPage() {
 
             {/* Input Nominal Manual jika belum nisab */}
             {hartaBersih < nishabEmas && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-orange-900 mb-2">
+              <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-warning-900 mb-2">
                   Jika tidak mencapai nisab, Anda tetap dapat ber-infaq, silahkan isi kolom input nominal dibawah ini
                 </p>
                 <div className="relative">
@@ -516,9 +516,9 @@ export default function ZakatCalculatorPage() {
             </div>
 
             {/* Total Penghasilan */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="bg-light border border-gray-200 rounded-lg p-4">
               <p className="text-sm font-medium text-gray-700 mb-1">d. Total Penghasilan (A+B+C)</p>
-              <p className="text-xl font-bold text-gray-900">Rp {formatRupiah(totalPenghasilanVal)}</p>
+              <p className="text-xl font-bold text-dark">Rp {formatRupiah(totalPenghasilanVal)}</p>
             </div>
 
             <div className="form-group">
@@ -543,7 +543,7 @@ export default function ZakatCalculatorPage() {
               <p className="text-sm font-medium text-primary-900 mb-1">f. Penghasilan Bersih (D-E, jika nisab)</p>
               <p className="text-xl font-bold text-primary-700">Rp {formatRupiah(penghasilanBersihVal)}</p>
               {penghasilanBersihVal < nishabProfesiVal && (
-                <p className="text-xs text-orange-600 mt-2">
+                <p className="text-xs text-warning-600 mt-2">
                   Belum mencapai nishab (Rp {formatRupiah(nishabProfesiVal)})
                 </p>
               )}
@@ -570,8 +570,8 @@ export default function ZakatCalculatorPage() {
 
             {/* Input Nominal Manual jika belum nisab */}
             {penghasilanBersihVal < nishabProfesiVal && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-orange-900 mb-2">
+              <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-warning-900 mb-2">
                   Jika tidak mencapai nisab, Anda tetap dapat ber-infaq, silahkan isi kolom input nominal dibawah ini
                 </p>
                 <div className="relative">
@@ -633,7 +633,7 @@ export default function ZakatCalculatorPage() {
             <div className="form-group">
               <label className="form-label">A. Jenis pengairan</label>
               <div className="space-y-2">
-                <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-light">
                   <input
                     type="radio"
                     name="jenisPengairan"
@@ -642,9 +642,9 @@ export default function ZakatCalculatorPage() {
                     onChange={(e) => setPertanianData({ ...pertanianData, jenisPengairan: e.target.value })}
                     className="w-4 h-4 text-primary-600"
                   />
-                  <span className="text-gray-900">Buatan</span>
+                  <span className="text-dark">Buatan</span>
                 </label>
-                <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-light">
                   <input
                     type="radio"
                     name="jenisPengairan"
@@ -653,7 +653,7 @@ export default function ZakatCalculatorPage() {
                     onChange={(e) => setPertanianData({ ...pertanianData, jenisPengairan: e.target.value })}
                     className="w-4 h-4 text-primary-600"
                   />
-                  <span className="text-gray-900">Air Hujan</span>
+                  <span className="text-dark">Air Hujan</span>
                 </label>
               </div>
             </div>
@@ -693,7 +693,7 @@ export default function ZakatCalculatorPage() {
               <p className="text-sm font-medium text-primary-900 mb-1">D. Hasil bersih panen (B dikurangi C, jika B &gt; nisab)</p>
               <p className="text-xl font-bold text-primary-700">Rp {formatRupiah(hasilBersihVal)}</p>
               {hasilBersihVal < nishabPertanianVal && (
-                <p className="text-xs text-orange-600 mt-2">
+                <p className="text-xs text-warning-600 mt-2">
                   Belum mencapai nishab (Rp {formatRupiah(nishabPertanianVal)})
                 </p>
               )}
@@ -722,8 +722,8 @@ export default function ZakatCalculatorPage() {
 
             {/* Input Nominal Manual jika belum nisab */}
             {hasilBersihVal < nishabPertanianVal && (
-              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-orange-900 mb-2">
+              <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-warning-900 mb-2">
                   Jika tidak mencapai nisab, Anda tetap dapat ber-infaq, silahkan isi kolom input nominal dibawah ini
                 </p>
                 <div className="relative">
@@ -770,12 +770,12 @@ export default function ZakatCalculatorPage() {
               </p>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-sm font-medium text-amber-900 mb-1">Nishab Zakat Peternakan</p>
-              <p className="text-sm text-amber-700">
+            <div className="bg-warning-50 border border-warning-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-warning-900 mb-1">Nishab Zakat Peternakan</p>
+              <p className="text-sm text-warning-700">
                 Sapi: 30 ekor | Kambing: 40 ekor | Unta: 5 ekor
               </p>
-              <p className="text-xs text-amber-600 mt-1">
+              <p className="text-xs text-warning-600 mt-1">
                 Atau setara dengan nishab emas
               </p>
             </div>
@@ -793,7 +793,7 @@ export default function ZakatCalculatorPage() {
 
   if (isLoading) {
     return (
-      <main className="flex-1 overflow-y-auto bg-gray-50">
+      <main className="flex-1 overflow-y-auto bg-light">
         <div className="dashboard-container">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
@@ -805,12 +805,12 @@ export default function ZakatCalculatorPage() {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto bg-gray-50">
+    <main className="flex-1 overflow-y-auto bg-light">
       <div className="dashboard-container">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Kalkulator Zakat</h1>
+            <h1 className="text-2xl font-bold text-dark">Kalkulator Zakat</h1>
             <p className="text-gray-600 mt-1">Hitung zakat Anda dengan mudah dan akurat</p>
           </div>
         </div>
@@ -819,7 +819,7 @@ export default function ZakatCalculatorPage() {
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Pilih Jenis Zakat</h2>
+              <h2 className="text-xl font-semibold text-dark mb-4">Pilih Jenis Zakat</h2>
               <div className="form-group">
                 <label className="form-label">Jenis Zakat</label>
                 <Autocomplete

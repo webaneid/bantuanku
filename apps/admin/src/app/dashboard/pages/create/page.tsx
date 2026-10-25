@@ -53,7 +53,7 @@ export default function CreatePageAdminPage() {
   if (!canManage) {
     return (
       <div className="dashboard-container">
-        <h1 className="text-2xl font-bold text-gray-900">Tambah Page</h1>
+        <h1 className="text-2xl font-bold text-dark">Tambah Page</h1>
         <p className="text-sm text-gray-600 mt-2">Anda tidak memiliki akses ke halaman ini.</p>
       </div>
     );

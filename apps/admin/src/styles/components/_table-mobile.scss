@@ -30,7 +30,7 @@
         &-title {
           font-weight: 600;
           font-size: 0.9375rem;
-          color: $gray-900;
+          color: $dark;
           margin-bottom: $spacing-xs;
           line-height: 1.4;
         }
@@ -63,7 +63,7 @@
         }
 
         &-value {
-          color: $gray-900;
+          color: $dark;
           text-align: right;
 
           &.mono {

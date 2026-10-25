@@ -171,7 +171,7 @@ export function AddressForm({
             onChange={(e) => setDetailAddress(e.target.value)}
             disabled={disabled}
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-100 focus:border-primary-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-100 focus:border-primary-500 disabled:bg-light disabled:cursor-not-allowed"
             placeholder="Contoh: Jl. Merdeka No. 123, RT 02/RW 05"
           />
         </div>
@@ -180,7 +180,7 @@ export function AddressForm({
           {/* Province */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Provinsi {required && <span className="text-red-500">*</span>}
+              Provinsi {required && <span className="text-danger-500">*</span>}
             </label>
           <Autocomplete
             options={provinces || []}
@@ -197,7 +197,7 @@ export function AddressForm({
         {/* Regency */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Kabupaten/Kota {required && <span className="text-red-500">*</span>}
+            Kabupaten/Kota {required && <span className="text-danger-500">*</span>}
           </label>
           <Autocomplete
             options={regencies || []}
@@ -214,7 +214,7 @@ export function AddressForm({
         {/* District */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Kecamatan {required && <span className="text-red-500">*</span>}
+            Kecamatan {required && <span className="text-danger-500">*</span>}
           </label>
           <Autocomplete
             options={districts || []}
@@ -231,7 +231,7 @@ export function AddressForm({
         {/* Village */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Kelurahan/Desa {required && <span className="text-red-500">*</span>}
+            Kelurahan/Desa {required && <span className="text-danger-500">*</span>}
           </label>
           <Autocomplete
             options={villages || []}
@@ -254,7 +254,7 @@ export function AddressForm({
               type="text"
               value={postalCode || "-"}
               disabled
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-light text-gray-500 cursor-not-allowed"
               placeholder="Otomatis terisi saat memilih kelurahan/desa"
             />
             <p className="text-xs text-gray-500 mt-1">

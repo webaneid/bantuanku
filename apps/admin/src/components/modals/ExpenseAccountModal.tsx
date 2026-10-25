@@ -241,13 +241,13 @@ export default function ExpenseAccountModal({
                   allowClear={false}
                   disabled={isViewMode}
                 />
-                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                <div className="mt-2 p-3 bg-info-50 border border-info-200 rounded text-xs text-info-800">
                   <p className="font-semibold mb-1">💡 Panduan Normal Balance:</p>
                   <ul className="space-y-1 ml-4 list-disc">
                     <li><strong>Asset & Expense</strong> → pilih <strong>Debit</strong></li>
                     <li><strong>Liability, Equity & Income</strong> → pilih <strong>Credit</strong></li>
                   </ul>
-                  <p className="mt-2 text-blue-700">
+                  <p className="mt-2 text-info-700">
                     ⚠️ Untuk akun <strong>Penyaluran/Pengeluaran</strong>, gunakan Normal Balance <strong>Debit</strong>
                   </p>
                 </div>

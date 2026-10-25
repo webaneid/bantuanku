@@ -25,7 +25,7 @@
   border-spacing: 0;
 
   thead {
-    background: $gray-50;
+    background: $light;
 
     th {
       padding: $spacing-lg $spacing-xl;
@@ -50,7 +50,7 @@
         user-select: none;
 
         &:hover {
-          color: $gray-900;
+          color: $dark;
         }
 
         &::after {
@@ -70,7 +70,7 @@
       transition: all $transition-fast;
 
       &:hover {
-        background: $gray-50;
+        background: $light;
       }
 
       &:last-child {
@@ -88,7 +88,7 @@
       td {
         padding: $spacing-lg $spacing-xl;
         font-size: 0.875rem;
-        color: $gray-900;
+        color: $dark;
         vertical-align: middle;
 
         // Monospace for numbers
@@ -102,14 +102,14 @@
 
   tfoot {
     tr {
-      background: $gray-50;
+      background: $light;
       border-top: 2px solid $gray-300;
 
       td {
         padding: $spacing-lg $spacing-xl;
         font-size: 0.875rem;
         font-weight: 700;
-        color: $gray-900;
+        color: $dark;
         vertical-align: middle;
 
         &.mono {
@@ -146,7 +146,7 @@
   // Table variants
   &.table-striped {
     tbody tr:nth-child(even) {
-      background: $gray-50;
+      background: $light;
     }
   }
 
@@ -237,7 +237,7 @@
 
     &:hover {
       background: $gray-100;
-      color: $gray-900;
+      color: $dark;
       border-color: $gray-300;
     }
 

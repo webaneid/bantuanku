@@ -236,10 +236,10 @@ export default function PeriodDetailPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      partial: "bg-blue-100 text-blue-800",
-      paid: "bg-green-100 text-green-800",
-      confirmed: "bg-purple-100 text-purple-800",
+      pending: "bg-warning-100 text-warning-800",
+      partial: "bg-info-100 text-info-800",
+      paid: "bg-success-100 text-success-800",
+      confirmed: "bg-secondary-100 text-secondary-800",
       executed: "bg-gray-100 text-gray-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
@@ -459,38 +459,38 @@ export default function PeriodDetailPage() {
 
       {/* Stats Dashboard */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-info-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Kambing</p>
-              <p className="text-3xl font-bold text-blue-600">{stats.totalGoats}</p>
+              <p className="text-3xl font-bold text-info-600">{stats.totalGoats}</p>
             </div>
-            <div className="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center text-3xl">
+            <div className="h-12 w-12 bg-info-100 rounded-full flex items-center justify-center text-3xl">
               🐐
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-success-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Sapi</p>
-              <p className="text-3xl font-bold text-green-600">{stats.totalCows}</p>
+              <p className="text-3xl font-bold text-success-600">{stats.totalCows}</p>
             </div>
-            <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center text-3xl">
+            <div className="h-12 w-12 bg-success-100 rounded-full flex items-center justify-center text-3xl">
               🐄
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+        <div className="bg-white rounded-lg shadow p-6 border-l-4 border-secondary-500">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Pesanan Lunas</p>
-              <p className="text-3xl font-bold text-purple-600">{stats.totalOrders}</p>
+              <p className="text-3xl font-bold text-secondary-600">{stats.totalOrders}</p>
             </div>
-            <div className="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
+            <div className="h-12 w-12 bg-secondary-100 rounded-full flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-secondary-600" />
             </div>
           </div>
         </div>
@@ -504,7 +504,7 @@ export default function PeriodDetailPage() {
               onClick={() => setActiveTab("penerimaan")}
               className={`px-4 sm:px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === "penerimaan"
-                  ? "border-blue-500 text-blue-600"
+                  ? "border-info-500 text-info-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -514,7 +514,7 @@ export default function PeriodDetailPage() {
               onClick={() => setActiveTab("penyaluran")}
               className={`px-4 sm:px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === "penyaluran"
-                  ? "border-blue-500 text-blue-600"
+                  ? "border-info-500 text-info-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -524,7 +524,7 @@ export default function PeriodDetailPage() {
               onClick={() => setActiveTab("penyembelihan")}
               className={`px-4 sm:px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === "penyembelihan"
-                  ? "border-amber-500 text-amber-600"
+                  ? "border-warning-500 text-warning-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -534,7 +534,7 @@ export default function PeriodDetailPage() {
               onClick={() => setActiveTab("kegiatan")}
               className={`px-4 sm:px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === "kegiatan"
-                  ? "border-blue-500 text-blue-600"
+                  ? "border-info-500 text-info-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -544,7 +544,7 @@ export default function PeriodDetailPage() {
               onClick={() => setActiveTab("laporan")}
               className={`px-4 sm:px-6 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === "laporan"
-                  ? "border-blue-500 text-blue-600"
+                  ? "border-info-500 text-info-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -725,36 +725,36 @@ export default function PeriodDetailPage() {
           <div className="p-6 space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-5 border border-amber-200">
+              <div className="bg-gradient-to-br from-warning-50 to-warning-100 rounded-xl p-5 border border-warning-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-200 rounded-lg flex items-center justify-center">
-                    <Scissors className="h-5 w-5 text-amber-700" />
+                  <div className="w-10 h-10 bg-warning-200 rounded-lg flex items-center justify-center">
+                    <Scissors className="h-5 w-5 text-warning-700" />
                   </div>
                   <div>
-                    <p className="text-sm text-amber-700">Total Hewan</p>
-                    <p className="text-2xl font-bold text-amber-900">{totalAnimals}</p>
+                    <p className="text-sm text-warning-700">Total Hewan</p>
+                    <p className="text-2xl font-bold text-warning-900">{totalAnimals}</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border border-green-200">
+              <div className="bg-gradient-to-br from-success-50 to-success-100 rounded-xl p-5 border border-success-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-200 rounded-lg flex items-center justify-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-700" />
+                  <div className="w-10 h-10 bg-success-200 rounded-lg flex items-center justify-center">
+                    <CheckCircle2 className="h-5 w-5 text-success-700" />
                   </div>
                   <div>
-                    <p className="text-sm text-green-700">Sudah Disembelih</p>
-                    <p className="text-2xl font-bold text-green-900">{executedCount}</p>
+                    <p className="text-sm text-success-700">Sudah Disembelih</p>
+                    <p className="text-2xl font-bold text-success-900">{executedCount}</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-5 border border-orange-200">
+              <div className="bg-gradient-to-br from-warning-50 to-warning-100 rounded-xl p-5 border border-warning-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-orange-200 rounded-lg flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-orange-700" />
+                  <div className="w-10 h-10 bg-warning-200 rounded-lg flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-warning-700" />
                   </div>
                   <div>
-                    <p className="text-sm text-orange-700">Belum Disembelih</p>
-                    <p className="text-2xl font-bold text-orange-900">{pendingCount}</p>
+                    <p className="text-sm text-warning-700">Belum Disembelih</p>
+                    <p className="text-2xl font-bold text-warning-900">{pendingCount}</p>
                   </div>
                 </div>
               </div>
@@ -765,13 +765,13 @@ export default function PeriodDetailPage() {
               <div className="bg-white rounded-xl border p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">Progress Penyembelihan</span>
-                  <span className="text-sm font-bold text-amber-700">
+                  <span className="text-sm font-bold text-warning-700">
                     {totalAnimals > 0 ? Math.round((executedCount / totalAnimals) * 100) : 0}%
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
-                    className="bg-gradient-to-r from-amber-500 to-green-500 h-3 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-warning-500 to-success-500 h-3 rounded-full transition-all duration-500"
                     style={{ width: `${totalAnimals > 0 ? (executedCount / totalAnimals) * 100 : 0}%` }}
                   />
                 </div>
@@ -781,7 +781,7 @@ export default function PeriodDetailPage() {
             {/* Kambing Section */}
             {paidGoatOrders.length > 0 && (
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <h3 className="text-lg font-bold text-dark mb-3 flex items-center gap-2">
                   <span className="text-2xl">🐐</span> Kambing ({paidGoatOrders.length} ekor)
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -793,20 +793,20 @@ export default function PeriodDetailPage() {
                         key={order.order_id}
                         className={`rounded-xl border-2 p-4 transition-all ${
                           isExecuted
-                            ? "border-green-200 bg-green-50/50"
-                            : "border-orange-200 bg-white hover:shadow-md"
+                            ? "border-success-200 bg-success-50/50"
+                            : "border-warning-200 bg-white hover:shadow-md"
                         }`}
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div>
-                            <p className="font-semibold text-gray-900 text-sm">{order.package_name}</p>
+                            <p className="font-semibold text-dark text-sm">{order.package_name}</p>
                             <p className="text-xs text-gray-500 mt-0.5">a.n. {order.on_behalf_of || order.donor_name}</p>
                           </div>
                           <span
                             className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
                               isExecuted
-                                ? "bg-green-100 text-green-700"
-                                : "bg-orange-100 text-orange-700"
+                                ? "bg-success-100 text-success-700"
+                                : "bg-warning-100 text-warning-700"
                             }`}
                           >
                             {isExecuted ? (
@@ -817,7 +817,7 @@ export default function PeriodDetailPage() {
                           </span>
                         </div>
                         {isExecuted && exec && (
-                          <div className="text-xs text-gray-600 space-y-1 mb-3 bg-green-50 rounded-lg p-2.5">
+                          <div className="text-xs text-gray-600 space-y-1 mb-3 bg-success-50 rounded-lg p-2.5">
                             <p className="flex items-center gap-1.5">
                               <Calendar className="h-3 w-3" />
                               {formatDateWIB(exec.executionDate, "dd MMM yyyy")}
@@ -850,8 +850,8 @@ export default function PeriodDetailPage() {
                           }}
                           className={`w-full text-center text-sm font-medium py-2 rounded-lg transition-colors ${
                             isExecuted
-                              ? "bg-green-100 text-green-700 hover:bg-green-200"
-                              : "bg-amber-500 text-white hover:bg-amber-600"
+                              ? "bg-success-100 text-success-700 hover:bg-success-200"
+                              : "bg-warning-500 text-white hover:bg-warning-600"
                           }`}
                         >
                           {isExecuted ? "Lihat Detail" : "Catat Penyembelihan"}
@@ -866,7 +866,7 @@ export default function PeriodDetailPage() {
             {/* Sapi Shared Groups Section */}
             {sharedGroupsInfo.length > 0 && (
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <h3 className="text-lg font-bold text-dark mb-3 flex items-center gap-2">
                   <span className="text-2xl">🐄</span> Sapi Patungan ({sharedGroupsInfo.length} ekor)
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -879,15 +879,15 @@ export default function PeriodDetailPage() {
                         key={group.groupId}
                         className={`rounded-xl border-2 p-4 transition-all ${
                           isExecuted
-                            ? "border-green-200 bg-green-50/50"
-                            : "border-orange-200 bg-white hover:shadow-md"
+                            ? "border-success-200 bg-success-50/50"
+                            : "border-warning-200 bg-white hover:shadow-md"
                         }`}
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div>
-                            <p className="font-semibold text-gray-900">
+                            <p className="font-semibold text-dark">
                               {group.packageName}
-                              <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                              <span className="ml-2 text-xs bg-info-100 text-info-700 px-2 py-0.5 rounded-full font-medium">
                                 Grup #{group.groupNumber}
                               </span>
                             </p>
@@ -898,8 +898,8 @@ export default function PeriodDetailPage() {
                           <span
                             className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
                               isExecuted
-                                ? "bg-green-100 text-green-700"
-                                : "bg-orange-100 text-orange-700"
+                                ? "bg-success-100 text-success-700"
+                                : "bg-warning-100 text-warning-700"
                             }`}
                           >
                             {isExecuted ? (
@@ -913,7 +913,7 @@ export default function PeriodDetailPage() {
                         {/* Slot progress mini bar */}
                         <div className="w-full bg-gray-200 rounded-full h-1.5 mb-3">
                           <div
-                            className="bg-blue-500 h-1.5 rounded-full"
+                            className="bg-info-500 h-1.5 rounded-full"
                             style={{ width: `${(group.slotsFilled / group.maxSlots) * 100}%` }}
                           />
                         </div>
@@ -930,8 +930,8 @@ export default function PeriodDetailPage() {
                         {isExpanded && (
                           <div className="mb-3 space-y-1.5">
                             {group.members.map((m, i) => (
-                              <div key={m.order_id} className="flex items-center gap-2 text-xs bg-gray-50 rounded-lg px-3 py-1.5">
-                                <span className="w-5 h-5 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-semibold text-[10px]">
+                              <div key={m.order_id} className="flex items-center gap-2 text-xs bg-light rounded-lg px-3 py-1.5">
+                                <span className="w-5 h-5 bg-info-100 text-info-700 rounded-full flex items-center justify-center font-semibold text-[10px]">
                                   {i + 1}
                                 </span>
                                 <span className="text-gray-700">{m.on_behalf_of || m.donor_name}</span>
@@ -944,7 +944,7 @@ export default function PeriodDetailPage() {
                         )}
 
                         {isExecuted && exec && (
-                          <div className="text-xs text-gray-600 space-y-1 mb-3 bg-green-50 rounded-lg p-2.5">
+                          <div className="text-xs text-gray-600 space-y-1 mb-3 bg-success-50 rounded-lg p-2.5">
                             <p className="flex items-center gap-1.5">
                               <Calendar className="h-3 w-3" />
                               {formatDateWIB(exec.executionDate, "dd MMM yyyy")}
@@ -978,8 +978,8 @@ export default function PeriodDetailPage() {
                           }}
                           className={`w-full text-center text-sm font-medium py-2 rounded-lg transition-colors ${
                             isExecuted
-                              ? "bg-green-100 text-green-700 hover:bg-green-200"
-                              : "bg-amber-500 text-white hover:bg-amber-600"
+                              ? "bg-success-100 text-success-700 hover:bg-success-200"
+                              : "bg-warning-500 text-white hover:bg-warning-600"
                           }`}
                         >
                           {isExecuted ? "Lihat Detail" : "Catat Penyembelihan"}
@@ -994,7 +994,7 @@ export default function PeriodDetailPage() {
             {/* Individual Cow Section */}
             {individualCowOrders.length > 0 && (
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <h3 className="text-lg font-bold text-dark mb-3 flex items-center gap-2">
                   <span className="text-2xl">🐄</span> Sapi Individual ({individualCowOrders.length} ekor)
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1006,20 +1006,20 @@ export default function PeriodDetailPage() {
                         key={order.order_id}
                         className={`rounded-xl border-2 p-4 transition-all ${
                           isExecuted
-                            ? "border-green-200 bg-green-50/50"
-                            : "border-orange-200 bg-white hover:shadow-md"
+                            ? "border-success-200 bg-success-50/50"
+                            : "border-warning-200 bg-white hover:shadow-md"
                         }`}
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div>
-                            <p className="font-semibold text-gray-900 text-sm">{order.package_name}</p>
+                            <p className="font-semibold text-dark text-sm">{order.package_name}</p>
                             <p className="text-xs text-gray-500 mt-0.5">a.n. {order.on_behalf_of || order.donor_name}</p>
                           </div>
                           <span
                             className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
                               isExecuted
-                                ? "bg-green-100 text-green-700"
-                                : "bg-orange-100 text-orange-700"
+                                ? "bg-success-100 text-success-700"
+                                : "bg-warning-100 text-warning-700"
                             }`}
                           >
                             {isExecuted ? (
@@ -1030,7 +1030,7 @@ export default function PeriodDetailPage() {
                           </span>
                         </div>
                         {isExecuted && exec && (
-                          <div className="text-xs text-gray-600 space-y-1 mb-3 bg-green-50 rounded-lg p-2.5">
+                          <div className="text-xs text-gray-600 space-y-1 mb-3 bg-success-50 rounded-lg p-2.5">
                             <p className="flex items-center gap-1.5">
                               <Calendar className="h-3 w-3" />
                               {formatDateWIB(exec.executionDate, "dd MMM yyyy")}
@@ -1063,8 +1063,8 @@ export default function PeriodDetailPage() {
                           }}
                           className={`w-full text-center text-sm font-medium py-2 rounded-lg transition-colors ${
                             isExecuted
-                              ? "bg-green-100 text-green-700 hover:bg-green-200"
-                              : "bg-amber-500 text-white hover:bg-amber-600"
+                              ? "bg-success-100 text-success-700 hover:bg-success-200"
+                              : "bg-warning-500 text-white hover:bg-warning-600"
                           }`}
                         >
                           {isExecuted ? "Lihat Detail" : "Catat Penyembelihan"}
@@ -1106,10 +1106,10 @@ export default function PeriodDetailPage() {
                     <tr key={d.id}>
                       <td>{(disbursementPage - 1) * ITEMS_PER_PAGE + index + 1}</td>
                       <td>
-                        <div className="font-medium text-gray-900">{d.disbursementNumber}</div>
+                        <div className="font-medium text-dark">{d.disbursementNumber}</div>
                       </td>
                       <td>
-                        <div className="font-medium text-gray-900">{d.recipientName}</div>
+                        <div className="font-medium text-dark">{d.recipientName}</div>
                         {d.recipientContact && (
                           <div className="text-xs text-gray-500">{d.recipientContact}</div>
                         )}
@@ -1153,7 +1153,7 @@ export default function PeriodDetailPage() {
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-gray-50 font-semibold">
+                <tfoot className="bg-light font-semibold">
                   <tr>
                     <td colSpan={4} className="text-right">Total:</td>
                     <td className="mono">{formatCurrencyValue(totalDisbursed)}</td>
@@ -1226,32 +1226,32 @@ export default function PeriodDetailPage() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-green-50 border-l-4 border-green-500 p-6 rounded-lg">
-                <p className="text-sm text-green-700 mb-1">Total Penerimaan</p>
-                <p className="text-2xl font-bold text-green-800">
+              <div className="bg-success-50 border-l-4 border-success-500 p-6 rounded-lg">
+                <p className="text-sm text-success-700 mb-1">Total Penerimaan</p>
+                <p className="text-2xl font-bold text-success-800">
                   {formatCurrencyValue(stats.totalRevenue)}
                 </p>
-                <p className="text-xs text-green-600 mt-1">
+                <p className="text-xs text-success-600 mt-1">
                   {stats.totalOrders} pesanan
                 </p>
               </div>
 
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
-                <p className="text-sm text-blue-700 mb-1">Total Penyaluran</p>
-                <p className="text-2xl font-bold text-blue-800">
+              <div className="bg-info-50 border-l-4 border-info-500 p-6 rounded-lg">
+                <p className="text-sm text-info-700 mb-1">Total Penyaluran</p>
+                <p className="text-2xl font-bold text-info-800">
                   {formatCurrencyValue(totalDisbursed)}
                 </p>
-                <p className="text-xs text-blue-600 mt-1">
+                <p className="text-xs text-info-600 mt-1">
                   {disbursementCount} penyaluran
                 </p>
               </div>
 
-              <div className="bg-purple-50 border-l-4 border-purple-500 p-6 rounded-lg">
-                <p className="text-sm text-purple-700 mb-1">Saldo</p>
-                <p className="text-2xl font-bold text-purple-800">
+              <div className="bg-secondary-50 border-l-4 border-secondary-500 p-6 rounded-lg">
+                <p className="text-sm text-secondary-700 mb-1">Saldo</p>
+                <p className="text-2xl font-bold text-secondary-800">
                   {formatCurrencyValue(stats.totalRevenue - totalDisbursed)}
                 </p>
-                <p className="text-xs text-purple-600 mt-1">
+                <p className="text-xs text-secondary-600 mt-1">
                   {((1 - (totalDisbursed / stats.totalRevenue)) * 100 || 0).toFixed(1)}% dari total
                 </p>
               </div>
@@ -1281,7 +1281,7 @@ export default function PeriodDetailPage() {
                   </div>
                   <div className="flex justify-between items-center pt-2">
                     <span className="font-semibold text-gray-800">Total</span>
-                    <span className="font-bold text-green-600">
+                    <span className="font-bold text-success-600">
                       {formatCurrencyValue(stats.totalRevenue)}
                     </span>
                   </div>
@@ -1294,21 +1294,21 @@ export default function PeriodDetailPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center pb-3 border-b">
                     <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                      <span className="w-3 h-3 bg-success-500 rounded-full"></span>
                       <span className="text-sm text-gray-600">Sudah Disembelih</span>
                     </div>
                     <span className="text-sm font-medium">{executedCount} ekor</span>
                   </div>
                   <div className="flex justify-between items-center pb-3 border-b">
                     <div className="flex items-center gap-2">
-                      <span className="w-3 h-3 bg-orange-500 rounded-full"></span>
+                      <span className="w-3 h-3 bg-warning-500 rounded-full"></span>
                       <span className="text-sm text-gray-600">Belum Disembelih</span>
                     </div>
                     <span className="text-sm font-medium">{pendingCount} ekor</span>
                   </div>
                   <div className="flex justify-between items-center pt-2">
                     <span className="font-semibold text-gray-800">Total Hewan</span>
-                    <span className="font-bold text-purple-600">
+                    <span className="font-bold text-secondary-600">
                       {totalAnimals}
                     </span>
                   </div>
@@ -1338,7 +1338,7 @@ export default function PeriodDetailPage() {
                     <tr key={report.id}>
                       <td>{(activityPage - 1) * ITEMS_PER_PAGE + index + 1}</td>
                       <td>
-                        <div className="font-medium text-gray-900">{report.title}</div>
+                        <div className="font-medium text-dark">{report.title}</div>
                         <div className="text-xs text-gray-500 line-clamp-2">{report.description}</div>
                       </td>
                       <td className="text-gray-600">
@@ -1448,7 +1448,7 @@ export default function PeriodDetailPage() {
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Catat Penyembelihan</h2>
+                <h2 className="text-lg font-bold text-dark">Catat Penyembelihan</h2>
                 <p className="text-sm text-gray-500 mt-0.5">{executionTarget.label}</p>
               </div>
               <button type="button" onClick={() => setShowExecutionModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -1464,7 +1464,7 @@ export default function PeriodDetailPage() {
                     type="date"
                     value={execForm.execution_date}
                     onChange={(e) => setExecForm({ ...execForm, execution_date: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning-500 focus:border-warning-500"
                   />
                 </div>
                 <div>
@@ -1474,7 +1474,7 @@ export default function PeriodDetailPage() {
                     placeholder="Contoh: Lapangan Masjid Al-Ikhlas"
                     value={execForm.location}
                     onChange={(e) => setExecForm({ ...execForm, location: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning-500 focus:border-warning-500"
                   />
                 </div>
               </div>
@@ -1488,7 +1488,7 @@ export default function PeriodDetailPage() {
                     placeholder="Contoh: 45.5"
                     value={execForm.animal_weight}
                     onChange={(e) => setExecForm({ ...execForm, animal_weight: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning-500 focus:border-warning-500"
                   />
                 </div>
                 <div>
@@ -1498,7 +1498,7 @@ export default function PeriodDetailPage() {
                     placeholder="Contoh: Sehat, gemuk, tidak cacat"
                     value={execForm.animal_condition}
                     onChange={(e) => setExecForm({ ...execForm, animal_condition: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning-500 focus:border-warning-500"
                   />
                 </div>
               </div>
@@ -1509,7 +1509,7 @@ export default function PeriodDetailPage() {
                   <select
                     value={execForm.distribution_method}
                     onChange={(e) => setExecForm({ ...execForm, distribution_method: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning-500 focus:border-warning-500"
                   >
                     <option value="">-- Pilih --</option>
                     <option value="direct_pickup">Ambil Langsung</option>
@@ -1524,7 +1524,7 @@ export default function PeriodDetailPage() {
                     placeholder="Contoh: 50"
                     value={execForm.recipient_count}
                     onChange={(e) => setExecForm({ ...execForm, recipient_count: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning-500 focus:border-warning-500"
                   />
                 </div>
               </div>
@@ -1536,7 +1536,7 @@ export default function PeriodDetailPage() {
                   placeholder="Catatan tambahan terkait distribusi daging..."
                   value={execForm.distribution_notes}
                   onChange={(e) => setExecForm({ ...execForm, distribution_notes: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning-500 focus:border-warning-500"
                 />
               </div>
 
@@ -1550,7 +1550,7 @@ export default function PeriodDetailPage() {
                       <button
                         type="button"
                         onClick={() => setExecForm({ ...execForm, photos: execForm.photos.filter((_, idx) => idx !== i) })}
-                        className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                        className="absolute top-0.5 right-0.5 bg-danger-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -1559,7 +1559,7 @@ export default function PeriodDetailPage() {
                   <button
                     type="button"
                     onClick={() => setMediaOpen(true)}
-                    className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-amber-400 hover:text-amber-500 transition-colors"
+                    className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 hover:border-warning-400 hover:text-warning-500 transition-colors"
                   >
                     <Camera className="h-5 w-5" />
                     <span className="text-[10px] mt-1">Tambah</span>
@@ -1574,7 +1574,7 @@ export default function PeriodDetailPage() {
                   placeholder="https://youtube.com/watch?v=..."
                   value={execForm.video_url}
                   onChange={(e) => setExecForm({ ...execForm, video_url: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-warning-500 focus:border-warning-500"
                 />
               </div>
             </div>
@@ -1591,7 +1591,7 @@ export default function PeriodDetailPage() {
                 type="button"
                 onClick={handleSubmitExecution}
                 disabled={!execForm.execution_date || !execForm.location || createExecutionMutation.isPending}
-                className="px-6 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 text-sm font-medium text-white bg-warning-600 rounded-lg hover:bg-warning-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {createExecutionMutation.isPending ? "Menyimpan..." : "Simpan Penyembelihan"}
               </button>
@@ -1609,7 +1609,7 @@ export default function PeriodDetailPage() {
           >
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Detail Penyembelihan</h2>
+                <h2 className="text-lg font-bold text-dark">Detail Penyembelihan</h2>
                 <p className="text-xs text-gray-500 mt-0.5">{viewExecution.executionNumber}</p>
               </div>
               <button type="button" onClick={() => setViewExecution(null)} className="text-gray-400 hover:text-gray-600">
@@ -1621,37 +1621,37 @@ export default function PeriodDetailPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-xs font-semibold text-gray-500 uppercase">Tanggal</span>
-                  <p className="text-gray-900 mt-1 font-medium">
+                  <p className="text-dark mt-1 font-medium">
                     {formatDateWIB(viewExecution.executionDate, "dd MMMM yyyy")}
                   </p>
                 </div>
                 <div>
                   <span className="text-xs font-semibold text-gray-500 uppercase">Lokasi</span>
-                  <p className="text-gray-900 mt-1">{viewExecution.location}</p>
+                  <p className="text-dark mt-1">{viewExecution.location}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-gray-50 rounded-xl p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-light rounded-xl p-4">
                 <div>
                   <span className="text-xs text-gray-500">Jenis Hewan</span>
-                  <p className="font-semibold text-gray-900 text-sm">{viewExecution.animalType === "cow" ? "Sapi" : "Kambing"}</p>
+                  <p className="font-semibold text-dark text-sm">{viewExecution.animalType === "cow" ? "Sapi" : "Kambing"}</p>
                 </div>
                 {viewExecution.animalWeight && (
                   <div>
                     <span className="text-xs text-gray-500">Berat</span>
-                    <p className="font-semibold text-gray-900 text-sm">{viewExecution.animalWeight} kg</p>
+                    <p className="font-semibold text-dark text-sm">{viewExecution.animalWeight} kg</p>
                   </div>
                 )}
                 {viewExecution.animalCondition && (
                   <div>
                     <span className="text-xs text-gray-500">Kondisi</span>
-                    <p className="font-semibold text-gray-900 text-sm">{viewExecution.animalCondition}</p>
+                    <p className="font-semibold text-dark text-sm">{viewExecution.animalCondition}</p>
                   </div>
                 )}
                 {viewExecution.distributionMethod && (
                   <div>
                     <span className="text-xs text-gray-500">Distribusi</span>
-                    <p className="font-semibold text-gray-900 text-sm">
+                    <p className="font-semibold text-dark text-sm">
                       {viewExecution.distributionMethod === "direct_pickup" ? "Ambil Langsung"
                         : viewExecution.distributionMethod === "distribution" ? "Distribusi"
                         : viewExecution.distributionMethod === "donation" ? "Donasi"
@@ -1662,7 +1662,7 @@ export default function PeriodDetailPage() {
                 {viewExecution.recipientCount && (
                   <div>
                     <span className="text-xs text-gray-500">Jumlah Penerima</span>
-                    <p className="font-semibold text-gray-900 text-sm">{viewExecution.recipientCount}</p>
+                    <p className="font-semibold text-dark text-sm">{viewExecution.recipientCount}</p>
                   </div>
                 )}
               </div>
@@ -1699,7 +1699,7 @@ export default function PeriodDetailPage() {
               {viewExecution.videoUrl && (
                 <div>
                   <span className="text-xs font-semibold text-gray-500 uppercase">Video</span>
-                  <a href={viewExecution.videoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm block mt-1">
+                  <a href={viewExecution.videoUrl} target="_blank" rel="noopener noreferrer" className="text-info-600 hover:underline text-sm block mt-1">
                     {viewExecution.videoUrl}
                   </a>
                 </div>
@@ -1720,7 +1720,7 @@ export default function PeriodDetailPage() {
                     deleteExecutionMutation.mutate(viewExecution.id);
                   }
                 }}
-                className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100"
+                className="px-4 py-2 text-sm font-medium text-danger-600 bg-danger-50 rounded-lg hover:bg-danger-100"
               >
                 Hapus
               </button>

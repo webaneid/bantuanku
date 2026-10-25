@@ -35,7 +35,7 @@ const getStatusBadgeClass = (status: string) => {
 const programStatusBadgeMap: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700",
   active: "bg-success-50 text-success-700",
-  completed: "bg-blue-50 text-blue-700",
+  completed: "bg-info-50 text-info-700",
   cancelled: "bg-danger-50 text-danger-700",
   inactive: "bg-gray-100 text-gray-700",
 };
@@ -141,7 +141,7 @@ export default function MitraPage() {
     return (
       <div className="dashboard-container">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard Mitra</h1>
+          <h1 className="text-2xl font-bold text-dark">Dashboard Mitra</h1>
           <p className="text-gray-600 mt-1">Selamat datang, {mitraMe.name}</p>
         </div>
 
@@ -156,7 +156,7 @@ export default function MitraPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-500">Total Program</div>
-            <div className="text-2xl font-bold text-gray-900">{mitraMe.totalPrograms || 0}</div>
+            <div className="text-2xl font-bold text-dark">{mitraMe.totalPrograms || 0}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-500">Total Donasi Masuk</div>
@@ -168,7 +168,7 @@ export default function MitraPage() {
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-500">Saldo</div>
-            <div className="text-2xl font-bold text-gray-900">Rp {formatRupiah(mitraMe.currentBalance || 0)}</div>
+            <div className="text-2xl font-bold text-dark">Rp {formatRupiah(mitraMe.currentBalance || 0)}</div>
           </div>
         </div>
 
@@ -188,7 +188,7 @@ export default function MitraPage() {
                 const isPdf = url?.toLowerCase().includes(".pdf");
                 return (
                   <div key={key} className="border border-gray-200 rounded-lg overflow-hidden">
-                    <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                    <div className="px-3 py-2 bg-light border-b border-gray-200">
                       <span className="text-xs font-medium text-gray-600">{label}</span>
                     </div>
                     {url ? (
@@ -253,7 +253,7 @@ export default function MitraPage() {
                       <td>
                         <button
                           type="button"
-                          className="font-medium text-gray-900 hover:text-primary-600 text-left"
+                          className="font-medium text-dark hover:text-primary-600 text-left"
                           onClick={() => goToProgramDetail(program)}
                         >
                           {program.title}
@@ -344,7 +344,7 @@ export default function MitraPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mitra Lembaga</h1>
+          <h1 className="text-2xl font-bold text-dark">Mitra Lembaga</h1>
           <p className="text-gray-600 mt-1">Kelola mitra dan lembaga yang bermitra</p>
         </div>
         <button
@@ -362,7 +362,7 @@ export default function MitraPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-500">Total Mitra</div>
-            <div className="text-2xl font-bold text-gray-900">{statsData.totalMitra || 0}</div>
+            <div className="text-2xl font-bold text-dark">{statsData.totalMitra || 0}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-500">Verified</div>
@@ -370,7 +370,7 @@ export default function MitraPage() {
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-500">Pending</div>
-            <div className="text-2xl font-bold text-gray-900">{statsData.pendingMitra || 0}</div>
+            <div className="text-2xl font-bold text-dark">{statsData.pendingMitra || 0}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="text-sm text-gray-500">Total Donasi Masuk</div>
@@ -457,13 +457,13 @@ export default function MitraPage() {
                         </div>
                       )}
                       <div>
-                        <div className="font-medium text-gray-900">{m.name}</div>
+                        <div className="font-medium text-dark">{m.name}</div>
                         <div className="text-xs text-gray-500">{m.slug}</div>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <div className="text-sm text-gray-900">{m.picName || "-"}</div>
+                    <div className="text-sm text-dark">{m.picName || "-"}</div>
                   </td>
                   <td>
                     <div className="text-sm text-gray-600">{m.email || "-"}</div>

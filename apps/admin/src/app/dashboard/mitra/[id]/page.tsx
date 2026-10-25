@@ -30,7 +30,7 @@ const statusLabelMap: Record<string, string> = {
 const campaignStatusBadgeMap: Record<string, string> = {
   draft: "bg-gray-100 text-gray-700",
   active: "bg-success-50 text-success-700",
-  completed: "bg-blue-50 text-blue-700",
+  completed: "bg-info-50 text-info-700",
   cancelled: "bg-danger-50 text-danger-700",
   inactive: "bg-gray-100 text-gray-700",
 };
@@ -255,7 +255,7 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
           <ArrowLeftIcon className="w-5 h-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">Detail Mitra</h1>
+          <h1 className="text-2xl font-bold text-dark">Detail Mitra</h1>
           <p className="text-gray-600">{data.nama || data.name || "-"}</p>
         </div>
         <div className="flex gap-2">
@@ -271,7 +271,7 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
               </button>
               <button
                 type="button"
-                className="btn btn-secondary btn-md text-red-600"
+                className="btn btn-secondary btn-md text-danger-600"
                 onClick={handleReject}
                 disabled={rejectMutation.isPending}
               >
@@ -282,7 +282,7 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
           {data.status === "verified" && (
             <button
               type="button"
-              className="btn btn-secondary btn-md text-red-600"
+              className="btn btn-secondary btn-md text-danger-600"
               onClick={() => suspendMutation.mutate()}
               disabled={suspendMutation.isPending}
             >
@@ -308,7 +308,7 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
           </button>
           <button
             type="button"
-            className="btn btn-secondary btn-md text-red-600"
+            className="btn btn-secondary btn-md text-danger-600"
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
           >
@@ -394,7 +394,7 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
               {data.rejectionReason && (
                 <div>
                   <span className="text-gray-500">Alasan Penolakan</span>
-                  <p className="mt-1 text-sm text-red-600">{data.rejectionReason}</p>
+                  <p className="mt-1 text-sm text-danger-600">{data.rejectionReason}</p>
                 </div>
               )}
             </div>
@@ -691,7 +691,7 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
                 </tr>
               ) : (
                 programs.map((program: any) => (
-                  <tr key={`${program.programType || "campaign"}-${program.id}`} className="hover:bg-gray-50">
+                  <tr key={`${program.programType || "campaign"}-${program.id}`} className="hover:bg-light">
                     <td className="text-sm text-gray-600">{getProgramTypeLabel(program.programType)}</td>
                     <td>
                       <button
@@ -742,7 +742,7 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Hapus Mitra</h3>
+            <h3 className="text-lg font-semibold text-dark mb-2">Hapus Mitra</h3>
             <p className="text-gray-600 mb-6">
               Yakin ingin menghapus mitra ini? Tindakan ini tidak dapat dibatalkan.
             </p>
@@ -772,7 +772,7 @@ export default function MitraDetailPage({ params }: { params: Promise<{ id: stri
       {showRejectModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Tolak Mitra</h3>
+            <h3 className="text-lg font-semibold text-dark mb-2">Tolak Mitra</h3>
             <p className="text-sm text-gray-600 mb-3">Masukkan alasan penolakan:</p>
             <textarea
               className="form-input w-full mb-4"

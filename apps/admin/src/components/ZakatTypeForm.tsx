@@ -286,7 +286,7 @@ export default function ZakatTypeForm({ draftKey, onSubmit, initialData, isLoadi
 
             {/* Has Calculator */}
             <div className="form-field">
-              <div className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between py-2 px-4 bg-light rounded-lg">
                 <div>
                   <label htmlFor="hasCalculator" className="form-label mb-0 cursor-pointer">
                     Ada Kalkulator
@@ -361,7 +361,7 @@ export default function ZakatTypeForm({ draftKey, onSubmit, initialData, isLoadi
 
             {/* Active Status */}
             <div className="form-field">
-              <div className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between py-2 px-4 bg-light rounded-lg">
                 <div>
                   <label htmlFor="isActive" className="form-label mb-0 cursor-pointer">
                     Status Aktif

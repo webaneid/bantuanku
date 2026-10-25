@@ -237,7 +237,7 @@ export default function DonationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Donasi</h1>
+          <h1 className="text-2xl font-bold text-dark">Donasi</h1>
           <p className="text-gray-600 mt-1">Kelola semua transaksi donasi realtime</p>
         </div>
         <button
@@ -348,13 +348,13 @@ export default function DonationsPage() {
               donations.map((donation: any) => (
                 <tr key={donation.id}>
                   <td>
-                    <div className="font-mono text-sm font-semibold text-gray-900">
+                    <div className="font-mono text-sm font-semibold text-dark">
                       {donation.referenceId}
                     </div>
                     <div className="text-xs text-gray-500">{donation.source || "user"}</div>
                   </td>
                   <td>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-dark">
                       {donation.donorName}
                       {donation.isAnonymous && (
                         <span className="ml-2 text-xs text-warning-600 font-normal">(Anonim)</span>
@@ -365,7 +365,7 @@ export default function DonationsPage() {
                     )}
                   </td>
                   <td>
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm text-dark">
                       {resolveCampaignTitle(donation)}
                     </div>
                   </td>

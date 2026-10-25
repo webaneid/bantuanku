@@ -212,7 +212,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center text-gray-600 hover:text-gray-900"
+          className="flex items-center text-gray-600 hover:text-dark"
         >
           <ArrowLeftIcon className="h-5 w-5 mr-2" />
           Back
@@ -319,7 +319,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
               </div>
               <div className="flex justify-between text-sm">
                 <span>Paid Amount:</span>
-                <span className="text-green-600 font-medium">Rp {formatRupiah(transaction.paidAmount)}</span>
+                <span className="text-success-600 font-medium">Rp {formatRupiah(transaction.paidAmount)}</span>
               </div>
               {(() => {
                 const remaining = (transaction.totalAmount + (transaction.uniqueCode || 0)) - transaction.paidAmount;
@@ -334,7 +334,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
                   return (
                     <div className="flex justify-between text-sm">
                       <span>Kelebihan Pembayaran:</span>
-                      <span className="text-blue-600 font-medium">Rp {formatRupiah(Math.abs(remaining))}</span>
+                      <span className="text-info-600 font-medium">Rp {formatRupiah(Math.abs(remaining))}</span>
                     </div>
                   );
                 } else {
@@ -366,7 +366,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
           {transaction.typeSpecificData && (
             <div className="border-t pt-4 mb-6">
               <h2 className="font-semibold mb-2">Detail Tambahan</h2>
-              <div className="bg-gray-50 p-4 rounded space-y-2">
+              <div className="bg-light p-4 rounded space-y-2">
                 {transaction.productType === "campaign" && (
                   <>
                     {transaction.typeSpecificData.pillar && (
@@ -470,14 +470,14 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
                   return (
                     <div
                       key={payment.id}
-                      className="p-4 border border-gray-200 rounded-lg bg-gray-50"
+                      className="p-4 border border-gray-200 rounded-lg bg-light"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-gray-900">
+                          <p className="text-sm font-semibold text-dark">
                             {payment.paymentNumber}
                           </p>
-                          <p className="text-lg font-bold text-gray-900 mt-1">
+                          <p className="text-lg font-bold text-dark mt-1">
                             Rp {formatRupiah(payment.amount)}
                           </p>
                         </div>
@@ -489,13 +489,13 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
                       <div className="grid grid-cols-2 gap-3 mt-3 text-sm">
                         <div>
                           <p className="text-gray-500">Tanggal Transfer</p>
-                          <p className="text-gray-900 font-medium">
+                          <p className="text-dark font-medium">
                             {payment.paymentDate && formatDateWIB(payment.paymentDate, "dd MMM yyyy, HH:mm")}
                           </p>
                         </div>
                         <div>
                           <p className="text-gray-500">Metode Pembayaran</p>
-                          <p className="text-gray-900 font-medium">
+                          <p className="text-dark font-medium">
                             {paymentMethod ? (
                               paymentMethod.type === "bank_transfer" ? (
                                 <>
@@ -543,7 +543,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
           {(transaction.paymentStatus === "pending" || transaction.paymentStatus === "partial") && (
             <button
               onClick={handleOpenPaymentModal}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="px-4 py-2 bg-info-600 text-white rounded-lg hover:bg-info-700"
             >
               Upload Bukti Pembayaran
             </button>
@@ -553,14 +553,14 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
               <button
                 onClick={() => setShowRejectModal(true)}
                 disabled={isRejecting}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                className="px-4 py-2 bg-danger-600 text-white rounded-lg hover:bg-danger-700 disabled:opacity-50"
               >
                 {isRejecting ? "Menolak..." : "Tolak Pembayaran"}
               </button>
               <button
                 onClick={() => setShowApproveModal(true)}
                 disabled={isApproving}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="px-4 py-2 bg-success-600 text-white rounded-lg hover:bg-success-700 disabled:opacity-50"
               >
                 {isApproving ? "Menyetujui..." : "Setujui Pembayaran"}
               </button>
@@ -568,7 +568,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
           )}
           <button
             onClick={() => router.push("/dashboard/transactions/create")}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-4 py-2 bg-info-600 text-white rounded-lg hover:bg-info-700"
           >
             Create Another
           </button>
@@ -584,7 +584,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
                 message: "Invoice link copied!",
               });
             }}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-light"
           >
             Copy Invoice Link
           </button>
@@ -595,7 +595,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
       {showPaymentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="text-lg font-semibold text-dark mb-4">
               Upload Bukti Pembayaran
             </h3>
             <div className="space-y-4">
@@ -646,7 +646,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
               <div>
                 <label className="form-label">Bukti Transfer (Opsional)</label>
                 {paymentForm.paymentProof ? (
-                  <div className="flex items-center gap-3 bg-gray-50 border rounded p-3">
+                  <div className="flex items-center gap-3 bg-light border rounded p-3">
                     <PaperClipIcon className="w-5 h-5 text-gray-400" />
                     <span className="text-sm text-gray-700 truncate flex-1">
                       {paymentForm.paymentProof.split("/").pop()}
@@ -721,7 +721,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
       {showApproveModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Setujui Pembayaran</h3>
+            <h3 className="text-lg font-semibold text-dark mb-3">Setujui Pembayaran</h3>
             <p className="text-sm text-gray-700 mb-5">Apakah Anda yakin ingin menyetujui pembayaran ini?</p>
             <div className="flex justify-end gap-3">
               <button
@@ -746,7 +746,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
       {showRejectModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Tolak Pembayaran</h3>
+            <h3 className="text-lg font-semibold text-dark mb-3">Tolak Pembayaran</h3>
             <div className="mb-5">
               <label className="form-label">Alasan Penolakan (opsional)</label>
               <textarea

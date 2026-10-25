@@ -217,7 +217,7 @@ export default function CreateDisbursementPage() {
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          className="flex items-center gap-2 text-gray-600 hover:text-dark"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           Kembali
@@ -226,7 +226,7 @@ export default function CreateDisbursementPage() {
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Buat Catatan Ledger</h1>
+          <h1 className="text-2xl font-bold text-dark">Buat Catatan Ledger</h1>
           <p className="text-gray-600 mt-1">Buat permintaan catatan dana untuk campaign</p>
         </div>
       </div>
@@ -236,7 +236,7 @@ export default function CreateDisbursementPage() {
           {/* Campaign */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Campaign <span className="text-red-500">*</span>
+              Campaign <span className="text-danger-500">*</span>
             </label>
             <Autocomplete
               options={campaignOptions}
@@ -250,7 +250,7 @@ export default function CreateDisbursementPage() {
           {/* Amount */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Jumlah Dana <span className="text-red-500">*</span>
+              Jumlah Dana <span className="text-danger-500">*</span>
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">Rp</span>
@@ -269,7 +269,7 @@ export default function CreateDisbursementPage() {
           {/* Expense Account */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Akun Beban <span className="text-red-500">*</span>
+              Akun Beban <span className="text-danger-500">*</span>
             </label>
             <div className="flex gap-2">
               <div className="flex-1">
@@ -284,7 +284,7 @@ export default function CreateDisbursementPage() {
               <button
                 type="button"
                 onClick={() => setIsExpenseAccountModalOpen(true)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-light flex items-center gap-2"
                 title="Tambah Akun Beban Baru"
               >
                 <PlusIcon className="w-5 h-5" />
@@ -299,7 +299,7 @@ export default function CreateDisbursementPage() {
           {/* Purpose */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tujuan Pencairan <span className="text-red-500">*</span>
+              Tujuan Pencairan <span className="text-danger-500">*</span>
             </label>
             <input
               type="text"
@@ -313,13 +313,13 @@ export default function CreateDisbursementPage() {
 
           {/* Recipient Info */}
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Penerima</h3>
+            <h3 className="text-lg font-semibold text-dark mb-4">Informasi Penerima</h3>
 
             <div className="space-y-4">
               {/* Recipient Type */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Transfer ke <span className="text-red-500">*</span>
+                  Transfer ke <span className="text-danger-500">*</span>
                 </label>
                 <Autocomplete
                   options={recipientTypeOptions}
@@ -334,7 +334,7 @@ export default function CreateDisbursementPage() {
               {formData.recipientType === "vendor" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pilih Vendor <span className="text-red-500">*</span>
+                    Pilih Vendor <span className="text-danger-500">*</span>
                   </label>
                   <div className="flex gap-2">
                     <div className="flex-1">
@@ -349,7 +349,7 @@ export default function CreateDisbursementPage() {
                     <button
                       type="button"
                       onClick={() => setIsVendorModalOpen(true)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-light flex items-center gap-2"
                       title="Tambah Vendor Baru"
                     >
                       <PlusIcon className="w-5 h-5" />
@@ -363,7 +363,7 @@ export default function CreateDisbursementPage() {
               {formData.recipientType === "employee" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pilih Employee <span className="text-red-500">*</span>
+                    Pilih Employee <span className="text-danger-500">*</span>
                   </label>
                   <div className="flex gap-2">
                     <div className="flex-1">
@@ -378,7 +378,7 @@ export default function CreateDisbursementPage() {
                     <button
                       type="button"
                       onClick={() => setIsEmployeeModalOpen(true)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-light flex items-center gap-2"
                       title="Tambah Employee Baru"
                     >
                       <PlusIcon className="w-5 h-5" />
@@ -393,14 +393,14 @@ export default function CreateDisbursementPage() {
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nama Penerima <span className="text-red-500">*</span>
+                      Nama Penerima <span className="text-danger-500">*</span>
                     </label>
                     <input
                       type="text"
                       required
                       value={formData.recipientName}
                       onChange={(e) => setFormData({ ...formData, recipientName: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-light"
                       placeholder="Nama lengkap penerima"
                       readOnly
                     />
@@ -414,7 +414,7 @@ export default function CreateDisbursementPage() {
                       type="text"
                       value={formData.recipientBank}
                       onChange={(e) => setFormData({ ...formData, recipientBank: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-light"
                       placeholder="Contoh: BCA"
                       readOnly
                     />
@@ -428,7 +428,7 @@ export default function CreateDisbursementPage() {
                       type="text"
                       value={formData.recipientAccount}
                       onChange={(e) => setFormData({ ...formData, recipientAccount: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-light"
                       placeholder="1234567890"
                       readOnly
                     />
@@ -442,7 +442,7 @@ export default function CreateDisbursementPage() {
                       type="tel"
                       value={formData.recipientPhone}
                       onChange={(e) => setFormData({ ...formData, recipientPhone: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-gray-50"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-light"
                       placeholder="08xxxxxxxxxx"
                       readOnly
                     />
@@ -485,7 +485,7 @@ export default function CreateDisbursementPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-light"
             >
               Batal
             </button>
@@ -499,7 +499,7 @@ export default function CreateDisbursementPage() {
           </div>
 
           {createMutation.isError && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm">
               Gagal membuat catatan. Silakan coba lagi.
             </div>
           )}

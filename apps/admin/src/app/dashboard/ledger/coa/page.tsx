@@ -150,7 +150,7 @@ export default function COAPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Chart of Accounts</h1>
+          <h1 className="text-2xl font-bold text-dark">Chart of Accounts</h1>
           <p className="text-gray-600 mt-1">Kelola akun-akun untuk pencatatan keuangan</p>
         </div>
         <button
@@ -284,7 +284,7 @@ export default function COAPage() {
             <div key={coa.id} className="table-mobile-card">
               <div className="table-mobile-card-header">
                 <div>
-                  <div className="font-mono font-semibold text-gray-900">{coa.code}</div>
+                  <div className="font-mono font-semibold text-dark">{coa.code}</div>
                   <div className="text-sm text-gray-600">{coa.name}</div>
                 </div>
                 {coa.isActive ? (

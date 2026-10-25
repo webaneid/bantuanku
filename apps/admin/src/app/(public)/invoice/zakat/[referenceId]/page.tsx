@@ -53,10 +53,10 @@ export default function ZakatInvoicePage({
   );
 
   const statusBadgeMap: Record<string, string> = {
-    pending: "bg-amber-50 text-amber-700 border border-amber-200",
-    processing: "bg-blue-50 text-blue-700 border border-blue-200",
-    success: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    failed: "bg-rose-50 text-rose-700 border border-rose-200",
+    pending: "bg-warning-50 text-warning-700 border border-warning-200",
+    processing: "bg-info-50 text-info-700 border border-info-200",
+    success: "bg-primary-50 text-primary-700 border border-primary-200",
+    failed: "bg-danger-50 text-danger-700 border border-danger-200",
     expired: "bg-gray-100 text-gray-700 border border-gray-200",
   };
 
@@ -84,8 +84,8 @@ export default function ZakatInvoicePage({
       const accountName = donation.metadata?.accountName || selectedPaymentMethod?.details?.accountName || 'N/A';
 
       return (
-        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-sm font-semibold text-gray-900 mb-2">Transfer Bank</p>
+        <div className="p-3 bg-light rounded-lg border border-gray-200">
+          <p className="text-sm font-semibold text-dark mb-2">Transfer Bank</p>
           <div className="space-y-1 text-sm text-gray-700">
             <div className="flex">
               <span className="w-32 font-medium">Bank:</span>
@@ -139,7 +139,7 @@ export default function ZakatInvoicePage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-10 px-4">
+      <div className="min-h-screen bg-light py-10 px-4">
         <div className="max-w-3xl mx-auto space-y-4">
           <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
           <div className="h-80 bg-gray-200 rounded animate-pulse"></div>
@@ -150,9 +150,9 @@ export default function ZakatInvoicePage({
 
   if (error || !donation) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-light px-4">
         <div className="bg-white rounded-lg shadow p-8 max-w-lg w-full text-center border border-gray-200">
-          <p className="text-lg font-semibold text-gray-900 mb-2">Invoice tidak ditemukan</p>
+          <p className="text-lg font-semibold text-dark mb-2">Invoice tidak ditemukan</p>
           <p className="text-sm text-gray-600">
             Pastikan tautan invoice sudah benar atau hubungi admin {siteName}.
           </p>
@@ -165,12 +165,12 @@ export default function ZakatInvoicePage({
 
   return (
     <>
-    <div className="min-h-screen bg-gray-50 py-10 px-4 print:bg-white">
+    <div className="min-h-screen bg-light py-10 px-4 print:bg-white">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-start justify-between mb-6 print:hidden">
           <div>
             <p className="text-sm font-semibold text-primary-600">{siteName}</p>
-            <h1 className="text-2xl font-bold text-gray-900">Invoice Zakat</h1>
+            <h1 className="text-2xl font-bold text-dark">Invoice Zakat</h1>
             <p className="text-sm text-gray-600 mt-1">Nomor: {donation.referenceId}</p>
           </div>
           <div className="flex gap-2">
@@ -196,12 +196,12 @@ export default function ZakatInvoicePage({
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 print:shadow-none print:border-0">
           <div className="flex items-start justify-between border-b border-gray-200 pb-4 mb-4">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900">INVOICE</h2>
+              <h2 className="text-3xl font-bold text-dark">INVOICE</h2>
               <p className="text-sm text-gray-500 mt-1">Tanda Terima Zakat</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-500">Nomor Referensi</p>
-              <p className="text-lg font-mono font-bold text-gray-900">{donation.referenceId}</p>
+              <p className="text-lg font-mono font-bold text-dark">{donation.referenceId}</p>
               <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full mt-2 capitalize ${badgeClass}`}>
                 {getStatusLabel(donation.paymentStatus)}
               </span>
@@ -212,7 +212,7 @@ export default function ZakatInvoicePage({
             <div>
               <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Muzaki</h3>
               <div className="space-y-1">
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-semibold text-dark">
                   {donation.isAnonymous ? "Hamba Allah" : donation.donorName}
                 </p>
                 {!donation.isAnonymous && donation.donorEmail && (
@@ -225,7 +225,7 @@ export default function ZakatInvoicePage({
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Jenis Zakat</h3>
-              <p className="text-lg font-semibold text-gray-900">
+              <p className="text-lg font-semibold text-dark">
                 {donation.zakatType?.name || donation.zakatTypeName || "-"}
               </p>
             </div>
@@ -236,7 +236,7 @@ export default function ZakatInvoicePage({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Nominal Zakat</span>
-                <span className="font-mono font-semibold text-gray-900">{formatCurrency(donation.amount)}</span>
+                <span className="font-mono font-semibold text-dark">{formatCurrency(donation.amount)}</span>
               </div>
               {donation.calculatedZakat && (
                 <div className="flex justify-between text-sm">
@@ -245,8 +245,8 @@ export default function ZakatInvoicePage({
                 </div>
               )}
               <div className="flex justify-between pt-2 border-t border-gray-200">
-                <span className="font-semibold text-gray-900">Total</span>
-                <span className="font-mono font-bold text-lg text-gray-900">{formatCurrency(donation.amount)}</span>
+                <span className="font-semibold text-dark">Total</span>
+                <span className="font-mono font-bold text-lg text-dark">{formatCurrency(donation.amount)}</span>
               </div>
             </div>
           </div>
@@ -256,23 +256,23 @@ export default function ZakatInvoicePage({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className={donation.paymentMethodId?.startsWith("bank-") ? "md:col-span-2" : ""}>
                 <p className="text-sm text-gray-500 mb-1">Metode Pembayaran</p>
-                <div className="text-sm font-medium text-gray-900">{renderPaymentMethod()}</div>
+                <div className="text-sm font-medium text-dark">{renderPaymentMethod()}</div>
               </div>
               <div>
                 <p className="text-sm text-gray-500 mb-1">Status</p>
-                <p className="text-sm font-medium text-gray-900">{getStatusLabel(donation.paymentStatus)}</p>
+                <p className="text-sm font-medium text-dark">{getStatusLabel(donation.paymentStatus)}</p>
               </div>
               {donation.paidAt && (
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Tanggal Pembayaran</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-dark">
                     {formatDateWIB(donation.paidAt, "dd MMMM yyyy, HH:mm")}
                   </p>
                 </div>
               )}
               <div>
                 <p className="text-sm text-gray-500 mb-1">Tanggal Donasi</p>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-dark">
                   {formatDateWIB(donation.createdAt, "dd MMMM yyyy, HH:mm")}
                 </p>
               </div>
@@ -294,20 +294,20 @@ export default function ZakatInvoicePage({
           {donation.calculatorData && (
             <div className="border-t border-gray-200 pt-4 mb-4">
               <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Data Kalkulator</h3>
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <div className="bg-light rounded-lg p-4 space-y-2">
                 {donation.calculatorData.zakatType === 'fitrah' && (
                   <>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Jumlah Jiwa</span>
-                      <span className="font-semibold text-gray-900">{donation.calculatorData.quantity} orang</span>
+                      <span className="font-semibold text-dark">{donation.calculatorData.quantity} orang</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Harga per Jiwa</span>
-                      <span className="font-mono text-gray-900">{formatCurrency(donation.calculatorData.pricePerUnit)}</span>
+                      <span className="font-mono text-dark">{formatCurrency(donation.calculatorData.pricePerUnit)}</span>
                     </div>
                     <div className="flex justify-between text-sm pt-2 border-t border-gray-300">
-                      <span className="font-semibold text-gray-900">Total Kalkulasi</span>
-                      <span className="font-mono font-semibold text-gray-900">
+                      <span className="font-semibold text-dark">Total Kalkulasi</span>
+                      <span className="font-mono font-semibold text-dark">
                         {formatCurrency(donation.calculatorData.quantity * donation.calculatorData.pricePerUnit)}
                       </span>
                     </div>

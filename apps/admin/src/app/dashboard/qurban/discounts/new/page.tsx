@@ -87,12 +87,12 @@ export default function NewDiscountPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <Tag className="w-5 h-5 text-primary-600" />
-        <h1 className="text-xl font-bold text-gray-900">Buat Diskon / Voucher Baru</h1>
+        <h1 className="text-xl font-bold text-dark">Buat Diskon / Voucher Baru</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-5">
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>
+          <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg text-sm text-danger-700">{error}</div>
         )}
 
         <div>
@@ -288,7 +288,7 @@ export default function NewDiscountPage() {
           >
             {createMutation.isPending ? "Menyimpan..." : "Simpan"}
           </button>
-          <Link href="/dashboard/qurban/discounts" className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+          <Link href="/dashboard/qurban/discounts" className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-light">
             Batal
           </Link>
         </div>

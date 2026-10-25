@@ -60,7 +60,7 @@ interface DisbursementListItem {
 
 const statusBadgeMap: Record<string, { label: string; className: string }> = {
   draft: { label: "Draft", className: "bg-gray-100 text-gray-700" },
-  submitted: { label: "Diajukan", className: "bg-blue-50 text-blue-700" },
+  submitted: { label: "Diajukan", className: "bg-info-50 text-info-700" },
   approved: { label: "Disetujui", className: "bg-warning-50 text-warning-700" },
   rejected: { label: "Ditolak", className: "bg-danger-50 text-danger-700" },
   paid: { label: "Dibayar", className: "bg-success-50 text-success-700" },
@@ -160,7 +160,7 @@ export default function RevenueShareDisbursementPanel({
   return (
     <div className="space-y-6">
       <div className="bg-primary-50 border border-primary-200 rounded-lg p-5">
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Hak Bagi Hasil</h3>
+        <h3 className="text-lg font-semibold text-dark mb-3">Hak Bagi Hasil</h3>
         {availabilityLoading ? (
           <p className="text-sm text-gray-500">Memuat data...</p>
         ) : (
@@ -168,11 +168,11 @@ export default function RevenueShareDisbursementPanel({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Total Hak</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">Rp {formatRupiah(availabilityData?.availability?.totalEntitled || 0)}</p>
+                <p className="text-3xl font-bold text-dark mt-1">Rp {formatRupiah(availabilityData?.availability?.totalEntitled || 0)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Sudah Diajukan/Disalurkan</p>
-                <p className="text-3xl font-bold text-gray-900 mt-1">Rp {formatRupiah(availabilityData?.availability?.totalCommitted || 0)}</p>
+                <p className="text-3xl font-bold text-dark mt-1">Rp {formatRupiah(availabilityData?.availability?.totalCommitted || 0)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Tersisa</p>
@@ -227,7 +227,7 @@ export default function RevenueShareDisbursementPanel({
                     <tr key={row.id}>
                       <td className="text-sm font-medium">{row.disbursementNumber}</td>
                       <td className="text-sm">
-                        <p className="font-medium text-gray-900">Revenue Share</p>
+                        <p className="font-medium text-dark">Revenue Share</p>
                         <p className="text-gray-500">Pencairan Komisi Fundraiser</p>
                       </td>
                       <td className="text-sm">{row.recipientName}</td>
@@ -259,8 +259,8 @@ export default function RevenueShareDisbursementPanel({
         </div>
 
         {selectedRow && (
-          <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
-            <p className="font-semibold text-gray-900 mb-3">Detail Pencairan</p>
+          <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-light">
+            <p className="font-semibold text-dark mb-3">Detail Pencairan</p>
             {selectedRow.status === "paid" ? (
               <div className="space-y-3 text-sm">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -280,15 +280,15 @@ export default function RevenueShareDisbursementPanel({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <p className="text-gray-500">Bank Tujuan</p>
-                    <p className="font-medium text-gray-900">{selectedRow.recipientBankName || "-"}</p>
+                    <p className="font-medium text-dark">{selectedRow.recipientBankName || "-"}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Rekening Tujuan</p>
-                    <p className="font-medium text-gray-900">{selectedRow.recipientBankAccount || "-"}</p>
+                    <p className="font-medium text-dark">{selectedRow.recipientBankAccount || "-"}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Nominal Transfer</p>
-                    <p className="font-medium text-gray-900">Rp {formatRupiah(selectedRow.transferredAmount ?? selectedRow.amount ?? 0)}</p>
+                    <p className="font-medium text-dark">Rp {formatRupiah(selectedRow.transferredAmount ?? selectedRow.amount ?? 0)}</p>
                   </div>
                 </div>
                 <div>
@@ -345,11 +345,11 @@ export default function RevenueShareDisbursementPanel({
           <div className="absolute inset-0 bg-black/50" onClick={() => setShowModal(false)} />
           <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-semibold text-gray-900">Ajukan Pencairan</h3>
+              <h3 className="text-lg font-semibold text-dark">Ajukan Pencairan</h3>
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="w-8 h-8 rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-50"
+                className="w-8 h-8 rounded-lg border border-gray-300 text-gray-500 hover:bg-light"
               >
                 ×
               </button>
@@ -359,11 +359,11 @@ export default function RevenueShareDisbursementPanel({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">Tipe Pencairan</label>
-                  <input readOnly value={disbursementTypeLabel} className="form-input bg-gray-50" />
+                  <input readOnly value={disbursementTypeLabel} className="form-input bg-light" />
                 </div>
                 <div>
                   <label className="form-label">Kategori</label>
-                  <input readOnly value={categoryLabel} className="form-input bg-gray-50" />
+                  <input readOnly value={categoryLabel} className="form-input bg-light" />
                 </div>
               </div>
 
@@ -373,7 +373,7 @@ export default function RevenueShareDisbursementPanel({
                   <input
                     readOnly
                     value={availabilityData?.sourceBank ? `${availabilityData.sourceBank.bankName} - ${availabilityData.sourceBank.accountNumber}` : "Ditentukan admin"}
-                    className="form-input bg-gray-50"
+                    className="form-input bg-light"
                   />
                 </div>
                 <div>
@@ -393,26 +393,26 @@ export default function RevenueShareDisbursementPanel({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">Nama Penerima</label>
-                  <input readOnly value={availabilityData?.recipient?.name || "-"} className="form-input bg-gray-50" />
+                  <input readOnly value={availabilityData?.recipient?.name || "-"} className="form-input bg-light" />
                 </div>
                 <div>
                   <label className="form-label">Kontak</label>
-                  <input readOnly value={availabilityData?.recipient?.contact || "-"} className="form-input bg-gray-50" />
+                  <input readOnly value={availabilityData?.recipient?.contact || "-"} className="form-input bg-light" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="form-label">Bank Penerima</label>
-                  <input readOnly value={availabilityData?.recipient?.bankAccount?.bankName || "-"} className="form-input bg-gray-50" />
+                  <input readOnly value={availabilityData?.recipient?.bankAccount?.bankName || "-"} className="form-input bg-light" />
                 </div>
                 <div>
                   <label className="form-label">No. Rekening</label>
-                  <input readOnly value={availabilityData?.recipient?.bankAccount?.accountNumber || "-"} className="form-input bg-gray-50" />
+                  <input readOnly value={availabilityData?.recipient?.bankAccount?.accountNumber || "-"} className="form-input bg-light" />
                 </div>
                 <div>
                   <label className="form-label">Atas Nama</label>
-                  <input readOnly value={availabilityData?.recipient?.bankAccount?.accountHolderName || "-"} className="form-input bg-gray-50" />
+                  <input readOnly value={availabilityData?.recipient?.bankAccount?.accountHolderName || "-"} className="form-input bg-light" />
                 </div>
               </div>
 

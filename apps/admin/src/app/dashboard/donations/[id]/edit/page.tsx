@@ -215,12 +215,12 @@ export default function EditDonationPage({ params }: { params: Promise<{ id: str
         <button
           type="button"
           onClick={() => router.push(`/dashboard/donations/${donationId}`)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+          className="flex items-center gap-2 text-gray-600 hover:text-dark mb-4"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           Kembali ke Detail Donasi
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Edit Donasi</h1>
+        <h1 className="text-2xl font-bold text-dark">Edit Donasi</h1>
         <p className="text-gray-600 mt-1">Perbarui informasi transaksi donasi</p>
       </div>
 
@@ -243,7 +243,7 @@ export default function EditDonationPage({ params }: { params: Promise<{ id: str
 
           {/* Data Donatur Section */}
           <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Donatur</h3>
+            <h3 className="text-lg font-semibold text-dark mb-4">Data Donatur</h3>
 
             <div className="space-y-4">
               {/* Anonymous Checkbox */}
@@ -306,7 +306,7 @@ export default function EditDonationPage({ params }: { params: Promise<{ id: str
 
           {/* Donation Details Section */}
           <div className="border-t border-gray-200 pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Detail Donasi</h3>
+            <h3 className="text-lg font-semibold text-dark mb-4">Detail Donasi</h3>
 
             <div className="space-y-4">
               {/* Amount */}
@@ -377,7 +377,7 @@ export default function EditDonationPage({ params }: { params: Promise<{ id: str
           <div className="border-t border-gray-200 pt-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Bukti Transfer</h3>
+                <h3 className="text-lg font-semibold text-dark">Bukti Transfer</h3>
                 <p className="text-sm text-gray-600 mt-1">Upload bukti pembayaran (opsional)</p>
               </div>
               <button
@@ -395,11 +395,11 @@ export default function EditDonationPage({ params }: { params: Promise<{ id: str
                 {evidences.map((evidence: any) => (
                   <div
                     key={evidence.id}
-                    className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50"
+                    className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-light"
                   >
                     <PaperClipIcon className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-dark truncate">
                         {evidence.title}
                       </p>
                       <p className="text-xs text-gray-500">

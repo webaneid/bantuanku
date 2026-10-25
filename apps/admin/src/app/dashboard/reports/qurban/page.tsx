@@ -166,7 +166,7 @@ export default function QurbanReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Laporan Qurban</h1>
+          <h1 className="text-2xl font-bold text-dark">Laporan Qurban</h1>
           <p className="text-gray-600 mt-1">
             Pemasukan pembayaran qurban dan pembelian hewan qurban
           </p>
@@ -231,7 +231,7 @@ export default function QurbanReportPage() {
             {/* Income - Desktop */}
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Pemasukan Qurban per Jenis</h2>
+                <h2 className="text-lg font-semibold text-dark">Pemasukan Qurban per Jenis</h2>
               </div>
 
               {income.length === 0 ? (
@@ -247,8 +247,8 @@ export default function QurbanReportPage() {
                   </thead>
                   <tbody>
                     {income.map((item) => (
-                      <tr key={item.category} className="hover:bg-gray-50">
-                        <td className="text-sm text-gray-900">
+                      <tr key={item.category} className="hover:bg-light">
+                        <td className="text-sm text-dark">
                           {QURBAN_INCOME_LABELS[item.category] || item.category}
                         </td>
                         <td className="text-sm text-right text-gray-600">{item.count}</td>
@@ -258,9 +258,9 @@ export default function QurbanReportPage() {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                  <tfoot className="bg-light border-t-2 border-gray-300">
                     <tr>
-                      <td className="font-bold text-gray-900">TOTAL</td>
+                      <td className="font-bold text-dark">TOTAL</td>
                       <td className="text-right font-bold">{income.reduce((s, i) => s + i.count, 0)}</td>
                       <td className="text-right font-bold text-success-600 mono">Rp {formatRupiah(summary.totalIncome)}</td>
                     </tr>
@@ -272,7 +272,7 @@ export default function QurbanReportPage() {
             {/* Income - Mobile Cards */}
             <div className="table-mobile-cards">
               <div className="px-1 py-2 mb-2">
-                <h2 className="text-lg font-semibold text-gray-900">Pemasukan Qurban per Jenis</h2>
+                <h2 className="text-lg font-semibold text-dark">Pemasukan Qurban per Jenis</h2>
               </div>
               {income.map((item) => (
                 <div key={item.category} className="table-card">
@@ -297,7 +297,7 @@ export default function QurbanReportPage() {
                 <div className="text-center py-8 text-gray-500">Tidak ada data pemasukan</div>
               )}
               {income.length > 0 && (
-                <div className="table-card bg-gray-50">
+                <div className="table-card bg-light">
                   <div className="table-card-header">
                     <div className="table-card-header-left">
                       <div className="table-card-header-title">TOTAL</div>
@@ -317,7 +317,7 @@ export default function QurbanReportPage() {
 
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Laporan Qurban per Periode & Jumlah Hewan</h2>
+                <h2 className="text-lg font-semibold text-dark">Laporan Qurban per Periode & Jumlah Hewan</h2>
               </div>
 
               {periodByAnimal.length === 0 ? (
@@ -335,8 +335,8 @@ export default function QurbanReportPage() {
                   </thead>
                   <tbody>
                     {periodByAnimal.map((item) => (
-                      <tr key={`${item.periodId}-${item.animalType}`} className="hover:bg-gray-50">
-                        <td className="text-sm text-gray-900">
+                      <tr key={`${item.periodId}-${item.animalType}`} className="hover:bg-light">
+                        <td className="text-sm text-dark">
                           {item.periodName}
                           {item.hijriYear ? ` (${item.hijriYear}H)` : ""}
                         </td>
@@ -351,9 +351,9 @@ export default function QurbanReportPage() {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                  <tfoot className="bg-light border-t-2 border-gray-300">
                     <tr>
-                      <td className="font-bold text-gray-900" colSpan={2}>TOTAL</td>
+                      <td className="font-bold text-dark" colSpan={2}>TOTAL</td>
                       <td className="text-right font-bold">{periodByAnimal.reduce((s, i) => s + i.animalCount, 0)}</td>
                       <td className="text-right font-bold">{periodByAnimal.reduce((s, i) => s + i.transactionCount, 0)}</td>
                       <td className="text-right font-bold text-success-600 mono">
@@ -368,7 +368,7 @@ export default function QurbanReportPage() {
             {/* Period x Animal - Mobile Cards */}
             <div className="table-mobile-cards">
               <div className="px-1 py-2 mb-2">
-                <h2 className="text-lg font-semibold text-gray-900">Laporan Qurban per Periode & Jumlah Hewan</h2>
+                <h2 className="text-lg font-semibold text-dark">Laporan Qurban per Periode & Jumlah Hewan</h2>
               </div>
               {periodByAnimal.map((item) => (
                 <div key={`${item.periodId}-${item.animalType}`} className="table-card">
@@ -401,7 +401,7 @@ export default function QurbanReportPage() {
                 <div className="text-center py-8 text-gray-500">Belum ada data qurban per periode</div>
               )}
               {periodByAnimal.length > 0 && (
-                <div className="table-card bg-gray-50">
+                <div className="table-card bg-light">
                   <div className="table-card-header">
                     <div className="table-card-header-left">
                       <div className="table-card-header-title">TOTAL</div>
@@ -428,7 +428,7 @@ export default function QurbanReportPage() {
             {/* Expense - Desktop */}
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Pembelian Qurban per Kategori</h2>
+                <h2 className="text-lg font-semibold text-dark">Pembelian Qurban per Kategori</h2>
               </div>
 
               {expense.length === 0 ? (
@@ -444,8 +444,8 @@ export default function QurbanReportPage() {
                   </thead>
                   <tbody>
                     {expense.map((item) => (
-                      <tr key={item.category} className="hover:bg-gray-50">
-                        <td className="text-sm text-gray-900">
+                      <tr key={item.category} className="hover:bg-light">
+                        <td className="text-sm text-dark">
                           {QURBAN_EXPENSE_LABELS[item.category] || item.category}
                         </td>
                         <td className="text-sm text-right text-gray-600">{item.count}</td>
@@ -455,9 +455,9 @@ export default function QurbanReportPage() {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                  <tfoot className="bg-light border-t-2 border-gray-300">
                     <tr>
-                      <td className="font-bold text-gray-900">TOTAL</td>
+                      <td className="font-bold text-dark">TOTAL</td>
                       <td className="text-right font-bold">{expense.reduce((s, e) => s + e.count, 0)}</td>
                       <td className="text-right font-bold text-danger-600 mono">Rp {formatRupiah(summary.totalExpense)}</td>
                     </tr>
@@ -469,7 +469,7 @@ export default function QurbanReportPage() {
             {/* Expense - Mobile Cards */}
             <div className="table-mobile-cards">
               <div className="px-1 py-2 mb-2">
-                <h2 className="text-lg font-semibold text-gray-900">Pembelian Qurban per Kategori</h2>
+                <h2 className="text-lg font-semibold text-dark">Pembelian Qurban per Kategori</h2>
               </div>
               {expense.map((item) => (
                 <div key={item.category} className="table-card">
@@ -494,7 +494,7 @@ export default function QurbanReportPage() {
                 <div className="text-center py-8 text-gray-500">Tidak ada data pembelian</div>
               )}
               {expense.length > 0 && (
-                <div className="table-card bg-gray-50">
+                <div className="table-card bg-light">
                   <div className="table-card-header">
                     <div className="table-card-header-left">
                       <div className="table-card-header-title">TOTAL</div>

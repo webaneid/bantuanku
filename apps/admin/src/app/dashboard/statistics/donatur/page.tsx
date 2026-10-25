@@ -23,8 +23,9 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { todayWIBDateInput } from "@/lib/timezone";
+import { CHART, CHART_PALETTE } from "@/lib/chart-colors";
 
-const PIE_COLORS = ["#035a52", "#d2aa55", "#296585", "#e74c3c", "#8b5cf6", "#f59e0b"];
+const PIE_COLORS = CHART_PALETTE;
 
 function CustomPieTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
@@ -41,7 +42,7 @@ function CustomBarTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-sm">
-      <p className="font-medium text-gray-900">{label}</p>
+      <p className="font-medium text-dark">{label}</p>
       <p className="text-primary-600">{payload[0]?.value?.toLocaleString("id-ID")} donatur</p>
     </div>
   );
@@ -97,24 +98,24 @@ export default function StatistikDonaturPage() {
   // Pie data: Donatur aktif vs tidak aktif
   const donaturPieData = summary
     ? [
-        { name: "Aktif", value: summary.donaturActive, fill: "#035a52" },
-        { name: "Tidak Aktif", value: summary.donaturInactive, fill: "#d2aa55" },
+        { name: "Aktif", value: summary.donaturActive, fill: CHART.primary },
+        { name: "Tidak Aktif", value: summary.donaturInactive, fill: CHART.secondary },
       ].filter((d) => d.value > 0)
     : [];
 
   // Pie data: Influencer aktif vs tidak aktif
   const influencerPieData = summary
     ? [
-        { name: "Aktif", value: summary.influencerActive, fill: "#035a52" },
-        { name: "Tidak Aktif", value: summary.influencerInactive, fill: "#e74c3c" },
+        { name: "Aktif", value: summary.influencerActive, fill: CHART.primary },
+        { name: "Tidak Aktif", value: summary.influencerInactive, fill: CHART.danger },
       ].filter((d) => d.value > 0)
     : [];
 
   // Pie data: Donatur saja vs donatur + influencer
   const donaturInfluencerPieData = summary
     ? [
-        { name: "Donatur Saja", value: summary.totalDonatur - summary.donaturAsInfluencer, fill: "#296585" },
-        { name: "Donatur + Influencer", value: summary.donaturAsInfluencer, fill: "#035a52" },
+        { name: "Donatur Saja", value: summary.totalDonatur - summary.donaturAsInfluencer, fill: CHART.info },
+        { name: "Donatur + Influencer", value: summary.donaturAsInfluencer, fill: CHART.primary },
       ].filter((d) => d.value > 0)
     : [];
 
@@ -152,7 +153,7 @@ export default function StatistikDonaturPage() {
     return (
       <div className="dashboard-container">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Statistik Donatur</h1>
+          <h1 className="text-2xl font-bold text-dark">Statistik Donatur</h1>
         </div>
         <div className="dashboard-kpi-grid">
           {[...Array(7)].map((_, i) => (
@@ -167,7 +168,7 @@ export default function StatistikDonaturPage() {
     <div className="dashboard-container">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Statistik Donatur</h1>
+        <h1 className="text-2xl font-bold text-dark">Statistik Donatur</h1>
         <p className="text-gray-600 mt-1">Rangkuman statistik donatur dan influencer</p>
       </div>
 
@@ -353,7 +354,7 @@ export default function StatistikDonaturPage() {
                     <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
                     <YAxis type="category" dataKey="name" width={140} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
                     <Tooltip content={<CustomBarTooltip />} />
-                    <Bar dataKey="value" fill="#035a52" radius={[0, 4, 4, 0]} barSize={20} />
+                    <Bar dataKey="value" fill={CHART.primary} radius={[0, 4, 4, 0]} barSize={20} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -379,7 +380,7 @@ export default function StatistikDonaturPage() {
                     <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
                     <YAxis type="category" dataKey="name" width={160} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
                     <Tooltip content={<CustomBarTooltip />} />
-                    <Bar dataKey="value" fill="#296585" radius={[0, 4, 4, 0]} barSize={20} />
+                    <Bar dataKey="value" fill={CHART.info} radius={[0, 4, 4, 0]} barSize={20} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -406,7 +407,7 @@ export default function StatistikDonaturPage() {
                   <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
                   <YAxis type="category" dataKey="name" width={160} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#6b7280" }} />
                   <Tooltip content={<CustomBarTooltip />} />
-                  <Bar dataKey="value" fill="#d2aa55" radius={[0, 4, 4, 0]} barSize={20} />
+                  <Bar dataKey="value" fill={CHART.secondary} radius={[0, 4, 4, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

@@ -100,7 +100,7 @@ export default function PagesAdminListPage() {
   if (!canManage) {
     return (
       <div className="dashboard-container">
-        <h1 className="text-2xl font-bold text-gray-900">Pages</h1>
+        <h1 className="text-2xl font-bold text-dark">Pages</h1>
         <p className="text-sm text-gray-600 mt-2">Anda tidak memiliki akses ke halaman ini.</p>
       </div>
     );
@@ -110,7 +110,7 @@ export default function PagesAdminListPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pages</h1>
+          <h1 className="text-2xl font-bold text-dark">Pages</h1>
           <p className="text-gray-600 mt-1">Kelola halaman statis seperti Tentang Kami, Kontak, dan lainnya.</p>
         </div>
         <Link href="/dashboard/pages/create" className="btn btn-primary btn-md">
@@ -185,7 +185,7 @@ export default function PagesAdminListPage() {
                         <div className="w-10 h-10 rounded bg-gray-100 border border-gray-200" />
                       )}
                       <div>
-                        <div className="font-medium text-gray-900">{item.title}</div>
+                        <div className="font-medium text-dark">{item.title}</div>
                         <div className="text-xs text-gray-500 line-clamp-1">{item.excerpt || "-"}</div>
                       </div>
                     </div>
@@ -254,7 +254,7 @@ export default function PagesAdminListPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Hapus Halaman</h2>
+              <h2 className="text-xl font-bold text-dark">Hapus Halaman</h2>
             </div>
             <div className="p-6">
               <p className="text-sm text-gray-700">

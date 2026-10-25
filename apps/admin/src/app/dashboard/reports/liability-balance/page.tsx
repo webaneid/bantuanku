@@ -107,7 +107,7 @@ export default function LiabilityBalanceReportPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Laporan Saldo Titipan Dana</h1>
+            <h1 className="text-2xl font-bold text-dark">Laporan Saldo Titipan Dana</h1>
             <p className="text-sm text-gray-600 mt-1">
               Menampilkan saldo titipan dana (liability) per campaign berdasarkan jurnal akuntansi
             </p>
@@ -187,9 +187,9 @@ export default function LiabilityBalanceReportPage() {
                     ? (campaign.totalDisbursements / campaign.totalDonations) * 100
                     : 0;
                   return (
-                    <tr key={campaign.campaignId} className="hover:bg-gray-50">
+                    <tr key={campaign.campaignId} className="hover:bg-light">
                       <td>
-                        <div className="text-sm font-medium text-gray-900">{campaign.campaignTitle}</div>
+                        <div className="text-sm font-medium text-dark">{campaign.campaignTitle}</div>
                         <div className="text-xs text-gray-500 mt-1">
                           {campaign.donationCount} donasi · {campaign.disbursementCount} penyaluran
                         </div>
@@ -220,9 +220,9 @@ export default function LiabilityBalanceReportPage() {
               )}
             </tbody>
             {!isLoading && campaigns.length > 0 && (
-              <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+              <tfoot className="bg-light border-t-2 border-gray-300">
                 <tr>
-                  <td className="font-bold text-gray-900">TOTAL</td>
+                  <td className="font-bold text-dark">TOTAL</td>
                   <td className="text-right font-bold text-success-600 mono">Rp {formatRupiah(totals.totalDonations)}</td>
                   <td className="text-right font-bold text-primary-600 mono">Rp {formatRupiah(totals.totalDisbursements)}</td>
                   <td className="text-right font-bold text-warning-600 mono">Rp {formatRupiah(totals.remainingLiability)}</td>
@@ -286,10 +286,10 @@ export default function LiabilityBalanceReportPage() {
         </div>
 
         {/* Info Box */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 no-print">
+        <div className="bg-info-50 border border-info-200 rounded-lg p-4 no-print">
           <div className="flex gap-3">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="h-5 w-5 text-info-400" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
@@ -298,8 +298,8 @@ export default function LiabilityBalanceReportPage() {
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-medium text-blue-800">Tentang Saldo Titipan Dana</h3>
-              <p className="text-sm text-blue-700 mt-1">
+              <h3 className="text-sm font-medium text-info-800">Tentang Saldo Titipan Dana</h3>
+              <p className="text-sm text-info-700 mt-1">
                 Saldo titipan dana (liability) menunjukkan total donasi yang belum disalurkan untuk
                 setiap campaign. Berdasarkan model akuntansi nonprofit, donasi dicatat sebagai
                 kewajiban (liability) di akun 2210 - Titipan Dana Campaign. Saat dana disalurkan,

@@ -152,7 +152,7 @@ export default function IntegrationSettingsPage() {
             <div className="space-y-6">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
                     <div className="mb-6">
-                        <h2 className="text-xl font-bold text-gray-900">Integration</h2>
+                        <h2 className="text-xl font-bold text-dark">Integration</h2>
                         <p className="text-sm text-gray-500 mt-1">
                             Kelola integrasi dengan platform pihak ketiga.
                         </p>
@@ -161,7 +161,7 @@ export default function IntegrationSettingsPage() {
                     <div className="space-y-6">
                         {/* Meta Business Suite */}
                         <div>
-                            <h3 className="text-base font-semibold text-gray-900 mb-1">Meta Business Suite</h3>
+                            <h3 className="text-base font-semibold text-dark mb-1">Meta Business Suite</h3>
                             <p className="text-sm text-gray-500 mb-4">
                                 Verifikasi domain untuk Meta Business Suite (Facebook & Instagram).
                             </p>
@@ -202,7 +202,7 @@ export default function IntegrationSettingsPage() {
 
                         {/* Meta Conversions API */}
                         <div>
-                            <h3 className="text-base font-semibold text-gray-900 mb-1">Meta Conversions API</h3>
+                            <h3 className="text-base font-semibold text-dark mb-1">Meta Conversions API</h3>
                             <p className="text-sm text-gray-500 mb-4">
                                 Server-side tracking untuk meningkatkan akurasi data konversi Meta Ads.
                             </p>
@@ -226,7 +226,7 @@ export default function IntegrationSettingsPage() {
 
                         {/* Google Tag Manager */}
                         <div>
-                            <h3 className="text-base font-semibold text-gray-900 mb-1">Google Tag Manager</h3>
+                            <h3 className="text-base font-semibold text-dark mb-1">Google Tag Manager</h3>
                             <p className="text-sm text-gray-500 mb-4">
                                 Kelola semua tag tracking (Google Analytics, Search Console, dll) melalui Google Tag Manager.
                             </p>
@@ -252,7 +252,7 @@ export default function IntegrationSettingsPage() {
 
                         {/* Google Search Console */}
                         <div>
-                            <h3 className="text-base font-semibold text-gray-900 mb-1">Google Search Console</h3>
+                            <h3 className="text-base font-semibold text-dark mb-1">Google Search Console</h3>
                             <p className="text-sm text-gray-500 mb-4">
                                 Verifikasi kepemilikan situs melalui tag HTML untuk Google Search Console.
                             </p>
@@ -279,7 +279,7 @@ export default function IntegrationSettingsPage() {
                         {/* SEO & Sitemap */}
                         {WEB_URL && (
                             <div>
-                                <h3 className="text-base font-semibold text-gray-900 mb-1">SEO & Sitemap</h3>
+                                <h3 className="text-base font-semibold text-dark mb-1">SEO & Sitemap</h3>
                                 <p className="text-sm text-gray-500 mb-4">
                                     URL penting untuk didaftarkan ke Google Search Console dan mesin pencari lainnya.
                                 </p>
@@ -289,10 +289,10 @@ export default function IntegrationSettingsPage() {
                                         { label: "Sitemap URL", url: `${WEB_URL}/sitemap.xml`, desc: "Daftarkan URL ini di Google Search Console agar semua halaman ter-index." },
                                         { label: "Robots.txt", url: `${WEB_URL}/robots.txt`, desc: "File aturan crawling untuk mesin pencari." },
                                     ].map((item) => (
-                                        <div key={item.label} className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
+                                        <div key={item.label} className="flex items-center gap-3 bg-light rounded-lg px-4 py-3">
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-gray-700">{item.label}</p>
-                                                <p className="text-sm text-blue-600 truncate">{item.url}</p>
+                                                <p className="text-sm text-info-600 truncate">{item.url}</p>
                                                 <p className="text-xs text-gray-400 mt-0.5">{item.desc}</p>
                                             </div>
                                             <button

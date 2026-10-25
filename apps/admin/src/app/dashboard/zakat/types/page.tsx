@@ -90,7 +90,7 @@ export default function ZakatTypesPage() {
 
   if (isLoading) {
     return (
-      <main className="flex-1 overflow-y-auto bg-gray-50">
+      <main className="flex-1 overflow-y-auto bg-light">
         <div className="dashboard-container">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
@@ -102,12 +102,12 @@ export default function ZakatTypesPage() {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto bg-gray-50">
+    <main className="flex-1 overflow-y-auto bg-light">
       <div className="dashboard-container">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Kelola Jenis Zakat</h1>
+            <h1 className="text-2xl font-bold text-dark">Kelola Jenis Zakat</h1>
             <p className="text-gray-600 mt-1">Atur jenis-jenis zakat yang tersedia di sistem</p>
           </div>
           <div className="flex items-center gap-3">
@@ -132,7 +132,7 @@ export default function ZakatTypesPage() {
                 .map((type: ZakatType) => (
                   <div
                     key={type.id}
-                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+                    className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg hover:bg-light"
                   >
                     <div className="flex items-start gap-4 flex-1">
                       <div className="flex-shrink-0">
@@ -150,7 +150,7 @@ export default function ZakatTypesPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
-                          <h3 className="font-semibold text-gray-900">{type.name}</h3>
+                          <h3 className="font-semibold text-dark">{type.name}</h3>
                           {type.isActive ? (
                             <span className="px-2 py-1 text-xs font-medium rounded-full bg-success-50 text-success-700">
                               Aktif
@@ -208,7 +208,7 @@ export default function ZakatTypesPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Hapus Jenis Zakat</h2>
+              <h2 className="text-xl font-bold text-dark">Hapus Jenis Zakat</h2>
             </div>
             <div className="p-6">
               <p className="text-sm text-gray-700">

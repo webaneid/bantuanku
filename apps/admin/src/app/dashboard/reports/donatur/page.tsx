@@ -117,7 +117,7 @@ export default function DonaturReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Laporan Donatur</h1>
+          <h1 className="text-2xl font-bold text-dark">Laporan Donatur</h1>
           <p className="text-gray-600 mt-1">Analitik donatur dan riwayat donasi</p>
         </div>
         <ExportButton onExportExcel={handleExport} onPrint={() => window.print()} />
@@ -149,7 +149,7 @@ export default function DonaturReportPage() {
                   {donaturList.map((d) => (
                     <button
                       key={d.id}
-                      className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                      className="w-full text-left px-3 py-2 hover:bg-light text-sm"
                       onClick={() => { setSelectedDonorId(d.id); setSearchEmail(d.name); }}
                     >
                       <span className="font-medium">{d.name}</span> <span className="text-gray-500">{d.email}</span>
@@ -173,7 +173,7 @@ export default function DonaturReportPage() {
             ) : detailData ? (
               <>
                 <div className="card mb-4">
-                  <h2 className="text-lg font-bold text-gray-900 mb-1">{detailData.donor.name}</h2>
+                  <h2 className="text-lg font-bold text-dark mb-1">{detailData.donor.name}</h2>
                   <p className="text-sm text-gray-600">{detailData.donor.email} {detailData.donor.phone ? `· ${detailData.donor.phone}` : ""}</p>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3 text-sm">
                     <div><span className="text-gray-500">Total Transaksi:</span> <span className="font-medium">{detailData.summary.totalTransactions}x</span></div>
@@ -214,7 +214,7 @@ export default function DonaturReportPage() {
                       ))}
                     </tbody>
                     {detailData.transactions.length > 0 && (
-                      <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                      <tfoot className="bg-light border-t-2 border-gray-300">
                         <tr>
                           <td colSpan={4} className="font-bold">TOTAL</td>
                           <td className="text-right font-bold text-success-600 mono">Rp {formatRupiah(detailData.summary.totalAmount)}</td>
@@ -255,7 +255,7 @@ export default function DonaturReportPage() {
             {/* Top 20 Donors - Desktop */}
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Top 20 Donatur</h2>
+                <h2 className="text-lg font-semibold text-dark">Top 20 Donatur</h2>
               </div>
               {isLoading ? (
                 <div className="p-6 text-center text-gray-500">Loading...</div>
@@ -273,10 +273,10 @@ export default function DonaturReportPage() {
                   </thead>
                   <tbody>
                     {topDonors.map((d, i) => (
-                      <tr key={`${d.donorEmail || 'no-email'}-${d.donorName || 'anonim'}-${i}`} className="hover:bg-gray-50">
+                      <tr key={`${d.donorEmail || 'no-email'}-${d.donorName || 'anonim'}-${i}`} className="hover:bg-light">
                         <td className="text-sm text-gray-500">{i + 1}</td>
                         <td>
-                          <div className="text-sm font-medium text-gray-900">{d.donorName || "Anonim"}</div>
+                          <div className="text-sm font-medium text-dark">{d.donorName || "Anonim"}</div>
                           <div className="text-xs text-gray-500">{d.donorEmail || "-"}</div>
                         </td>
                         <td className="text-center text-sm">{Number(d.totalDonations)}x</td>

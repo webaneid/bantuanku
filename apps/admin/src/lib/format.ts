@@ -42,8 +42,8 @@ export function getPaymentStatusLabel(status: string): string {
 export function getPaymentStatusBadgeClass(status: string): string {
   const badgeMap: Record<string, string> = {
     pending: "bg-warning-50 text-warning-700",
-    processing: "bg-blue-50 text-blue-700",
-    partial: "bg-yellow-100 text-yellow-700",
+    processing: "bg-info-50 text-info-700",
+    partial: "bg-warning-100 text-warning-700",
     paid: "bg-success-50 text-success-700",
     success: "bg-success-50 text-success-700", // Legacy status
     failed: "bg-danger-50 text-danger-700",
@@ -75,7 +75,7 @@ export function getTransactionPaymentStatusLabel(status: string): string {
  */
 export function getTransactionPaymentStatusBadgeClass(status: string): string {
   const badgeMap: Record<string, string> = {
-    pending: "bg-blue-50 text-blue-700",
+    pending: "bg-info-50 text-info-700",
     verified: "bg-success-50 text-success-700",
     rejected: "bg-danger-50 text-danger-700",
   };

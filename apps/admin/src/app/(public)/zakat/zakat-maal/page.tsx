@@ -79,7 +79,7 @@ export default function ZakatMaalCalculatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-light py-8">
       <div className="container mx-auto px-4 max-w-5xl">
         {/* Header */}
         <div className="mb-8">
@@ -94,7 +94,7 @@ export default function ZakatMaalCalculatorPage() {
           <div className="flex items-start gap-4">
             <div className="text-5xl">💰</div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Kalkulator Zakat Maal</h1>
+              <h1 className="text-3xl font-bold text-dark">Kalkulator Zakat Maal</h1>
               <p className="text-gray-600 mt-2">
                 Hitung zakat atas harta yang tersimpan selama 1 tahun hijriyah (haul)
               </p>
@@ -256,7 +256,7 @@ export default function ZakatMaalCalculatorPage() {
 
             {/* Result */}
             {result !== null && (
-              <Card className={nisabStatus ? "bg-success-50 border-success-200" : "bg-gray-50"}>
+              <Card className={nisabStatus ? "bg-success-50 border-success-200" : "bg-light"}>
                 <CardHeader>
                   <CardTitle className="text-base">Hasil Perhitungan</CardTitle>
                 </CardHeader>

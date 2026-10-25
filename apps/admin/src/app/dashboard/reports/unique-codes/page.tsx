@@ -112,7 +112,7 @@ export default function UniqueCodesReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Laporan Kode Unik</h1>
+          <h1 className="text-2xl font-bold text-dark">Laporan Kode Unik</h1>
           <p className="text-gray-600 mt-1">Ringkasan pemasukan dari kode unik transaksi berstatus paid.</p>
         </div>
         <ExportButton onExportExcel={handleExportExcel} onPrint={() => window.print()} />
@@ -149,7 +149,7 @@ export default function UniqueCodesReportPage() {
           </div>
           <div className="card">
             <p className="text-sm font-medium text-gray-600">Jumlah Transaksi</p>
-            <p className="mt-2 text-2xl font-bold text-gray-900">{summary.transactionCount || 0}</p>
+            <p className="mt-2 text-2xl font-bold text-dark">{summary.transactionCount || 0}</p>
           </div>
           <div className="card">
             <p className="text-sm font-medium text-gray-600">Rata-rata Kode Unik</p>
@@ -164,7 +164,7 @@ export default function UniqueCodesReportPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="table-container">
                 <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Per Bulan</h2>
+                  <h2 className="text-lg font-semibold text-dark">Per Bulan</h2>
                 </div>
                 {byMonth.length === 0 ? (
                   <div className="p-6 text-center text-gray-500">Tidak ada data.</div>
@@ -180,7 +180,7 @@ export default function UniqueCodesReportPage() {
                     <tbody>
                       {byMonth.map((row) => (
                         <tr key={row.month}>
-                          <td className="text-sm text-gray-900">{row.month}</td>
+                          <td className="text-sm text-dark">{row.month}</td>
                           <td className="text-sm text-right text-gray-700">{row.transactionCount}</td>
                           <td className="text-sm text-right mono text-primary-700">Rp {formatRupiah(row.totalAmount || 0)}</td>
                         </tr>
@@ -192,7 +192,7 @@ export default function UniqueCodesReportPage() {
 
               <div className="table-container">
                 <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900">Per Tipe Produk</h2>
+                  <h2 className="text-lg font-semibold text-dark">Per Tipe Produk</h2>
                 </div>
                 {byProductType.length === 0 ? (
                   <div className="p-6 text-center text-gray-500">Tidak ada data.</div>
@@ -208,7 +208,7 @@ export default function UniqueCodesReportPage() {
                     <tbody>
                       {byProductType.map((row) => (
                         <tr key={row.productType || "unknown"}>
-                          <td className="text-sm text-gray-900">
+                          <td className="text-sm text-dark">
                             {PRODUCT_TYPE_LABEL[row.productType || ""] || row.productType || "Lainnya"}
                           </td>
                           <td className="text-sm text-right text-gray-700">{row.transactionCount}</td>
@@ -223,7 +223,7 @@ export default function UniqueCodesReportPage() {
 
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Detail Transaksi (Maks 100)</h2>
+                <h2 className="text-lg font-semibold text-dark">Detail Transaksi (Maks 100)</h2>
                 <span className="text-sm text-gray-600">{detail.length} baris</span>
               </div>
 
@@ -243,13 +243,13 @@ export default function UniqueCodesReportPage() {
                   </thead>
                   <tbody>
                     {detail.map((row) => (
-                      <tr key={row.id} className="hover:bg-gray-50">
+                      <tr key={row.id} className="hover:bg-light">
                         <td className="text-sm text-gray-700">
                           {row.paidAt ? formatDateWIB(row.paidAt, "dd MMM yyyy HH:mm") : "-"}
                         </td>
-                        <td className="text-sm text-gray-900">{row.transactionNumber}</td>
-                        <td className="text-sm text-gray-900">{row.donorName || "Anonim"}</td>
-                        <td className="text-sm text-gray-900">
+                        <td className="text-sm text-dark">{row.transactionNumber}</td>
+                        <td className="text-sm text-dark">{row.donorName || "Anonim"}</td>
+                        <td className="text-sm text-dark">
                           <div>{row.productName || "-"}</div>
                           <div className="text-xs text-gray-500">
                             {PRODUCT_TYPE_LABEL[row.productType || ""] || row.productType || "Lainnya"}

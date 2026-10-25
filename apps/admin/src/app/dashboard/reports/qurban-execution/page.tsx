@@ -126,7 +126,7 @@ export default function QurbanExecutionReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Laporan Penyembelihan Qurban</h1>
+          <h1 className="text-2xl font-bold text-dark">Laporan Penyembelihan Qurban</h1>
           <p className="text-gray-600 mt-1">Pendekatan personal per individu / per ekor</p>
         </div>
         <ExportButton onExportExcel={handleExportExcel} onPrint={() => window.print()} />
@@ -161,7 +161,7 @@ export default function QurbanExecutionReportPage() {
           <>
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Detail Per Ekor / Per Individu</h2>
+                <h2 className="text-lg font-semibold text-dark">Detail Per Ekor / Per Individu</h2>
               </div>
 
               {executions.length === 0 ? (
@@ -183,7 +183,7 @@ export default function QurbanExecutionReportPage() {
                   <tbody>
                     {executions.map((item) => (
                       <tr key={item.id}>
-                        <td className="text-sm text-gray-900">{item.executionNumber}</td>
+                        <td className="text-sm text-dark">{item.executionNumber}</td>
                         <td className="text-sm text-gray-700">{formatExecutionDate(item.executionDate)}</td>
                         <td className="text-sm text-gray-700">{item.periodName || "-"}</td>
                         <td className="text-sm text-gray-700">{item.animalType}</td>
@@ -202,7 +202,7 @@ export default function QurbanExecutionReportPage() {
 
             <div className="table-mobile-cards">
               <div className="px-1 py-2 mb-2">
-                <h2 className="text-lg font-semibold text-gray-900">Detail Per Ekor / Per Individu</h2>
+                <h2 className="text-lg font-semibold text-dark">Detail Per Ekor / Per Individu</h2>
               </div>
               {executions.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">Belum ada data penyembelihan pada periode ini</div>

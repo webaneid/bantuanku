@@ -12,6 +12,7 @@ import {
 import { BarChart3 } from "lucide-react";
 import { formatRupiah } from "@/lib/format";
 import { formatDateWIB } from "@/lib/timezone";
+import { CHART } from "@/lib/chart-colors";
 
 interface TrendItem {
   date: string;
@@ -41,7 +42,7 @@ function CustomTooltip({ active, payload, label }: any) {
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 text-sm">
-      <p className="font-medium text-gray-900 mb-1">{dateStr}</p>
+      <p className="font-medium text-dark mb-1">{dateStr}</p>
       <p className="text-primary-600">
         Rp {formatRupiah(payload[0]?.value || 0)}
       </p>
@@ -85,8 +86,8 @@ export default function RevenueChart({
               <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#035a52" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#035a52" stopOpacity={0} />
+                    <stop offset="5%" stopColor={CHART.primary} stopOpacity={0.2} />
+                    <stop offset="95%" stopColor={CHART.primary} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
@@ -119,11 +120,11 @@ export default function RevenueChart({
                 <Area
                   type="monotone"
                   dataKey="amount"
-                  stroke="#035a52"
+                  stroke={CHART.primary}
                   strokeWidth={2}
                   fill="url(#colorAmount)"
                   dot={false}
-                  activeDot={{ r: 4, fill: "#035a52", stroke: "#fff", strokeWidth: 2 }}
+                  activeDot={{ r: 4, fill: CHART.primary, stroke: "#fff", strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>

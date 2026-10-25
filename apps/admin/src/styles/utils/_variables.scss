@@ -1,90 +1,83 @@
 // ===========================
-// BRAND COLORS - LAZISWAF DARUNNAJAH (Updated)
+// BRAND COLORS
 // ===========================
 
-// PRIMARY: Hijau Darunnajah
-$primary-50: #e6f2f1;
-$primary-100: #cce3e1;  // Hijau light
-$primary-200: #99c7c3;
-$primary-300: #66aba5;
-$primary-400: #338f87;
-$primary-500: #035a52;  // Base hijau
-$primary-600: #025850;  // Hijau 2
-$primary-700: #024842;
-$primary-800: #023834;
-$primary-900: #012826;
-
-// SECONDARY/ACCENT: Emas
-$secondary-50: #faf7f0;
-$secondary-100: #dccfb4;  // Emas light
-$secondary-200: #d9c49a;
-$secondary-300: #d6b980;
-$secondary-400: #d4af6b;
-$secondary-500: #d2aa55;  // Base emas
-$secondary-600: #a88843;  // Emas 2
-$secondary-700: #8a6f37;
-$secondary-800: #6c562b;
-$secondary-900: #4e3d1f;
-
-// ACCENT: Same as secondary (Emas)
-$accent-50: #faf7f0;
-$accent-100: #dccfb4;
-$accent-200: #d9c49a;
-$accent-300: #d6b980;
-$accent-400: #d4af6b;
-$accent-500: #d2aa55;
-$accent-600: #a88843;
-$accent-700: #8a6f37;
-$accent-800: #6c562b;
-$accent-900: #4e3d1f;
-
-// SUCCESS: Aksen hijau
-$success-50: #f3f7e8;
-$success-100: #e6efd1;
-$success-200: #cddfa3;
-$success-300: #b4cf75;
-$success-400: #9bbf47;
-$success-500: #678f0c;  // Aksen sukses
-$success-600: #52720a;
-$success-700: #3e5508;
-$success-800: #293805;
-$success-900: #151c03;
-
-// DANGER: Merah
-$danger-50: #fceaed;
-$danger-100: #f9d5db;
-$danger-200: #f3abb7;
-$danger-300: #ed8193;
-$danger-400: #e7576f;
-$danger-500: #8f132f;  // Danger red
-$danger-600: #720f26;
-$danger-700: #560b1c;
-$danger-800: #390813;
-$danger-900: #1d0409;
-
-// WARNING: Emas (same as secondary)
-$warning-50: #faf7f0;
-$warning-100: #dccfb4;
-$warning-200: #d9c49a;
-$warning-300: #d6b980;
-$warning-400: #d4af6b;
-$warning-500: #d2aa55;
-$warning-600: #a88843;
-$warning-700: #8a6f37;
-$warning-800: #6c562b;
-$warning-900: #4e3d1f;
-
-// INFO: Biru tua
-$info-50: #e9f1f5;
-$info-100: #d3e3eb;
-$info-200: #a7c7d7;
-$info-300: #7babc3;
-$info-400: #4f8faf;
-$info-500: #296585;  // Biru tua
-$info-600: #21516a;
-$info-700: #193d50;
-$info-800: #102835;
-$info-900: #08141b;
+// === Token brand (ADR-0015): primary, secondary, light, dark = CSS variable dari settings (src/lib/brand.ts) ===
+// Jangan pakai rgba($primary-500, x): tulis rgb(var(--color-primary-500) / x).
+$primary-50: rgb(var(--color-primary-50));
+$primary-100: rgb(var(--color-primary-100));
+$primary-200: rgb(var(--color-primary-200));
+$primary-300: rgb(var(--color-primary-300));
+$primary-400: rgb(var(--color-primary-400));
+$primary-500: rgb(var(--color-primary-500));
+$primary-600: rgb(var(--color-primary-600));
+$primary-700: rgb(var(--color-primary-700));
+$primary-800: rgb(var(--color-primary-800));
+$primary-900: rgb(var(--color-primary-900));
+$secondary-50: rgb(var(--color-secondary-50));
+$secondary-100: rgb(var(--color-secondary-100));
+$secondary-200: rgb(var(--color-secondary-200));
+$secondary-300: rgb(var(--color-secondary-300));
+$secondary-400: rgb(var(--color-secondary-400));
+$secondary-500: rgb(var(--color-secondary-500));
+$secondary-600: rgb(var(--color-secondary-600));
+$secondary-700: rgb(var(--color-secondary-700));
+$secondary-800: rgb(var(--color-secondary-800));
+$secondary-900: rgb(var(--color-secondary-900));
+$light: rgb(var(--color-light));
+$dark: rgb(var(--color-dark));
+// Alias lama accent = secondary
+$accent-50: $secondary-50;
+$accent-100: $secondary-100;
+$accent-200: $secondary-200;
+$accent-300: $secondary-300;
+$accent-400: $secondary-400;
+$accent-500: $secondary-500;
+$accent-600: $secondary-600;
+$accent-700: $secondary-700;
+$accent-800: $secondary-800;
+$accent-900: $secondary-900;
+// === Semantik: success = primary; warning/danger/info = palet bawaan Tailwind (amber/red/blue) ===
+$success-50: $primary-50;
+$success-100: $primary-100;
+$success-200: $primary-200;
+$success-300: $primary-300;
+$success-400: $primary-400;
+$success-500: $primary-500;
+$success-600: $primary-600;
+$success-700: $primary-700;
+$success-800: $primary-800;
+$success-900: $primary-900;
+$warning-50: #fffbeb;
+$warning-100: #fef3c7;
+$warning-200: #fde68a;
+$warning-300: #fcd34d;
+$warning-400: #fbbf24;
+$warning-500: #f59e0b;
+$warning-600: #d97706;
+$warning-700: #b45309;
+$warning-800: #92400e;
+$warning-900: #78350f;
+$danger-50: #fef2f2;
+$danger-100: #fee2e2;
+$danger-200: #fecaca;
+$danger-300: #fca5a5;
+$danger-400: #f87171;
+$danger-500: #ef4444;
+$danger-600: #dc2626;
+$danger-700: #b91c1c;
+$danger-800: #991b1b;
+$danger-900: #7f1d1d;
+$info-50: #eff6ff;
+$info-100: #dbeafe;
+$info-200: #bfdbfe;
+$info-300: #93c5fd;
+$info-400: #60a5fa;
+$info-500: #3b82f6;
+$info-600: #2563eb;
+$info-700: #1d4ed8;
+$info-800: #1e40af;
+$info-900: #1e3a8a;
 
 // ===========================
 // COLOR HARMONY GROUPS
@@ -103,9 +96,9 @@ $complementary-gold: $secondary-500;
 // ===========================
 // GRADIENTS
 // ===========================
-$gradient-gold: linear-gradient(135deg, #d2aa55 0%, #a88843 100%);
-$gradient-green: linear-gradient(135deg, #02756b 0%, #035a52 100%);
-$gradient-blue: linear-gradient(135deg, #296585 0%, #21516a 100%);
+$gradient-gold: linear-gradient(135deg, $secondary-500 0%, $secondary-600 100%);
+$gradient-green: linear-gradient(135deg, $primary-400 0%, $primary-500 100%);
+$gradient-blue: linear-gradient(135deg, $info-500 0%, $info-600 100%);
 
 $gray-50: #f9fafb;
 $gray-100: #f3f4f6;

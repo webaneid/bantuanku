@@ -131,7 +131,7 @@ export default function MutationReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Catatan Mutasi</h1>
+          <h1 className="text-2xl font-bold text-dark">Catatan Mutasi</h1>
           <p className="text-gray-600 mt-1">Riwayat pemasukan dan pengeluaran</p>
         </div>
         <ExportButton onExportExcel={handleExportExcel} onPrint={() => window.print()} />
@@ -228,7 +228,7 @@ export default function MutationReportPage() {
                 {rows.map((row, index) => (
                   <tr key={`${row.id}-${row.category}-${row.date ? row.date.getTime() : "no-date"}-${index}`}>
                     <td className="text-sm text-gray-600">{row.date ? formatDateWIB(row.date, "dd MMM yyyy") : "-"}</td>
-                    <td><div className="font-medium text-gray-900 text-sm">{row.description}</div></td>
+                    <td><div className="font-medium text-dark text-sm">{row.description}</div></td>
                     <td><span className="text-sm text-gray-700">{row.category}</span></td>
                     <td className="text-right mono text-sm">
                       {row.debit > 0 ? <span className="text-success-600 font-medium">Rp {formatRupiah(row.debit)}</span> : <span className="text-gray-400">-</span>}

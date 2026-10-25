@@ -790,7 +790,7 @@ export default function CreateDisbursementPage() {
       <div className="mb-6">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          className="flex items-center gap-2 text-gray-600 hover:text-dark"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           Kembali
@@ -799,7 +799,7 @@ export default function CreateDisbursementPage() {
 
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{isCoordinator || isMitra || isEmployeeOnly ? "Ajukan Pencairan Dana" : "Buat Pencairan Dana"}</h1>
+          <h1 className="text-2xl font-bold text-dark">{isCoordinator || isMitra || isEmployeeOnly ? "Ajukan Pencairan Dana" : "Buat Pencairan Dana"}</h1>
           <p className="text-gray-600 mt-1">{isCoordinator ? "Ajukan pencairan dana untuk diri sendiri" : isMitra ? "Ajukan pencairan campaign, zakat, qurban, dan bagi hasil milik Anda" : isEmployeeOnly ? "Ajukan pencairan dana untuk campaign yang Anda kelola" : "Sistem universal untuk semua jenis pengeluaran"}</p>
         </div>
       </div>
@@ -808,14 +808,14 @@ export default function CreateDisbursementPage() {
         <div className="space-y-6">
           {/* STEP 1: Disbursement Type */}
           {isEmployeeOnly ? (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="bg-light border border-gray-200 rounded-lg p-4">
               <p className="text-sm text-gray-600">Tipe Pencairan</p>
-              <p className="font-medium text-gray-900">Campaign Disbursement</p>
+              <p className="font-medium text-dark">Campaign Disbursement</p>
             </div>
           ) : (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipe Pencairan <span className="text-red-500">*</span>
+                Tipe Pencairan <span className="text-danger-500">*</span>
               </label>
               <Autocomplete
                 options={disbursementTypeOptions}
@@ -831,7 +831,7 @@ export default function CreateDisbursementPage() {
           {formData.disbursement_type === "campaign" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Campaign <span className="text-red-500">*</span>
+                Campaign <span className="text-danger-500">*</span>
               </label>
               <Autocomplete
                 options={campaigns.map((c: any) => ({ value: c.id, label: c.title }))}
@@ -847,7 +847,7 @@ export default function CreateDisbursementPage() {
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Jenis Zakat <span className="text-red-500">*</span>
+                  Jenis Zakat <span className="text-danger-500">*</span>
                 </label>
                 <Autocomplete
                   options={zakatTypes.map((t: any) => ({ value: t.id, label: t.name }))}
@@ -873,7 +873,7 @@ export default function CreateDisbursementPage() {
               {formData.type_specific_data.zakat_type_id && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Periode Zakat <span className="text-red-500">*</span>
+                    Periode Zakat <span className="text-danger-500">*</span>
                   </label>
                   <Autocomplete
                     options={zakatPeriods.map((p: any) => ({
@@ -898,7 +898,7 @@ export default function CreateDisbursementPage() {
           {formData.disbursement_type === "qurban" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Periode Qurban <span className="text-red-500">*</span>
+                Periode Qurban <span className="text-danger-500">*</span>
               </label>
               <Autocomplete
                 options={qurbanPeriods.map((p: any) => ({ value: p.id, label: p.name }))}
@@ -908,16 +908,16 @@ export default function CreateDisbursementPage() {
                 allowClear={false}
               />
               {qurbanSummaryData?.data && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mt-4">
-                  <h4 className="text-sm font-semibold text-emerald-900 mb-3">Ringkasan Periode</h4>
+                <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mt-4">
+                  <h4 className="text-sm font-semibold text-primary-900 mb-3">Ringkasan Periode</h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-emerald-700">Total Sapi</p>
-                      <p className="text-xl font-bold text-emerald-900">{qurbanSummaryData.data.totalSapi} ekor</p>
+                      <p className="text-primary-700">Total Sapi</p>
+                      <p className="text-xl font-bold text-primary-900">{qurbanSummaryData.data.totalSapi} ekor</p>
                     </div>
                     <div>
-                      <p className="text-emerald-700">Total Kambing</p>
-                      <p className="text-xl font-bold text-emerald-900">{qurbanSummaryData.data.totalKambing} ekor</p>
+                      <p className="text-primary-700">Total Kambing</p>
+                      <p className="text-xl font-bold text-primary-900">{qurbanSummaryData.data.totalKambing} ekor</p>
                     </div>
                   </div>
                 </div>
@@ -929,7 +929,7 @@ export default function CreateDisbursementPage() {
           {formData.disbursement_type === "zakat" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Asnaf (Penerima) <span className="text-red-500">*</span>
+                Asnaf (Penerima) <span className="text-danger-500">*</span>
               </label>
               <Autocomplete
                 options={[
@@ -957,7 +957,7 @@ export default function CreateDisbursementPage() {
           {formData.disbursement_type && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Kategori <span className="text-red-500">*</span>
+                Kategori <span className="text-danger-500">*</span>
               </label>
               <Autocomplete
                 options={getCategoryOptions()}
@@ -1042,33 +1042,33 @@ export default function CreateDisbursementPage() {
 
           {/* STEP 4: Available Funds & Amount */}
           {availableFunds && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-blue-900 mb-2">
+            <div className="bg-info-50 border border-info-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-info-900 mb-2">
                 {formData.disbursement_type === "revenue_share" ? "Hak Bagi Hasil" : "Dana Tersedia"}
               </h4>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
-                  <p className="text-blue-600">
+                  <p className="text-info-600">
                     {formData.disbursement_type === "revenue_share" ? "Total Hak" : "Dana Masuk"}
                   </p>
-                  <p className="text-lg font-bold text-blue-900 mono">
+                  <p className="text-lg font-bold text-info-900 mono">
                     Rp {availableFunds.collected.toLocaleString("id-ID")}
                   </p>
                 </div>
                 <div>
-                  <p className="text-blue-600">Sudah Diajukan/Disalurkan</p>
-                  <p className="text-lg font-bold text-blue-900 mono">
+                  <p className="text-info-600">Sudah Diajukan/Disalurkan</p>
+                  <p className="text-lg font-bold text-info-900 mono">
                     Rp {availableFunds.disbursed.toLocaleString("id-ID")}
                   </p>
                 </div>
                 <div>
-                  <p className="text-blue-600">Tersisa</p>
-                  <p className="text-lg font-bold text-green-600 mono">
+                  <p className="text-info-600">Tersisa</p>
+                  <p className="text-lg font-bold text-success-600 mono">
                     Rp {availableFunds.available.toLocaleString("id-ID")}
                   </p>
                 </div>
               </div>
-              <p className="text-xs text-blue-600 mt-2">
+              <p className="text-xs text-info-600 mt-2">
                 {formData.disbursement_type === "revenue_share"
                   ? "Termasuk alokasi yang sudah diajukan, disetujui, maupun dibayar."
                   : "Termasuk pencairan yang diajukan, disetujui, maupun sudah dibayar oleh semua admin."}
@@ -1078,7 +1078,7 @@ export default function CreateDisbursementPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Jumlah Dana <span className="text-red-500">*</span>
+              Jumlah Dana <span className="text-danger-500">*</span>
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">Rp</span>
@@ -1094,8 +1094,8 @@ export default function CreateDisbursementPage() {
               />
             </div>
             {isExceedingFunds && (
-              <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <p className="text-sm text-orange-800">
+              <div className="mt-2 p-3 bg-warning-50 border border-warning-200 rounded-lg">
+                <p className="text-sm text-warning-800">
                   ⚠️ <strong>Peringatan:</strong> Jumlah pencairan (Rp {amountValue.toLocaleString("id-ID")})
                   melebihi dana tersedia (Rp {availableFunds?.available.toLocaleString("id-ID")}) untuk {" "}
                   {formData.disbursement_type === "campaign" ? "campaign" :
@@ -1108,20 +1108,20 @@ export default function CreateDisbursementPage() {
 
           {/* STEP 5: Recipient */}
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Informasi Penerima</h3>
+            <h3 className="text-lg font-semibold text-dark mb-4">Informasi Penerima</h3>
 
             {/* Mitra: locked to own account */}
             {isMitra ? (
               <div className="space-y-4">
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="bg-light border border-gray-200 rounded-lg p-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-gray-600">Nama Penerima</p>
-                      <p className="font-medium text-gray-900">{formData.recipient_name || "-"}</p>
+                      <p className="font-medium text-dark">{formData.recipient_name || "-"}</p>
                     </div>
                     <div>
                       <p className="text-gray-600">Kontak</p>
-                      <p className="font-medium text-gray-900">{formData.recipient_contact || "-"}</p>
+                      <p className="font-medium text-dark">{formData.recipient_contact || "-"}</p>
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-3">
@@ -1130,25 +1130,25 @@ export default function CreateDisbursementPage() {
                 </div>
 
                 {formData.recipient_bank_name ? (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="bg-light border border-gray-200 rounded-lg p-4">
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-gray-600">Bank</p>
-                        <p className="font-medium text-gray-900">{formData.recipient_bank_name}</p>
+                        <p className="font-medium text-dark">{formData.recipient_bank_name}</p>
                       </div>
                       <div>
                         <p className="text-gray-600">Nomor Rekening</p>
-                        <p className="font-medium text-gray-900">{formData.recipient_bank_account}</p>
+                        <p className="font-medium text-dark">{formData.recipient_bank_account}</p>
                       </div>
                       <div>
                         <p className="text-gray-600">Nama Pemilik</p>
-                        <p className="font-medium text-gray-900">{formData.recipient_bank_account_name}</p>
+                        <p className="font-medium text-dark">{formData.recipient_bank_account_name}</p>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <p className="text-sm text-orange-800">
+                  <div className="p-3 bg-warning-50 border border-warning-200 rounded-lg">
+                    <p className="text-sm text-warning-800">
                       Rekening mitra belum tersedia. Lengkapi rekening mitra terlebih dahulu sebelum mengajukan pencairan.
                     </p>
                   </div>
@@ -1156,15 +1156,15 @@ export default function CreateDisbursementPage() {
               </div>
             ) : isCoordinator ? (
               <div className="space-y-4">
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="bg-light border border-gray-200 rounded-lg p-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-gray-600">Nama Penerima</p>
-                      <p className="font-medium text-gray-900">{formData.recipient_name || "-"}</p>
+                      <p className="font-medium text-dark">{formData.recipient_name || "-"}</p>
                     </div>
                     <div>
                       <p className="text-gray-600">Kontak</p>
-                      <p className="font-medium text-gray-900">{formData.recipient_contact || "-"}</p>
+                      <p className="font-medium text-dark">{formData.recipient_contact || "-"}</p>
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-3">
@@ -1176,7 +1176,7 @@ export default function CreateDisbursementPage() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Rekening Bank <span className="text-red-500">*</span>
+                      Rekening Bank <span className="text-danger-500">*</span>
                     </label>
                     <button
                       type="button"
@@ -1199,8 +1199,8 @@ export default function CreateDisbursementPage() {
                       allowClear={false}
                     />
                   ) : (
-                    <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                      <p className="text-sm text-orange-800">
+                    <div className="p-3 bg-warning-50 border border-warning-200 rounded-lg">
+                      <p className="text-sm text-warning-800">
                         Anda belum memiliki rekening bank. Silakan tambahkan rekening terlebih dahulu sebelum mengajukan pencairan.
                       </p>
                     </div>
@@ -1208,19 +1208,19 @@ export default function CreateDisbursementPage() {
                 </div>
 
                 {formData.recipient_bank_name && (
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="bg-light border border-gray-200 rounded-lg p-4">
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-gray-600">Bank</p>
-                        <p className="font-medium text-gray-900">{formData.recipient_bank_name}</p>
+                        <p className="font-medium text-dark">{formData.recipient_bank_name}</p>
                       </div>
                       <div>
                         <p className="text-gray-600">Nomor Rekening</p>
-                        <p className="font-medium text-gray-900">{formData.recipient_bank_account}</p>
+                        <p className="font-medium text-dark">{formData.recipient_bank_account}</p>
                       </div>
                       <div>
                         <p className="text-gray-600">Nama Pemilik</p>
-                        <p className="font-medium text-gray-900">{formData.recipient_bank_account_name}</p>
+                        <p className="font-medium text-dark">{formData.recipient_bank_account_name}</p>
                       </div>
                     </div>
                   </div>
@@ -1229,9 +1229,9 @@ export default function CreateDisbursementPage() {
             ) : (
             <div className="space-y-4">
               {formData.disbursement_type === "revenue_share" ? (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div className="bg-light border border-gray-200 rounded-lg p-4">
                   <p className="text-sm text-gray-600">Tipe Penerima</p>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-dark">
                     {formData.category === "revenue_share_mitra"
                       ? "Mitra"
                       : formData.category === "revenue_share_fundraiser"
@@ -1244,7 +1244,7 @@ export default function CreateDisbursementPage() {
               ) : (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipe Penerima <span className="text-red-500">*</span>
+                    Tipe Penerima <span className="text-danger-500">*</span>
                   </label>
                   <Autocomplete
                     options={[
@@ -1275,7 +1275,7 @@ export default function CreateDisbursementPage() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Pilih Vendor <span className="text-red-500">*</span>
+                      Pilih Vendor <span className="text-danger-500">*</span>
                     </label>
                     <button
                       type="button"
@@ -1300,7 +1300,7 @@ export default function CreateDisbursementPage() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Pilih Employee <span className="text-red-500">*</span>
+                      Pilih Employee <span className="text-danger-500">*</span>
                     </label>
                     <button
                       type="button"
@@ -1325,7 +1325,7 @@ export default function CreateDisbursementPage() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Pilih Mustahiq <span className="text-red-500">*</span>
+                      Pilih Mustahiq <span className="text-danger-500">*</span>
                     </label>
                     <button
                       type="button"
@@ -1349,7 +1349,7 @@ export default function CreateDisbursementPage() {
               {formData.recipient_type === "fundraiser" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pilih Influencer <span className="text-red-500">*</span>
+                    Pilih Influencer <span className="text-danger-500">*</span>
                   </label>
                   <Autocomplete
                     options={fundraisers.map((f: any) => ({
@@ -1367,7 +1367,7 @@ export default function CreateDisbursementPage() {
               {formData.recipient_type === "mitra" && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Pilih Mitra <span className="text-red-500">*</span>
+                    Pilih Mitra <span className="text-danger-500">*</span>
                   </label>
                   <Autocomplete
                     options={mitraRecipientOptions}
@@ -1383,7 +1383,7 @@ export default function CreateDisbursementPage() {
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nama Penerima <span className="text-red-500">*</span>
+                      Nama Penerima <span className="text-danger-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -1391,7 +1391,7 @@ export default function CreateDisbursementPage() {
                       value={formData.recipient_name}
                       readOnly={isRevenueShareDeveloperRecipient}
                       onChange={(e) => setFormData({ ...formData, recipient_name: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent read-only:bg-gray-50"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent read-only:bg-light"
                       placeholder="Nama lengkap penerima"
                     />
                   </div>
@@ -1405,7 +1405,7 @@ export default function CreateDisbursementPage() {
                       value={formData.recipient_contact}
                       readOnly={isRevenueShareDeveloperRecipient}
                       onChange={(e) => setFormData({ ...formData, recipient_contact: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent read-only:bg-gray-50"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent read-only:bg-light"
                       placeholder="08xxxxxxxxxx"
                     />
                   </div>
@@ -1440,7 +1440,7 @@ export default function CreateDisbursementPage() {
                             allowClear={false}
                           />
                         ) : (
-                          <p className="text-sm text-orange-600">
+                          <p className="text-sm text-warning-600">
                             Rekening developer belum tersedia. Lengkapi di Settings &gt; Developer &gt; Rekening.
                           </p>
                         )
@@ -1488,19 +1488,19 @@ export default function CreateDisbursementPage() {
                   </div>
 
                   {formData.recipient_bank_name && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-2">
+                    <div className="bg-light border border-gray-200 rounded-lg p-4 space-y-2">
                       <div className="grid grid-cols-3 gap-4 text-sm">
                         <div>
                           <p className="text-gray-600">Bank</p>
-                          <p className="font-medium text-gray-900">{formData.recipient_bank_name}</p>
+                          <p className="font-medium text-dark">{formData.recipient_bank_name}</p>
                         </div>
                         <div>
                           <p className="text-gray-600">Nomor Rekening</p>
-                          <p className="font-medium text-gray-900">{formData.recipient_bank_account}</p>
+                          <p className="font-medium text-dark">{formData.recipient_bank_account}</p>
                         </div>
                         <div>
                           <p className="text-gray-600">Nama Pemilik</p>
-                          <p className="font-medium text-gray-900">{formData.recipient_bank_account_name}</p>
+                          <p className="font-medium text-dark">{formData.recipient_bank_account_name}</p>
                         </div>
                       </div>
                     </div>
@@ -1514,7 +1514,7 @@ export default function CreateDisbursementPage() {
           {/* Purpose & Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tujuan Pencairan <span className="text-red-500">*</span>
+              Tujuan Pencairan <span className="text-danger-500">*</span>
             </label>
             <input
               type="text"
@@ -1557,7 +1557,7 @@ export default function CreateDisbursementPage() {
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-light"
             >
               Batal
             </button>
@@ -1575,7 +1575,7 @@ export default function CreateDisbursementPage() {
           </div>
 
           {createMutation.isError && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="p-4 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm">
               Gagal membuat pencairan. Silakan coba lagi.
             </div>
           )}
@@ -1625,7 +1625,7 @@ export default function CreateDisbursementPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="flex items-center justify-between p-6 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">Tambah Rekening Bank</h3>
+              <h3 className="text-lg font-semibold text-dark">Tambah Rekening Bank</h3>
               <button
                 onClick={() => {
                   setShowBankAccountModal(false);
@@ -1642,7 +1642,7 @@ export default function CreateDisbursementPage() {
             <form onSubmit={handleCreateBankAccount} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nama Bank <span className="text-red-500">*</span>
+                  Nama Bank <span className="text-danger-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -1656,7 +1656,7 @@ export default function CreateDisbursementPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nomor Rekening <span className="text-red-500">*</span>
+                  Nomor Rekening <span className="text-danger-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -1670,7 +1670,7 @@ export default function CreateDisbursementPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nama Pemilik Rekening <span className="text-red-500">*</span>
+                  Nama Pemilik Rekening <span className="text-danger-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -1689,7 +1689,7 @@ export default function CreateDisbursementPage() {
                     setShowBankAccountModal(false);
                     setNewBankAccount({ bankName: "", accountNumber: "", accountHolderName: "" });
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-light"
                 >
                   Batal
                 </button>
@@ -1703,7 +1703,7 @@ export default function CreateDisbursementPage() {
               </div>
 
               {createBankAccountMutation.isError && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg text-danger-700 text-sm">
                   Gagal menyimpan rekening. Silakan coba lagi.
                 </div>
               )}

@@ -295,7 +295,7 @@ export default function ProfilePage() {
     <div className="dashboard-container">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Profil Saya</h1>
+        <h1 className="text-2xl font-bold text-dark">Profil Saya</h1>
         <p className="text-gray-600 mt-1">Kelola informasi profil Anda</p>
       </div>
 
@@ -303,7 +303,7 @@ export default function ProfilePage() {
         <form onSubmit={handleSubmitProfile} className="space-y-6">
           {/* Basic Info Card */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Informasi Dasar</h2>
+            <h2 className="text-lg font-semibold text-dark mb-6">Informasi Dasar</h2>
 
             <div className="space-y-4">
               <div>
@@ -386,7 +386,7 @@ export default function ProfilePage() {
               {/* Personal Data from donatur (for employee) */}
               {entityType === "employee" && entity?.personalData && (
                 <div className="space-y-4 pt-2 border-t">
-                  <h3 className="text-sm font-semibold text-gray-900">Data Pribadi</h3>
+                  <h3 className="text-sm font-semibold text-dark">Data Pribadi</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {entity.personalData.nik && (
                       <div>
@@ -512,7 +512,7 @@ export default function ProfilePage() {
 
           {/* Contact Info Card */}
           <div className="card">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Informasi Kontak</h2>
+            <h2 className="text-lg font-semibold text-dark mb-6">Informasi Kontak</h2>
 
             <div className="space-y-4">
               <div>
@@ -565,7 +565,7 @@ export default function ProfilePage() {
           {/* Bank Accounts Card */}
           {entityType && (
             <div className="card">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Rekening Bank</h2>
+              <h2 className="text-lg font-semibold text-dark mb-4">Rekening Bank</h2>
               <BankAccountForm
                 value={bankAccountsValue}
                 onChange={setBankAccountsFormData}
@@ -589,7 +589,7 @@ export default function ProfilePage() {
         {/* Change Password Card */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Ubah Password</h2>
+            <h2 className="text-lg font-semibold text-dark">Ubah Password</h2>
           </div>
 
           {showPasswordForm ? (

@@ -83,18 +83,18 @@ export default function EditDiscountPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <Tag className="w-5 h-5 text-primary-600" />
-        <h1 className="text-xl font-bold text-gray-900">Edit Diskon</h1>
+        <h1 className="text-xl font-bold text-dark">Edit Diskon</h1>
       </div>
 
       {data.usageCount > 0 && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
+        <div className="mb-4 p-3 bg-warning-50 border border-warning-200 rounded-lg text-sm text-warning-700">
           Diskon ini sudah digunakan {data.usageCount} kali. Field krusial (tipe, nilai, kode) tidak bisa diubah.
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 space-y-5">
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">{error}</div>
+          <div className="p-3 bg-danger-50 border border-danger-200 rounded-lg text-sm text-danger-700">{error}</div>
         )}
 
         <div>
@@ -109,7 +109,7 @@ export default function EditDiscountPage() {
         </div>
 
         {/* Read-only fields (can't be edited if usageCount > 0) */}
-        <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+        <div className="grid grid-cols-2 gap-4 p-3 bg-light rounded-lg">
           <div>
             <label className="block text-xs text-gray-500 mb-1">Tipe (tidak bisa diubah)</label>
             <p className="font-medium text-sm">{data.type === "automatic" ? "Otomatis" : "Voucher"}</p>
@@ -207,7 +207,7 @@ export default function EditDiscountPage() {
           </button>
           <Link
             href={`/dashboard/qurban/discounts/${id}`}
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-light"
           >
             Batal
           </Link>

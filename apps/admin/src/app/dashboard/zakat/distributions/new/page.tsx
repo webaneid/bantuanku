@@ -248,7 +248,7 @@ export default function NewDistributionPage() {
   };
 
   return (
-    <main className="flex-1 overflow-y-auto bg-gray-50">
+    <main className="flex-1 overflow-y-auto bg-light">
       <div className="dashboard-container">
         {/* Header */}
         <div className="form-page-header">

@@ -100,4 +100,37 @@ export function contrastRatio(a: string, b: string): number {
   const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
   return (x + 0.05) / (y + 0.05);
 }
+export interface BrandContrast {
+  errors: string[];
+  warnings: string[];
+}
+
+/**
+ * Keterbacaan warna brand (WCAG): di bawah 3:1 = DITOLAK (tombol/teks tak terbaca); 3–4,5 = peringatan.
+ * Dipakai API (menolak simpan) dan halaman admin (menonaktifkan simpan + peringatan).
+ */
+export function brandContrast(brand: Brand): BrandContrast {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const check = (ratio: number, bad: string, warn: string) => {
+    if (ratio < 3) errors.push(bad);
+    else if (ratio < 4.5) warnings.push(warn);
+  };
+  check(
+    contrastRatio('#ffffff', brand.primary),
+    'Warna Primary terlalu terang: teks putih pada tombol utama tidak terbaca. Pilih warna yang lebih gelap.',
+    'Teks putih pada tombol utama kurang jelas (di bawah standar kontras 4,5:1). Pertimbangkan Primary yang lebih gelap.'
+  );
+  check(
+    contrastRatio(brand.dark, brand.light),
+    'Warna Gelap dan Warna Terang terlalu mirip: teks utama tidak terbaca.',
+    'Kontras Warna Gelap terhadap Warna Terang rendah: teks utama kurang jelas.'
+  );
+  check(
+    contrastRatio(brand.dark, '#ffffff'),
+    'Warna Gelap terlalu terang untuk teks pada latar putih.',
+    'Warna Gelap kurang gelap untuk teks pada latar putih.'
+  );
+  return { errors, warnings };
+}
 // BRAND-SHARED-END

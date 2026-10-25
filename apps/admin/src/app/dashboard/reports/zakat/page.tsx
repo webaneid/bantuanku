@@ -161,7 +161,7 @@ export default function ZakatReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Laporan Zakat</h1>
+          <h1 className="text-2xl font-bold text-dark">Laporan Zakat</h1>
           <p className="text-gray-600 mt-1">
             Pemasukan dan penyaluran zakat berdasarkan kategori & 8 asnaf
           </p>
@@ -226,7 +226,7 @@ export default function ZakatReportPage() {
             {/* Pemasukan Zakat per Jenis - Desktop */}
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Pemasukan Zakat per Jenis</h2>
+                <h2 className="text-lg font-semibold text-dark">Pemasukan Zakat per Jenis</h2>
               </div>
 
               {income.length === 0 ? (
@@ -244,7 +244,7 @@ export default function ZakatReportPage() {
                     {income.map((item) => (
                       <tr key={item.category}>
                         <td>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-dark">
                             {ZAKAT_TYPE_LABELS[item.category] || item.category}
                           </div>
                         </td>
@@ -269,7 +269,7 @@ export default function ZakatReportPage() {
             {/* Pemasukan Zakat per Jenis - Mobile Cards */}
             <div className="table-mobile-cards">
               <div className="px-1 py-2 mb-2">
-                <h2 className="text-lg font-semibold text-gray-900">Pemasukan Zakat per Jenis</h2>
+                <h2 className="text-lg font-semibold text-dark">Pemasukan Zakat per Jenis</h2>
               </div>
               {income.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">Tidak ada data pemasukan dalam periode ini</div>
@@ -294,7 +294,7 @@ export default function ZakatReportPage() {
                       </div>
                     </div>
                   ))}
-                  <div className="table-card bg-gray-50">
+                  <div className="table-card bg-light">
                     <div className="table-card-header">
                       <div className="table-card-header-left">
                         <div className="table-card-header-title">TOTAL</div>
@@ -316,7 +316,7 @@ export default function ZakatReportPage() {
             {/* Laporan Zakat per Periode & Jenis - Desktop */}
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Laporan Zakat per Periode & Jenis</h2>
+                <h2 className="text-lg font-semibold text-dark">Laporan Zakat per Periode & Jenis</h2>
               </div>
 
               {periodByType.length === 0 ? (
@@ -335,7 +335,7 @@ export default function ZakatReportPage() {
                     {periodByType.map((item) => (
                       <tr key={`${item.periodId}-${item.zakatTypeId}`}>
                         <td>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-dark">
                             {item.periodName}
                             {item.periodHijriYear ? ` (${item.periodHijriYear}H)` : ""}
                           </div>
@@ -364,7 +364,7 @@ export default function ZakatReportPage() {
             {/* Laporan Zakat per Periode & Jenis - Mobile Cards */}
             <div className="table-mobile-cards">
               <div className="px-1 py-2 mb-2">
-                <h2 className="text-lg font-semibold text-gray-900">Laporan Zakat per Periode & Jenis</h2>
+                <h2 className="text-lg font-semibold text-dark">Laporan Zakat per Periode & Jenis</h2>
               </div>
               {periodByType.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">Belum ada transaksi zakat per periode dalam filter ini</div>
@@ -391,7 +391,7 @@ export default function ZakatReportPage() {
                       </div>
                     </div>
                   ))}
-                  <div className="table-card bg-gray-50">
+                  <div className="table-card bg-light">
                     <div className="table-card-header">
                       <div className="table-card-header-left">
                         <div className="table-card-header-title">TOTAL</div>
@@ -415,7 +415,7 @@ export default function ZakatReportPage() {
             {/* Penyaluran Zakat per Asnaf - Desktop */}
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Penyaluran Zakat per Asnaf (8 Kategori)</h2>
+                <h2 className="text-lg font-semibold text-dark">Penyaluran Zakat per Asnaf (8 Kategori)</h2>
               </div>
 
               {expense.length === 0 ? (
@@ -433,7 +433,7 @@ export default function ZakatReportPage() {
                     {expense.map((item) => (
                       <tr key={item.category}>
                         <td>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-dark">
                             {ASNAF_LABELS[item.category] || item.category}
                           </div>
                         </td>
@@ -458,7 +458,7 @@ export default function ZakatReportPage() {
             {/* Penyaluran Zakat per Asnaf - Mobile Cards */}
             <div className="table-mobile-cards">
               <div className="px-1 py-2 mb-2">
-                <h2 className="text-lg font-semibold text-gray-900">Penyaluran Zakat per Asnaf (8 Kategori)</h2>
+                <h2 className="text-lg font-semibold text-dark">Penyaluran Zakat per Asnaf (8 Kategori)</h2>
               </div>
               {expense.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">Tidak ada data penyaluran dalam periode ini</div>
@@ -483,7 +483,7 @@ export default function ZakatReportPage() {
                       </div>
                     </div>
                   ))}
-                  <div className="table-card bg-gray-50">
+                  <div className="table-card bg-light">
                     <div className="table-card-header">
                       <div className="table-card-header-left">
                         <div className="table-card-header-title">TOTAL</div>

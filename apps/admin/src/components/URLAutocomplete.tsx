@@ -147,7 +147,7 @@ export default function URLAutocomplete({
         className={`
           relative w-full px-3 py-2 border rounded-lg cursor-pointer transition-all
           ${isOpen ? "border-primary-500 ring-2 ring-primary-100" : "border-gray-300"}
-          ${disabled ? "bg-gray-50 cursor-not-allowed" : "bg-white hover:border-gray-400"}
+          ${disabled ? "bg-light cursor-not-allowed" : "bg-white hover:border-gray-400"}
         `}
         onClick={() => !disabled && setIsOpen(!isOpen)}
       >
@@ -165,7 +165,7 @@ export default function URLAutocomplete({
         ) : (
           <div className="flex items-center gap-2">
             {value && isExternalURL(value) ? (
-              <ArrowTopRightOnSquareIcon className="w-4 h-4 text-blue-500" />
+              <ArrowTopRightOnSquareIcon className="w-4 h-4 text-info-500" />
             ) : (
               <LinkIcon className="w-4 h-4 text-gray-400" />
             )}
@@ -173,7 +173,7 @@ export default function URLAutocomplete({
               <span className="text-sm flex items-center gap-1">
                 {displayValue}
                 {value && isExternalURL(value) && (
-                  <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                  <span className="text-xs text-info-600 bg-info-50 px-1.5 py-0.5 rounded">
                     Eksternal
                   </span>
                 )}
@@ -205,19 +205,19 @@ export default function URLAutocomplete({
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
           {/* Show external URL hint if user is typing external URL */}
           {searchQuery && isExternalURL(searchQuery) && (
-            <div className={`px-3 py-2 border-b ${isValidURL(searchQuery) ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}>
+            <div className={`px-3 py-2 border-b ${isValidURL(searchQuery) ? 'bg-success-50 border-success-200' : 'bg-warning-50 border-warning-200'}`}>
               <div className="flex items-start gap-2">
-                <ArrowTopRightOnSquareIcon className={`w-4 h-4 flex-shrink-0 mt-0.5 ${isValidURL(searchQuery) ? 'text-green-600' : 'text-yellow-600'}`} />
+                <ArrowTopRightOnSquareIcon className={`w-4 h-4 flex-shrink-0 mt-0.5 ${isValidURL(searchQuery) ? 'text-success-600' : 'text-warning-600'}`} />
                 <div className="flex-1 text-xs">
                   {isValidURL(searchQuery) ? (
                     <>
-                      <p className="text-green-800 font-medium">URL Eksternal Valid</p>
-                      <p className="text-green-700 mt-0.5">Tekan <kbd className="px-1 py-0.5 bg-white border rounded text-xs font-mono">Enter</kbd> untuk menggunakan URL ini</p>
+                      <p className="text-success-800 font-medium">URL Eksternal Valid</p>
+                      <p className="text-success-700 mt-0.5">Tekan <kbd className="px-1 py-0.5 bg-white border rounded text-xs font-mono">Enter</kbd> untuk menggunakan URL ini</p>
                     </>
                   ) : (
                     <>
-                      <p className="text-yellow-800 font-medium">URL Tidak Valid</p>
-                      <p className="text-yellow-700 mt-0.5">Pastikan URL dimulai dengan http:// atau https://</p>
+                      <p className="text-warning-800 font-medium">URL Tidak Valid</p>
+                      <p className="text-warning-700 mt-0.5">Pastikan URL dimulai dengan http:// atau https://</p>
                     </>
                   )}
                 </div>
@@ -234,7 +234,7 @@ export default function URLAutocomplete({
             <div className="py-1">
               {sortedCategories.map((category) => (
                 <div key={category}>
-                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase bg-gray-50 sticky top-0">
+                  <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase bg-light sticky top-0">
                     {category}
                   </div>
                   <ul>
@@ -242,7 +242,7 @@ export default function URLAutocomplete({
                       <li
                         key={option.value}
                         className={`
-                          px-3 py-2 cursor-pointer transition-colors hover:bg-gray-50
+                          px-3 py-2 cursor-pointer transition-colors hover:bg-light
                           ${option.value === value ? "bg-primary-50 text-primary-700" : ""}
                         `}
                         onClick={() => handleSelect(option.value)}
@@ -250,7 +250,7 @@ export default function URLAutocomplete({
                         <div className="flex items-start gap-2">
                           <LinkIcon className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900 truncate">
+                            <div className="text-sm font-medium text-dark truncate">
                               {option.label}
                             </div>
                             <div className="text-xs text-gray-500 truncate">
@@ -269,7 +269,7 @@ export default function URLAutocomplete({
               <LinkIcon className="w-8 h-8 mx-auto mb-2 text-gray-300" />
               <p>Tidak ada URL yang cocok</p>
               {searchQuery && !isExternalURL(searchQuery) && (
-                <div className="mt-3 p-2 bg-gray-50 rounded text-left">
+                <div className="mt-3 p-2 bg-light rounded text-left">
                   <p className="text-xs text-gray-600 mb-1">💡 Tips:</p>
                   <ul className="text-xs text-gray-600 space-y-1">
                     <li>• URL internal: ketik <code className="px-1 bg-white rounded">/path</code> lalu Enter</li>

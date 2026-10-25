@@ -205,7 +205,7 @@ export default function QurbanPackageForm({ draftKey, onSubmit, initialData, isL
           <div className="form-main-content">
             {/* Package Info Section */}
             <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              <h3 className="text-lg font-semibold text-dark mb-4">
                 Informasi Paket
               </h3>
 
@@ -307,7 +307,7 @@ export default function QurbanPackageForm({ draftKey, onSubmit, initialData, isL
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
+                  <h3 className="text-lg font-semibold text-dark">
                     Harga & Stok per Periode
                   </h3>
                   <p className="text-sm text-gray-500 mt-1">
@@ -327,7 +327,7 @@ export default function QurbanPackageForm({ draftKey, onSubmit, initialData, isL
               </div>
 
               {fields.length === 0 ? (
-                <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                <div className="text-center py-8 bg-light rounded-lg border-2 border-dashed border-gray-300">
                   <p className="text-gray-500 mb-4">
                     Belum ada periode ditambahkan
                   </p>
@@ -346,7 +346,7 @@ export default function QurbanPackageForm({ draftKey, onSubmit, initialData, isL
                     </p>
                   )}
                   {!isLoadingPeriods && periods.length > 0 && (
-                    <p className="text-xs text-green-600 mt-2">
+                    <p className="text-xs text-success-600 mt-2">
                       {periods.length} periode tersedia
                     </p>
                   )}
@@ -361,7 +361,7 @@ export default function QurbanPackageForm({ draftKey, onSubmit, initialData, isL
                     return (
                       <div
                         key={field.id}
-                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                        className="bg-light rounded-lg p-4 border border-gray-200"
                       >
                         <div className="flex items-start justify-between mb-4">
                           <h4 className="text-sm font-medium text-gray-700">
@@ -676,7 +676,7 @@ export default function QurbanPackageForm({ draftKey, onSubmit, initialData, isL
 
             {/* Featured Status */}
             <div className="form-field">
-              <div className="flex items-center justify-between py-2 px-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between py-2 px-4 bg-light rounded-lg">
                 <div>
                   <label htmlFor="isFeatured" className="form-label mb-0 cursor-pointer">
                     Paket Unggulan
@@ -698,11 +698,11 @@ export default function QurbanPackageForm({ draftKey, onSubmit, initialData, isL
             </div>
 
             {/* Help Text */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800 font-medium mb-2">
+            <div className="bg-info-50 border border-info-200 rounded-lg p-4">
+              <p className="text-sm text-info-800 font-medium mb-2">
                 💡 Tips
               </p>
-              <ul className="text-xs text-blue-700 space-y-1">
+              <ul className="text-xs text-info-700 space-y-1">
                 <li>• Paket master dapat digunakan di berbagai periode</li>
                 <li>• Harga dan stok dapat berbeda untuk setiap periode</li>
                 <li>• Contoh: Sapi Premium di 2026 Rp 3,5jt, di 2027 Rp 3,8jt</li>

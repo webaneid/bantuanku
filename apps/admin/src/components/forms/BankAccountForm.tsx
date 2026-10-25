@@ -88,7 +88,7 @@ export function BankAccountForm({
         {accounts.map((account, index) => (
           <div
             key={index}
-            className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3"
+            className="p-4 border border-gray-200 rounded-lg bg-light space-y-3"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">
@@ -110,14 +110,14 @@ export function BankAccountForm({
               {/* Bank Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nama Bank {required && index === 0 && <span className="text-red-500">*</span>}
+                  Nama Bank {required && index === 0 && <span className="text-danger-500">*</span>}
                 </label>
                 <input
                   type="text"
                   value={account.bankName}
                   onChange={(e) => handleAccountChange(index, "bankName", e.target.value)}
                   disabled={disabled}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-100 focus:border-primary-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-100 focus:border-primary-500 disabled:bg-light disabled:cursor-not-allowed"
                   placeholder="Contoh: BCA, Mandiri, BRI"
                   required={required && index === 0}
                 />
@@ -126,14 +126,14 @@ export function BankAccountForm({
               {/* Account Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nomor Rekening {required && index === 0 && <span className="text-red-500">*</span>}
+                  Nomor Rekening {required && index === 0 && <span className="text-danger-500">*</span>}
                 </label>
                 <input
                   type="text"
                   value={account.accountNumber}
                   onChange={(e) => handleAccountChange(index, "accountNumber", e.target.value)}
                   disabled={disabled}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-100 focus:border-primary-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-100 focus:border-primary-500 disabled:bg-light disabled:cursor-not-allowed"
                   placeholder="Contoh: 1234567890"
                   required={required && index === 0}
                 />
@@ -142,14 +142,14 @@ export function BankAccountForm({
               {/* Account Holder Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nama Pemilik Rekening {required && index === 0 && <span className="text-red-500">*</span>}
+                  Nama Pemilik Rekening {required && index === 0 && <span className="text-danger-500">*</span>}
                 </label>
                 <input
                   type="text"
                   value={account.accountHolderName}
                   onChange={(e) => handleAccountChange(index, "accountHolderName", e.target.value)}
                   disabled={disabled}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-100 focus:border-primary-500 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-100 focus:border-primary-500 disabled:bg-light disabled:cursor-not-allowed"
                   placeholder="Contoh: PT. Nama Perusahaan"
                   required={required && index === 0}
                 />

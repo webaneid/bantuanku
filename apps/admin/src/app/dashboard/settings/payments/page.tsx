@@ -753,7 +753,7 @@ export default function PaymentsSettingsPage() {
         {/* Payment Providers List */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Metode Pembayaran</h2>
+            <h2 className="text-lg font-semibold text-dark">Metode Pembayaran</h2>
             <p className="text-sm text-gray-600 mt-1">
               Pilih dan konfigurasi metode pembayaran yang tersedia untuk donatur
             </p>
@@ -778,7 +778,7 @@ export default function PaymentsSettingsPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-base font-medium text-gray-900">{provider.name}</h3>
+                          <h3 className="text-base font-medium text-dark">{provider.name}</h3>
                           {enabled && (
                             <CheckCircleIcon className="w-5 h-5 text-success-500 flex-shrink-0" />
                           )}
@@ -800,11 +800,11 @@ export default function PaymentsSettingsPage() {
 
                   {/* Configuration Forms */}
                       {enabled && isActive && (
-                        <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="mt-6 p-4 bg-light rounded-lg border border-gray-200">
                           {provider.id === "bank_transfer" && (
                             <div className="space-y-6">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-medium text-gray-900">Rekening Bank</h4>
+                            <h4 className="font-medium text-dark">Rekening Bank</h4>
                             <span className="text-sm text-gray-600">
                               {bankAccounts.length} rekening terdaftar
                             </span>
@@ -925,7 +925,7 @@ export default function PaymentsSettingsPage() {
                                     <div className="flex items-start justify-between gap-4">
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-2">
-                                          <h5 className="font-semibold text-gray-900">
+                                          <h5 className="font-semibold text-dark">
                                             {account.bankName}
                                           </h5>
                                           {account.branch && (
@@ -937,18 +937,18 @@ export default function PaymentsSettingsPage() {
                                         <div className="space-y-1 text-sm">
                                           <div className="flex items-center gap-2">
                                             <span className="text-gray-600">No. Rekening:</span>
-                                            <span className="font-mono font-medium text-gray-900">
+                                            <span className="font-mono font-medium text-dark">
                                               {account.accountNumber}
                                             </span>
                                           </div>
                                           <div className="flex items-center gap-2">
                                             <span className="text-gray-600">Atas Nama:</span>
-                                            <span className="text-gray-900">{account.accountName}</span>
+                                            <span className="text-dark">{account.accountName}</span>
                                           </div>
                                           {account.coaCode && (
                                             <div className="flex items-center gap-2">
                                               <span className="text-gray-600">Kode Akun:</span>
-                                              <span className="font-mono text-gray-900">{account.coaCode}</span>
+                                              <span className="font-mono text-dark">{account.coaCode}</span>
                                             </div>
                                           )}
                                           <div className="flex flex-wrap gap-2 mt-2">
@@ -988,7 +988,7 @@ export default function PaymentsSettingsPage() {
 
                       {provider.id === "bank_transfer" && (
                         <div className="border-t border-gray-200 pt-4">
-                          <h5 className="font-medium text-gray-900 mb-4">Tambah Rekening Baru</h5>
+                          <h5 className="font-medium text-dark mb-4">Tambah Rekening Baru</h5>
                           <form onSubmit={handleAddBankAccount} className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div className="form-field">
@@ -1117,7 +1117,7 @@ export default function PaymentsSettingsPage() {
                       {provider.id === "qris" && (
                         <div className="space-y-6">
                           <div className="flex items-center justify-between">
-                            <h4 className="font-medium text-gray-900">QRIS</h4>
+                            <h4 className="font-medium text-dark">QRIS</h4>
                             <span className="text-sm text-gray-600">
                               {qrisAccounts.length} QRIS terdaftar
                             </span>
@@ -1244,14 +1244,14 @@ export default function PaymentsSettingsPage() {
                                             Upload gambar QRIS di atas untuk auto-decode, atau paste manual string EMV payload.
                                           </p>
                                           {editQrisForm.emvPayload && !validateQrisCrc(editQrisForm.emvPayload) && (
-                                            <p className="text-xs text-red-500 mt-1 font-medium">CRC tidak valid. Pastikan payload benar.</p>
+                                            <p className="text-xs text-danger-500 mt-1 font-medium">CRC tidak valid. Pastikan payload benar.</p>
                                           )}
                                         </div>
                                         <div className="form-field">
                                           <label className="form-label">Merchant Name</label>
                                           <input
                                             type="text"
-                                            className="form-input bg-gray-50"
+                                            className="form-input bg-light"
                                             value={editQrisForm.merchantName}
                                             readOnly
                                             placeholder="Auto-parse dari EMV Payload"
@@ -1261,7 +1261,7 @@ export default function PaymentsSettingsPage() {
                                           <label className="form-label">Merchant City</label>
                                           <input
                                             type="text"
-                                            className="form-input bg-gray-50"
+                                            className="form-input bg-light"
                                             value={editQrisForm.merchantCity}
                                             readOnly
                                             placeholder="Auto-parse dari EMV Payload"
@@ -1275,7 +1275,7 @@ export default function PaymentsSettingsPage() {
                                               checked={editQrisForm.isDynamic}
                                               onChange={(e) => setEditQrisForm({ ...editQrisForm, isDynamic: e.target.checked })}
                                             />
-                                            <span className="text-sm font-medium text-gray-900">Dynamic Mode</span>
+                                            <span className="text-sm font-medium text-dark">Dynamic Mode</span>
                                           </label>
                                           <p className="text-xs text-gray-500 mt-1 ml-7">
                                             Jika aktif, sistem akan generate QR per-transaksi dengan nominal terkunci. Memerlukan EMV Payload.
@@ -1304,9 +1304,9 @@ export default function PaymentsSettingsPage() {
                                           )}
                                           <div>
                                             <div className="flex items-center gap-2">
-                                              <h5 className="font-semibold text-gray-900">{acc.name || "QRIS"}</h5>
+                                              <h5 className="font-semibold text-dark">{acc.name || "QRIS"}</h5>
                                               {acc.isDynamic && (
-                                                <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Dynamic</span>
+                                                <span className="text-xs px-2 py-0.5 rounded-full bg-success-100 text-success-700 font-medium">Dynamic</span>
                                               )}
                                             </div>
                                             {acc.coaCode && (
@@ -1353,7 +1353,7 @@ export default function PaymentsSettingsPage() {
 
                           {/* Add new QRIS */}
                           <div className="border-t border-gray-200 pt-4">
-                            <h5 className="font-medium text-gray-900 mb-4">Tambah QRIS Baru</h5>
+                            <h5 className="font-medium text-dark mb-4">Tambah QRIS Baru</h5>
                             <form onSubmit={handleAddQris} className="space-y-4">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="form-field">
@@ -1480,14 +1480,14 @@ export default function PaymentsSettingsPage() {
                                     Upload gambar QRIS di atas untuk auto-decode, atau paste manual string EMV payload.
                                   </p>
                                   {newQrisForm.emvPayload && !validateQrisCrc(newQrisForm.emvPayload) && (
-                                    <p className="text-xs text-red-500 mt-1 font-medium">CRC tidak valid. Pastikan payload benar.</p>
+                                    <p className="text-xs text-danger-500 mt-1 font-medium">CRC tidak valid. Pastikan payload benar.</p>
                                   )}
                                 </div>
                                 <div className="form-field">
                                   <label className="form-label">Merchant Name</label>
                                   <input
                                     type="text"
-                                    className="form-input bg-gray-50"
+                                    className="form-input bg-light"
                                     value={newQrisForm.merchantName}
                                     readOnly
                                     placeholder="Auto-parse dari EMV Payload"
@@ -1497,7 +1497,7 @@ export default function PaymentsSettingsPage() {
                                   <label className="form-label">Merchant City</label>
                                   <input
                                     type="text"
-                                    className="form-input bg-gray-50"
+                                    className="form-input bg-light"
                                     value={newQrisForm.merchantCity}
                                     readOnly
                                     placeholder="Auto-parse dari EMV Payload"
@@ -1511,7 +1511,7 @@ export default function PaymentsSettingsPage() {
                                       checked={newQrisForm.isDynamic}
                                       onChange={(e) => setNewQrisForm({ ...newQrisForm, isDynamic: e.target.checked })}
                                     />
-                                    <span className="text-sm font-medium text-gray-900">Dynamic Mode</span>
+                                    <span className="text-sm font-medium text-dark">Dynamic Mode</span>
                                   </label>
                                   <p className="text-xs text-gray-500 mt-1 ml-7">
                                     Jika aktif, sistem akan generate QR per-transaksi dengan nominal terkunci. Memerlukan EMV Payload.
@@ -1531,7 +1531,7 @@ export default function PaymentsSettingsPage() {
 
                       {provider.id === "xendit" && (
                         <form onSubmit={handleSaveXendit} className="space-y-4">
-                          <h4 className="font-medium text-gray-900 mb-4">Konfigurasi Xendit</h4>
+                          <h4 className="font-medium text-dark mb-4">Konfigurasi Xendit</h4>
 
                           <div className="space-y-4">
                             <div className="form-field">
@@ -1589,7 +1589,7 @@ export default function PaymentsSettingsPage() {
 
                       {provider.id === "ipaymu" && (
                         <form onSubmit={handleSaveIPaymu} className="space-y-4">
-                          <h4 className="font-medium text-gray-900 mb-4">Konfigurasi iPaymu</h4>
+                          <h4 className="font-medium text-dark mb-4">Konfigurasi iPaymu</h4>
 
                           <div className="space-y-4">
                             <div className="form-field">
@@ -1643,7 +1643,7 @@ export default function PaymentsSettingsPage() {
 
                       {provider.id === "flip" && (
                         <form onSubmit={handleSaveFlip} className="space-y-4">
-                          <h4 className="font-medium text-gray-900 mb-4">Konfigurasi Flip</h4>
+                          <h4 className="font-medium text-dark mb-4">Konfigurasi Flip</h4>
 
                           <div className="space-y-4">
                             <div className="form-field">
@@ -1708,7 +1708,7 @@ export default function PaymentsSettingsPage() {
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Hapus Rekening</h2>
+            <h2 className="text-xl font-bold text-dark">Hapus Rekening</h2>
           </div>
           <div className="p-6">
             <p className="text-sm text-gray-700">Hapus rekening bank ini?</p>
@@ -1737,7 +1737,7 @@ export default function PaymentsSettingsPage() {
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-bold text-gray-900">Hapus QRIS</h2>
+            <h2 className="text-xl font-bold text-dark">Hapus QRIS</h2>
           </div>
           <div className="p-6">
             <p className="text-sm text-gray-700">Hapus QRIS ini?</p>

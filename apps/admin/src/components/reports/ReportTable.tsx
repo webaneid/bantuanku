@@ -42,7 +42,7 @@ function formatCellValue(value: any, col: Column): React.ReactNode {
       if (num === 0) return <span className="text-gray-400">-</span>;
       const isNeg = num < 0;
       return (
-        <span className={`mono font-medium ${isNeg ? "text-danger-600" : "text-gray-900"}`}>
+        <span className={`mono font-medium ${isNeg ? "text-danger-600" : "text-dark"}`}>
           Rp {formatRupiah(Math.abs(num))}
         </span>
       );
@@ -124,7 +124,7 @@ export default function ReportTable({
             {data.map((row, idx) => (
               <tr
                 key={row.id || idx}
-                className={onRowClick ? "cursor-pointer hover:bg-gray-50" : ""}
+                className={onRowClick ? "cursor-pointer hover:bg-light" : ""}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
               >
                 {columns.map((col) => (
@@ -141,7 +141,7 @@ export default function ReportTable({
 
           {/* Footer total row */}
           {footerRow && data.length > 0 && (
-            <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+            <tfoot className="bg-light border-t-2 border-gray-300">
               <tr>
                 {columns.map((col) => (
                   <td
@@ -215,7 +215,7 @@ export default function ReportTable({
             <button
               onClick={() => onPageChange?.(pagination.page - 1)}
               disabled={pagination.page <= 1}
-              className="p-2 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              className="p-2 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-light"
             >
               <ChevronLeft size={16} />
             </button>
@@ -225,7 +225,7 @@ export default function ReportTable({
             <button
               onClick={() => onPageChange?.(pagination.page + 1)}
               disabled={pagination.page >= totalPages}
-              className="p-2 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              className="p-2 rounded border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-light"
             >
               <ChevronRight size={16} />
             </button>

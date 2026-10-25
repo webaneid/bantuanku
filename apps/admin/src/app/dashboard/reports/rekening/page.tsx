@@ -127,7 +127,7 @@ export default function RekeningReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Laporan Per Rekening</h1>
+          <h1 className="text-2xl font-bold text-dark">Laporan Per Rekening</h1>
           <p className="text-gray-600 mt-1">Mutasi per bank account organisasi</p>
         </div>
         <ExportButton
@@ -143,7 +143,7 @@ export default function RekeningReportPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="card">
                 <p className="text-sm font-medium text-gray-600">Jumlah Rekening</p>
-                <p className="mt-2 text-2xl font-bold text-gray-900">{accounts.length}</p>
+                <p className="mt-2 text-2xl font-bold text-dark">{accounts.length}</p>
               </div>
               <div className="card">
                 <p className="text-sm font-medium text-gray-600">Total Saldo (Estimasi)</p>
@@ -167,9 +167,9 @@ export default function RekeningReportPage() {
                   </thead>
                   <tbody>
                     {accounts.map((a) => (
-                      <tr key={a.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedId(a.id)}>
+                      <tr key={a.id} className="hover:bg-light cursor-pointer" onClick={() => setSelectedId(a.id)}>
                         <td>
-                          <div className="text-sm font-medium text-gray-900">{a.bankName} - {a.accountNumber}</div>
+                          <div className="text-sm font-medium text-dark">{a.bankName} - {a.accountNumber}</div>
                           <div className="text-xs text-gray-500">{a.accountName}</div>
                         </td>
                         <td className="text-center text-sm">{a.transactionCount}</td>
@@ -179,7 +179,7 @@ export default function RekeningReportPage() {
                     ))}
                   </tbody>
                   {accounts.length > 0 && (
-                    <tfoot className="bg-gray-50 border-t-2 border-gray-300">
+                    <tfoot className="bg-light border-t-2 border-gray-300">
                       <tr>
                         <td className="font-bold">TOTAL</td>
                         <td />
@@ -258,7 +258,7 @@ export default function RekeningReportPage() {
             ) : detailData ? (
               <>
                 <div className="card mb-4">
-                  <h2 className="text-lg font-bold text-gray-900 mb-2">{detailData.account.bankName} - {detailData.account.accountNumber}</h2>
+                  <h2 className="text-lg font-bold text-dark mb-2">{detailData.account.bankName} - {detailData.account.accountNumber}</h2>
                   <p className="text-sm text-gray-600 mb-3">{detailData.account.accountName}</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div><span className="text-gray-500">Saldo Awal:</span> <span className="mono font-medium">Rp {formatRupiah(detailData.summary.openingBalance)}</span></div>

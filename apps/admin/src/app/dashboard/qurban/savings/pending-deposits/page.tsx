@@ -198,13 +198,13 @@ export default function PendingDepositsPage() {
 
       {/* Bulk Actions */}
       {selectedIds.size > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex items-center justify-between">
-          <span className="text-sm font-medium text-blue-900">
+        <div className="bg-info-50 border border-info-200 rounded-lg p-4 mb-4 flex items-center justify-between">
+          <span className="text-sm font-medium text-info-900">
             {selectedIds.size} setoran terpilih
           </span>
           <button
             onClick={handleBulkVerify}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+            className="bg-success-600 hover:bg-success-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
           >
             <Check className="h-4 w-4" />
             Verifikasi Semua Terpilih
@@ -262,14 +262,14 @@ export default function PendingDepositsPage() {
                     <td>
                       <Link
                         href={`/dashboard/qurban/savings/${deposit.savingsId}`}
-                        className="text-sm font-medium text-blue-600 hover:underline inline-flex items-center gap-1"
+                        className="text-sm font-medium text-info-600 hover:underline inline-flex items-center gap-1"
                       >
                         {deposit.savingsNumber}
                         <ExternalLink className="h-3 w-3" />
                       </Link>
                     </td>
                     <td>
-                      <div className="font-medium text-gray-900">{deposit.donorName}</div>
+                      <div className="font-medium text-dark">{deposit.donorName}</div>
                       <div className="text-sm text-gray-500">{deposit.donorPhone}</div>
                     </td>
                     <td className="text-sm">{deposit.periodName}</td>
@@ -299,8 +299,7 @@ export default function PendingDepositsPage() {
                       <div className="table-actions">
                         <button
                           onClick={() => handleVerify(deposit.id, deposit.savingsId)}
-                          className="action-btn"
-                          style={{ backgroundColor: "#10b981", color: "white" }}
+                          className="action-btn bg-primary-600 text-white"
                           title="Verifikasi"
                         >
                           <Check className="h-4 w-4" />
@@ -354,7 +353,7 @@ export default function PendingDepositsPage() {
                   <span className="table-card-row-value">
                     <Link
                       href={`/dashboard/qurban/savings/${deposit.savingsId}`}
-                      className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                      className="text-info-600 hover:underline inline-flex items-center gap-1"
                     >
                       {deposit.savingsNumber}
                       <ExternalLink className="h-3 w-3" />
@@ -389,7 +388,7 @@ export default function PendingDepositsPage() {
                         setPreviewImageUrl(deposit.paymentProofUrl);
                         setImagePreviewOpen(true);
                       }}
-                      className="text-blue-600 hover:underline text-sm inline-flex items-center gap-1"
+                      className="text-info-600 hover:underline text-sm inline-flex items-center gap-1"
                     >
                       <Eye className="h-4 w-4" />
                       Lihat
@@ -400,8 +399,7 @@ export default function PendingDepositsPage() {
                 <div className="table-card-footer">
                   <button
                     onClick={() => handleVerify(deposit.id, deposit.savingsId)}
-                    className="action-btn"
-                    style={{ backgroundColor: "#10b981", color: "white" }}
+                    className="action-btn bg-primary-600 text-white"
                     title="Verifikasi"
                   >
                     <Check className="h-4 w-4" />
@@ -445,13 +443,13 @@ export default function PendingDepositsPage() {
                   setSelectedTxId(null);
                   setRejectNotes("");
                 }}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 border rounded-lg hover:bg-light"
               >
                 Batal
               </button>
               <button
                 onClick={handleReject}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="px-4 py-2 bg-danger-600 text-white rounded-lg hover:bg-danger-700"
               >
                 Tolak Setoran
               </button>

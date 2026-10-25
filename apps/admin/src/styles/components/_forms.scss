@@ -12,7 +12,7 @@
 .form-section-title {
   font-size: 1rem;
   font-weight: 600;
-  color: $gray-900;
+  color: $dark;
   margin-bottom: $spacing-lg;
   padding-bottom: $spacing-sm;
   border-bottom: 2px solid $gray-200;
@@ -44,14 +44,14 @@
   border: 1px solid $gray-300;
   border-radius: $radius-lg;
   font-size: 1rem;
-  color: $gray-900;
+  color: $dark;
   background: white;
   transition: border-color $transition-base, box-shadow $transition-base;
 
   &:focus {
     outline: none;
     border-color: $primary-500;
-    box-shadow: 0 0 0 3px rgba($primary-500, 0.1);
+    box-shadow: 0 0 0 3px rgb(var(--color-primary-500) / 0.1);
   }
 
   &:disabled {
@@ -64,7 +64,7 @@
     border-color: $danger-500;
 
     &:focus {
-      box-shadow: 0 0 0 3px rgba($danger-500, 0.1);
+      box-shadow: 0 0 0 3px rgb(239 68 68 / 0.1);
     }
   }
 
@@ -149,7 +149,7 @@ input[type="radio"].form-radio {
     }
 
     &:focus + .form-switch-slider {
-      box-shadow: 0 0 0 3px rgba($primary-500, 0.1);
+      box-shadow: 0 0 0 3px rgb(var(--color-primary-500) / 0.1);
     }
   }
 

@@ -2,6 +2,7 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { formatRupiah, formatRupiahShort } from "@/lib/format";
+import { CHART } from "@/lib/chart-colors";
 
 interface CategoryStats {
   income: {
@@ -17,9 +18,9 @@ interface IncomeBreakdownProps {
 }
 
 const SEGMENTS = [
-  { key: "zakat", label: "Zakat", color: "#035a52" },
-  { key: "campaign", label: "Campaign", color: "#296585" },
-  { key: "qurban", label: "Qurban", color: "#d2aa55" },
+  { key: "zakat", label: "Zakat", color: CHART.primary },
+  { key: "campaign", label: "Campaign", color: CHART.info },
+  { key: "qurban", label: "Qurban", color: CHART.secondary },
 ];
 
 function CustomTooltip({ active, payload }: any) {

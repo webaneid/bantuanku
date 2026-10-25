@@ -9,7 +9,7 @@ import {
   BRAND_SETTING_KEYS,
   DEFAULT_BRAND,
   SHADES,
-  contrastRatio,
+  brandContrast,
   isHexColor,
   scaleFor,
   type Brand,
@@ -74,11 +74,8 @@ export default function BrandingSettingsPage() {
   const primaryScale = scaleFor("primary", brand);
   const secondaryScale = scaleFor("secondary", brand);
 
-  // Peringatan keterbacaan (WCAG AA = 4,5)
-  const warnings: string[] = [];
-  if (contrastRatio("#ffffff", primaryScale[600]) < 4.5) warnings.push("Teks putih pada tombol utama sulit dibaca. Pilih warna Primary yang lebih gelap.");
-  if (contrastRatio(brand.dark, brand.light) < 4.5) warnings.push("Kontras Warna Gelap terhadap Warna Terang rendah: teks utama sulit dibaca.");
-  if (contrastRatio(brand.dark, "#ffffff") < 4.5) warnings.push("Warna Gelap terlalu terang untuk teks pada latar putih.");
+  // Keterbacaan (WCAG): < 3:1 memblokir simpan (juga ditolak API); 3–4,5:1 hanya peringatan
+  const { errors: contrastErrors, warnings } = brandContrast(brand);
 
   const saveMutation = useMutation({
     mutationFn: async (values: Brand) => {
@@ -127,7 +124,7 @@ export default function BrandingSettingsPage() {
       <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
           <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Warna Brand</h2>
+            <h2 className="text-xl font-bold text-dark">Warna Brand</h2>
             <p className="text-sm text-gray-500 mt-1">
               Empat warna identitas yang dipakai di seluruh website publik. Skala warna (terang ke gelap) dibuat otomatis dari Primary dan Secondary.
               Warna status (sukses, peringatan, bahaya, info) tetap baku agar maknanya sama di semua tema.
@@ -161,12 +158,12 @@ export default function BrandingSettingsPage() {
                       type="button"
                       onClick={() => setForm((prev) => ({ ...prev, [field.key]: DEFAULT_BRAND[field.key] }))}
                       disabled={value === DEFAULT_BRAND[field.key]}
-                      className="px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                      className="px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-light disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                     >
                       Bawaan
                     </button>
                   </div>
-                  {!valid && <p className="text-xs text-red-600 mt-1.5">Format harus #rrggbb (mis. #035a52).</p>}
+                  {!valid && <p className="text-xs text-danger-600 mt-1.5">Format harus #rrggbb (mis. #035a52).</p>}
                   <p className="text-xs text-gray-400 mt-1.5">{field.description}</p>
                 </div>
               );
@@ -175,7 +172,7 @@ export default function BrandingSettingsPage() {
 
           {/* Pratinjau skala */}
           <div className="mt-8 pt-6 border-t border-gray-100 space-y-4">
-            <p className="text-sm font-medium text-gray-900">Pratinjau skala otomatis</p>
+            <p className="text-sm font-medium text-dark">Pratinjau skala otomatis</p>
             {([
               ["Primary", primaryScale],
               ["Secondary", secondaryScale],
@@ -207,8 +204,17 @@ export default function BrandingSettingsPage() {
               </div>
             </div>
 
+            {contrastErrors.length > 0 && (
+              <div className="rounded-lg border border-danger-200 bg-danger-50 p-4 text-sm text-danger-800 space-y-1" role="alert">
+                {contrastErrors.map((e) => (
+                  <p key={e}>• {e}</p>
+                ))}
+                <p className="font-medium pt-1">Perbaiki warna di atas sebelum menyimpan.</p>
+              </div>
+            )}
+
             {warnings.length > 0 && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 space-y-1">
+              <div className="rounded-lg border border-warning-200 bg-warning-50 p-4 text-sm text-warning-800 space-y-1">
                 {warnings.map((w) => (
                   <p key={w}>• {w}</p>
                 ))}
@@ -221,14 +227,14 @@ export default function BrandingSettingsPage() {
               type="button"
               onClick={() => setForm({ ...DEFAULT_BRAND })}
               disabled={saveMutation.isPending}
-              className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-light disabled:opacity-60 disabled:cursor-not-allowed"
             >
               Kembalikan ke bawaan
             </button>
             <button
               type="button"
               onClick={() => saveMutation.mutate(form)}
-              disabled={!allValid || saveMutation.isPending}
+              disabled={!allValid || contrastErrors.length > 0 || saveMutation.isPending}
               className="btn btn-primary btn-md"
             >
               {saveMutation.isPending ? "Menyimpan..." : "Simpan Warna"}

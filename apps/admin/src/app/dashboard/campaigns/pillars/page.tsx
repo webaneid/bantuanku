@@ -214,7 +214,7 @@ export default function PillarsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pilar Campaign</h1>
+          <h1 className="text-2xl font-bold text-dark">Pilar Campaign</h1>
           <p className="text-gray-600 mt-1">Kelola pilar untuk campaign fundraising</p>
         </div>
         <button
@@ -250,7 +250,7 @@ export default function PillarsPage() {
               pillarsData.map((pillar) => (
                 <tr key={pillar.id}>
                   <td>
-                    <div className="font-medium text-gray-900">{pillar.name}</div>
+                    <div className="font-medium text-dark">{pillar.name}</div>
                   </td>
                   <td>
                     <div className="text-sm text-gray-600 mono">{pillar.slug}</div>
@@ -360,7 +360,7 @@ export default function PillarsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-dark">
                 {editingPillar ? "Edit Pilar" : "Tambah Pilar"}
               </h2>
             </div>
@@ -438,7 +438,7 @@ export default function PillarsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Hapus Pilar</h2>
+              <h2 className="text-xl font-bold text-dark">Hapus Pilar</h2>
             </div>
             <div className="p-6">
               <p className="text-sm text-gray-700">

@@ -161,7 +161,7 @@ export default function VendorsPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Vendors</h1>
+          <h1 className="text-2xl font-bold text-dark">Vendors</h1>
           <p className="text-gray-600 mt-1">Kelola data vendor</p>
         </div>
         <button
@@ -227,7 +227,7 @@ export default function VendorsPage() {
               vendors.map((vendor: Vendor) => (
                 <tr key={vendor.id}>
                   <td>
-                    <div className="font-medium text-gray-900">{vendor.name}</div>
+                    <div className="font-medium text-dark">{vendor.name}</div>
                     {vendor.category && (
                       <div className="text-sm text-gray-500">{vendor.category}</div>
                     )}
@@ -238,7 +238,7 @@ export default function VendorsPage() {
                     </span>
                   </td>
                   <td>
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm text-dark">
                       {vendor.contactPerson || "-"}
                     </div>
                     {vendor.phone && (
@@ -246,7 +246,7 @@ export default function VendorsPage() {
                     )}
                   </td>
                   <td>
-                    <div className="text-sm text-gray-900">
+                    <div className="text-sm text-dark">
                       {vendor.bankName || "-"}
                     </div>
                     {vendor.bankAccount && (

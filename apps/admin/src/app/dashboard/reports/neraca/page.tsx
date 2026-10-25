@@ -65,7 +65,7 @@ export default function NeracaReportPage() {
     <div className="dashboard-container">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Neraca</h1>
+          <h1 className="text-2xl font-bold text-dark">Neraca</h1>
           <p className="text-gray-600 mt-1">Posisi aset, kewajiban, ekuitas, pendapatan, dan beban</p>
         </div>
       </div>
@@ -122,7 +122,7 @@ export default function NeracaReportPage() {
             </div>
             <div className="card">
               <p className="text-sm text-gray-600">Net Income</p>
-              <p className="text-2xl font-bold text-gray-900 mono mt-1">Rp {formatRupiah(Number(incomeStatement?.netIncome || 0))}</p>
+              <p className="text-2xl font-bold text-dark mono mt-1">Rp {formatRupiah(Number(incomeStatement?.netIncome || 0))}</p>
             </div>
           </div>
 
@@ -137,7 +137,7 @@ export default function NeracaReportPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <div className="table-container">
-              <div className="px-6 py-4 border-b border-gray-200"><h3 className="text-lg font-semibold text-gray-900">Aset</h3></div>
+              <div className="px-6 py-4 border-b border-gray-200"><h3 className="text-lg font-semibold text-dark">Aset</h3></div>
               <table className="table">
                 <thead><tr><th>Akun</th><th className="text-right">Saldo</th></tr></thead>
                 <tbody>
@@ -149,7 +149,7 @@ export default function NeracaReportPage() {
             </div>
 
             <div className="table-container">
-              <div className="px-6 py-4 border-b border-gray-200"><h3 className="text-lg font-semibold text-gray-900">Kewajiban</h3></div>
+              <div className="px-6 py-4 border-b border-gray-200"><h3 className="text-lg font-semibold text-dark">Kewajiban</h3></div>
               <table className="table">
                 <thead><tr><th>Akun</th><th className="text-right">Saldo</th></tr></thead>
                 <tbody>
@@ -163,7 +163,7 @@ export default function NeracaReportPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="table-container">
-              <div className="px-6 py-4 border-b border-gray-200"><h3 className="text-lg font-semibold text-gray-900">Pendapatan</h3></div>
+              <div className="px-6 py-4 border-b border-gray-200"><h3 className="text-lg font-semibold text-dark">Pendapatan</h3></div>
               <table className="table">
                 <thead><tr><th>Akun</th><th className="text-right">Saldo</th></tr></thead>
                 <tbody>
@@ -175,7 +175,7 @@ export default function NeracaReportPage() {
             </div>
 
             <div className="table-container">
-              <div className="px-6 py-4 border-b border-gray-200"><h3 className="text-lg font-semibold text-gray-900">Beban</h3></div>
+              <div className="px-6 py-4 border-b border-gray-200"><h3 className="text-lg font-semibold text-dark">Beban</h3></div>
               <table className="table">
                 <thead><tr><th>Akun</th><th className="text-right">Saldo</th></tr></thead>
                 <tbody>

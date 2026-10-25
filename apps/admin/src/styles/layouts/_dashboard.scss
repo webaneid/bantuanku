@@ -8,7 +8,7 @@
   .dashboard-main {
     flex: 1;
     overflow-y: auto;
-    background: $gray-50;
+    background: $light;
   }
 }
 
@@ -26,7 +26,7 @@
   .dashboard-title {
     font-size: 2rem;
     font-weight: 700;
-    color: $gray-900;
+    color: $dark;
   }
 
   .dashboard-subtitle {
@@ -60,7 +60,7 @@
     .dashboard-section-title {
       font-size: 1.25rem;
       font-weight: 600;
-      color: $gray-900;
+      color: $dark;
     }
   }
 }

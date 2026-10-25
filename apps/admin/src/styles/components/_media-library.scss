@@ -43,7 +43,7 @@
   &-title {
     font-size: 1.25rem;
     font-weight: 600;
-    color: $gray-900;
+    color: $dark;
 
     @media (max-width: 768px) {
       font-size: 1.125rem;
@@ -65,7 +65,7 @@
 
     &:hover {
       background: $gray-100;
-      color: $gray-900;
+      color: $dark;
     }
   }
 
@@ -103,7 +103,7 @@
     }
 
     &:hover {
-      color: $gray-900;
+      color: $dark;
     }
 
     &.active {
@@ -160,7 +160,7 @@
       border: none;
       outline: none;
       font-size: 0.875rem;
-      color: $gray-900;
+      color: $dark;
       min-width: 0;
 
       &::placeholder {
@@ -285,7 +285,7 @@
   }
 
   &-sidebar {
-    background: $gray-50;
+    background: $light;
     border-left: 1px solid $gray-200;
     padding: $spacing-xl;
     overflow-y: auto;

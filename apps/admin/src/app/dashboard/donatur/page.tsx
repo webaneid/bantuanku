@@ -98,7 +98,7 @@ export default function DonaturPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Donatur</h1>
+          <h1 className="text-2xl font-bold text-dark">Donatur</h1>
           <p className="text-gray-600 mt-1">Kelola data donatur dan riwayat donasi</p>
         </div>
         <div className="flex gap-2">
@@ -156,7 +156,7 @@ export default function DonaturPage() {
               donaturData.map((donatur) => (
                 <tr key={donatur.id}>
                   <td>
-                    <div className="font-medium text-gray-900">{donatur.name}</div>
+                    <div className="font-medium text-dark">{donatur.name}</div>
                   </td>
                   <td>
                     <div className="text-sm text-gray-600">{donatur.email}</div>

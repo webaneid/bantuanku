@@ -52,7 +52,7 @@
       .sidebar-user-name {
         font-size: 0.875rem;
         font-weight: 500;
-        color: $gray-900;
+        color: $dark;
         @include truncate;
       }
 
@@ -86,8 +86,8 @@
           transition: all $transition-fast;
 
           &:hover {
-            background: $gray-50;
-            color: $gray-900;
+            background: $light;
+            color: $dark;
           }
 
           &.active {

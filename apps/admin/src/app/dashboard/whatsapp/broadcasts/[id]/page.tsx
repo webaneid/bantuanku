@@ -43,16 +43,16 @@ type BroadcastLog = {
 };
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  pending: { label: "Menunggu", className: "bg-yellow-100 text-yellow-800" },
-  processing: { label: "Berjalan", className: "bg-blue-100 text-blue-800" },
-  completed: { label: "Selesai", className: "bg-green-100 text-green-800" },
-  failed: { label: "Gagal", className: "bg-red-100 text-red-800" },
+  pending: { label: "Menunggu", className: "bg-warning-100 text-warning-800" },
+  processing: { label: "Berjalan", className: "bg-info-100 text-info-800" },
+  completed: { label: "Selesai", className: "bg-success-100 text-success-800" },
+  failed: { label: "Gagal", className: "bg-danger-100 text-danger-800" },
   cancelled: { label: "Dibatalkan", className: "bg-gray-100 text-gray-700" },
 };
 
 const LOG_STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  sent: { label: "Terkirim", className: "text-green-600" },
-  failed: { label: "Gagal", className: "text-red-600" },
+  sent: { label: "Terkirim", className: "text-success-600" },
+  failed: { label: "Gagal", className: "text-danger-600" },
   skipped_no_phone: { label: "No HP", className: "text-gray-400" },
   skipped_recently_sent: { label: "Skip duplikat", className: "text-gray-400" },
   skipped_opt_out: { label: "Opt-out", className: "text-gray-400" },
@@ -100,8 +100,8 @@ export default function BroadcastDetailPage() {
   if (!job) {
     return (
       <div className="p-6">
-        <p className="text-red-600">Broadcast tidak ditemukan.</p>
-        <Link href="/dashboard/whatsapp/broadcasts" className="text-blue-600 text-sm mt-2 inline-block">
+        <p className="text-danger-600">Broadcast tidak ditemukan.</p>
+        <Link href="/dashboard/whatsapp/broadcasts" className="text-info-600 text-sm mt-2 inline-block">
           ← Kembali
         </Link>
       </div>
@@ -118,7 +118,7 @@ export default function BroadcastDetailPage() {
           <ArrowLeft size={20} />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{job.name}</h1>
+          <h1 className="text-xl font-bold text-dark">{job.name}</h1>
           <p className="text-sm text-gray-500">ID: {job.id}</p>
         </div>
         <span className={`ml-2 inline-block px-3 py-1 rounded-full text-xs font-medium ${statusInfo.className}`}>
@@ -128,7 +128,7 @@ export default function BroadcastDetailPage() {
           <button
             onClick={() => cancelMutation.mutate()}
             disabled={cancelMutation.isPending}
-            className="ml-auto flex items-center gap-1 text-sm text-red-600 border border-red-300 px-3 py-1.5 rounded-lg hover:bg-red-50 disabled:opacity-50"
+            className="ml-auto flex items-center gap-1 text-sm text-danger-600 border border-danger-300 px-3 py-1.5 rounded-lg hover:bg-danger-50 disabled:opacity-50"
           >
             <XCircle size={14} /> Batalkan
           </button>
@@ -138,9 +138,9 @@ export default function BroadcastDetailPage() {
       {/* Stats cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Penerima", value: job.totalRecipients, color: "text-gray-900" },
-          { label: "Terkirim", value: job.sentCount, color: "text-green-700" },
-          { label: "Gagal", value: job.failedCount, color: "text-red-600" },
+          { label: "Total Penerima", value: job.totalRecipients, color: "text-dark" },
+          { label: "Terkirim", value: job.sentCount, color: "text-success-700" },
+          { label: "Gagal", value: job.failedCount, color: "text-danger-600" },
           { label: "Dilewati", value: job.skippedCount, color: "text-gray-500" },
         ].map((stat) => (
           <div key={stat.label} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -159,7 +159,7 @@ export default function BroadcastDetailPage() {
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
-              className="h-full bg-green-500 rounded-full transition-all"
+              className="h-full bg-success-500 rounded-full transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -181,7 +181,7 @@ export default function BroadcastDetailPage() {
           <div><dt className="text-gray-500">Dimulai</dt><dd className="font-medium">{formatDate(job.startedAt)}</dd></div>
           <div><dt className="text-gray-500">Selesai</dt><dd className="font-medium">{formatDate(job.completedAt)}</dd></div>
           {job.referenceId && <div><dt className="text-gray-500">Reference ID</dt><dd className="font-medium">{job.referenceId}</dd></div>}
-          {job.errorMessage && <div className="col-span-2"><dt className="text-gray-500">Error</dt><dd className="text-red-600">{job.errorMessage}</dd></div>}
+          {job.errorMessage && <div className="col-span-2"><dt className="text-gray-500">Error</dt><dd className="text-danger-600">{job.errorMessage}</dd></div>}
         </dl>
       </div>
 
@@ -196,7 +196,7 @@ export default function BroadcastDetailPage() {
           <div className="p-6 text-center text-gray-400">Belum ada log.</div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600 text-xs uppercase">
+            <thead className="bg-light text-gray-600 text-xs uppercase">
               <tr>
                 <th className="px-4 py-3 text-left">Donatur</th>
                 <th className="px-4 py-3 text-left">Nomor</th>
@@ -208,7 +208,7 @@ export default function BroadcastDetailPage() {
               {logs.map((log) => {
                 const ls = LOG_STATUS_LABELS[log.status] || { label: log.status, className: "text-gray-500" };
                 return (
-                  <tr key={log.id} className="hover:bg-gray-50">
+                  <tr key={log.id} className="hover:bg-light">
                     <td className="px-4 py-2 text-gray-800">{log.donaturRef?.name || log.donaturId || "-"}</td>
                     <td className="px-4 py-2 text-gray-500">{log.phone || "-"}</td>
                     <td className={`px-4 py-2 text-center font-medium ${ls.className}`}>{ls.label}</td>

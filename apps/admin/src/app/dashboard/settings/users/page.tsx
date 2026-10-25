@@ -443,7 +443,7 @@ export default function UsersSettingsPage() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-6 border-b border-gray-200 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Manage Users</h2>
+            <h2 className="text-lg font-semibold text-dark">Manage Users</h2>
             <p className="text-sm text-gray-600 mt-1">Kelola user yang dapat mengakses admin panel</p>
           </div>
           <div className="flex items-center gap-2">
@@ -478,7 +478,7 @@ export default function UsersSettingsPage() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3">
-                      <h3 className="text-base font-medium text-gray-900">{user.name}</h3>
+                      <h3 className="text-base font-medium text-dark">{user.name}</h3>
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           user.isActive
@@ -548,7 +548,7 @@ export default function UsersSettingsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-dark">
                 {editingUser ? "Edit User" : selectedEmployeeHasUser ? "Ubah Role Employee" : "Tambah User"}
               </h2>
             </div>
@@ -609,7 +609,7 @@ export default function UsersSettingsPage() {
                       </label>
                       <input
                         type="text"
-                        className={`form-input ${createMode === "employee" && formData.employeeId ? "bg-gray-50" : ""}`}
+                        className={`form-input ${createMode === "employee" && formData.employeeId ? "bg-light" : ""}`}
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         placeholder="John Doe"
@@ -630,7 +630,7 @@ export default function UsersSettingsPage() {
                         </label>
                         <input
                           type="email"
-                          className={`form-input ${createMode === "employee" && formData.employeeId && formData.email ? "bg-gray-50" : ""}`}
+                          className={`form-input ${createMode === "employee" && formData.employeeId && formData.email ? "bg-light" : ""}`}
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           placeholder="john@example.com"
@@ -655,7 +655,7 @@ export default function UsersSettingsPage() {
                         <label className="form-label">Email</label>
                         <input
                           type="email"
-                          className="form-input bg-gray-50"
+                          className="form-input bg-light"
                           value={formData.email}
                           disabled
                         />
@@ -759,7 +759,7 @@ export default function UsersSettingsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Ubah Password</h2>
+              <h2 className="text-xl font-bold text-dark">Ubah Password</h2>
             </div>
 
             <form onSubmit={handlePasswordSubmit}>
@@ -823,7 +823,7 @@ export default function UsersSettingsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Hapus User</h2>
+              <h2 className="text-xl font-bold text-dark">Hapus User</h2>
             </div>
             <div className="p-6">
               <p className="text-sm text-gray-700">

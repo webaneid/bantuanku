@@ -310,7 +310,7 @@ export default function ZakatDistributionDetailPage() {
 
   if (isLoading) {
     return (
-      <main className="flex-1 overflow-y-auto bg-gray-50">
+      <main className="flex-1 overflow-y-auto bg-light">
         <div className="dashboard-container">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-gray-200 rounded w-1/4"></div>
@@ -323,7 +323,7 @@ export default function ZakatDistributionDetailPage() {
 
   if (!distributionData) {
     return (
-      <main className="flex-1 overflow-y-auto bg-gray-50">
+      <main className="flex-1 overflow-y-auto bg-light">
         <div className="dashboard-container">
           <div className="text-center py-12">
             <p className="text-gray-500">Penyaluran tidak ditemukan</p>
@@ -342,7 +342,7 @@ export default function ZakatDistributionDetailPage() {
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { label: string; className: string }> = {
       draft: { label: "Draft", className: "bg-gray-100 text-gray-800" },
-      approved: { label: "Disetujui", className: "bg-blue-100 text-blue-800" },
+      approved: { label: "Disetujui", className: "bg-info-100 text-info-800" },
       disbursed: { label: "Tersalurkan", className: "bg-success-100 text-success-800" },
     };
 
@@ -370,7 +370,7 @@ export default function ZakatDistributionDetailPage() {
   };
 
   return (
-    <main className="flex-1 overflow-y-auto bg-gray-50">
+    <main className="flex-1 overflow-y-auto bg-light">
       <div className="dashboard-container">
         {/* Header */}
         <div className="dashboard-header">
@@ -413,7 +413,7 @@ export default function ZakatDistributionDetailPage() {
               <div>
                 <div className="detail-label">Kategori Asnaf</div>
                 <div className="detail-value">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-800">
                     {getAsnafLabel(distributionData.recipientCategory)}
                   </span>
                 </div>
@@ -475,7 +475,7 @@ export default function ZakatDistributionDetailPage() {
 
               <div>
                 <div className="detail-label">Jumlah Penyaluran</div>
-                <div className="detail-value text-xl font-bold text-green-600">
+                <div className="detail-value text-xl font-bold text-success-600">
                   Rp {formatRupiah(distributionData.amount)}
                 </div>
               </div>
@@ -488,7 +488,7 @@ export default function ZakatDistributionDetailPage() {
               {distributionData.description && (
                 <div>
                   <div className="detail-label mb-2">Deskripsi</div>
-                  <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+                  <div className="p-3 bg-light rounded-lg text-sm text-gray-700">
                     {distributionData.description}
                   </div>
                 </div>
@@ -497,7 +497,7 @@ export default function ZakatDistributionDetailPage() {
               {distributionData.notes && (
                 <div>
                   <div className="detail-label mb-2">Catatan Internal</div>
-                  <div className="p-3 bg-yellow-50 rounded-lg text-sm text-gray-700">
+                  <div className="p-3 bg-warning-50 rounded-lg text-sm text-gray-700">
                     {distributionData.notes}
                   </div>
                 </div>
@@ -623,7 +623,7 @@ export default function ZakatDistributionDetailPage() {
 
                 <div>
                   <div className="detail-label mb-2">Deskripsi Kegiatan</div>
-                  <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700 whitespace-pre-wrap">
+                  <div className="p-3 bg-light rounded-lg text-sm text-gray-700 whitespace-pre-wrap">
                     {distributionData.reportDescription}
                   </div>
                 </div>
@@ -723,7 +723,7 @@ export default function ZakatDistributionDetailPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Setujui Penyaluran</h2>
+              <h2 className="text-xl font-bold text-dark">Setujui Penyaluran</h2>
               <button
                 onClick={() => setShowApproveModal(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -735,7 +735,7 @@ export default function ZakatDistributionDetailPage() {
             <form onSubmit={handleApproveSubmit} className="p-6 space-y-6">
               {/* Source Bank */}
               <div className="form-section">
-                <h3 className="font-semibold text-gray-900 mb-4">Rekening Asal (Yayasan)</h3>
+                <h3 className="font-semibold text-dark mb-4">Rekening Asal (Yayasan)</h3>
                 <div className="form-group">
                   <label className="form-label">Pilih Rekening Asal *</label>
                   <Autocomplete
@@ -750,7 +750,7 @@ export default function ZakatDistributionDetailPage() {
 
               {/* Target Bank */}
               <div className="form-section">
-                <h3 className="font-semibold text-gray-900 mb-4">Rekening Tujuan (Penerima)</h3>
+                <h3 className="font-semibold text-dark mb-4">Rekening Tujuan (Penerima)</h3>
                 <div className="form-grid">
                   <div className="form-group">
                     <label className="form-label">Nama Bank *</label>
@@ -790,13 +790,13 @@ export default function ZakatDistributionDetailPage() {
 
               {/* Transfer Proof */}
               <div className="form-section">
-                <h3 className="font-semibold text-gray-900 mb-4">Bukti Transfer</h3>
+                <h3 className="font-semibold text-dark mb-4">Bukti Transfer</h3>
                 <div className="form-group">
                   <label className="form-label">Bukti Transfer *</label>
                   
                   {approveForm.transferProof ? (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-2 p-3 bg-light rounded-lg border border-gray-200">
                         <PhotoIcon className="h-5 w-5 text-gray-400" />
                         <span className="text-sm text-gray-700 flex-1 truncate">
                           {approveForm.transferProof.split("/").pop()}
@@ -875,7 +875,7 @@ export default function ZakatDistributionDetailPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Tambahkan Laporan Kegiatan</h2>
+              <h2 className="text-xl font-bold text-dark">Tambahkan Laporan Kegiatan</h2>
               <button
                 onClick={() => setShowReportModal(false)}
                 className="text-gray-400 hover:text-gray-600"

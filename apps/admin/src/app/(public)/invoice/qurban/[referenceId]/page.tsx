@@ -97,11 +97,11 @@ export default function QurbanInvoicePage({
   }, [paymentChannel, paymentMethodsData]);
 
   const statusBadgeMap: Record<string, string> = {
-    pending: "bg-amber-50 text-amber-700 border border-amber-200",
-    processing: "bg-blue-50 text-blue-700 border border-blue-200",
-    paid: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    partial: "bg-blue-50 text-blue-700 border border-blue-200",
-    overdue: "bg-rose-50 text-rose-700 border border-rose-200",
+    pending: "bg-warning-50 text-warning-700 border border-warning-200",
+    processing: "bg-info-50 text-info-700 border border-info-200",
+    paid: "bg-primary-50 text-primary-700 border border-primary-200",
+    partial: "bg-info-50 text-info-700 border border-info-200",
+    overdue: "bg-danger-50 text-danger-700 border border-danger-200",
   };
 
   const paymentStatusLabelMap: Record<string, string> = {
@@ -113,10 +113,10 @@ export default function QurbanInvoicePage({
   };
 
   const orderStatusMap: Record<string, string> = {
-    pending: "bg-amber-50 text-amber-700 border border-amber-200",
-    confirmed: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    cancelled: "bg-rose-50 text-rose-700 border border-rose-200",
-    executed: "bg-blue-50 text-blue-700 border border-blue-200",
+    pending: "bg-warning-50 text-warning-700 border border-warning-200",
+    confirmed: "bg-primary-50 text-primary-700 border border-primary-200",
+    cancelled: "bg-danger-50 text-danger-700 border border-danger-200",
+    executed: "bg-info-50 text-info-700 border border-info-200",
   };
 
   const orderStatusLabelMap: Record<string, string> = {
@@ -156,7 +156,7 @@ export default function QurbanInvoicePage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-light">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Memuat invoice...</p>
@@ -167,9 +167,9 @@ export default function QurbanInvoicePage({
 
   if (error || !order) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-light">
         <div className="text-center">
-          <p className="text-lg font-semibold text-gray-900">Invoice tidak ditemukan</p>
+          <p className="text-lg font-semibold text-dark">Invoice tidak ditemukan</p>
           <p className="text-gray-600 mt-2">Nomor order: {referenceId}</p>
         </div>
       </div>
@@ -183,13 +183,13 @@ export default function QurbanInvoicePage({
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="min-h-screen bg-light py-8 px-4">
         <div className="max-w-3xl mx-auto">
           {/* Actions - Hide on print */}
           <div className="flex justify-end gap-3 mb-4 print:hidden">
             <button
               onClick={handleCopyLink}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-light transition-colors"
             >
               <ClipboardIcon className="w-4 h-4" />
               Salin Link
@@ -209,7 +209,7 @@ export default function QurbanInvoicePage({
             <div className="border-b border-gray-200 pb-6 mb-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">INVOICE QURBAN</h1>
+                  <h1 className="text-2xl font-bold text-dark">INVOICE QURBAN</h1>
                   <p className="text-sm text-gray-600 mt-1">No. Order: {order.order_number}</p>
                 </div>
                 <div className="text-right">
@@ -244,7 +244,7 @@ export default function QurbanInvoicePage({
               {/* Donor Info */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Donatur</h3>
-                <p className="text-base font-semibold text-gray-900">{order.donor_name}</p>
+                <p className="text-base font-semibold text-dark">{order.donor_name}</p>
                 {order.donor_email && <p className="text-sm text-gray-600">{order.donor_email}</p>}
                 {order.donor_phone && <p className="text-sm text-gray-600">{order.donor_phone}</p>}
               </div>
@@ -252,7 +252,7 @@ export default function QurbanInvoicePage({
               {/* Package Info */}
               <div>
                 <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Paket Qurban</h3>
-                <p className="text-base font-semibold text-gray-900">{order.package_name || "-"}</p>
+                <p className="text-base font-semibold text-dark">{order.package_name || "-"}</p>
                 <div className="flex gap-2 mt-2">
                   <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">
                     {order.animal_type === "cow" ? "🐄 Sapi" : "🐐 Kambing"}
@@ -265,9 +265,9 @@ export default function QurbanInvoicePage({
                   <p className="text-sm text-gray-600 mt-2">Periode: {order.period_name}</p>
                 )}
                 {order.on_behalf_of && (
-                  <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                    <p className="text-xs text-amber-700 font-medium mb-1">Atas Nama:</p>
-                    <p className="text-sm font-semibold text-amber-900">{order.on_behalf_of}</p>
+                  <div className="mt-3 p-3 bg-warning-50 rounded-lg border border-warning-200">
+                    <p className="text-xs text-warning-700 font-medium mb-1">Atas Nama:</p>
+                    <p className="text-sm font-semibold text-warning-900">{order.on_behalf_of}</p>
                   </div>
                 )}
               </div>
@@ -280,26 +280,26 @@ export default function QurbanInvoicePage({
                   <span className="text-gray-600">
                     Harga Hewan Qurban {order.quantity && order.quantity > 1 ? `(${order.quantity}x)` : ''}
                   </span>
-                  <span className="font-mono text-gray-900">Rp {formatRupiah(subtotal)}</span>
+                  <span className="font-mono text-dark">Rp {formatRupiah(subtotal)}</span>
                 </div>
                 {calculatedAdminFee > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Administrasi Penyembelihan</span>
-                    <span className="font-mono text-gray-900">Rp {formatRupiah(calculatedAdminFee)}</span>
+                    <span className="font-mono text-dark">Rp {formatRupiah(calculatedAdminFee)}</span>
                   </div>
                 )}
                 <div className="flex justify-between pt-2 border-t border-gray-200">
-                  <span className="font-semibold text-gray-900">Total Order</span>
-                  <span className="font-mono font-bold text-lg text-gray-900">Rp {formatRupiah(order.total_amount)}</span>
+                  <span className="font-semibold text-dark">Total Order</span>
+                  <span className="font-mono font-bold text-lg text-dark">Rp {formatRupiah(order.total_amount)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Terbayar</span>
-                  <span className="font-mono text-emerald-600">Rp {formatRupiah(order.paid_amount)}</span>
+                  <span className="font-mono text-primary-600">Rp {formatRupiah(order.paid_amount)}</span>
                 </div>
                 {order.paid_amount < order.total_amount && (
                   <div className="flex justify-between pt-2 border-t border-gray-200">
-                    <span className="font-semibold text-rose-700">Sisa Pembayaran</span>
-                    <span className="font-mono font-bold text-lg text-rose-700">
+                    <span className="font-semibold text-danger-700">Sisa Pembayaran</span>
+                    <span className="font-mono font-bold text-lg text-danger-700">
                       Rp {formatRupiah(order.total_amount - order.paid_amount)}
                     </span>
                   </div>
@@ -312,7 +312,7 @@ export default function QurbanInvoicePage({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Metode Pembayaran</p>
-                  <p className="text-sm font-medium text-gray-900 capitalize">
+                  <p className="text-sm font-medium text-dark capitalize">
                     {order.payment_method === "full" ? "Bayar Penuh" : "Cicilan"}
                   </p>
                 </div>
@@ -320,7 +320,7 @@ export default function QurbanInvoicePage({
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Transfer ke Rekening</p>
                     <div className="space-y-1">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-dark">
                         {selectedBankAccount?.bankName || parsedMetadata?.bankName}
                       </p>
                       {(selectedBankAccount?.accountNumber || parsedMetadata?.accountNumber) && (
@@ -338,7 +338,7 @@ export default function QurbanInvoicePage({
                 )}
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Status Pembayaran</p>
-                  <p className="text-sm font-medium text-gray-900 capitalize">{order.payment_status}</p>
+                  <p className="text-sm font-medium text-dark capitalize">{order.payment_status}</p>
                 </div>
                 {payments.length > 0 && payments[0]?.payment_proof_url && (
                   <div>
@@ -360,14 +360,14 @@ export default function QurbanInvoicePage({
                 )}
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Tanggal Order</p>
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-dark">
                     {formatDateWIB(order.created_at, "dd MMMM yyyy, HH:mm")}
                   </p>
                 </div>
                 {order.confirmed_at && (
                   <div>
                     <p className="text-sm text-gray-500 mb-1">Tanggal Konfirmasi</p>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-dark">
                       {formatDateWIB(order.confirmed_at, "dd MMMM yyyy, HH:mm")}
                     </p>
                   </div>
@@ -397,10 +397,10 @@ export default function QurbanInvoicePage({
                     return (
                       <div
                         key={payment.id}
-                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50"
+                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-light"
                       >
                         <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-dark">
                             Rp {formatRupiah(payment.amount)}
                           </p>
                           <p className="text-xs text-gray-500">
@@ -410,10 +410,10 @@ export default function QurbanInvoicePage({
                         <span
                           className={`text-xs px-2 py-1 rounded-full font-medium ${
                             payment.status === "verified"
-                              ? "bg-emerald-50 text-emerald-700"
+                              ? "bg-primary-50 text-primary-700"
                               : payment.status === "rejected"
-                              ? "bg-rose-50 text-rose-700"
-                              : "bg-amber-50 text-amber-700"
+                              ? "bg-danger-50 text-danger-700"
+                              : "bg-warning-50 text-warning-700"
                           }`}
                         >
                           {statusLabels[payment.status] || payment.status}
@@ -452,7 +452,7 @@ export default function QurbanInvoicePage({
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">{proofModal.title}</h3>
+              <h3 className="text-lg font-semibold text-dark">{proofModal.title}</h3>
               <button
                 onClick={() => setProofModal({ open: false, url: "", title: "" })}
                 className="text-gray-400 hover:text-gray-500"
@@ -475,11 +475,11 @@ export default function QurbanInvoicePage({
                       console.error("Image failed to load:", proofModal.url);
                       e.currentTarget.style.display = 'none';
                       const errorDiv = document.createElement('div');
-                      errorDiv.className = 'text-center p-8 text-red-600';
+                      errorDiv.className = 'text-center p-8 text-danger-600';
                       errorDiv.innerHTML = `
                         <p class="font-semibold mb-2">Gagal memuat gambar</p>
                         <p class="text-sm text-gray-600 mb-4">URL: ${proofModal.url}</p>
-                        <a href="${proofModal.url}" target="_blank" class="text-blue-600 underline text-sm">Coba buka langsung</a>
+                        <a href="${proofModal.url}" target="_blank" class="text-info-600 underline text-sm">Coba buka langsung</a>
                       `;
                       e.currentTarget.parentElement?.appendChild(errorDiv);
                     }}

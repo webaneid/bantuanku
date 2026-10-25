@@ -148,14 +148,14 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
         <button
           type="button"
           onClick={() => router.push("/dashboard/activity-reports")}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+          className="flex items-center gap-2 text-gray-600 hover:text-dark mb-4"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           Kembali ke Daftar Laporan
         </button>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Detail Laporan Kegiatan</h1>
+            <h1 className="text-2xl font-bold text-dark">Detail Laporan Kegiatan</h1>
             <p className="text-gray-600 mt-1">Informasi lengkap laporan kegiatan</p>
           </div>
           <div className="flex gap-3">
@@ -216,25 +216,25 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Jenis Laporan</h3>
-            <p className="text-lg font-semibold text-gray-900">
+            <p className="text-lg font-semibold text-dark">
               {getReferenceTypeLabel(report.referenceType || "campaign")}
             </p>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Referensi</h3>
-            <p className="text-lg font-semibold text-gray-900">{report.referenceName || "-"}</p>
+            <p className="text-lg font-semibold text-dark">{report.referenceName || "-"}</p>
           </div>
         </div>
 
         {/* Title */}
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">{report.title}</h2>
+          <h2 className="text-3xl font-bold text-dark">{report.title}</h2>
         </div>
 
         {/* Activity Date */}
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Tanggal Kegiatan</h3>
-          <p className="text-lg text-gray-900">
+          <p className="text-lg text-dark">
             {formatDateWIB(report.activityDate, "dd MMMM yyyy")}
           </p>
         </div>
@@ -243,7 +243,7 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
         {(report.provinceName || report.detailAddress) && (
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Lokasi Kegiatan</h3>
-            <p className="text-lg text-gray-900">
+            <p className="text-lg text-dark">
               {[
                 report.detailAddress,
                 report.villageName,
@@ -258,7 +258,7 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
 
         {/* Type-Specific Data */}
         {report.referenceType === "campaign" && typeSpecificData.beneficiary_count > 0 && (
-          <div className="mb-6 bg-gray-50 rounded-lg p-4">
+          <div className="mb-6 bg-light rounded-lg p-4">
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Detail Campaign</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -270,7 +270,7 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
         )}
 
         {report.referenceType === "zakat_period" && (typeSpecificData.recipient_count || typeSpecificData.distribution_areas) && (
-          <div className="mb-6 bg-gray-50 rounded-lg p-4">
+          <div className="mb-6 bg-light rounded-lg p-4">
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Detail Zakat Periode</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {typeSpecificData.recipient_count > 0 && (
@@ -290,7 +290,7 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
         )}
 
         {report.referenceType === "zakat_disbursement" && typeSpecificData.recipient_count > 0 && (
-          <div className="mb-6 bg-gray-50 rounded-lg p-4">
+          <div className="mb-6 bg-light rounded-lg p-4">
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Detail Pencairan Zakat</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -302,7 +302,7 @@ export default function ViewActivityReportPage({ params }: { params: Promise<{ i
         )}
 
         {report.referenceType === "qurban_period" && (
-          <div className="mb-6 bg-gray-50 rounded-lg p-4">
+          <div className="mb-6 bg-light rounded-lg p-4">
             <h3 className="text-sm font-semibold text-gray-500 uppercase mb-3">Detail Qurban Periode</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {typeSpecificData.animals_by_type?.kambing > 0 && (

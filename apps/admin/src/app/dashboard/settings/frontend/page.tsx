@@ -1339,7 +1339,7 @@ export default function FrontendSettingsPage() {
               className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === "body-landingpage"
                   ? "border-primary-600 text-primary-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
+                  : "border-transparent text-gray-600 hover:text-dark hover:border-gray-300"
               }`}
             >
               Body Landingpage
@@ -1349,7 +1349,7 @@ export default function FrontendSettingsPage() {
               className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === "header-menu"
                   ? "border-primary-600 text-primary-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
+                  : "border-transparent text-gray-600 hover:text-dark hover:border-gray-300"
               }`}
             >
               Header Menu
@@ -1359,7 +1359,7 @@ export default function FrontendSettingsPage() {
               className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === "footer-menu"
                   ? "border-primary-600 text-primary-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
+                  : "border-transparent text-gray-600 hover:text-dark hover:border-gray-300"
               }`}
             >
               Footer Menu
@@ -1369,7 +1369,7 @@ export default function FrontendSettingsPage() {
               className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === "pages"
                   ? "border-primary-600 text-primary-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
+                  : "border-transparent text-gray-600 hover:text-dark hover:border-gray-300"
               }`}
             >
               Pages
@@ -1379,7 +1379,7 @@ export default function FrontendSettingsPage() {
               className={`px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === "utilities"
                   ? "border-primary-600 text-primary-600"
-                  : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
+                  : "border-transparent text-gray-600 hover:text-dark hover:border-gray-300"
               }`}
             >
               Utilities
@@ -1394,7 +1394,7 @@ export default function FrontendSettingsPage() {
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Hero Slider</h3>
+                  <h3 className="text-lg font-semibold text-dark">Hero Slider</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur slide hero yang tampil di halaman utama
                   </p>
@@ -1573,7 +1573,7 @@ export default function FrontendSettingsPage() {
                           {/* Right Column - Content */}
                           <div className="space-y-2">
                             <div>
-                              <p className="text-sm font-semibold text-gray-900">{slide.title}</p>
+                              <p className="text-sm font-semibold text-dark">{slide.title}</p>
                               <p className="text-xs text-gray-600 mt-1">{slide.description}</p>
                             </div>
                             <div className="pt-2">
@@ -1607,8 +1607,8 @@ export default function FrontendSettingsPage() {
               </div>
 
               {/* Help Text */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
+              <div className="bg-info-50 border border-info-200 rounded-lg p-4">
+                <p className="text-sm text-info-800">
                   <strong>Tips:</strong> Drag & drop untuk mengatur urutan slide. Slide akan tampil di hero
                   section sesuai urutan yang Anda atur.
                 </p>
@@ -1618,7 +1618,7 @@ export default function FrontendSettingsPage() {
               <div className="pt-8 mt-8 border-t border-gray-200">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Kategori Layanan</h3>
+                    <h3 className="text-lg font-semibold text-dark">Kategori Layanan</h3>
                     <p className="text-sm text-gray-600 mt-1">
                       Atur kategori layanan yang tampil di bawah hero
                     </p>
@@ -1745,7 +1745,7 @@ export default function FrontendSettingsPage() {
                                   />
                                 )}
                                 <div>
-                                  <p className="text-sm font-medium text-gray-900">{category.name}</p>
+                                  <p className="text-sm font-medium text-dark">{category.name}</p>
                                   <p className="text-xs text-gray-500">{category.description}</p>
                                 </div>
                               </div>
@@ -1753,7 +1753,7 @@ export default function FrontendSettingsPage() {
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
                                   /{category.slug}
                                 </span>
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-secondary-100 text-secondary-800">
                                   {category.gradient}
                                 </span>
                               </div>
@@ -1780,8 +1780,8 @@ export default function FrontendSettingsPage() {
                 </div>
 
                 {/* Help Text */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-info-50 border border-info-200 rounded-lg p-4 mt-4">
+                  <p className="text-sm text-info-800">
                     <strong>Tips:</strong> Drag & drop untuk mengatur urutan kategori. Kategori akan tampil sesuai urutan yang Anda atur.
                   </p>
                 </div>
@@ -1790,7 +1790,7 @@ export default function FrontendSettingsPage() {
               {/* Featured Section Settings */}
               <div className="pt-8 mt-8 border-t border-gray-200">
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Section Program Unggulan</h3>
+                  <h3 className="text-lg font-semibold text-dark">Section Program Unggulan</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur judul, deskripsi, dan tampilan program unggulan
                   </p>
@@ -1865,7 +1865,7 @@ export default function FrontendSettingsPage() {
               {/* Programs Section Settings */}
               <div className="pt-8 mt-8 border-t border-gray-200">
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Section Program Kami</h3>
+                  <h3 className="text-lg font-semibold text-dark">Section Program Kami</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur judul, deskripsi, dan tampilan section program kami
                   </p>
@@ -1939,7 +1939,7 @@ export default function FrontendSettingsPage() {
               {/* Funfact Section Settings */}
               <div className="pt-8 mt-8 border-t border-gray-200">
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Section Funfact/Statistik</h3>
+                  <h3 className="text-lg font-semibold text-dark">Section Funfact/Statistik</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur judul, deskripsi, dan label setiap item statistik
                   </p>
@@ -1986,7 +1986,7 @@ export default function FrontendSettingsPage() {
                             onDragStart={() => handleFunfactItemDragStart(item)}
                             onDragOver={(e) => handleFunfactItemDragOver(e, item)}
                             onDragEnd={handleFunfactItemDragEnd}
-                            className={`bg-gray-50 border border-gray-200 rounded-lg p-4 cursor-move hover:border-gray-300 transition-all ${
+                            className={`bg-light border border-gray-200 rounded-lg p-4 cursor-move hover:border-gray-300 transition-all ${
                               draggedFunfactItem?.id === item.id ? "opacity-50" : ""
                             }`}
                           >
@@ -2030,7 +2030,7 @@ export default function FrontendSettingsPage() {
                               </div>
                             </div>
                             <div className="mt-2 ml-8">
-                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-info-100 text-info-800">
                                 Data Key: {item.key}
                               </span>
                             </div>
@@ -2041,8 +2041,8 @@ export default function FrontendSettingsPage() {
                   </div>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-info-50 border border-info-200 rounded-lg p-4 mt-4">
+                  <p className="text-sm text-info-800">
                     <strong>Catatan:</strong> Data angka (jumlah donatur, program, dll) diambil secara otomatis dari database. Anda hanya perlu mengatur label dan deskripsi yang ditampilkan.
                   </p>
                 </div>
@@ -2051,7 +2051,7 @@ export default function FrontendSettingsPage() {
               {/* Why Choose Us Section Settings */}
               <div className="pt-8 mt-8 border-t border-gray-200">
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Section Mengapa Memilih Kami</h3>
+                  <h3 className="text-lg font-semibold text-dark">Section Mengapa Memilih Kami</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur judul, deskripsi, dan keunggulan platform Anda
                   </p>
@@ -2107,7 +2107,7 @@ export default function FrontendSettingsPage() {
                             onDragStart={() => handleWhyChooseUsItemDragStart(item)}
                             onDragOver={(e) => handleWhyChooseUsItemDragOver(e, item)}
                             onDragEnd={handleWhyChooseUsItemDragEnd}
-                            className={`bg-gray-50 border border-gray-200 rounded-lg p-4 ${
+                            className={`bg-light border border-gray-200 rounded-lg p-4 ${
                               editingWhyChooseUsId === item.id ? "" : "cursor-move hover:border-gray-300"
                             } transition-all ${draggedWhyChooseUsItem?.id === item.id ? "opacity-50" : ""}`}
                           >
@@ -2189,7 +2189,7 @@ export default function FrontendSettingsPage() {
                                 <div className="flex-1">
                                   <div className="flex items-start justify-between">
                                     <div>
-                                      <h4 className="font-medium text-gray-900">{item.title}</h4>
+                                      <h4 className="font-medium text-dark">{item.title}</h4>
                                       <p className="text-sm text-gray-600 mt-1">{item.description}</p>
                                       <div className="mt-2 flex items-center gap-2">
                                         <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-${item.iconBgColor}-100 text-${item.iconBgColor}-800`}>
@@ -2226,7 +2226,7 @@ export default function FrontendSettingsPage() {
               {/* CTA Section Settings */}
               <div className="pt-8 mt-8 border-t border-gray-200">
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Section Call to Action (CTA)</h3>
+                  <h3 className="text-lg font-semibold text-dark">Section Call to Action (CTA)</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur ajakan bertindak di bagian akhir halaman
                   </p>
@@ -2265,7 +2265,7 @@ export default function FrontendSettingsPage() {
                       </label>
                       <div className="space-y-3">
                         {ctaSection.buttons.map((button, index) => (
-                          <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                          <div key={index} className="bg-light border border-gray-200 rounded-lg p-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                               <div>
                                 <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -2337,7 +2337,7 @@ export default function FrontendSettingsPage() {
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Menu Header</h3>
+                  <h3 className="text-lg font-semibold text-dark">Menu Header</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur menu navigasi yang tampil di header website
                   </p>
@@ -2417,7 +2417,7 @@ export default function FrontendSettingsPage() {
                         <div className="flex items-center gap-3">
                           <Bars3Icon className="w-5 h-5 text-gray-400 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">{item.label}</p>
+                            <p className="text-sm font-medium text-dark">{item.label}</p>
                             <p className="text-xs text-gray-500 truncate">{item.url}</p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -2442,8 +2442,8 @@ export default function FrontendSettingsPage() {
               </div>
 
               {/* Help Text */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
+              <div className="bg-info-50 border border-info-200 rounded-lg p-4">
+                <p className="text-sm text-info-800">
                   <strong>Tips:</strong> Drag & drop untuk mengatur urutan menu. Menu akan tampil di header
                   website sesuai urutan yang Anda atur.
                 </p>
@@ -2463,7 +2463,7 @@ export default function FrontendSettingsPage() {
               {/* Header */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Menu Footer</h3>
+                  <h3 className="text-lg font-semibold text-dark">Menu Footer</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur kolom menu yang tampil di footer website
                   </p>
@@ -2541,7 +2541,7 @@ export default function FrontendSettingsPage() {
 
                             <div className="space-y-2">
                               {columnForm.items.map((item, itemIndex) => (
-                                <div key={item.id} className="bg-gray-50 border border-gray-200 rounded p-3">
+                                <div key={item.id} className="bg-light border border-gray-200 rounded p-3">
                                   {editingFooterItemId === item.id ? (
                                     // Edit Item
                                     <div className="space-y-2">
@@ -2596,7 +2596,7 @@ export default function FrontendSettingsPage() {
                                     // View Item
                                     <div className="flex items-center justify-between">
                                       <div>
-                                        <div className="text-sm font-medium text-gray-900">{item.label}</div>
+                                        <div className="text-sm font-medium text-dark">{item.label}</div>
                                         <div className="text-xs text-gray-500">{item.url}</div>
                                       </div>
                                       <div className="flex items-center gap-1">
@@ -2614,7 +2614,7 @@ export default function FrontendSettingsPage() {
                                             const updatedItems = columnForm.items.filter(i => i.id !== item.id);
                                             setColumnForm({ ...columnForm, items: updatedItems });
                                           }}
-                                          className="btn btn-ghost btn-xs text-red-600 hover:text-red-700"
+                                          className="btn btn-ghost btn-xs text-danger-600 hover:text-danger-700"
                                         >
                                           <TrashIcon className="w-3 h-3" />
                                         </button>
@@ -2656,7 +2656,7 @@ export default function FrontendSettingsPage() {
                         <div>
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900 mb-2">{column.title}</h4>
+                              <h4 className="font-semibold text-dark mb-2">{column.title}</h4>
                               <div className="space-y-1">
                                 {column.items.map(item => (
                                   <div key={item.id} className="text-sm text-gray-600">
@@ -2680,7 +2680,7 @@ export default function FrontendSettingsPage() {
                               </button>
                               <button
                                 onClick={() => setDeleteColumnId(column.id)}
-                                className="btn btn-ghost btn-sm text-red-600 hover:text-red-700"
+                                className="btn btn-ghost btn-sm text-danger-600 hover:text-danger-700"
                               >
                                 <TrashIcon className="w-4 h-4" />
                               </button>
@@ -2694,8 +2694,8 @@ export default function FrontendSettingsPage() {
               </div>
 
               {/* Help Text */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-blue-800">
+              <div className="bg-info-50 border border-info-200 rounded-lg p-4">
+                <p className="text-sm text-info-800">
                   <strong>Tips:</strong> Setiap kolom dapat memiliki beberapa menu items. Kolom akan ditampilkan di footer website sesuai urutan yang Anda atur.
                 </p>
               </div>
@@ -2714,7 +2714,7 @@ export default function FrontendSettingsPage() {
               {/* Zakat Page Settings */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Halaman Zakat</h3>
+                  <h3 className="text-lg font-semibold text-dark">Halaman Zakat</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur konten untuk halaman zakat (/zakat)
                   </p>
@@ -2782,7 +2782,7 @@ export default function FrontendSettingsPage() {
                       {zakatPage.infoItems.map((item, index) => (
                         <div
                           key={item.id}
-                          className="bg-gray-50 border border-gray-200 rounded-lg p-3"
+                          className="bg-light border border-gray-200 rounded-lg p-3"
                         >
                           {editingZakatInfoId === item.id ? (
                             // Edit Mode
@@ -2842,7 +2842,7 @@ export default function FrontendSettingsPage() {
               {/* Qurban Page Settings */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Halaman Qurban</h3>
+                  <h3 className="text-lg font-semibold text-dark">Halaman Qurban</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur konten untuk halaman qurban (/qurban)
                   </p>
@@ -2910,7 +2910,7 @@ export default function FrontendSettingsPage() {
                       {qurbanPage.infoItems.map((item, index) => (
                         <div
                           key={item.id}
-                          className="bg-gray-50 border border-gray-200 rounded-lg p-3"
+                          className="bg-light border border-gray-200 rounded-lg p-3"
                         >
                           {editingQurbanInfoId === item.id ? (
                             // Edit Mode
@@ -2970,7 +2970,7 @@ export default function FrontendSettingsPage() {
               {/* Wakaf Page Settings */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Halaman Wakaf</h3>
+                  <h3 className="text-lg font-semibold text-dark">Halaman Wakaf</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur konten untuk halaman wakaf (/wakaf)
                   </p>
@@ -3010,7 +3010,7 @@ export default function FrontendSettingsPage() {
               {/* Program Page Settings */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Halaman Program</h3>
+                  <h3 className="text-lg font-semibold text-dark">Halaman Program</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur konten untuk halaman program (/program)
                   </p>
@@ -3061,7 +3061,7 @@ export default function FrontendSettingsPage() {
               {/* Campaign Amounts */}
               <div>
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Rekomendasi Nominal Campaign</h3>
+                  <h3 className="text-lg font-semibold text-dark">Rekomendasi Nominal Campaign</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur nominal rekomendasi untuk donasi campaign (maksimal 3 nominal)
                   </p>
@@ -3116,8 +3116,8 @@ export default function FrontendSettingsPage() {
                   )}
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-info-50 border border-info-200 rounded-lg p-4 mt-4">
+                  <p className="text-sm text-info-800">
                     <strong>Tips:</strong> Masukkan nominal dalam Rupiah (tanpa tanda titik). Contoh: 50000 untuk Rp 50.000
                   </p>
                 </div>
@@ -3126,7 +3126,7 @@ export default function FrontendSettingsPage() {
               {/* Wakaf Amounts */}
               <div className="pt-8 border-t border-gray-200">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Rekomendasi Nominal Wakaf</h3>
+                  <h3 className="text-lg font-semibold text-dark">Rekomendasi Nominal Wakaf</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Atur nominal rekomendasi untuk wakaf (maksimal 3 nominal)
                   </p>
@@ -3181,8 +3181,8 @@ export default function FrontendSettingsPage() {
                   )}
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                  <p className="text-sm text-blue-800">
+                <div className="bg-info-50 border border-info-200 rounded-lg p-4 mt-4">
+                  <p className="text-sm text-info-800">
                     <strong>Tips:</strong> Masukkan nominal dalam Rupiah (tanpa tanda titik). Contoh: 100000 untuk Rp 100.000
                   </p>
                 </div>
@@ -3191,7 +3191,7 @@ export default function FrontendSettingsPage() {
               {/* Invoice Footer */}
               <div className="pt-8 border-t border-gray-200">
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Footer Invoice</h3>
+                  <h3 className="text-lg font-semibold text-dark">Footer Invoice</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     Konten footer yang ditampilkan di bagian bawah kwitansi/invoice
                   </p>
@@ -3232,7 +3232,7 @@ export default function FrontendSettingsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Hapus Kolom</h2>
+              <h2 className="text-xl font-bold text-dark">Hapus Kolom</h2>
             </div>
             <div className="p-6">
               <p className="text-sm text-gray-700">Hapus kolom ini?</p>
