@@ -320,6 +320,7 @@ Mount route admin:
 | `/v1/admin/evidences` | `routes/admin/evidences.ts` |
 | `/v1/admin/export` | `routes/admin/export.ts` |
 | `/v1/admin/reports` | `routes/admin/reports.ts` |
+| `/v1/admin/cashbook` | `routes/admin/cashbook.ts` (Buku Kas, ADR-0016; `super_admin` + `admin_finance`) |
 | `/v1/admin/analytics` | `routes/admin/analytics.ts` |
 | `/v1/admin/settings` | `routes/admin/settings.ts` |
 | `/v1/admin/audit` | `routes/admin/audit.ts` |
