@@ -68,3 +68,13 @@ Pemilik produk memilih **mencatat semua transaksi paid tanpa pembayaran terverif
 
 1. Uji UI "Balik" lewat otomasi JS tidak menghasilkan entri pembalik (tombol/alasan tidak terkirim); jalur API terbukti oleh tes `bun`. Ulangi manual di browser sebelum dipakai bendahara.
 2. Transaksi "Zakat Fitra 2026/1447 H" di dev dikelompokkan sebagai `zakat_maal` karena pemetaan mencari "fitrah"; periksa nama di produksi (66 transaksi zakat_fitrah) sebelum angka per jenis zakat dipercaya.
+
+### Produksi (2026-10-26)
+
+1. **Deploy berjalan mulus** dengan urutan backup → migrasi 123 → backfill → 124 → restart. Backup diverifikasi (348 transaksi, 232 pembayaran, 9 pencairan) tanpa membuat database baru (role aplikasi tak boleh `createdb`).
+2. **`db:manifest:run:dry` mencetak seluruh manifest** karena runner tidak melacak migrasi terapan; selalu pakai `--from/--to`.
+3. **Metode pembayaran data lama nyaris lengkap**: semua bernilai `cash`, `bank-<angka>`, `qris-<angka>`, atau `flip`; hanya 2 transaksi (Rp 150.000) kosong. `cash` Rp 398.968.350 (37 transaksi kelompok A + 6 pembayaran verified) adalah data tunai nyata.
+4. **Saldo fundraiser sempat menggelembung** (Rp 334.200) karena komisi transaksi pending dikreditkan oleh kode lama; dirapikan oleh `fundraiser:reconcile`. Laporan lama fundraiser menampilkan 0 karena membaca pencairan yang diajukan, bukan hak.
+5. **Laporan lama dan Keuangan berbeda hanya karena periode** (lama = seluruh waktu tanpa filter, Keuangan = bulan berjalan) sehingga ditambah preset "Semua Waktu"; rumus keduanya identik.
+6. **Qurban dengan `admin_fee` 0 tidak punya bagi hasil** (basis komisi = biaya admin): bukan bug, tetapi keputusan kebijakan.
+7. Belum ada pencairan mitra/fundraiser di produksi saat rekonsiliasi dijalankan, sehingga perbaikan saldo tidak berisiko.

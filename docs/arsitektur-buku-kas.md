@@ -1,6 +1,6 @@
 # Arsitektur Buku Kas dan Hak Bagi Hasil (Rencana)
 
-> **Status: ADR-0016 Accepted; Fase 1 (offline) berjalan.** Keputusan pemilik produk 2026-10-26 sudah masuk (§11); tersisa D3 (cara memasukkan data lama, dari audit produksi) lalu persetujuan ADR-0016. **Pembangunan dilakukan offline (lokal) dulu**; produksi menyusul setelah pelajaran dicatat. Disusun 2026-10-26 sesuai SOP (arsitektur → kode aktual → rencana fase → eksekusi → `tsc` → review keamanan → dokumentasi). Keputusan desain: `docs/decisions/adr-0016-buku-kas-dan-hak-bagi-hasil.md`. Kondisi laporan saat ini: `arsitektur-laporan.md`.
+> **Status (2026-10-26): ADR-0016 Accepted; Fase 1–5 selesai dan SUDAH BERJALAN DI PRODUKSI (migrasi 123 + 124, backfill 424 baris).** Yang tersisa: lihat "Status Produksi dan Sisa Pekerjaan" di bawah (§8b). Keputusan D1–D9 pemilik produk di §11. Keputusan desain: `docs/decisions/adr-0016-buku-kas-dan-hak-bagi-hasil.md`. Kondisi laporan lama: `arsitektur-laporan.md`.
 
 ## 1. Tujuan dan prinsip
 
@@ -298,6 +298,34 @@ Keputusan pemilik produk: tidak boleh ada uang masuk tanpa metode pembayaran. Ak
 | Uji | `cash-book-method.test.ts` (gerbang API + trigger, di transaksi yang di-rollback). |
 
 Gap: pembayaran lama berstatus `pending` dengan metode generik tidak bisa diapprove sampai ditolak dan dimasukkan ulang dengan metode jelas; `PaymentModal` (modul ledger lama, D8) belum disentuh; pembayaran dari tabel legacy `qurban_savings_transactions` tidak diposting ke buku kas.
+
+## 8b. Status Produksi dan Sisa Pekerjaan (diperbarui 2026-10-26)
+
+### Yang sudah berjalan di produksi
+- **Migrasi 123** (tabel `cash_accounts`, `cash_entries`) dan **124** (trigger metode wajib) terpasang. Backfill idempoten: 424 baris (masuk Rp 522.836.563, keluar Rp 25.981.000; kelompok A 51 baris Rp 320.231.250; akun `cash` Rp 398.968.350 = data tunai nyata; "Metode Lain" hanya Rp 150.000). `npm run cashbook:check` hijau.
+- Hook posting di semua jalur bayar/cair; webhook gateway kini juga menghitung bagi hasil (perubahan perilaku yang disetujui lewat deploy).
+- Penjaga metode wajib (API `paymentMethodError` + trigger DB), UI admin menu **Keuangan** (Arus Kas, Sirkulasi Rekening, Dana per Sumber, Bagi Hasil, Per Mitra, Per Influencer, Per Program, Perlu Ditinjau) dengan filter **Semua Waktu**.
+- Rekonsiliasi saldo fundraiser dijalankan di produksi (5 fundraiser, 7 referral; selisih Rp 334.200 dari komisi transaksi pending kode lama). Skrip: `npm run fundraiser:reconcile` (dry-run default).
+- Laporan lama diperbaiki: `/fundraiser-summary|detail` (hak dari `revenue_shares` paid), `/mitra-summary|detail` (hanya transaksi paid). UI Per Mitra/Per Influencer dipindah ke `/dashboard/cashbook/mitra|influencer` (URL lama redirect).
+- Commit utama: `5c3c0d5` (Fase 1–5), `db1788f`/`eae3b1a` (rekonsiliasi fundraiser), `76adec3` (laporan fundraiser), `99218e1` (Semua Waktu + menu), `9f43298` (laporan mitra), `b77a438` (halaman Per Mitra/Influencer). Semua di-push ke `release/vps-initial`.
+
+### Cara deploy (pelajaran, sudah dipakai)
+Backup `pg_dump -Fc` dulu (`~/backup/` di VPS, `chmod 600`, salin ke laptop) → `git pull origin release/vps-initial` → migrasi **dengan `--from/--to`** dari `packages/db` (`npm run manifest:run -- --from=X --to=X`; `db:manifest:run:dry` mencetak SELURUH manifest, jangan jalankan tanpa range) → `cashbook:backfill` (dry-run lalu `-- --apply`) → `cashbook:check` → `pm2 restart bantuanku-api --update-env` → build + restart admin bila ada perubahan UI. Role DB aplikasi tidak boleh `createdb`; verifikasi backup lewat `pg_restore -f` + hitung baris `COPY`.
+
+### SISA PEKERJAAN (urut prioritas)
+1. **Konfirmasi deploy terakhir (`b77a438`)**: `git pull`, `pm2 restart bantuanku-api`, build + restart admin, lalu cek menu Keuangan (Per Mitra, Per Influencer), total influencer ±Rp 204.000 (Semua Waktu), redirect URL lama. Belum ada konfirmasi dari pemilik produk bahwa langkah ini sudah dijalankan.
+2. **Uji fungsional pembayaran nyata**: satu pembayaran baru yang di-approve harus muncul di Arus Kas, dan `cashbook:check` tetap hijau.
+3. **Log API `Decryption failed: bad decrypt`** (muncul sebelum `pm2 flush`; kemungkinan kunci gateway di settings terenkripsi dengan kunci lain, terpisah dari buku kas). Pantau apakah muncul lagi setelah flush.
+4. **Bagi hasil transaksi gateway LAMA belum dihitung ulang** (bug webhook lama: transaksi Flip/iPaymu tanpa `revenue_shares`). Rencana: skrip dry-run yang menghitung ulang lewat `RevenueShareService.calculateForPaidTransaction` dan menampilkan nilai per pihak sebelum diterapkan; butuh persetujuan.
+5. **Kebijakan komisi qurban untuk influencer**: 5 transaksi qurban paid berfundraiser (Rp 15 jt) tanpa komisi karena basis komisi qurban = biaya admin dan `admin_fee` = 0 (perilaku kode, bukan bug). Putuskan apakah influencer berhak komisi dari qurban walau biaya admin 0.
+6. **Sisa output audit produksi bagian 4b–11** (`scripts/audit/audit-keuangan.sh`): daftar tak cocok, kode unik per metode, rekening/metode tak dikenal, pencairan, bagi hasil, tabel legacy. Belum diterima; sebagian pertanyaannya sudah terjawab lewat query terpisah.
+7. **Tombol "Balik" (entri pembalik) di UI belum diuji manual** (uji otomatis lewat JS tidak mengirim; jalur API lulus tes `bun`). Uji di browser sebelum bendahara memakainya.
+8. **Pembayaran `pending` lama bermetode generik/kosong** tidak bisa di-approve (harus ditolak dan diinput ulang dengan metode jelas); 51 transaksi pending tanpa metode (keranjang ditinggalkan) harus memilih metode dulu. Pantau keluhan admin.
+9. **Fase 7 — pensiun laporan lama**: daftar kandidat di `arsitektur-laporan.md` (26 endpoint di `routes/admin/reports.ts`, `analytics.ts`, `export.ts`, halaman `/dashboard/reports/*`). Sudah redundan: `/revenue-sharing` (kartu gabungan Platform Provider + Influencer, tanpa filter tanggal), `/mitra-*`, `/fundraiser-*` (tak lagi dipakai UI), `/financial-statement`/`/cash-flow`/`/rekening-*` (berbeda definisi "uang masuk"). Urutan: sembunyikan → 410 → hapus. Register ledger/COA/`bank_accounts` di §6 tetap menunggu perbaikan database.
+10. **Tanggal bagi hasil**: laporan Bagi Hasil memfilter `revenue_shares.calculated_at` (waktu dihitung), bukan `paid_at`. Tawarkan memindahkan ke tanggal bayar agar sejajar dengan Arus Kas.
+11. **Pemetaan jenis zakat**: `getCategoryFromTransaction` mencari "fitrah" sementara nama di dev "Fitra"; cek di produksi sebelum angka per jenis zakat dipercaya.
+12. **Hal kecil**: `PaymentModal` (ledger lama, D8) tidak disentuh; pembayaran dari tabel legacy `qurban_savings_transactions` tidak diposting; salin dump backup ke laptop; hapus cetakan dobel "Belum ada transfer" di `ReportTable` (mobile + desktop).
+13. **Fase 8 (opsional, ADR terpisah)**: laporan publik dari buku kas, tampilan PSAK 109.
 
 ## 9. Keamanan dan izin
 

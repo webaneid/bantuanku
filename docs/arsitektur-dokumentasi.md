@@ -121,7 +121,7 @@
 | Cart (CartContext, checkout flow) | `arsitektur-cart.md` | 🟢 Selesai | — |
 | i18n (id/en locales, nested keys) | `arsitektur-i18n.md` | 🟢 Selesai | `03-Translate-Safe-Text-blueprint.md` ✅ Dihapus |
 | Color system & tema | `arsitektur-color.md` | 🟢 Selesai | `color-harmony.md` ✅ Dihapus, `color-harmony-override.md` ✅ Dihapus, `COLORS.md` ✅ Dihapus |
-| Buku kas & hak bagi hasil (RENCANA perombakan laporan keuangan, ADR-0016) | `arsitektur-buku-kas.md` | 🟡 Rencana | menggantikan `arsitektur-laporan.md` setelah Fase 6 |
+| Buku kas & hak bagi hasil (perombakan laporan keuangan, ADR-0016) | `arsitektur-buku-kas.md` | 🟢 Fase 1–5 berjalan di produksi (2026-10-26); sisa pekerjaan di §8b | menggantikan `arsitektur-laporan.md` setelah Fase 7 |
 | Activity Reports (laporan kegiatan program) | `arsitektur-activity-reports.md` | 🟢 Selesai | — |
 
 ---
