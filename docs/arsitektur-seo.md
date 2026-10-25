@@ -374,6 +374,23 @@ Payload setiap item:
 | Sitemap noIndex filter | Hanya `activity_reports` yang filter `noIndex` | Semua entity (campaign, zakat type, qurban package, category, pillar, static page) kini filter `noIndex === true` |
 | AI crawler rules di robots | Tidak ada rule eksplisit AI bot | `robots.ts` sekarang punya explicit `allow: '/'` untuk GPTBot, ChatGPT-User, Google-Extended, PerplexityBot, anthropic-ai, Claude-Web, CCBot, Applebot-Extended — konsisten dengan meta tags di layout |
 
+## Aturan Judul Halaman `<title>` (2026-10-25)
+
+Satu aturan untuk semua halaman publik: **`{judul} | {site_name}`**, disusun HANYA lewat helper `pageTitle(title, siteName)` di `apps/web/src/lib/seo.tsx`:
+
+```ts
+return { title: pageTitle(seoTitle, settings.site_name), ... }   // di generateMetadata
+```
+
+- Helper mengembalikan `{ absolute }` sehingga tidak bergantung pada `title.template` root. (Layout yang memberi `title` string mereset template untuk anak-anaknya: itu sumber ketidakkonsistenan lama, mis. `/program/[slug]` dan `/qurban/laporan` tanpa nama situs.)
+- Nama situs tidak ditambahkan lagi bila judul (mis. `metaTitle` dari admin) sudah memuatnya, jadi tidak pernah ganda.
+- Beranda tetap memakai judul sendiri (`{site_name} - {tagline}`, `absolute`). Halaman `documentation/**` (konten platform) tidak memakai helper.
+- JANGAN menulis `| ${siteName}` manual di judul halaman. Halaman "tidak ditemukan" memakai judul polos.
+- Pemakai helper: program (layout, `[slug]`, kategori, pilar), wakaf, zakat (`page`, `[slug]`, laporan), qurban (layout, `[id]`, laporan), laporan (list + `[slug]`), `page/[slug]`, `mitra/[slug]`, `daftar-mitra`.
+
+### Bug SEOPanel (admin) yang membekukan metaTitle di huruf pertama
+`SEOPanel` mengisi otomatis `metaTitle`/`metaDescription` hanya saat kosong; karena efeknya jalan tiap ketukan, nilai terisi di huruf pertama ("T", "Z", "S") dan tidak pernah mengikuti lagi. Judul web menjadi "T | Nama Situs". Perbaikan: nilai otomatis terakhir diingat (ref) dan terus mengikuti judul/deskripsi selama admin belum mengeditnya sendiri. Data lama yang sudah terlanjur 1 karakter harus dibersihkan (lihat `lessons-learned.md`).
+
 ## Gap Implementasi
 
 | Gap | Dampak |

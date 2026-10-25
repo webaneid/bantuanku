@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MagnifyingGlassIcon,
   ChevronDownIcon,
@@ -675,28 +675,36 @@ export default function SEOPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scoreResult.overall]);
 
-  // Auto-populate metaTitle & metaDescription from content when empty
+  // Auto-isi metaTitle & metaDescription dari konten. Nilai otomatis terakhir diingat (ref) supaya isian terus mengikuti
+  // judul/deskripsi SAAT diketik dan berhenti begitu admin mengeditnya sendiri. Tanpa ini nilai membeku di huruf pertama
+  // ("T", "Z") karena kondisi "kosong" hanya benar pada ketukan pertama.
+  const lastAutoTitle = useRef("");
+  const lastAutoDesc = useRef("");
   useEffect(() => {
     const updates: Partial<SEOData> = {};
     let changed = false;
 
     // Auto-fill metaTitle from title
-    if (!seo.metaTitle && contentData.title) {
-      updates.metaTitle = contentData.title.slice(0, 70);
-      changed = true;
+    if ((!seo.metaTitle || seo.metaTitle === lastAutoTitle.current) && contentData.title) {
+      const next = contentData.title.slice(0, 70);
+      if (next !== seo.metaTitle) {
+        updates.metaTitle = next;
+        lastAutoTitle.current = next;
+        changed = true;
+      }
     }
 
     // Auto-fill metaDescription from description (excerpt) or content
-    if (!seo.metaDescription) {
-      if (contentData.description) {
-        updates.metaDescription = contentData.description.slice(0, 140);
+    if (!seo.metaDescription || seo.metaDescription === lastAutoDesc.current) {
+      const next = contentData.description
+        ? contentData.description.slice(0, 140)
+        : contentData.content
+          ? stripHtml(contentData.content).slice(0, 140)
+          : "";
+      if (next && next !== seo.metaDescription) {
+        updates.metaDescription = next;
+        lastAutoDesc.current = next;
         changed = true;
-      } else if (contentData.content) {
-        const plain = stripHtml(contentData.content).slice(0, 140);
-        if (plain) {
-          updates.metaDescription = plain;
-          changed = true;
-        }
       }
     }
 

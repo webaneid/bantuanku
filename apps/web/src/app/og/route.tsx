@@ -2,10 +2,29 @@ import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
+// Nama lembaga & tagline dari settings (bukan hardcode tenant). Gagal ambil → kosong, bukan nama bawaan.
+async function fetchBrand(): Promise<{ name: string; tagline: string }> {
+  try {
+    const base = (process.env.API_INTERNAL_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1').replace(/\/$/, '');
+    const res = await fetch(`${base.endsWith('/v1') ? base : `${base}/v1`}/settings`, {
+      next: { revalidate: 300, tags: ['settings'] },
+    });
+    if (!res.ok) return { name: '', tagline: '' };
+    const settings = (await res.json()).data || {};
+    return {
+      name: settings.organization_name || settings.site_name || '',
+      tagline: settings.site_tagline || '',
+    };
+  } catch {
+    return { name: '', tagline: '' };
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+  const brand = await fetchBrand();
   const title = searchParams.get('title') || '';
-  const subtitle = searchParams.get('subtitle') || 'Platform Donasi Terpercaya';
+  const subtitle = searchParams.get('subtitle') || brand.tagline;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
   const domain = appUrl ? new URL(appUrl).hostname : searchParams.get('domain') || '';
 
@@ -51,20 +70,22 @@ export async function GET(request: Request) {
         />
 
         {/* Badge */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            background: 'rgba(255,255,255,0.15)',
-            borderRadius: '100px',
-            padding: '8px 20px',
-            marginBottom: '28px',
-          }}
-        >
-          <span style={{ color: '#d2aa55', fontSize: '14px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
-            Laziswaf Darunnajah
-          </span>
-        </div>
+        {brand.name ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: '100px',
+              padding: '8px 20px',
+              marginBottom: '28px',
+            }}
+          >
+            <span style={{ color: '#d2aa55', fontSize: '14px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
+              {brand.name}
+            </span>
+          </div>
+        ) : null}
 
         {/* Title */}
         <div

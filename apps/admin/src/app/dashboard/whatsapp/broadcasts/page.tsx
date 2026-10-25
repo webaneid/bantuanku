@@ -86,12 +86,12 @@ function formatTarget(amount: number | null): string {
 }
 
 // Render template preview: replace {var} with sample/real values
-function renderPreview(template: string, detail?: CampaignDetail | null): string {
+function renderPreview(template: string, orgName: string, detail?: CampaignDetail | null): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "";
   const campaignUrl = detail?.slug ? `${appUrl}/program/${detail.slug}` : `${appUrl}/program/nama-program`;
   return template
     .replace(/\{customer_name\}/g, "Budi Santoso")
-    .replace(/\{store_name\}/g, "Laziswaf Darunnajah")
+    .replace(/\{store_name\}/g, orgName)
     .replace(/\{campaign_title\}/g, detail?.title || "Nama Program")
     .replace(/\{campaign_name\}/g, detail?.title || "Nama Program")
     .replace(/\{campaign_description\}/g, detail?.description
@@ -106,6 +106,13 @@ function renderPreview(template: string, detail?: CampaignDetail | null): string
 
 export default function BroadcastsPage() {
   const queryClient = useQueryClient();
+  // Nama lembaga untuk pratinjau {store_name} (dari settings, bukan hardcode tenant)
+  const { data: orgName = "" } = useQuery({
+    queryKey: ["public-settings-org-name"],
+    queryFn: () =>
+      api.get("/settings").then((r) => (r.data?.data?.organization_name || r.data?.data?.site_name || "") as string),
+    staleTime: 5 * 60 * 1000,
+  });
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState<CreateForm>({
@@ -209,13 +216,13 @@ export default function BroadcastsPage() {
       try {
         const res = await api.get(`/admin/whatsapp/templates/${form.templateKey}`);
         const { content } = res.data.data;
-        setTemplatePreview(content ? renderPreview(content, campaignDetail) : null);
+        setTemplatePreview(content ? renderPreview(content, orgName, campaignDetail) : null);
       } catch {
         setTemplatePreview(null);
       }
     }, 400);
     return () => clearTimeout(timer);
-  }, [form.templateKey, campaignDetail, form.type]);
+  }, [form.templateKey, campaignDetail, form.type, orgName]);
 
   // Fetch estimate when audienceScope / referenceId / batchSize changes
   const fetchEstimate = useCallback(async (f: CreateForm) => {
@@ -309,7 +316,7 @@ export default function BroadcastsPage() {
   const pagination = data?.pagination;
 
   const previewContent = form.type === "manual_free"
-    ? (form.contentOverride ? renderPreview(form.contentOverride) : null)
+    ? (form.contentOverride ? renderPreview(form.contentOverride, orgName) : null)
     : templatePreview;
 
   const needsCampaign = form.type === "manual_content" || form.type === "campaign_new";

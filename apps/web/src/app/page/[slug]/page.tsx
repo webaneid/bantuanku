@@ -12,7 +12,7 @@ import { fetchPageBySlug } from "@/services/pages";
 import { fetchCampaigns } from "@/services/campaigns";
 import { fetchZakatTypes } from "@/services/zakat";
 import { fetchActivePeriods, fetchPackagesByPeriod, getAnimalTypeLabel, getQurbanImageUrl } from "@/services/qurban";
-import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from "@/lib/seo";
+import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl, pageTitle } from "@/lib/seo";
 
 interface StaticPageProps {
   params: Promise<{
@@ -137,7 +137,7 @@ export async function generateMetadata({ params }: StaticPageProps): Promise<Met
     };
 
     return {
-      title: seoTitle,
+      title: pageTitle(seoTitle, siteName),
       description: seoDescription,
       keywords,
       alternates: {

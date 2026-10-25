@@ -5,7 +5,7 @@ import { Header } from '@/components/organisms/Header';
 import { Footer } from '@/components/organisms/Footer';
 import { Breadcrumb } from '@/components/organisms/Breadcrumb';
 import { ReportCard } from '@/components/organisms/ReportCard';
-import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
+import { fetchSeoSettings, resolveOgImageUrl, pageTitle } from '@/lib/seo';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50245/v1';
 
@@ -41,14 +41,14 @@ export async function generateMetadata({
   const siteName = settings.site_name || '';
   const canonical = `${appUrl}/laporan`;
   const title = page > 1
-    ? `Arsip Laporan Kegiatan - Halaman ${page} | ${siteName}`
-    : `Arsip Laporan Kegiatan | ${siteName}`;
+    ? `Arsip Laporan Kegiatan - Halaman ${page}`
+    : 'Arsip Laporan Kegiatan';
   const description = `Dokumentasi penyaluran donasi, zakat, qurban, dan kegiatan sosial ${siteName} yang dipublikasikan secara terbuka.`;
   const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og');
   const isPaginated = page > 1;
 
   return {
-    title,
+    title: pageTitle(title, siteName),
     description,
     alternates: { canonical },
     robots: {

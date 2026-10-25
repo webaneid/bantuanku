@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
+import { fetchSeoSettings, resolveOgImageUrl, pageTitle } from '@/lib/seo';
 import { QueryProvider } from '@/components/QueryProvider';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -7,12 +7,12 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSeoSettings();
   const siteName = settings.site_name || '';
   const canonical = `${appUrl}/daftar-mitra`;
-  const title = `Daftar Mitra | ${siteName}`;
+  const title = 'Daftar Mitra';
   const description = `Daftarkan lembaga atau mitra Anda untuk bekerja sama dengan ${siteName} dalam program donasi, zakat, qurban, dan wakaf.`;
   const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og');
 
   return {
-    title,
+    title: pageTitle(title, siteName),
     description,
     alternates: { canonical },
     robots: {

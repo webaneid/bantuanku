@@ -7,7 +7,7 @@ import { fetchPublicZakatReport } from '@/services/public-reports';
 import ZakatReportFilters from './ZakatReportFilters';
 import ZakatTitipanTable from './ZakatTitipanTable';
 import ZakatActivityTable from './ZakatActivityTable';
-import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
+import { fetchSeoSettings, resolveOgImageUrl, pageTitle } from '@/lib/seo';
 
 interface PageProps {
   searchParams?: {
@@ -33,7 +33,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og');
 
   return {
-    title: `Laporan Zakat Publik | ${siteName}`,
+    title: pageTitle('Laporan Zakat Publik', siteName),
     description,
     alternates: { canonical },
     robots: {

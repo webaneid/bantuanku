@@ -7,6 +7,18 @@ export function toAbsoluteUrl(appUrl: string, url?: string | null): string | und
   return `${appUrl}${url.startsWith("/") ? url : `/${url}`}`;
 }
 
+/**
+ * Judul <title> halaman: "{judul} | {nama situs}". SATU-SATUNYA cara menyusun judul halaman (pakai `title: { absolute: pageTitle(...) }`),
+ * tidak bergantung pada `title.template` karena layout yang memberi `title` string mereset template anak-anaknya.
+ * Tidak menambah nama situs bila judul (mis. metaTitle dari admin) sudah memuatnya. Beranda memakai judul sendiri (nama - tagline).
+ */
+export function pageTitle(title: string, siteName?: string | null): { absolute: string } {
+  const name = (siteName || '').trim();
+  const base = title.trim();
+  const hasName = !name || base.toLowerCase().includes(name.toLowerCase());
+  return { absolute: hasName ? base : `${base} | ${name}` };
+}
+
 export function resolveOgImageUrl(
   appUrl: string,
   candidates: Array<string | null | undefined>,

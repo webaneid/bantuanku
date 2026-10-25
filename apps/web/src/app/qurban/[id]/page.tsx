@@ -11,7 +11,7 @@ import { QurbanCard } from '@/components/organisms/QurbanCard/QurbanCard';
 import { fetchPackageDetail, fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrl, getQurbanImageUrlByVariant } from '@/services/qurban';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchCompleteAddress, formatCompleteAddress } from '@/services/address';
-import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl, toAbsoluteUrl as toAbsoluteSeoUrl } from '@/lib/seo';
+import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl, toAbsoluteUrl as toAbsoluteSeoUrl, pageTitle } from '@/lib/seo';
 import { normalizeLocale, translate } from '@/lib/i18n';
 import QurbanTabs from './QurbanTabs';
 import QurbanSidebar from './QurbanSidebar';
@@ -74,7 +74,7 @@ export async function generateMetadata({ params }: QurbanPageProps): Promise<Met
         ].filter(Boolean);
 
     return {
-      title: seoTitle,
+      title: pageTitle(seoTitle, siteName),
       description: seoDescription,
       keywords,
       alternates: { canonical: canonicalUrl },

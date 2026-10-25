@@ -10,6 +10,7 @@ import { MobileTopBar } from '@/components/organisms/MobileTopBar';
 import { getImageUrl } from '@/lib/image';
 import { calculateDaysLeft } from '@/services/campaigns';
 import { fetchPublicSettings } from '@/services/settings';
+import { fetchSeoSettings, pageTitle } from '@/lib/seo';
 import { fetchCompleteAddress, formatCompleteAddress } from '@/services/address';
 import MitraReferralCapture from './MitraReferralCapture';
 
@@ -50,14 +51,14 @@ async function fetchMitraProfile(slug: string) {
 }
 
 export async function generateMetadata({ params }: MitraPageProps): Promise<Metadata> {
-  const mitraData = await fetchMitraProfile(params.slug);
+  const [mitraData, seoSettings] = await Promise.all([fetchMitraProfile(params.slug), fetchSeoSettings()]);
 
   if (!mitraData) {
     return { title: 'Mitra tidak ditemukan' };
   }
 
   return {
-    title: `${mitraData.name} - Mitra Lembaga`,
+    title: pageTitle(`${mitraData.name} - Mitra Lembaga`, seoSettings.site_name),
     description: mitraData.description || `Profil mitra ${mitraData.name}`,
   };
 }

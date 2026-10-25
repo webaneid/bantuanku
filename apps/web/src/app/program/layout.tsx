@@ -1,6 +1,6 @@
 import { I18nNamespaces } from '@/lib/i18n/I18nNamespaces';
 import type { Metadata } from 'next';
-import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
+import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl, pageTitle } from '@/lib/seo';
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await fetchSeoSettings();
@@ -32,7 +32,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const noFollow = seo.noFollow === true;
 
   return {
-    title,
+    title: pageTitle(title, siteName),
     description,
     keywords,
     alternates: { canonical },

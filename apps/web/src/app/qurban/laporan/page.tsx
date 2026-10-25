@@ -9,7 +9,7 @@ import QurbanPenerimaanTable from './QurbanPenerimaanTable';
 import QurbanPenyaluranTable from './QurbanPenyaluranTable';
 import QurbanPenyembelihanTable from './QurbanPenyembelihanTable';
 import QurbanActivityTable from './QurbanActivityTable';
-import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
+import { fetchSeoSettings, resolveOgImageUrl, pageTitle } from '@/lib/seo';
 
 interface PageProps {
   searchParams?: {
@@ -33,7 +33,7 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
   const ogImageUrl = resolveOgImageUrl(appUrl, [settings.og_image], '/og');
 
   return {
-    title: `Laporan Qurban Publik | ${siteName}`,
+    title: pageTitle('Laporan Qurban Publik', siteName),
     description,
     alternates: { canonical },
     robots: {

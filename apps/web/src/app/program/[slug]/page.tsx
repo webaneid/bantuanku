@@ -11,7 +11,7 @@ import { MobileTopBar } from '@/components/organisms/MobileTopBar';
 import { fetchCampaignBySlug, fetchCampaigns, calculateDaysLeft, getImageUrl, getImageUrlByVariant } from '@/services/campaigns';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchCompleteAddress, formatCompleteAddress } from '@/services/address';
-import { generateSiteMetadata, JsonLdScript, generateBreadcrumbJsonLd, fetchSeoSettings, type JsonLdArticle } from '@/lib/seo';
+import { generateSiteMetadata, JsonLdScript, generateBreadcrumbJsonLd, fetchSeoSettings, type JsonLdArticle, pageTitle } from '@/lib/seo';
 import { normalizeLocale, translate } from '@/lib/i18n';
 import CampaignTabs from './CampaignTabs';
 import CampaignSidebar from './CampaignSidebar';
@@ -144,7 +144,7 @@ export async function generateMetadata({ params }: CampaignPageProps): Promise<M
     const noFollow = (campaign as any).noFollow === true;
 
     return {
-      title,
+      title: pageTitle(title, settings.site_name),
       description,
       keywords,
       alternates: { canonical },

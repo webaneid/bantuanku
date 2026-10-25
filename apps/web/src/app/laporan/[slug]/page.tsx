@@ -8,7 +8,7 @@ import { MobileTopBar } from '@/components/organisms/MobileTopBar';
 import { RelatedReports } from '@/components/organisms/RelatedReports';
 import { getImageUrl, getImageUrlByVariant } from '@/lib/image';
 import { formatReportDate, getReportReferenceLabel } from '@/lib/report-label';
-import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
+import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl, pageTitle } from '@/lib/seo';
 import { fetchCampaigns } from '@/services/campaigns';
 import { fetchZakatTypes } from '@/services/zakat';
 import { fetchActivePeriods, fetchPackagesByPeriod, getAnimalTypeLabel, getQurbanImageUrl } from '@/services/qurban';
@@ -108,7 +108,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const noFollow = Boolean(report.noFollow);
 
   return {
-    title: seoTitle,
+    title: pageTitle(seoTitle, siteName),
     description: seoDescription,
     alternates: { canonical: canonicalUrl },
     robots: {

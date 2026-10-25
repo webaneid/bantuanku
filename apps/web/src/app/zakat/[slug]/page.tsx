@@ -7,7 +7,7 @@ import { Breadcrumb } from '@/components/organisms/Breadcrumb';
 import { MobileTopBar } from '@/components/organisms/MobileTopBar';
 import { fetchZakatTypes, type ZakatType } from '@/services/zakat';
 import { fetchPublicSettings } from '@/services/settings';
-import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
+import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl, pageTitle } from '@/lib/seo';
 import Link from 'next/link';
 import type { ComponentType } from 'react';
 import { normalizeLocale, translate } from '@/lib/i18n';
@@ -104,7 +104,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ].filter(Boolean);
 
     return {
-      title: seoTitle,
+      title: pageTitle(seoTitle, siteName),
       description: seoDescription,
       keywords,
       alternates: { canonical: canonicalUrl },

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Header } from '@/components/organisms/Header';
 import { Footer } from '@/components/organisms/Footer';
 import { Breadcrumb } from '@/components/organisms/Breadcrumb';
+import { fetchSeoSettings, pageTitle } from '@/lib/seo';
 import ProgramListTemplate from '@/components/templates/ProgramListTemplate';
 import { fetchCategories } from '@/services/categories';
 
@@ -26,12 +27,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       };
     }
 
+    const siteName = (await fetchSeoSettings()).site_name;
     const title = `${category.name} - Program Donasi`;
     const description = `Lihat semua program donasi dalam kategori ${category.name}. Salurkan bantuan Anda untuk berbagai program kebaikan.`;
     const canonical = `${appUrl}/program/kategori/${params.slug}`;
 
     return {
-      title,
+      title: pageTitle(title, siteName),
       description,
       alternates: { canonical },
       openGraph: {

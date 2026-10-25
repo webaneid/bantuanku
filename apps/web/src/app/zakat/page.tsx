@@ -6,7 +6,7 @@ import { Footer } from '@/components/organisms/Footer';
 import { Breadcrumb } from '@/components/organisms/Breadcrumb';
 import { fetchZakatTypes, type ZakatType } from '@/services/zakat';
 import { fetchPublicSettings } from '@/services/settings';
-import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl } from '@/lib/seo';
+import { fetchSeoSettings, generateBreadcrumbJsonLd, resolveOgImageUrl, pageTitle } from '@/lib/seo';
 import { normalizeLocale, translate } from '@/lib/i18n';
 import ZakatArchive from './ZakatArchive';
 
@@ -51,7 +51,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const noFollow = seo.noFollow === true;
 
   return {
-    title,
+    title: pageTitle(title, siteName),
     description,
     keywords,
     alternates: { canonical },
