@@ -28,6 +28,8 @@ const DEFAULT_PRESETS: DatePreset[] = [
   { value: "custom", label: "Custom" },
 ];
 
+const ALL_TIME_PRESET: DatePreset = { value: "all", label: "Semua Waktu" };
+
 function formatLocalDate(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -66,6 +68,8 @@ interface ReportFiltersProps {
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
   datePresets?: boolean;
+  /** Tambahkan pilihan "Semua Waktu" (tanggal dikosongkan = tanpa batas). */
+  allTimePreset?: boolean;
   filters?: FilterConfig[];
   searchable?: boolean;
   searchValue?: string;
@@ -80,6 +84,7 @@ export default function ReportFilters({
   onStartDateChange,
   onEndDateChange,
   datePresets = true,
+  allTimePreset = false,
   filters,
   searchable = false,
   searchValue = "",
@@ -103,7 +108,7 @@ export default function ReportFilters({
       {/* Date presets */}
       {datePresets && (
         <div className="flex flex-wrap gap-2 mb-4">
-          {DEFAULT_PRESETS.map((preset) => (
+          {(allTimePreset ? [...DEFAULT_PRESETS.slice(0, -1), ALL_TIME_PRESET, DEFAULT_PRESETS[DEFAULT_PRESETS.length - 1]] : DEFAULT_PRESETS).map((preset) => (
             <button
               key={preset.value}
               onClick={() => handlePresetClick(preset.value)}

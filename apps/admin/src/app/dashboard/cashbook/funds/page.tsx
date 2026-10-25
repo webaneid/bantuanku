@@ -33,7 +33,7 @@ export default function CashbookFundsPage() {
         <p className="text-sm text-gray-500 mt-1">Sisa = masuk − hak pihak lain (amil, developer, mitra, influencer) − disalurkan. Sisa tetap menjadi sisa program.</p>
       </div>
 
-      <ReportFilters startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
+      <ReportFilters allTimePreset startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
       {isError && <div className="card mb-6 border border-danger-200 bg-danger-50 text-sm text-danger-700">Gagal memuat laporan dana.</div>}
 
       <div className="card mb-6">

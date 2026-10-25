@@ -277,6 +277,8 @@ UI admin di `apps/admin/src/app/dashboard/cashbook/` (menu sidebar **Keuangan**,
 | Per Program | `/dashboard/cashbook/programs` | rincian per produk |
 | Perlu Ditinjau | `/dashboard/cashbook/review` | anomali dan contoh |
 
+Filter tanggal memakai `ReportFilters` dengan `allTimePreset` (tombol **Semua Waktu** mengosongkan tanggal = tanpa batas; API sudah menerima rentang kosong). Bawaan tetap bulan berjalan, jadi bandingkan dengan laporan lama (yang seluruh waktu) lewat Semua Waktu.
+
 Pendukung: `lib/cashbook.ts` (label, rentang tanggal), `components/cashbook/CashbookLayoutNav.tsx`, `CorrectionDialogs.tsx` (`Modal`, bukan `confirm()`). Warna hanya token (`check:colors` 0).
 
 Terverifikasi di browser: semua halaman tampil dan angkanya cocok dengan API; Penyesuaian manual lewat dialog berhasil. **Belum terverifikasi lewat UI: tombol "Balik"** (jalur API diuji `bun`: `cash-book-corrections.test.ts`). Data uji dev sudah dibersihkan.

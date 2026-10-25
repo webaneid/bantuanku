@@ -62,7 +62,7 @@ export default function CashbookRevenueSharePage() {
         <p className="text-gray-600 mt-1">Hak amil, developer, mitra, dan influencer (sesuai pengaturan), dan apakah sudah ditransfer.</p>
       </div>
 
-      <ReportFilters startDate={startDate} endDate={endDate} onStartDateChange={(v) => { setStartDate(v); setPage(1); }} onEndDateChange={(v) => { setEndDate(v); setPage(1); }} />
+      <ReportFilters allTimePreset startDate={startDate} endDate={endDate} onStartDateChange={(v) => { setStartDate(v); setPage(1); }} onEndDateChange={(v) => { setEndDate(v); setPage(1); }} />
       {isError && <div className="card mb-6 border border-danger-200 bg-danger-50 text-sm text-danger-700">Gagal memuat bagi hasil.</div>}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">

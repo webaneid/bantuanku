@@ -27,7 +27,7 @@ export default function CashbookProgramsPage() {
         <p className="text-gray-600 mt-1">Masuk, hak pihak lain, disalurkan, dan sisa untuk setiap campaign, jenis zakat, dan paket qurban.</p>
       </div>
 
-      <ReportFilters
+      <ReportFilters allTimePreset
         startDate={startDate}
         endDate={endDate}
         onStartDateChange={(v) => { setStartDate(v); setPage(1); }}

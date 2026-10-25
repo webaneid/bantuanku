@@ -28,7 +28,7 @@ export default function CashbookAccountsPage() {
         <p className="text-gray-600 mt-1">Uang yang beredar di setiap akun kas (rekening bank, QRIS, gateway, tunai). Ini catatan sistem, bukan saldo bank.</p>
       </div>
 
-      <ReportFilters startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
+      <ReportFilters allTimePreset startDate={startDate} endDate={endDate} onStartDateChange={setStartDate} onEndDateChange={setEndDate} />
 
       {isError && <div className="card mb-6 border border-danger-200 bg-danger-50 text-sm text-danger-700">Gagal memuat sirkulasi rekening.</div>}
 

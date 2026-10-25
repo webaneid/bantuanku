@@ -121,7 +121,7 @@ export default function CashbookEntriesPage() {
         </button>
       </div>
 
-      <ReportFilters
+      <ReportFilters allTimePreset
         startDate={startDate}
         endDate={endDate}
         onStartDateChange={resetPage(setStartDate)}
