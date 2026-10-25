@@ -42,7 +42,7 @@ async function zakatTxn(tx: any, total: number) {
   await tx.insert(transactions).values({
     id, transactionNumber: `TST-${id.slice(0, 8)}`, productType: "zakat", productId: createId(), productName: "Zakat Uji",
     unitPrice: total, subtotal: total, totalAmount: total, uniqueCode: 0, donorName: "Penguji",
-    category: "zakat_fitrah", paymentStatus: "paid", paidAt: new Date(), typeSpecificData: {},
+    category: "zakat_fitrah", paymentMethodId: "flip", paymentStatus: "paid", paidAt: new Date(), typeSpecificData: {},
   } as any);
   return id;
 }
@@ -73,7 +73,7 @@ describe("laporan buku kas: angka", () => {
       const z0 = f0.program.find((p) => p.fund === "zakat")!;
 
       const t = await zakatTxn(tx, 100000);
-      await pay(tx, t, 100000, "bank-uji-1");
+      await pay(tx, t, 100000, "bank-9000001");
       await postVerifiedPaymentsForTransaction(tx, t);
       // hak pihak lain 12.500 (amil total) dari transaksi ini
       await tx.insert(revenueShares).values({
@@ -84,7 +84,7 @@ describe("laporan buku kas: angka", () => {
       const did = createId();
       await tx.insert(disbursements).values({
         id: did, disbursementNumber: `DIS-TST-${did.slice(0, 8)}`, disbursementType: "zakat", amount: 60000, category: "zakat_to_fakir",
-        bankAccountId: "bank-uji-1", sourceBankId: "bank-uji-1", recipientName: "Penerima", createdBy: await userId(tx), status: "paid", paidAt: new Date(),
+        bankAccountId: "bank-9000001", sourceBankId: "bank-9000001", recipientName: "Penerima", createdBy: await userId(tx), status: "paid", paidAt: new Date(),
       } as any);
       await postPaidDisbursement(tx, did);
 
@@ -114,7 +114,7 @@ describe("laporan buku kas: angka", () => {
       const did = createId();
       await tx.insert(disbursements).values({
         id: did, disbursementNumber: `DIS-TST-${did.slice(0, 8)}`, disbursementType: "revenue_share", amount: 1500, category: "revenue_share_developer",
-        bankAccountId: "bank-uji-1", recipientName: "Developer", createdBy: await userId(tx), status: "paid", paidAt: new Date(),
+        bankAccountId: "bank-9000001", recipientName: "Developer", createdBy: await userId(tx), status: "paid", paidAt: new Date(),
       } as any);
       await tx.insert(disbursementRevenueShareItems).values({ disbursementId: did, revenueShareId: rs.id, shareType: "developer", allocatedAmount: 1500 } as any);
 

@@ -46,7 +46,7 @@ export default function CashbookReviewPage() {
           <Row tone="warn" label="Pencairan paid belum diposting" {...data.belumDiposting.pencairanPaid} hint="Seharusnya nol. Jalankan backfill bila ada." />
 
           <h2 className="text-lg font-semibold text-dark pt-2">Informasi</h2>
-          <Row tone="info" label="Akun belum dipetakan" {...data.informasi.akunBelumDipetakan} hint="Metode bayar yang tidak dikenal; perlu dipetakan ke rekening/gateway." />
+          <Row tone="info" label="Uang masuk Metode Lain (data lama)" {...data.informasi.akunBelumDipetakan} hint="Data lama tanpa metode yang jelas. Pembayaran baru tidak bisa lagi masuk ke sini (ditolak API dan database)." />
           <Row tone="info" label="Kelebihan bayar / pembayaran ganda" {...data.informasi.kelebihan} hint="Tetap dihitung sebagai pemasukan (komponen kelebihan)." />
           <Row tone="info" label="Pemasukan sintetis (data eksisting)" {...data.informasi.pemasukanSintetis} hint="Transaksi paid tanpa pembayaran terverifikasi, dicatat sebagai pemasukan berlabel." />
 

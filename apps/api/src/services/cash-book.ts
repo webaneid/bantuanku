@@ -18,6 +18,8 @@ import {
   classifyAccount,
   fundForDisbursement,
   fundForTransaction,
+  METHOD_REQUIRED_MESSAGE,
+  OTHER_METHOD_NAME,
   type AccountClassification,
   type Component,
   type PostedByComponent,
@@ -74,10 +76,29 @@ export async function loadAccountCatalog(db: Database): Promise<AccountCatalog> 
   return { names };
 }
 
+/**
+ * Gerbang "tidak boleh ada uang masuk tanpa metode" (ADR-0016, Fase 5). Mengembalikan pesan galat
+ * bila metode kosong, generik ("bank_transfer", "manual", ...), atau tidak terdaftar di settings/gateway;
+ * `null` bila valid. Dipakai semua jalur yang membuat atau memverifikasi pembayaran.
+ */
+export async function paymentMethodError(
+  db: Database,
+  input: { paymentMethod?: string | null; gatewayCode?: string | null },
+  catalogIn?: AccountCatalog,
+): Promise<string | null> {
+  const cls = classifyAccount(input);
+  if (cls.kind === "unmapped") return METHOD_REQUIRED_MESSAGE;
+  if (cls.kind === "bank" || cls.kind === "qris") {
+    const catalog = catalogIn ?? (await loadAccountCatalog(db));
+    if (!catalog.names.has(cls.refKey)) return METHOD_REQUIRED_MESSAGE;
+  }
+  return null;
+}
+
 /** Ambil (atau buat) akun kas untuk metode bayar. Upsert aman terhadap balapan lewat UNIQUE ref_key. */
 export async function getOrCreateCashAccount(db: Database, cls: AccountClassification, catalog: AccountCatalog): Promise<string> {
   const known = catalog.names.get(cls.refKey);
-  const fallbackName: Record<string, string> = { cash: "Kas Tunai", unmapped: "Belum dipetakan" };
+  const fallbackName: Record<string, string> = { cash: "Kas Tunai", unmapped: OTHER_METHOD_NAME };
   const name = known?.name || fallbackName[cls.refKey] || cls.refKey;
   await db
     .insert(cashAccounts)

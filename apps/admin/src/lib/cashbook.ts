@@ -37,7 +37,7 @@ export const KIND_LABEL: Record<string, string> = {
   qris: "QRIS",
   gateway: "Gateway",
   cash: "Tunai",
-  unmapped: "Belum dipetakan",
+  unmapped: "Metode Lain",
 };
 
 export const PARTY_LABEL: Record<string, string> = {

@@ -1,4 +1,4 @@
-import { postVerifiedPaymentsForTransaction, safePost } from "../../services/cash-book";
+import { paymentMethodError, postVerifiedPaymentsForTransaction, safePost } from "../../services/cash-book";
 import { Hono } from "hono";
 import { eq, desc, and, or, sql, inArray } from "drizzle-orm";
 import {
@@ -753,6 +753,10 @@ app.post("/:id/transactions", requireRole("super_admin", "admin_campaign"), asyn
       return c.json({ error: "Target package period tabungan belum valid" }, 400);
     }
 
+    // ADR-0016: setoran wajib menyebut rekening/QRIS/gateway yang terdaftar (tanpa fallback)
+    const methodProblem = await paymentMethodError(db, { paymentMethod: body.paymentMethod });
+    if (methodProblem) return c.json({ error: methodProblem }, 400);
+
     const txService = new TransactionService(db);
     const universalTx = await txService.create({
       product_type: "qurban",
@@ -765,7 +769,7 @@ app.post("/:id/transactions", requireRole("super_admin", "admin_campaign"), asyn
       donor_phone: savings[0].donorPhone || undefined,
       user_id: savings[0].userId || undefined,
       include_unique_code: false,
-      payment_method_id: body.paymentMethod || body.paymentChannel || "bank_transfer",
+      payment_method_id: body.paymentMethod,
       message: body.notes || undefined,
       type_specific_data: {
         payment_type: "savings",
@@ -785,7 +789,7 @@ app.post("/:id/transactions", requireRole("super_admin", "admin_campaign"), asyn
         transactionId: universalTx.id,
         amount: Number(body.amount || 0),
         paymentDate: now,
-        paymentMethod: body.paymentMethod || "bank_transfer",
+        paymentMethod: body.paymentMethod,
         paymentChannel: body.paymentChannel || null,
         paymentProof: body.paymentProof ? extractPath(body.paymentProof) : null,
         status: "pending",
@@ -875,6 +879,9 @@ app.post("/:id/transactions/:txId/verify", requireRole("super_admin", "admin_cam
     if (payment.status === "verified") {
       return c.json({ error: "Transaksi sudah diverifikasi" }, 400);
     }
+    // ADR-0016: setoran tanpa metode yang jelas tidak boleh menjadi uang masuk
+    const verifyMethodProblem = await paymentMethodError(db, { paymentMethod: payment.paymentMethod, gatewayCode: payment.gatewayCode });
+    if (verifyMethodProblem) return c.json({ error: verifyMethodProblem }, 400);
 
     await db
       .update(transactionPayments)

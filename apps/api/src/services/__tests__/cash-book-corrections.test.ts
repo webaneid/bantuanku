@@ -24,10 +24,10 @@ async function oneEntry(tx: any) {
   const id = createId();
   await tx.insert(transactions).values({
     id, transactionNumber: `TST-${id.slice(0, 8)}`, productType: "campaign", productId: createId(), productName: "Uji",
-    unitPrice: 10000, subtotal: 10000, totalAmount: 10000, donorName: "Penguji", category: "campaign_donation", paymentStatus: "paid", typeSpecificData: { pillar: "sedekah" },
+    unitPrice: 10000, subtotal: 10000, totalAmount: 10000, donorName: "Penguji", category: "campaign_donation", paymentMethodId: "flip", paymentStatus: "paid", typeSpecificData: { pillar: "sedekah" },
   } as any);
   const pid = createId();
-  await tx.insert(transactionPayments).values({ id: pid, paymentNumber: `PAY-TST-${pid.slice(0, 8)}`, transactionId: id, amount: 10000, paymentMethod: "bank-uji-9", status: "verified", verifiedAt: new Date() } as any);
+  await tx.insert(transactionPayments).values({ id: pid, paymentNumber: `PAY-TST-${pid.slice(0, 8)}`, transactionId: id, amount: 10000, paymentMethod: "bank-9000009", status: "verified", verifiedAt: new Date() } as any);
   await postVerifiedPaymentsForTransaction(tx, id);
   const [entry] = await tx.select().from(cashEntries).where(eq(cashEntries.transactionId, id));
   return entry;

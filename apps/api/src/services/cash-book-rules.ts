@@ -113,6 +113,12 @@ export function normalizeAccountId(id?: string | null): string {
 }
 
 /** Memetakan metode bayar (id settings / kode gateway / teks lain) ke satu akun kas. */
+export const METHOD_REQUIRED_MESSAGE =
+  "Metode pembayaran wajib dipilih dari rekening, QRIS, atau gateway yang terdaftar (ADR-0016)";
+
+/** Nama akun untuk uang yang metodenya tidak dapat dipetakan (data lama saja; pembayaran baru ditolak). */
+export const OTHER_METHOD_NAME = "Metode Lain";
+
 export function classifyAccount(input: { paymentMethod?: string | null; gatewayCode?: string | null }): AccountClassification {
   const gw = normalize(input.gatewayCode);
   if (gw) return { kind: "gateway", refKey: gw, method: "gateway", gatewayCode: gw };

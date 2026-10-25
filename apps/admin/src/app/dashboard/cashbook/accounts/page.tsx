@@ -72,7 +72,7 @@ export default function CashbookAccountsPage() {
                 )}
                 {accounts.map((a) => (
                   <tr key={a.id}>
-                    <td className="font-medium">{a.name}{a.kind === "unmapped" && <span className="ml-2 text-xs text-warning-700">perlu dipetakan</span>}</td>
+                    <td className="font-medium">{a.name}{a.kind === "unmapped" && <span className="ml-2 text-xs text-warning-700">data lama, metode tidak diketahui</span>}</td>
                     <td>{KIND_LABEL[a.kind] || a.kind}{a.purpose === "zakat" ? " · zakat" : ""}</td>
                     <td className="text-right mono">{a.entries}</td>
                     <td className="text-right mono text-success-700">Rp {formatRupiah(a.masuk)}</td>

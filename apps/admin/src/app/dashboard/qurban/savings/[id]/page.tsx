@@ -134,12 +134,29 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
     enabled: !isMitra && showAddDepositModal,
   });
 
+  // QRIS terdaftar di settings (ADR-0016: metode setoran harus rekening/QRIS terdaftar, bukan "QRIS" generik)
+  const { data: qrisAccounts = [] } = useQuery<{ id: string; name?: string }[]>({
+    queryKey: ["payment-qris-accounts"],
+    queryFn: async () => {
+      const response = await api.get("/admin/settings");
+      const settings = response.data?.data?.payment || [];
+      const setting = settings.find((s: any) => s.key === "payment_qris_accounts");
+      if (!setting?.value) return [];
+      try {
+        return JSON.parse(setting.value);
+      } catch {
+        return [];
+      }
+    },
+    enabled: !isMitra && showAddDepositModal,
+  });
+
   const paymentChannelOptions = [
     ...bankAccounts.map(acc => ({
-      value: `bank_${acc.id}`,
+      value: acc.id,
       label: `${acc.bankName} - ${acc.accountNumber} (${acc.accountName})`,
     })),
-    { value: "qris", label: "QRIS" },
+    ...qrisAccounts.map(acc => ({ value: acc.id, label: `QRIS - ${acc.name || acc.id}` })),
     { value: "cash", label: "Tunai / Cash" },
   ];
 
@@ -148,8 +165,13 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
     e.preventDefault();
     if (!savings) return;
     try {
+      if (!depositFormData.paymentChannel) {
+        setFeedback({ open: true, type: "error", title: "Gagal", message: "Pilih rekening, QRIS, atau tunai tujuan setoran" });
+        return;
+      }
       const payload = {
         ...depositFormData,
+        paymentMethod: depositFormData.paymentChannel,
         amount: Number(depositFormData.amount),
       };
 
@@ -626,21 +648,7 @@ export default function SavingsDetailPage({ params }: { params: Promise<{ id: st
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Metode Pembayaran *</label>
-                <select
-                  required
-                  value={depositFormData.paymentMethod}
-                  onChange={(e) => setDepositFormData({ ...depositFormData, paymentMethod: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg"
-                >
-                  <option value="transfer">Transfer Bank</option>
-                  <option value="cash">Tunai</option>
-                  <option value="qris">QRIS</option>
-                  <option value="ewallet">E-Wallet</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Transfer ke Rekening *</label>
+                <label className="block text-sm font-medium mb-1">Rekening / QRIS Tujuan *</label>
                 <Autocomplete
                   options={paymentChannelOptions}
                   value={depositFormData.paymentChannel}

@@ -37,7 +37,7 @@ async function makeTxn(tx: any, v: { productType: string; category: string; tota
     uniqueCode: v.unique || 0,
     donorName: "Penguji",
     category: v.category,
-    paymentMethodId: v.pm,
+    paymentMethodId: v.pm ?? "flip",
     paymentStatus: "paid",
     typeSpecificData: { ...(v.pillar ? { pillar: v.pillar } : {}), ...(v.nonCash ? { is_non_cash: true } : {}) },
   } as any);
@@ -71,8 +71,8 @@ const entriesOf = (tx: any, transactionId: string) =>
 describe("Buku Kas: posting pembayaran", () => {
   it("zakat fitrah via rekening bank: pokok + kode unik, dana zakat/fitrah, akun bank", async () => {
     await inRollback(async (tx) => {
-      const t = await makeTxn(tx, { productType: "zakat", category: "zakat_fitrah", total: 50000, unique: 123, pm: "bank-uji-1" });
-      await addPayment(tx, t, 50123, "bank-uji-1");
+      const t = await makeTxn(tx, { productType: "zakat", category: "zakat_fitrah", total: 50000, unique: 123, pm: "bank-9000001" });
+      await addPayment(tx, t, 50123, "bank-9000001");
       await postVerifiedPaymentsForTransaction(tx, t);
       const rows = await entriesOf(tx, t);
       expect(rows.length).toBe(2);
@@ -84,7 +84,7 @@ describe("Buku Kas: posting pembayaran", () => {
       expect(byComp.pokok.direction).toBe("in");
       const [acc] = await tx.select().from(cashAccounts).where(eq(cashAccounts.id, byComp.pokok.cashAccountId));
       expect(acc.kind).toBe("bank");
-      expect(acc.refKey).toBe("bank-uji-1");
+      expect(acc.refKey).toBe("bank-9000001");
     });
   });
 
@@ -105,8 +105,8 @@ describe("Buku Kas: posting pembayaran", () => {
     await inRollback(async (tx) => {
       const t = await makeTxn(tx, { productType: "campaign", category: "campaign_donation", total: 100000, unique: 213, pillar: "wakaf" });
       const t0 = new Date(Date.now() - 60000);
-      await addPayment(tx, t, 100213, "qris-uji", undefined, t0);
-      await addPayment(tx, t, 100213, "qris-uji", undefined, new Date());
+      await addPayment(tx, t, 100213, "qris-9000002", undefined, t0);
+      await addPayment(tx, t, 100213, "qris-9000002", undefined, new Date());
       await postVerifiedPaymentsForTransaction(tx, t);
       const rows = await entriesOf(tx, t);
       const sum = (c: string) => rows.filter((r: any) => r.component === c).reduce((a: number, r: any) => a + r.amount, 0);
@@ -152,8 +152,8 @@ describe("Buku Kas: posting pencairan", () => {
         transferredAmount: 100000,
         additionalFees: 2500,
         category: "zakat_to_fakir",
-        bankAccountId: "bank-uji-1",
-        sourceBankId: "bank-uji-1",
+        bankAccountId: "bank-9000001",
+        sourceBankId: "bank-9000001",
         recipientName: "Penerima Uji",
         createdBy: await anyUserId(tx),
         status: "paid",
@@ -179,7 +179,7 @@ describe("Buku Kas: posting pencairan", () => {
         disbursementType: "zakat",
         amount: 50000,
         category: "zakat",
-        bankAccountId: "bank-uji-1",
+        bankAccountId: "bank-9000001",
         recipientName: "Penerima Uji",
         createdBy: await anyUserId(tx),
         status: "paid",
@@ -214,7 +214,7 @@ describe("Buku Kas: safePost", () => {
 describe("Buku Kas: paid tanpa pembayaran terverifikasi (D3, kelompok A)", () => {
   it("dicatat sintetis sebesar total_amount, berlabel, idempoten", async () => {
     await inRollback(async (tx) => {
-      const t = await makeTxn(tx, { productType: "zakat", category: "zakat_fitrah", total: 4500000, unique: 321, pm: "bank-uji-1" });
+      const t = await makeTxn(tx, { productType: "zakat", category: "zakat_fitrah", total: 4500000, unique: 321, pm: "bank-9000001" });
       const r = await postPaidTransactionWithoutPayment(tx, t);
       expect(r.posted).toBe(1);
       const rows = await entriesOf(tx, t);
@@ -239,7 +239,7 @@ describe("Buku Kas: paid tanpa pembayaran terverifikasi (D3, kelompok A)", () =>
     await inRollback(async (tx) => {
       const t = await makeTxn(tx, { productType: "campaign", category: "campaign_donation", total: 100000, pillar: "sedekah" });
       await postPaidTransactionWithoutPayment(tx, t);
-      await addPayment(tx, t, 100000, "bank-uji-1");
+      await addPayment(tx, t, 100000, "bank-9000001");
       await postVerifiedPaymentsForTransaction(tx, t);
       const rows = await entriesOf(tx, t);
       const net = rows.reduce((a: number, r: any) => a + (r.direction === "in" ? r.amount : -r.amount), 0);

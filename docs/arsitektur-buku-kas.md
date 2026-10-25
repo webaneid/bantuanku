@@ -280,6 +280,19 @@ Pendukung: `lib/cashbook.ts` (label, rentang tanggal), `components/cashbook/Cash
 
 Terverifikasi di browser: semua halaman tampil dan angkanya cocok dengan API; Penyesuaian manual lewat dialog berhasil. **Belum terverifikasi lewat UI: tombol "Balik"** (jalur API diuji `bun`: `cash-book-corrections.test.ts`). Data uji dev sudah dibersihkan.
 
+### Status Fase 5: Metode Wajib (2026-10-26, selesai di lokal)
+
+Keputusan pemilik produk: tidak boleh ada uang masuk tanpa metode pembayaran. Akun `unmapped` kini bernama **"Metode Lain"** dan hanya menampung **data lama**; pembayaran baru tidak bisa memilihnya (tidak ada opsi di UI, ditolak API dan database).
+
+| Lapis | Implementasi |
+|---|---|
+| API | `paymentMethodError()` (`services/cash-book.ts`) menolak metode kosong, generik (`bank_transfer`, `transfer`, `manual`, `qris`) atau id yang tidak ada di settings. Dipakai di: `POST /transactions/:id/payments`, upload bukti bayar, `approve-payment`, `PUT /transactions/:id` ke `paid` (kecuali non-tunai/nominal 0), setoran tabungan qurban (buat + verifikasi), konfirmasi bayar WA bot. Semua fallback `"bank_transfer"` dihapus. |
+| Database | Migrasi **124**: trigger `trg_payment_method_required` (pembayaran menjadi `verified`) dan `trg_transaction_method_required` (transaksi menjadi `paid`, kecuali non-tunai/nominal 0; transaksi gateway lolos bila catatan pembayarannya bergateway). Hanya berlaku pada peristiwa baru; baris lama tetap bisa di-reject/diubah. Metode valid: `gateway_code`, `bank-<angka>`/`qris-<angka>` (juga `bank_bank-…`), `flip|ipaymu|midtrans|xendit`, `cash`. |
+| UI | Form setoran tabungan qurban: satu pilihan "Rekening / QRIS Tujuan" dari settings (tanpa "QRIS"/"Transfer" generik). Review buku kas menampilkan "Uang masuk Metode Lain (data lama)". |
+| Uji | `cash-book-method.test.ts` (gerbang API + trigger, di transaksi yang di-rollback). |
+
+Gap: pembayaran lama berstatus `pending` dengan metode generik tidak bisa diapprove sampai ditolak dan dimasukkan ulang dengan metode jelas; `PaymentModal` (modul ledger lama, D8) belum disentuh; pembayaran dari tabel legacy `qurban_savings_transactions` tidak diposting ke buku kas.
+
 ## 9. Keamanan dan izin
 
 - Semua route `/admin/cashbook/*` di balik `authMiddleware` + `requireRole("super_admin","admin_finance")`; tulis (koreksi) hanya keduanya, **selalu** tercatat di `audit_logs` (siapa, kapan, nilai sebelum/sesudah).

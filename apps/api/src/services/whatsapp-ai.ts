@@ -5,6 +5,7 @@ import type { Database } from "@bantuanku/db";
 import { WhatsAppService } from "./whatsapp";
 import { TransactionService } from "./transaction";
 import { decrypt } from "../lib/encryption";
+import { paymentMethodError } from "./cash-book";
 import { handleFlowStep, generateFirstFlowMessage, createZakatFlowState, createDonationFlowState, createFidyahFlowState, createQurbanFlowState, createQurbanSavingsFlowState, createQurbanSavingsDepositFlowState, type FlowState, type FlowContext } from "./whatsapp-flow";
 
 // ---------------------------------------------------------------------------
@@ -1045,6 +1046,10 @@ async function confirmPayment(
   const tx = await findOwnedTransaction(db, params.transactionId, ownerPhone);
 
   if (!tx) return "Transaksi tidak ditemukan.";
+  // ADR-0016: pembayaran tanpa metode yang jelas tidak dicatat (tanpa fallback "bank_transfer")
+  if (await paymentMethodError(db, { paymentMethod: tx.paymentMethodId })) {
+    return "Metode pembayaran transaksi ini belum dipilih. Silakan pilih metode pembayaran terlebih dahulu di halaman transaksi, lalu konfirmasi ulang.";
+  }
   // Nominal konfirmasi tidak boleh melebihi total tagihan (nilai dari LLM/pengguna tak tepercaya)
   if (params.amount > tx.totalAmount + (tx.uniqueCode || 0)) {
     return "Nominal konfirmasi melebihi total tagihan transaksi ini. Mohon periksa kembali nominal pada bukti transfer.";
@@ -1098,7 +1103,7 @@ async function confirmPayment(
     transactionId: params.transactionId,
     amount: params.amount,
     paymentDate,
-    paymentMethod: tx.paymentMethodId || "bank_transfer",
+    paymentMethod: tx.paymentMethodId as string,
     paymentProof: proofUrl || undefined,
     status: "pending",
     notes: "Konfirmasi pembayaran via WhatsApp Bot",

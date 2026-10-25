@@ -32,7 +32,7 @@ import { protectTransactionDonor } from "../lib/transaction-privacy";
 import { transactionCreateRateLimit } from "../middleware/ratelimit";
 import { getCookie } from "hono/cookie";
 import { updateBankBalance } from "../utils/bank-balance";
-import { postPaidTransactionWithoutPayment, postVerifiedPaymentsForTransaction, safePost } from "../services/cash-book";
+import { paymentMethodError, postPaidTransactionWithoutPayment, postVerifiedPaymentsForTransaction, safePost } from "../services/cash-book";
 import { sendCAPIEvent } from "../lib/meta-capi";
 import type { Env, Variables } from "../types";
 
@@ -471,6 +471,10 @@ app.post(
       );
     }
 
+    // ADR-0016: uang masuk wajib punya metode yang jelas
+    const methodProblem = await paymentMethodError(db, { paymentMethod });
+    if (methodProblem) return c.json({ success: false, message: methodProblem }, 400);
+
     // Generate payment number
     const date = new Date();
     const year = date.getFullYear();
@@ -621,6 +625,10 @@ app.post("/:id/upload-proof", async (c) => {
       );
     }
 
+    // ADR-0016: bukti bayar tanpa metode transaksi yang jelas ditolak (tidak ada lagi fallback "bank_transfer")
+    const methodProblem = await paymentMethodError(db, { paymentMethod: newTransaction.paymentMethodId });
+    if (methodProblem) return c.json({ success: false, message: methodProblem }, 400);
+
     // Upload to GCS
     const timestamp = Date.now();
     const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
@@ -681,7 +689,7 @@ app.post("/:id/upload-proof", async (c) => {
       transactionId: id,
       amount,
       paymentDate: paymentDate,
-      paymentMethod: newTransaction.paymentMethodId || "bank_transfer",
+      paymentMethod: newTransaction.paymentMethodId as string,
       paymentProof: fileUrl,
       status: "pending",
       createdAt: new Date(),
@@ -783,6 +791,15 @@ app.put(
       );
     }
 
+    // ADR-0016: status "paid" (uang masuk) wajib punya metode yang jelas, kecuali non-tunai / nominal 0
+    if (body.paymentStatus === "paid" && transaction.paymentStatus !== "paid") {
+      const isNonCash = (transaction.typeSpecificData as any)?.is_non_cash === true || !(transaction.totalAmount > 0);
+      if (!isNonCash) {
+        const methodProblem = await paymentMethodError(db, { paymentMethod: body.paymentMethodId ?? transaction.paymentMethodId });
+        if (methodProblem) return c.json({ success: false, message: methodProblem }, 400);
+      }
+    }
+
     await db
       .update(transactions)
       .set({
@@ -838,6 +855,18 @@ app.post(
     // Idempotency: jika sudah paid, return success tanpa redo side effects
     if (transaction.paymentStatus === "paid") {
       return c.json({ success: true, message: "Payment already approved" });
+    }
+
+    // ADR-0016: pembayaran tanpa metode yang jelas tidak boleh diverifikasi menjadi uang masuk
+    {
+      const pendingMethods = await db
+        .select({ paymentMethod: transactionPayments.paymentMethod, gatewayCode: transactionPayments.gatewayCode })
+        .from(transactionPayments)
+        .where(and(eq(transactionPayments.transactionId, id), eq(transactionPayments.status, "pending")));
+      for (const pm of pendingMethods) {
+        const problem = await paymentMethodError(db, { paymentMethod: pm.paymentMethod, gatewayCode: pm.gatewayCode });
+        if (problem) return c.json({ success: false, message: problem }, 400);
+      }
     }
 
     // Object result agar TypeScript bisa track mutasi di dalam async callback

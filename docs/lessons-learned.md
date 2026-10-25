@@ -635,3 +635,8 @@
 **Masalah/keputusan:** (1) data DB dev berisi data nyata, jadi uji laporan tidak boleh menebak total absolut; diukur SELISIH sebelum/sesudah menyisipkan data uji di dalam transaksi yang di-rollback; (2) sumber dana transaksi harus diturunkan di SQL (`CASE` atas jenis produk/pilar) dan identik dengan `fundForTransaction`; (3) "hak pihak lain" per dana = `donation_amount − program_amount` sehingga rumus sisa (D5) berlaku seragam untuk campaign, zakat, dan qurban; (4) alat paritas dibuat sebagai identitas aritmetika (jumlah penjelasan harus == buku kas), bukan sekadar menampilkan dua angka.
 **Pelajaran:** untuk migrasi laporan, tulis alat yang MENJELASKAN selisih sampai nol; semua parameter request (enum, tanggal, pencarian) lewat whitelist/parameter terikat; sertakan daftar "perlu ditinjau" agar jalur yang bocor (mis. transaksi gateway tanpa bagi hasil) langsung terlihat.
 
+
+### [2026-10-26] Metode pembayaran generik meloloskan uang masuk "tanpa metode"
+**Konteks:** audit metode uang masuk untuk buku kas (ADR-0016) menemukan fallback `|| "bank_transfer"` di tiga jalur (bukti bayar, setoran tabungan qurban, WA bot) dan form tabungan yang mengirim `"transfer"`/`"qris"` generik.
+**Masalah:** kolom `payment_method` NOT NULL tidak menjamin ada metode sebenarnya; nilai generik lolos dan mendarat di akun "Metode Lain". Regex trigger awal (`bank_[a-z0-9-]+`) bahkan meloloskan `bank_transfer`.
+**Pelajaran:** validasi metode harus memeriksa keberadaan di settings/gateway (API, `paymentMethodError`) dan bentuk id (`bank-<angka>`) di database (migrasi 124); jangan pernah memberi fallback metode. Fixture tes yang menyisipkan transaksi paid harus bermetode valid.
