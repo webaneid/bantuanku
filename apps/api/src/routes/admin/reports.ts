@@ -2278,22 +2278,39 @@ reportsAdmin.get("/fundraiser-summary", requireRole("super_admin", "admin_financ
       ))
       .groupBy(transactions.referredByFundraiserId);
 
-    const commissionRows = await db
+    // Hak komisi = revenue_shares transaksi PAID (sumber yang sama dengan Buku Kas, ADR-0016);
+    // dibayar = pencairan bagi hasil fundraiser berstatus paid. Pencairan yang baru diajukan bukan "hak".
+    const earnedRows = await db
+      .select({
+        recipientId: revenueShares.fundraiserId,
+        totalCommission: sql<number>`coalesce(sum(${revenueShares.fundraiserAmount}), 0)`,
+      })
+      .from(revenueShares)
+      .innerJoin(transactions, eq(transactions.id, revenueShares.transactionId))
+      .where(and(eq(transactions.paymentStatus, "paid"), sql`${revenueShares.fundraiserId} IS NOT NULL`))
+      .groupBy(revenueShares.fundraiserId);
+
+    const paidRows = await db
       .select({
         recipientId: disbursements.recipientId,
-        totalCommission: sql<number>`coalesce(sum(${disbursements.amount}), 0)`,
-        totalPaid: sql<number>`coalesce(sum(case when ${disbursements.status} = 'paid' then ${disbursements.amount} else 0 end), 0)`,
+        totalPaid: sql<number>`coalesce(sum(${disbursements.amount}), 0)`,
       })
       .from(disbursements)
       .where(and(
         eq(disbursements.recipientType, "fundraiser"),
         eq(disbursements.category, "revenue_share_fundraiser"),
-        inArray(disbursements.status, ["submitted", "approved", "paid"])
+        eq(disbursements.status, "paid")
       ))
       .groupBy(disbursements.recipientId);
 
+    const earnedMap = Object.fromEntries(earnedRows.map(r => [r.recipientId, Number(r.totalCommission)]));
+    const paidMap = Object.fromEntries(paidRows.map(r => [r.recipientId, Number(r.totalPaid)]));
+    const commissionMap: Record<string, { totalCommission: number; totalPaid: number }> = {};
+    for (const f of allFundraisers) {
+      commissionMap[f.id] = { totalCommission: earnedMap[f.id] || 0, totalPaid: paidMap[f.id] || 0 };
+    }
+
     const referralMap = Object.fromEntries(referralRows.map(r => [r.fundraiserId, { totalReferrals: Number(r.totalReferrals), totalDonationAmount: Number(r.totalDonationAmount) }]));
-    const commissionMap = Object.fromEntries(commissionRows.map(r => [r.recipientId, { totalCommission: Number(r.totalCommission), totalPaid: Number(r.totalPaid) }]));
 
     const result = allFundraisers.map(f => ({
       id: f.id,
@@ -2361,8 +2378,8 @@ reportsAdmin.get("/fundraiser-detail", requireRole("super_admin", "admin_finance
         id: transactions.id,
         transactionId: transactions.id,
         donationAmount: transactions.totalAmount,
-        commissionPercentage: sql<number>`0`,
-        commissionAmount: sql<number>`0`,
+        commissionPercentage: sql<number>`coalesce(${revenueShares.fundraiserPercentage}::numeric, 0)`,
+        commissionAmount: sql<number>`coalesce(${revenueShares.fundraiserAmount}, 0)`,
         status: transactions.paymentStatus,
         createdAt: transactions.paidAt,
         transactionNumber: transactions.transactionNumber,
@@ -2370,9 +2387,20 @@ reportsAdmin.get("/fundraiser-detail", requireRole("super_admin", "admin_finance
         productName: transactions.productName,
       })
       .from(transactions)
+      .leftJoin(revenueShares, eq(revenueShares.transactionId, transactions.id))
       .where(and(...refConds))
       .orderBy(desc(transactions.paidAt))
       .limit(200);
+
+    // Ringkasan dihitung di SQL (bukan dari daftar yang dibatasi 200 baris)
+    const [earnedAgg] = await db
+      .select({
+        count: sql<number>`count(*)`,
+        commission: sql<number>`coalesce(sum(${revenueShares.fundraiserAmount}), 0)`,
+      })
+      .from(transactions)
+      .leftJoin(revenueShares, eq(revenueShares.transactionId, transactions.id))
+      .where(and(...refConds));
 
     // Disbursements (payouts)
     const disbConds: any[] = [
@@ -2409,14 +2437,15 @@ reportsAdmin.get("/fundraiser-detail", requireRole("super_admin", "admin_finance
       if (e) fundraiserName = e.name;
     }
 
-    const totalCommission = disbList.reduce((s, d: any) => s + Number(d.amount), 0);
+    // Hak = revenue_shares transaksi paid pada rentang; dibayar = pencairan paid pada rentang (daftar pencairan tetap menampilkan yang diajukan/disetujui)
+    const totalCommission = Number(earnedAgg?.commission || 0);
     const totalPaid = disbList
       .filter((d: any) => d.status === "paid")
       .reduce((s, d: any) => s + Number(d.amount), 0);
 
     return success(c, {
       fundraiser: { id: fund.id, code: fund.code, name: fundraiserName, status: fund.status },
-      summary: { totalReferrals: refs.length, totalCommission, totalPaid, remaining: totalCommission - totalPaid },
+      summary: { totalReferrals: Number(earnedAgg?.count || 0), totalCommission, totalPaid, remaining: totalCommission - totalPaid },
       referrals: refs.map(r => ({ ...r, donationAmount: Number(r.donationAmount), commissionAmount: Number(r.commissionAmount) })),
       disbursements: disbList.map((d: any) => ({ ...d, amount: Number(d.amount), paidAt: d.paidAt || d.createdAt })),
     });

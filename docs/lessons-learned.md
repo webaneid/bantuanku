@@ -640,3 +640,8 @@
 **Konteks:** audit metode uang masuk untuk buku kas (ADR-0016) menemukan fallback `|| "bank_transfer"` di tiga jalur (bukti bayar, setoran tabungan qurban, WA bot) dan form tabungan yang mengirim `"transfer"`/`"qris"` generik.
 **Masalah:** kolom `payment_method` NOT NULL tidak menjamin ada metode sebenarnya; nilai generik lolos dan mendarat di akun "Metode Lain". Regex trigger awal (`bank_[a-z0-9-]+`) bahkan meloloskan `bank_transfer`.
 **Pelajaran:** validasi metode harus memeriksa keberadaan di settings/gateway (API, `paymentMethodError`) dan bentuk id (`bank-<angka>`) di database (migrasi 124); jangan pernah memberi fallback metode. Fixture tes yang menyisipkan transaksi paid harus bermetode valid.
+
+### [2026-10-26] Laporan fundraiser menampilkan komisi 0 karena salah sumber
+**Konteks:** `/dashboard/reports/fundraiser` selalu 0 padahal Keuangan → Bagi Hasil menunjukkan hak influencer.
+**Masalah:** `/fundraiser-summary` menjumlahkan `disbursements` (pencairan yang diajukan) sebagai "komisi", jadi hak yang belum diajukan tidak terlihat; `/fundraiser-detail` memakai `commissionAmount` hardcoded 0. Terpisah dari itu, kolom `fundraisers.current_balance` sempat menyertakan komisi transaksi pending (kode lama).
+**Pelajaran:** hak komisi selalu dari `revenue_shares` transaksi paid; pencairan hanyalah pembayaran atas hak itu. Saldo turunan dirapikan dengan `npm run fundraiser:reconcile`.
