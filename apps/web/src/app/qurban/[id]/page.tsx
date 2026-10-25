@@ -8,6 +8,7 @@ import { Footer } from '@/components/organisms/Footer';
 import { Breadcrumb } from '@/components/organisms/Breadcrumb';
 import { MobileTopBar } from '@/components/organisms/MobileTopBar';
 import { QurbanCard } from '@/components/organisms/QurbanCard/QurbanCard';
+import { mapQurbanPackageToCardProps } from '@/lib/qurban-card';
 import { fetchPackageDetail, fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrl, getQurbanImageUrlByVariant } from '@/services/qurban';
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchCompleteAddress, formatCompleteAddress } from '@/services/address';
@@ -113,29 +114,6 @@ function shuffleArray<T>(items: T[]): T[] {
     [cloned[i], cloned[j]] = [cloned[j], cloned[i]];
   }
   return cloned;
-}
-
-function mapQurbanPackageToCardProps(
-  pkg: any,
-  organizationName: string,
-  popularBadgeLabel: string
-) {
-  const ownerName =
-    pkg.ownerType === "mitra" && pkg.ownerName
-      ? pkg.ownerName
-      : organizationName;
-
-  return {
-    id: pkg.packagePeriodId,
-    slug: pkg.packagePeriodId,
-    name: pkg.name,
-    category: pkg.animalType === 'cow' ? ('sapi' as const) : ('kambing' as const),
-    packageType: pkg.packageType,
-    price: pkg.price,
-    image: getQurbanImageUrlByVariant(pkg.imageUrl, ['medium', 'thumbnail', 'large']),
-    badge: pkg.isFeatured ? popularBadgeLabel : undefined,
-    ownerName,
-  };
 }
 
 function pickRelatedQurbanPackages(allPackages: any[], currentPackage: any, maxItems = 4): any[] {
@@ -496,13 +474,17 @@ export default async function QurbanPage({ params }: QurbanPageProps) {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {relatedQurbanPackages.map((pkg) => {
-                  const { packageType, ...cardProps } = mapQurbanPackageToCardProps(
-                    pkg,
-                    settings.organization_name ||
+                  const cardProps = mapQurbanPackageToCardProps(pkg, {
+                    organizationName:
+                      settings.organization_name ||
                       settings.site_name ||
                       t('qurbanPage.defaults.organizationName'),
-                    t('qurbanPage.badges.popular')
-                  );
+                    popularLabel: t('qurbanPage.badges.popular'),
+                    adminFeeCow,
+                    adminFeeGoat,
+                    periodId: qurbanPackage.periodId,
+                    periodName: qurbanPackage.periodName || '',
+                  });
                   return <QurbanCard key={pkg.packagePeriodId} {...cardProps} />;
                 })}
               </div>

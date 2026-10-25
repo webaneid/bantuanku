@@ -15,7 +15,8 @@ import { fetchCampaigns, calculateDaysLeft, getImageUrlByVariant } from '@/servi
 import { fetchPublicSettings } from '@/services/settings';
 import { fetchPublicStats } from '@/services/stats';
 import { fetchCompleteAddress, formatCompleteAddress } from '@/services/address';
-import { fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrlByVariant } from '@/services/qurban';
+import { fetchActivePeriods, fetchPackagesByPeriod } from '@/services/qurban';
+import { mapQurbanPackageToCardProps } from '@/lib/qurban-card';
 import { fetchCategories } from '@/services/categories';
 import { fetchSeoSettings, resolveOgImageUrl } from '@/lib/seo';
 import { normalizeLocale, translate } from '@/lib/i18n';
@@ -190,20 +191,6 @@ function getDefaultSections(t: TranslateFn) {
 // Categories are fetched from database and used as-is
 // No hardcoded mapping needed
 
-// Helper function to map qurban package to QurbanCard props
-function mapQurbanPackageToCardProps(pkg: any) {
-  return {
-    id: pkg.packagePeriodId,
-    slug: pkg.packagePeriodId,
-    name: pkg.name,
-    category: pkg.animalType === 'cow' ? ('sapi' as const) : pkg.animalType === 'sheep' ? ('domba' as const) : ('kambing' as const),
-    price: pkg.price,
-    image: getQurbanImageUrlByVariant(pkg.imageUrl, ['medium', 'thumbnail', 'large']),
-    badge: pkg.isFeatured ? 'Unggulan' : undefined,
-    activeDiscount: pkg.activeDiscount || null,
-  };
-}
-
 // Helper function to map campaign to ProgramCard props
 function mapCampaignToCardProps(campaign: any, defaultCategoryName: string) {
   // Use categoryName from API response (already enriched by backend)
@@ -259,7 +246,7 @@ export default async function HomePage() {
       const perPeriod = await Promise.all(
         periods.map((period: any) =>
           fetchPackagesByPeriod(period.id)
-            .then((res) => res.data || [])
+            .then((res) => (res.data || []).map((pkg: any) => ({ ...pkg, __periodId: period.id, __periodName: period.name })))
             .catch((error) => {
               console.error(`Failed to fetch packages for period ${period.id}:`, error);
               return [] as any[];
@@ -317,12 +304,9 @@ export default async function HomePage() {
   }
 
   // Fetch qurban packages from active period
-  let qurbanPackages: any[] = [];
+  let rawQurbanPackages: any[] = [];
   try {
-    const allPackages = await qurbanPackagesP;
-
-    // Map to QurbanCard props and limit to 8
-    qurbanPackages = allPackages.slice(0, 8).map(mapQurbanPackageToCardProps);
+    rawQurbanPackages = (await qurbanPackagesP).slice(0, 8);
   } catch (error) {
     console.error('Failed to fetch qurban packages:', error);
   }
@@ -488,6 +472,17 @@ export default async function HomePage() {
       'query-input': 'required name=search_term_string',
     },
   };
+
+  const qurbanPackages = rawQurbanPackages.map((pkg) =>
+    mapQurbanPackageToCardProps(pkg, {
+      organizationName: settings.organization_name || settings.site_name || '',
+      popularLabel: t('qurbanPage.badges.popular'),
+      adminFeeCow: Number(settings.amil_qurban_sapi_fee) || 0,
+      adminFeeGoat: Number(settings.amil_qurban_perekor_fee) || 0,
+      periodId: pkg.__periodId || '',
+      periodName: pkg.__periodName || '',
+    })
+  );
 
   return (
     <I18nNamespaces names={['home', 'qurbanPage', 'qurbanCard']}>

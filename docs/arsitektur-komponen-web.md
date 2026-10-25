@@ -152,7 +152,7 @@ Folder: `apps/web/src/components/organisms`.
 | `CategoryGrid` | Grid kategori layanan/program |
 | `MobileTopBar` | Top bar mobile halaman single (back + titik tiga/menu); lihat `arsitektur-mobile-single-shell.md` |
 | `MobileMenuPanel` | Isi menu mobile, satu sumber untuk `Header` dan `MobileTopBar` |
-| `QurbanCard` | Card paket qurban, memakai CSS lokal `QurbanCard.css` |
+| `QurbanCard` | Kartu paket qurban bergaya toko (2026-10-25): foto 16:9 (ukuran asli, object-contain), chip jenis hewan/unggulan/diskon, chip Individu/Patungan, harga tebal (coret + chip bila diskon, "Habis" bila stok/slot habis), dua aksi **Detail** + **Keranjang** (tambah 1 paket ke `CartContext`, sama dengan modal konfirmasi di detail). CSS lokal `QurbanCard.css`. Props dibuat HANYA lewat `mapQurbanPackageToCardProps` (`lib/qurban-card.ts`) |
 | `QurbanCarousel` | Carousel paket qurban, memakai CSS lokal `QurbanCarousel.css` |
 | `QurbanSection` | Section qurban di homepage |
 | `ZakatCard` | Card zakat, memakai CSS lokal `ZakatCard.css` |

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/organisms/Header';
 import { Footer } from '@/components/organisms/Footer';
 import { Breadcrumb } from '@/components/organisms/Breadcrumb';
 import { QurbanCard } from '@/components/organisms/QurbanCard/QurbanCard';
-import { fetchActivePeriods, fetchPackagesByPeriod, getQurbanImageUrlByVariant, type QurbanPackage, type QurbanPeriod } from '@/services/qurban';
+import { fetchActivePeriods, fetchPackagesByPeriod, type QurbanPackage, type QurbanPeriod } from '@/services/qurban';
+import { mapQurbanPackageToCardProps } from '@/lib/qurban-card';
 import { fetchPublicSettings } from '@/services/settings';
 import { useI18n } from '@/lib/i18n/provider';
 
@@ -30,36 +31,11 @@ function QurbanCardSkeleton() {
   );
 }
 
-// Helper function to map qurban package to QurbanCard props
-function mapQurbanPackageToCardProps(
-  pkg: QurbanPackage,
-  organizationName: string,
-  popularBadgeLabel: string
-) {
-  const ownerName =
-    pkg.ownerType === "mitra" && pkg.ownerName
-      ? pkg.ownerName
-      : organizationName;
-
-  return {
-    id: pkg.packagePeriodId, // Use packagePeriodId as unique identifier
-    slug: pkg.packagePeriodId, // Use packagePeriodId for routing
-    name: pkg.name,
-    category: pkg.animalType === 'cow' ? ('sapi' as const) : pkg.animalType === 'sheep' ? ('domba' as const) : ('kambing' as const),
-    packageType: pkg.packageType, // Add packageType for filtering
-    price: pkg.price,
-    image: getQurbanImageUrlByVariant(pkg.imageUrl, ['medium', 'thumbnail', 'large']),
-    badge: pkg.isFeatured ? popularBadgeLabel : undefined,
-    ownerName,
-    activeDiscount: pkg.activeDiscount || null,
-  };
-}
-
 export default function QurbanPage() {
   const { t } = useI18n();
   const [periods, setPeriods] = useState<QurbanPeriod[]>([]);
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>('');
-  const [qurbanPackages, setQurbanPackages] = useState<any[]>([]);
+  const [rawPackages, setRawPackages] = useState<QurbanPackage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   // 'error' = gagal memuat (API bermasalah); 'no-period' = tidak ada periode qurban aktif; null = normal
   const [loadIssue, setLoadIssue] = useState<'error' | 'no-period' | null>(null);
@@ -73,6 +49,7 @@ export default function QurbanPage() {
   const [infoItems, setInfoItems] = useState<string[]>([]);
   const [typeFilter, setTypeFilter] = useState<'all' | 'individual' | 'shared'>('all');
   const [organizationName, setOrganizationName] = useState("");
+  const [adminFees, setAdminFees] = useState({ cow: 0, goat: 0 });
 
   const defaultInfoItems = [
     t('qurbanPage.defaults.infoItems.item1'),
@@ -119,6 +96,10 @@ export default function QurbanPage() {
     const loadSettings = async () => {
       try {
         const settings = await fetchPublicSettings();
+        setAdminFees({
+          cow: Number(settings.amil_qurban_sapi_fee) || 0,
+          goat: Number(settings.amil_qurban_perekor_fee) || 0,
+        });
         setOrganizationName(
           settings.organization_name ||
             settings.site_name ||
@@ -151,18 +132,10 @@ export default function QurbanPage() {
       setLoadIssue(null);
       try {
         const packagesResponse = await fetchPackagesByPeriod(selectedPeriodId);
-        const packages: QurbanPackage[] = packagesResponse.data || [];
-        const mappedPackages = packages.map((pkg) =>
-          mapQurbanPackageToCardProps(
-            pkg,
-            organizationName || t('qurbanPage.defaults.organizationName'),
-            t('qurbanPage.badges.popular')
-          )
-        );
-        setQurbanPackages(mappedPackages);
+        setRawPackages(packagesResponse.data || []);
       } catch (error) {
         console.error('Failed to fetch packages:', error);
-        setQurbanPackages([]);
+        setRawPackages([]);
         setLoadIssue('error');
       } finally {
         setIsLoading(false);
@@ -170,7 +143,22 @@ export default function QurbanPage() {
     };
 
     loadPackages();
-  }, [selectedPeriodId, organizationName, t, retryCount]);
+  }, [selectedPeriodId, retryCount]);
+
+  // Pemetaan ke props kartu dipisah dari fetch: nama lembaga/biaya admin boleh tiba belakangan tanpa memuat ulang paket
+  const qurbanPackages = useMemo(() => {
+    const periodName = periods.find((p) => p.id === selectedPeriodId)?.name || '';
+    return rawPackages.map((pkg) =>
+      mapQurbanPackageToCardProps(pkg, {
+        organizationName: organizationName || t('qurbanPage.defaults.organizationName'),
+        popularLabel: t('qurbanPage.badges.popular'),
+        adminFeeCow: adminFees.cow,
+        adminFeeGoat: adminFees.goat,
+        periodId: selectedPeriodId,
+        periodName,
+      })
+    );
+  }, [rawPackages, periods, selectedPeriodId, organizationName, adminFees, t]);
 
   // Filter packages based on selected filters
   const filteredPackages = qurbanPackages.filter((pkg) => {
@@ -356,9 +344,7 @@ export default function QurbanPage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {filteredPackages.map((pkg) => {
-                // Exclude packageType from props as QurbanCard doesn't need it
-                const { packageType, ...cardProps } = pkg;
-                return <QurbanCard key={pkg.id} {...cardProps} />;
+                return <QurbanCard key={pkg.id} {...pkg} />;
               })}
             </div>
           )}

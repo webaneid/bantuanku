@@ -594,3 +594,9 @@
 
 
 **Hardcode tenant yang ditemukan saat audit (sudah diperbaiki):** `app/og/route.tsx` menulis "Laziswaf Darunnajah" di gambar OG (kini `organization_name`/`site_name` dari settings, badge disembunyikan bila kosong; subtitle bawaan dari `site_tagline`), dan pratinjau `{store_name}` di `admin/.../whatsapp/broadcasts/page.tsx` (kini dari `/settings`). Teks UI statis Indonesia yang belum ber-i18n tercatat di `arsitektur-i18n.md` (Coverage Map, "Gap Aktual").
+
+### [2026-10-25] Tombol "+" kartu qurban tidak pernah berfungsi; pemeta paket→kartu terduplikasi tiga kali
+**Konteks:** redesign kartu qurban ke gaya toko (dua aksi: Detail + Keranjang).
+**Masalah:** `QurbanCard` punya prop `onAddToCart` tetapi tak satu pun pemakai mengisinya, jadi tombol "+" hanya tampak aktif. Pemeta paket→props kartu ada tiga salinan berbeda (beranda memakai badge "Unggulan" hardcode, `/qurban` dan detail berbeda dalam label domba). Beranda meratakan paket semua periode sehingga `periodId`/`periodName` hilang, padahal keranjang qurban membutuhkannya.
+**Pelajaran:** (1) kartu yang dipakai dari server component tidak bisa menerima callback; beri data serializable (`cart`) dan biarkan kartu memakai `useCart` sendiri. (2) Satu pemeta + satu rumus biaya admin (`lib/qurban-card.ts`) untuk semua pemakai. (3) Saat meratakan data lintas periode, tempelkan konteks periode ke tiap item. (4) Pantau tombol aksi "yang tampak benar" dengan klik nyata dan cek isi `bantuanku_cart` di localStorage.
+

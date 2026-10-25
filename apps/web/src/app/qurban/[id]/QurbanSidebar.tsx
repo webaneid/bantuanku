@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { calcQurbanAdminFee } from '@/lib/qurban-card';
 import { Button } from '@/components/atoms';
 import { formatRupiah } from '@/lib/format';
 import { getImageUrl } from '@/lib/image';
@@ -104,20 +105,8 @@ export default function QurbanSidebar({
     }
   };
 
-  // Calculate admin fee based on animal type and package type
-  const calculateAdminFee = () => {
-    // Get base fee by animal type (ensure it's a number)
-    const baseFee = Number(qurbanPackage.animalType === 'cow' ? adminFeeCow : adminFeeGoat);
-
-    // For shared packages (patungan), divide by number of slots and round up
-    if (qurbanPackage.packageType === 'shared' && qurbanPackage.maxSlots) {
-      return Math.ceil(baseFee / qurbanPackage.maxSlots);
-    }
-
-    return baseFee;
-  };
-
-  const adminFee = calculateAdminFee();
+  // Biaya admin per ekor (rumus bersama dengan kartu: lib/qurban-card)
+  const adminFee = calcQurbanAdminFee(qurbanPackage.animalType, qurbanPackage.packageType, qurbanPackage.maxSlots, adminFeeCow, adminFeeGoat);
 
   // Determine effective discount (auto > voucher)
   const effectiveDiscount = qurbanPackage.activeDiscount || appliedVoucher;

@@ -36,7 +36,7 @@ tangan user. Sumber kebenaran sekarang adalah kode + dokumen ini + `arsitektur-k
 | `FeaturedCarousel` ("Program Unggulan & Mendesak") | section baru: teks kiri + kartu gelap bergulir kanan, gambar rasio 900:498 (varian `large`), lencana sisa hari/target tercapai, dekorasi flat | 3b7b24f, d9e102a |
 
 ## Belum dikerjakan / keputusan terbuka
-- qurban section, "Why Choose Us", Header, Footer belum di-redesign. User akan menyebut bagian berikutnya.
+- Kartu qurban SUDAH di-redesign (2026-10-25, gaya marketplace; lihat `arsitektur-komponen-web.md`). Section qurban beranda memakai kartu yang sama. "Why Choose Us", Header, Footer belum di-redesign. User akan menyebut bagian berikutnya.
 - Overflow horizontal header di lebar < 1340px (sudah ada sebelum redesign, belum diperbaiki).
 - Halaman arsip `/program`: filter dan teks "Memuat program..." masih hardcode/tampilan lama.
 - `/qurban/[id]` mobile shell belum diuji visual (DB lokal tidak punya tabel `qurban_discounts`); uji di staging/produksi, begitu juga menu top bar saat login.
