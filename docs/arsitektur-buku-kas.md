@@ -1,0 +1,256 @@
+# Arsitektur Buku Kas dan Hak Bagi Hasil (Rencana)
+
+> **Status: RENCANA — belum ada kode.** Keputusan pemilik produk 2026-10-26 sudah masuk (§11); tersisa D3 (cara memasukkan data lama, dari audit produksi) lalu persetujuan ADR-0016. **Pembangunan dilakukan offline (lokal) dulu**; produksi menyusul setelah pelajaran dicatat. Disusun 2026-10-26 sesuai SOP (arsitektur → kode aktual → rencana fase → eksekusi → `tsc` → review keamanan → dokumentasi). Keputusan desain: `docs/decisions/adr-0016-buku-kas-dan-hak-bagi-hasil.md`. Kondisi laporan saat ini: `arsitektur-laporan.md`.
+
+## 1. Tujuan dan prinsip
+
+Pemilik produk ingin laporan keuangan **sederhana** yang menjawab lima hal. Seluruh desain mengikuti prinsip: **satu sumber, satu definisi, setiap angka dapat ditelusuri ke satu baris.**
+
+| # | Kebutuhan pemilik | Dijawab oleh |
+|---|---|---|
+| 1 | Tahu uang berasal dari mana: zakat (fitrah, maal, …), qurban, campaign, wakaf, fidyah | kolom **dana** + **rincian dana** di buku kas |
+| 2 | Tahu uang disimpan di rekening mana dan berapa | **akun kas** (`cash_accounts`) + **Saldo Rekening** |
+| 3 | Tahu metode bayar (hanya yang diaktifkan) dan, bila gateway, gateway apa | kolom **metode** + **gateway** |
+| 4 | Tahu uang masuk dan keluar | laporan **Arus Kas** |
+| 5 | Tahu bagi hasil: amil, developer, mitra, influencer — berapa dan sudah ditransfer atau belum | laporan **Bagi Hasil** (hak − dibayar = sisa) |
+
+Prinsip tambahan: aditif (tidak mengubah tabel/alur lama), append-only (koreksi lewat entri pembalik), paginasi dan agregasi di SQL, tanggal WIB (`utils/timezone.ts`), tidak ada nama tenant yang di-hardcode.
+
+## 2. Kondisi sekarang (ringkas, dengan bukti)
+
+Rinci di `arsitektur-laporan.md`. Fakta yang menentukan desain (data dev 2026-10-26; **produksi harus diaudit**, §7):
+
+| Temuan | Bukti |
+|---|---|
+| Jurnal kosong, neraca sintetis | `ledger_entries` 0, `ledger_lines` 0; `/financial-statement` = 5 agregat SQL |
+| Tiga definisi "uang masuk" | 4.295.000 (`dashboard`) / 4.298.781 (`financial-statement`, +kode unik) / 4.498.001 (pembayaran verified) |
+| Pembayaran ganda | TRX-20260224-47273: 3× verified @100.213 untuk tagihan 100.213 |
+| `paid_amount` tidak konsisten | transaksi paid dengan `paid_amount` 0 (3 dari 9), atau memuat kode unik, atau tidak |
+| Kode unik tidak selalu diterima | Flip: 3 dari 5 transaksi paid tanpa kode unik (nominal Rp 1.206) |
+| Rekening tak terhubung | `bank_accounts` 0 baris; `transactions.bank_account_id` terisi 0/17; rekening hanya di JSON `settings` |
+| Cicilan tak terbaca | status `partial` tidak ada di laporan manapun |
+| Bagi hasil: hak ada, pembayaran tak terlihat | `revenue_shares` 6 baris `calculated`; `disbursement_revenue_share_items` 0 |
+| Dana qurban/zakat sebagai "pendapatan" dan "ekuitas" | `/financial-statement`: ekuitas 3.448.781 memuat titipan qurban 3.400.000 |
+
+Sumber dana yang dapat diturunkan **tanpa kolom baru**: `transactions.product_type` + `campaigns.pillar` (di `type_specific_data.pillar`: `sedekah`, `wakaf`, `fidyah`, …) + `type_specific_data.payment_type` (tabungan qurban) + jenis zakat dari nama produk (`getCategoryFromTransaction`).
+
+## 3. Model data (target)
+
+Migrasi baru **123** (`123_create_cash_book.sql`, didaftarkan di `packages/db/scripts/run-production-manifest.ts`), schema Drizzle `packages/db/src/schema/cash-book.ts`. Semua `CREATE TABLE IF NOT EXISTS`, tanpa FK `ON DELETE CASCADE` ke tabel uang (jejak audit tidak boleh hilang).
+
+### 3.1 `cash_accounts` — akun kas (rekening)
+
+| Kolom | Tipe | Catatan |
+|---|---|---|
+| `id` | text PK (`createId`) | |
+| `kind` | text | `bank` \| `qris` \| `gateway` \| `cash` \| `unmapped` (setiap metode bayar = satu akun kas) |
+| `name` | text | tampilan: "BSI 1234…", "QRIS Infaq", "Flip", "Kas Tunai" |
+| `ref_key` | text UNIQUE | pemetaan: id di settings (`bank-<ts>`, `qris-<ts>`), kode gateway (`flip`, `ipaymu`, `midtrans`, `xendit`), `cash`, atau `unmapped` |
+| `gateway_code` | text null | untuk `kind = gateway` |
+| `purpose` | text | `umum` \| `zakat` (turunan `programs` di settings; dipakai peringatan "dana zakat di rekening non-zakat") |
+| `is_active` | boolean | |
+| `created_at`, `updated_at` | timestamptz | |
+
+Akun dibuat **otomatis (upsert)** saat pertama dipakai atau lewat tombol "Sinkron dari Settings"; admin tidak perlu mengisi saldo (tidak ada saldo awal). Metode bayar yang tak dikenal masuk akun `unmapped` (ditandai di laporan, harus dipetakan).
+
+### 3.2 `cash_entries` — buku kas (append-only)
+
+| Kolom | Tipe | Catatan |
+|---|---|---|
+| `id` | text PK | |
+| `entry_date` | timestamptz | `verified_at` pembayaran / `paid_at` pencairan / waktu koreksi (WIB saat ditampilkan) |
+| `direction` | text | `in` \| `out` |
+| `amount` | bigint > 0 | rupiah |
+| `component` | text | `pokok` \| `kode_unik` \| `kelebihan` \| `koreksi` |
+| `fund` | text | `zakat` \| `qurban` \| `campaign` \| `wakaf` \| `fidyah` \| `operasional` \| `lainnya` |
+| `fund_detail` | text null | slug jenis zakat (`fitrah`, `maal`, …), id campaign, id periode/paket qurban, kategori operasional |
+| `cash_account_id` | text FK `cash_accounts` | |
+| `method` | text | `bank_transfer` \| `qris` \| `gateway` \| `cash` \| `other` |
+| `gateway_code` | text null | `flip`, `ipaymu`, … |
+| `ref_type` | text | `transaction_payment` \| `disbursement` \| `adjustment` |
+| `ref_id` | text | id sumber |
+| `transaction_id` | text null | untuk drill-down donasi |
+| `campaign_id` | text null | untuk rincian per program |
+| `reverses_entry_id` | text null | entri ini membalik entri lain |
+| `note` | text null | wajib untuk koreksi dan pembalik |
+| `created_by` | text null | user (null = sistem) |
+| `created_at` | timestamptz | |
+
+Indeks: `(entry_date)`, `(fund, entry_date)`, `(cash_account_id, entry_date)`, `(transaction_id)`, **UNIQUE `(ref_type, ref_id, component)`** (idempotensi posting; pembalik memakai `ref_type = 'adjustment'`). Tidak ada UPDATE/DELETE pada baris; koreksi = baris baru dengan `reverses_entry_id`.
+
+### 3.3 Hak bagi hasil — tanpa tabel baru
+
+| Data | Sumber yang sudah ada |
+|---|---|
+| Hak per transaksi | `revenue_shares`: `amil_total/amil_net`, `developer_amount`, `fundraiser_amount` (+`fundraiser_id`), `mitra_amount` (+`mitra_id`), `program_amount`, `calculated_at` |
+| Pembayaran | `disbursements` bertipe `revenue_share` (`category` = `revenue_share_mitra/fundraiser/developer`), status `paid`, + `disbursement_revenue_share_items` (`share_type`, `allocated_amount`) |
+| Saldo berjalan | `fundraisers.current_balance/total_withdrawn`, `mitra.current_balance/total_withdrawn` (hanya untuk pencocokan, bukan sumber) |
+
+Yang dibangun adalah **read model** (service `revenue-share-ledger`): per pihak `hak` (jumlah dari `revenue_shares` pada transaksi `paid`), `dibayar` (pembayaran paid), `sisa = hak − dibayar`, plus daftar per transaksi dan per pencairan. **Amil**: `hak` = `amil_net_amount`; `dipakai` = pencairan paid kategori `operational_*`; `sisa` = hak amil yang belum terpakai (informasi, bukan turunan dari sisa dana program). Pastikan setiap pencairan bagi hasil **selalu** menulis item penghubung (gap saat ini, Fase 2).
+
+## 4. Aturan posting (peristiwa → baris buku kas)
+
+Satu fungsi `CashBookService.post*()` dipanggil di dalam transaksi DB yang mengubah status; gagal posting = seluruh perubahan dibatalkan (tidak ada uang tak tercatat).
+
+### 4.1 Pembayaran terverifikasi → `in`
+
+Pemicu: `transaction_payments.status` menjadi `verified` (rute: `routes/transactions.ts` approve-payment ±baris 884; webhook `routes/payments.ts` ±647; `routes/admin/qurban-savings.ts` ±879 dan ±1039; jalur lain ditemukan lewat grep + pemeriksa rekonsiliasi §8).
+
+- **Akun kas**: metode bayar → `cash_accounts.ref_key` (id rekening/QRIS di settings, atau kode gateway, atau `cash`; selain itu `unmapped`).
+- **Dana**: `campaign` → `pillar` `wakaf` → `wakaf`, `fidyah` → `fidyah`, selain itu `campaign` (rincian = campaign id); `zakat` → `zakat` (rincian = jenis zakat); `qurban` (termasuk tabungan) → `qurban` (rincian = paket/periode).
+- **Alokasi jumlah** ke komponen, **kumulatif per transaksi** (mendukung cicilan): `pokok` sampai `total_amount`, berikutnya `kode_unik` sampai `unique_code`, selebihnya `kelebihan` (pembayaran ganda/lebih bayar). **Ketiganya adalah pemasukan** (D1, D6); label komponen hanya untuk penelusuran dan filter. Kode unik hanya muncul bila memang diterima.
+- Pembayaran `rejected`/`pending` tidak diposting. Pembayaran yang kemudian dibatalkan setelah verified → baris pembalik (`reverses_entry_id`).
+
+### 4.2 Pencairan `paid` → `out`
+
+Pemicu: `disbursements.status` menjadi `paid` (`services/disbursement.ts` ±556; `routes/admin/zakat-distributions.ts` ±505; jalur lain lewat grep).
+
+- **Akun kas**: `source_bank_id`/`bank_account_id` → akun kas yang sama.
+- **Dana**: `zakat_to_*` → `zakat` (rincian = asnaf); `campaign_to_*` → dana campaign tujuan (`wakaf`/`fidyah`/`campaign` menurut pillar `reference_id`); `qurban_*` → `qurban`; `revenue_share_*` → dana asal bagi hasil tidak dipecah; dicatat `lainnya` dengan rincian `bagi_hasil:mitra|fundraiser|developer`; `operational_*` → `operasional` (rincian = kategori).
+- **Komponen**: `pokok` = `transferred_amount` (atau `amount`); `additional_fees` (biaya transfer bank pada pencairan) menjadi baris `out` terpisah berkomponen `pokok` dan `fund_detail = biaya_transfer`.
+
+### 4.3 Gateway dan koreksi
+
+- **Gateway** (D4): uang yang berhasil lewat gateway langsung dihitung masuk ke akun kas gateway itu. Tidak ada pindah kas ke bank dan tidak ada biaya gateway (ditanggung donatur; Flip `charge_fee: 1`). Penarikan dana gateway → bank berada di luar aplikasi.
+- **Koreksi**: entri pembalik atau `koreksi` dengan `note` wajib, hanya `super_admin`/`admin_finance`, selalu masuk `audit_logs`.
+
+## 5. Laporan (5) dan formulir (1)
+
+Semua endpoint baru di `apps/api/src/routes/admin/cashbook.ts`, mount `/admin/cashbook`, role `super_admin` + `admin_finance` (baca) dan hanya keduanya untuk tulis. Agregasi SQL dengan parameter terikat, paginasi server, batas hari WIB (`startOfDayWIB`/`endOfDayWIB`). UI di menu **Keuangan** (menggantikan "Reports").
+
+| # | Laporan | Endpoint | Isi |
+|---|---|---|---|
+| 1 | **Arus Kas** | `GET /admin/cashbook/entries`, `/summary` | tabel baris + total masuk/keluar/netto; filter: tanggal, dana, akun kas, metode, gateway, arah, komponen (pokok/kode unik/kelebihan), pencarian; ekspor Excel/CSV |
+| 2 | **Sirkulasi Rekening** | `GET /admin/cashbook/accounts`, `/accounts/gateways` | per akun kas: masuk − keluar = **uang yang beredar di sistem** (bukan saldo bank; tanpa saldo awal/rekonsiliasi); peringatan dana zakat di rekening non-zakat; akun `unmapped`. **Blok per gateway** (D4): percobaan, **berhasil**, tertunda, gagal/kedaluwarsa, total masuk berhasil (dari `transaction_payments` semua status) + kolom potongan bila payload menyediakannya (iPaymu `Fee`; Flip tidak) |
+| 3 | **Dana per Sumber** | `GET /admin/cashbook/funds` | per dana (zakat per jenis, qurban, campaign, wakaf, fidyah): masuk, dikurangi hak bagi hasil non-program (dari `revenue_shares`), dikurangi penyaluran, **sisa dana program** |
+| 4 | **Bagi Hasil** | `GET /admin/cashbook/revenue-share`, `/revenue-share/:party` | per pihak (amil, developer, mitra, fundraiser/influencer): hak, sudah ditransfer, belum; drill-down per transaksi dan per pencairan; status "sudah/belum" per baris |
+| 5 | **Rincian per Program** | `GET /admin/cashbook/programs`, `/programs/:id` | drill-down dari Dana per Sumber: masuk, bagi hasil, keluar, sisa per campaign/jenis zakat/periode qurban |
+| F1 | Koreksi | `POST /admin/cashbook/entries/:id/reverse`, `POST /admin/cashbook/adjustments` | |
+| — | Perlu ditinjau (informasi) | `GET /admin/cashbook/review` | paid tanpa pembayaran verified, akun `unmapped`, pembayaran verified tanpa baris buku kas, serta daftar `kelebihan` (hanya informasi, tetap dihitung sebagai pemasukan) |
+
+Dana per Sumber memakai rumus tunggal (D5): `sisa = Σ in (dana) − hak pihak lain (amil, developer, mitra, fundraiser; dari revenue_shares transaksi dana itu) − Σ out program (dana itu)`. **Sisa tetap menjadi sisa program** (contoh pemilik: masuk 3.000.000, disalurkan 2.500.000, hak amil dkk 200.000 → sisa 300.000 tetap "sisa program"). Tidak ada saldo amil turunan dari sisa; hak amil tampil di laporan Bagi Hasil. Laporan lama yang tidak punya padanan (neraca sintetis, liability, consistency-check, ledger-summary, unique-codes sebagai laporan, dll.) dihentikan di Fase 6.
+
+## 6. Hubungan dengan komponen lama
+
+| Komponen | Keputusan |
+|---|---|
+| `settings` JSON rekening/QRIS (`payment_bank_accounts`, `payment_qris_accounts`) | **Tetap** sebagai konfigurasi checkout; dipetakan ke `cash_accounts` lewat `ref_key` |
+| Tabel `bank_accounts` + `updateBankBalance()` | Tidak dipakai (kosong, ber-ID berbeda); **ditandai deprecated**; dihapus lewat ADR/fase terpisah setelah memastikan produksi kosong |
+| `revenue_shares`, `disbursements`, `fundraisers/mitra.current_balance` | Dipertahankan; menjadi sumber read model bagi hasil |
+| `ledger_entries`, `ledger_lines`, `chart_of_accounts`, `/admin/finance`, `/admin/ledger` (410) | Dibiarkan; **tidak** dipakai laporan baru; nasib lewat ADR terpisah |
+| 26 endpoint `/admin/reports/*`, `/admin/analytics`, `/admin/export` | Dipertahankan sampai paritas lolos (Fase 5), lalu menu disembunyikan → 410 → dihapus (Fase 6) |
+| Laporan publik web (`public-stats`) | Tidak berubah di rencana ini; kandidat re-source dari buku kas sesudahnya |
+
+### Register Penghapusan (D8)
+
+Komponen berikut **dibiarkan berdiri terpisah**, **tidak boleh dipakai kode baru**, dan **akan dihapus bertahap** mengikuti perbaikan database. Setiap penghapusan wajib lewat ADR/fase tersendiri dan pemeriksaan bahwa produksi tidak lagi memakainya.
+
+| Komponen | Alasan dihapus | Syarat sebelum dihapus |
+|---|---|---|
+| `ledger_entries`, `ledger_lines`, `chart_of_accounts` (+ seed COA, `routes/admin/coa.ts`, `services/ledger.ts`, halaman `dashboard/ledger/coa`) | jurnal kosong dan tidak jadi sumber laporan | audit produksi: 0 baris jurnal; tak ada konsumen |
+| Kolom `transactions.ledger_entry_id`, `transaction_payments.ledger_entry_id`, `disbursements.ledger_entry_id`, `disbursements.expense_account_id` | rujukan ke jurnal yang tidak dipakai | migrasi drop kolom terpisah |
+| Tabel `ledger` legacy, `routes/admin/ledger.ts` (selalu 410), `routes/admin/finance.ts` (+ pemakai di halaman master employees/mustahiq) | alur pengeluaran lama | pemakai dialihkan ke `/admin/disbursements` |
+| Tabel `bank_accounts`, `entity_bank_accounts` (bagian rekening sumber), `utils/bank-balance.ts` (`updateBankBalance`) | rekening nyata di JSON settings; tabel kosong dan `bank_account_id` tak pernah terisi | ganti ke `cash_accounts`; audit 0 baris |
+| Skrip `migrate-to-liability-model.ts` | usang | — |
+| `routes/admin/reports.ts` (26 endpoint), `analytics.ts`, `export.ts`, halaman `dashboard/reports/*` | digantikan laporan buku kas | Fase 7 setelah paritas |
+| Tabel legacy qurban (`qurban_payments`, `qurban_orders`, `qurban_savings_transactions`, …) dan `zakat_distributions` | model ganda pra-transaksi universal | audit produksi + migrasi data (di luar ADR ini) |
+
+## 7. Audit data produksi dan migrasi data lama
+
+**Langkah 0 (wajib sebelum ADR Accepted):** jalankan audit read-only di VPS:
+
+```bash
+cd /var/www/bantuanku/repo
+bash scripts/audit/audit-keuangan.sh > audit-keuangan-$(date +%F).txt   # tidak mencetak URL koneksi; sesi dipaksa read-only
+```
+
+Skrip: `scripts/audit/audit-keuangan.sh` + `audit-keuangan.sql` (hanya `SELECT`; sesi `default_transaction_read_only=on`; tanpa nama/email/telepon). Memeriksa: inventaris tabel, transaksi per jenis×status, sumber dana turunan, kecocokan paid vs pembayaran verified (kelompok A–E + daftar), pembayaran bukan-paid yang sudah verified, pembayaran ganda, kode unik per metode, rekening dikenal/tak dikenal, pencairan bermasalah, bagi hasil (hak vs dibayar, paid tanpa revenue share), saldo fundraiser/mitra, jejak legacy (`qurban_payments`, `qurban_orders`, `qurban_savings_transactions`, `zakat_distributions`, `ledger`), dan perbandingan enam definisi "uang masuk".
+
+**Aturan backfill** (idempoten, `--dry-run` dulu, laporan selisih; **dikerjakan offline dulu**):
+1. Setiap pembayaran `verified` → baris `in` sesuai §4.1 (tanpa mengubah data lama).
+2. Setiap pencairan `paid` → baris `out` (§4.2).
+3. **Tidak ada cut-off dan tidak ada saldo awal** (D9): buku kas mencatat sirkulasi seluruh riwayat yang ada; yang diaudit adalah *kelengkapan pencatatan*, bukan saldo bank. Pembayaran ganda/kelebihan masuk sebagai pemasukan (D6).
+4. Transaksi `paid` tanpa pembayaran verified (mis. diubah manual admin) **tidak** menghasilkan uang masuk; tampil di daftar informasi "Perlu ditinjau" untuk perbaikan data eksisting kelak.
+5. Uang di tabel legacy (bila audit menemukan isinya) → diputuskan per kasus (D3).
+
+Hasil audit menentukan D3: cara memasukkan data lama (semua riwayat atau sebagian) dan kebutuhan perbaikan data eksisting; uji dulu pada salinan data offline.
+
+## 8. Rencana eksekusi (fase)
+
+**Prinsip D9: semua dikerjakan offline dulu (lingkungan lokal, boleh memakai salinan data produksi), lalu hasil belajar dicatat di `docs/buku-kas-pelajaran.md` sebagai bekal sebelum menyentuh produksi.** Setiap fase: `tsc` web/admin/api = 0 error → review keamanan (`bantuanku-security-review` bila menyentuh route/DB/webhook) → update dokumen → commit lokal. Satu fase selesai sebelum berikutnya. Tidak ada deploy sebelum Tahap Offline selesai dan ada persetujuan eksplisit.
+
+### Tahap Offline
+
+| Fase | Tujuan | File tersentuh | Migrasi | Verifikasi / kriteria selesai |
+|---|---|---|---|---|
+| **0** | Audit + keputusan | `scripts/audit/*` (siap), ADR-0016 | — | Hasil audit produksi dinilai; D3, D4, D5 terjawab; ADR → Accepted |
+| **1** Fondasi | Skema, service posting, backfill dry-run | `packages/db/migrations/123_create_cash_book.sql`, `packages/db/src/schema/cash-book.ts`, `run-production-manifest.ts`, `apps/api/src/services/cash-book.ts`, `services/cash-book-backfill.ts`, uji `bun:test` | **123** (DB lokal) | Posting idempoten (2× = 0 baris baru); unit test alokasi komponen (cicilan, kode unik, kelebihan, qurban); backfill dry-run pada salinan data: Σ in = Σ verified, Σ out = Σ paid disbursement |
+| **2** Hook posting | Pasang posting di setiap jalur bayar/cair + item bagi hasil selalu ditulis | `routes/transactions.ts`, `routes/payments.ts`, `routes/admin/qurban-savings.ts`, `services/disbursement.ts`, `routes/admin/zakat-distributions.ts`, jalur lain hasil grep | — | Pemeriksa rekonsiliasi = 0 (verified tanpa baris, paid tanpa baris) setelah uji manual semua jalur: transfer, QRIS, tiap gateway, tabungan qurban, input admin, pembatalan |
+| **3** API baca | 5 laporan + review | `routes/admin/cashbook.ts`, `routes/admin/index.ts`, `services/revenue-share-ledger.ts`, `scripts/audit/parity.sql` | — | Paritas: tiap selisih terhadap laporan lama terjelaskan (kode unik, kelebihan, cicilan, dll.); uji batas WIB; paginasi server; `EXPLAIN` memakai indeks; review keamanan |
+| **4** UI | Menu Keuangan + 5 halaman + 2 formulir | `apps/admin/src/app/dashboard/cashbook/**`, `components/cashbook/*`, `Sidebar.tsx` | — | Cek browser desktop+mobile; `check:colors` 0; ekspor Excel sama dengan layar |
+| **5** Pembelajaran offline | Uji menyeluruh pada salinan data produksi; catat temuan | `docs/buku-kas-pelajaran.md`, `arsitektur-buku-kas.md` | — | Semua angka §12 lolos; daftar pelajaran, perbaikan data eksisting yang diperlukan, dan rencana produksi tertulis |
+
+### Tahap Online (hanya setelah persetujuan eksplisit)
+
+| Fase | Tujuan | Catatan |
+|---|---|---|
+| **6** Produksi | Migrasi 123, backfill sesuai D3, laporan baru berjalan berdampingan dengan laporan lama | Posting dapat dimatikan lewat settings `cashbook_posting_enabled`; laporan lama tetap utuh |
+| **7** Pensiun | Sembunyikan → 410 → hapus laporan lama (`reports.ts`, `analytics.ts`, `export.ts`, `/dashboard/reports/*`) | Revert commit sebagai rollback |
+| **8** (opsional) | Laporan publik dari buku kas; tampilan PSAK 109 | ADR terpisah |
+
+Urutan dependensi: 0 → 1 → 2 → 3 → 4 → 5 → (persetujuan) → 6 → 7. Fase 3 dan 4 boleh tumpang tindih setelah kontrak API dibekukan.
+
+## 9. Keamanan dan izin
+
+- Semua route `/admin/cashbook/*` di balik `authMiddleware` + `requireRole("super_admin","admin_finance")`; tulis (koreksi) hanya keduanya, **selalu** tercatat di `audit_logs` (siapa, kapan, nilai sebelum/sesudah).
+- Input divalidasi Zod; semua query parameter terikat (template `sql`, **tanpa** `sql.raw` berisi nilai request); `limit`/`page` di-clamp; tanggal lewat helper WIB.
+- Buku kas tidak menyimpan PII donatur (hanya `transaction_id`); detail donatur tetap lewat izin yang ada. Respons tidak membocorkan `webhook_payload`.
+- Posting berjalan di dalam transaksi DB yang sama dengan perubahan status (atomik); endpoint webhook tetap memverifikasi signature sebelum posting (tidak diubah).
+- Skrip audit: sesi read-only di tingkat server; tidak mencetak kredensial; keluaran bebas PII.
+- Review keamanan wajib di Fase 1–3 (route, query DB, webhook).
+
+## 10. Risiko dan mitigasi
+
+| Risiko | Mitigasi |
+|---|---|
+| Jalur bayar/cair yang terlewat tidak diposting | satu fungsi posting + grep sistematis + pemeriksa rekonsiliasi harian + daftar "Perlu ditinjau" + uji manual per jalur |
+| Angka baru berbeda dari laporan lama menimbulkan salah paham | laporan paritas yang menjelaskan tiap selisih sebelum laporan lama dimatikan; komunikasikan ke bendahara |
+| Metode bayar tak terpetakan | akun `unmapped` yang ditandai + layar pemetaan |
+| Disangka saldo bank | label jelas "sirkulasi di sistem, bukan saldo bank" |
+| Anomali data lama (ganda, paid tanpa verified) | ganda/kelebihan dicatat sebagai pemasukan (D6); paid tanpa verified tampil informasi; perbaikan data eksisting menyusul |
+| Skema DB berbeda antar lingkungan (drift) | migrasi aditif `IF NOT EXISTS`; uji pada salinan DB mirip produksi; audit memakai kolom yang ada di produksi |
+| Performa laporan | agregasi SQL + indeks; tanpa paginasi di memori |
+
+## 11. Keputusan
+
+Dijawab pemilik produk 2026-10-26 (ringkas):
+
+| ID | Keputusan | Status |
+|---|---|---|
+| D1 | Kode unik **dicatat sebagai pemasukan** | ✅ |
+| D2 | Hak amil dan pihak lain **sesuai settings** (`revenue_shares`), **tidak boleh hardcode** | ✅ |
+| D3 | Data lama: **diputuskan dari hasil audit produksi** | ⏳ menunggu audit |
+| D4 | Setiap gateway = akun kas; uang lewat gateway dianggap sudah masuk; **biaya ditanggung donatur**, tanpa pindah kas dan tanpa biaya gateway; laporan per gateway: percobaan/berhasil/tertunda/gagal + total masuk | ✅ |
+| D5 | **Sisa tetap sisa program**: sisa = masuk − hak pihak lain − disalurkan; tanpa konsep saldo amil dari sisa | ✅ |
+| D6 | Pembayaran ganda atau lebih bayar **menjadi pemasukan seperti kode unik** (komponen `kelebihan`) | ✅ |
+| D7 | Qurban: **pokok = dana pembelian hewan**; **biaya admin = hak amil** yang dibagi sesuai peruntukan/pengaturan bagi hasil | ✅ |
+| D8 | Ledger/COA dan sejenisnya **dibiarkan terpisah, dicatat untuk dihapus bertahap** (Register Penghapusan §6) | ✅ |
+| D9 | **Tidak ada cut-off, saldo awal, atau rekonsiliasi bank**; yang dicatat hanya **sirkulasi uang**, hak amil/mitra/developer/influencer. **Dikerjakan offline dulu**, hasil belajar jadi bekal produksi | ✅ |
+
+## 12. Kriteria sukses (uji penerimaan)
+
+1. Σ `in` buku kas periode P = Σ pembayaran `verified` periode P (selisih 0).
+2. Σ `out` buku kas periode P = Σ pencairan `paid` periode P + biaya tambahan.
+3. Sirkulasi setiap akun kas = Σ in − Σ out (tanpa saldo awal; bukan saldo bank).
+4. Identitas sirkulasi: Σ sisa dana program + Σ hak pihak lain (dibayar dan belum) + Σ keluar program = Σ masuk, per dana dan secara total.
+5. Bagi Hasil: untuk setiap pihak, hak = Σ `revenue_shares` transaksi paid; dibayar = Σ item pada pencairan paid; sisa tampil dan cocok dengan saldo fundraiser/mitra.
+6. Tidak ada pembayaran verified atau pencairan paid tanpa baris buku kas (pemeriksa rekonsiliasi = 0).
+7. Laporan responsif pada ≥100.000 baris (waktu respon < 2 dtk dengan indeks).
+
+## 13. Gap yang sengaja ditunda
+
+- Format PSAK 109 (lapisan penyajian di atas buku kas, ADR terpisah).
+- Re-source laporan publik web dari buku kas.
+- Penghapusan `ledger_*`, `chart_of_accounts`, `bank_accounts`, dan endpoint legacy.
+- Pencatatan biaya/pemotongan gateway dan pindah kas gateway → bank (sengaja tidak ada: biaya ditanggung donatur dan laporan resmi di luar aplikasi).
+- Perbaikan data eksisting (paid tanpa pembayaran verified, `paid_amount` tak konsisten) setelah pelajaran offline.

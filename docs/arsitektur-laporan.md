@@ -2,6 +2,8 @@
 
 > Terakhir di-sync dengan kode: 2026-09-22 (audit dokumen vs implementasi, dilengkapi verifikasi runtime).
 
+> **Akan dirombak:** laporan keuangan direncanakan digantikan Buku Kas + Hak Bagi Hasil (5 laporan). Lihat `arsitektur-buku-kas.md` dan `decisions/adr-0016-buku-kas-dan-hak-bagi-hasil.md`. Dokumen ini tetap benar untuk kondisi saat ini.
+
 ## Ringkasan
 
 Laporan adalah API agregasi untuk dashboard keuangan, performa program, liability, cash flow, zakat, qurban, revenue sharing, mitra, fundraiser, rekening, dan konsistensi kategori. Sumber utamanya adalah tabel operasional (`transactions`, `disbursements`, `revenue_shares`, `campaigns`, `mitra`, `fundraisers`, `donatur`, tabel zakat/qurban) — **bukan** ledger/COA double-entry.

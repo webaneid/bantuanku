@@ -1,5 +1,7 @@
 # Arsitektur Akuntansi
 
+> **Akan dihapus bertahap:** lapisan double-entry/COA di dokumen ini tidak dipakai laporan baru (ADR-0016). Daftar komponen dan syarat penghapusannya ada di `arsitektur-buku-kas.md` §6 *Register Penghapusan*. Jangan menambah kode baru yang bergantung padanya.
+
 ## Ringkasan
 
 Akuntansi di Bantuanku memiliki dua lapisan yang coexist:
