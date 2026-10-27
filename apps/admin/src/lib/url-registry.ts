@@ -60,6 +60,12 @@ const STATIC_URLS: URLOption[] = [
     category: 'Static',
     description: 'Form pendaftaran mitra lembaga baru',
   },
+  {
+    value: '/kontak',
+    label: 'Kontak',
+    category: 'Static',
+    description: 'Halaman kontak organisasi (alamat, telepon, WhatsApp, email, media sosial dari pengaturan)',
+  },
 ];
 
 /**

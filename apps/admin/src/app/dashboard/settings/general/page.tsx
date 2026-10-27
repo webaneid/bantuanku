@@ -15,6 +15,13 @@ import { useAuth } from "@/lib/auth";
 
 type TabType = "organization" | "zakat" | "fidyah" | "sosmed" | "cdn";
 
+/** Terima URL biasa atau kode iframe "Sematkan peta" Google; simpan hanya URL-nya. */
+function extractMapUrl(raw?: string): string {
+  const v = (raw || "").trim();
+  const src = v.match(/<iframe[^>]*\ssrc=["']([^"']+)["']/i);
+  return (src ? src[1] : v).trim();
+}
+
 export default function GeneralSettingsPage() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -52,6 +59,7 @@ export default function GeneralSettingsPage() {
     organizationAboutUrl: "",
     organizationAboutUrlLabel: "",
     address: "", // Legacy - for backward compatibility
+    mapUrl: "",
     // Indonesia Address System fields
     detailAddress: "",
     provinceCode: "",
@@ -154,6 +162,7 @@ export default function GeneralSettingsPage() {
       orgSettings.forEach((setting: any) => {
         if (setting.key === "organization_name") orgData.organizationName = setting.value;
         if (setting.key === "organization_address") orgData.address = setting.value;
+        if (setting.key === "organization_map_url") orgData.mapUrl = setting.value;
         if (setting.key === "organization_logo") orgData.organizationLogo = setting.value;
         if (setting.key === "organization_favicon") orgData.organizationFavicon = setting.value;
         if (setting.key === "organization_institution_logo")
@@ -408,6 +417,15 @@ export default function GeneralSettingsPage() {
           type: "string" as const,
           label: "Website",
           description: "Website organisasi",
+          isPublic: true,
+        },
+        {
+          key: "organization_map_url",
+          value: extractMapUrl(data.mapUrl),
+          category: "organization",
+          type: "string" as const,
+          label: "URL Google Maps",
+          description: "URL embed atau tautan Google Maps untuk halaman Kontak",
           isPublic: true,
         },
         // Indonesia Address System
@@ -1113,6 +1131,20 @@ export default function GeneralSettingsPage() {
                       onChange={setContactData}
                       required={true}
                     />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="form-label">URL Google Maps</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={orgForm.mapUrl}
+                      onChange={(e) => setOrgForm({ ...orgForm, mapUrl: e.target.value })}
+                      placeholder="https://www.google.com/maps/embed?pb=... atau https://maps.app.goo.gl/..."
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Di Google Maps: Bagikan → Sematkan peta → salin kode (atau cukup alamat src-nya). Tautan biasa (maps.app.goo.gl) hanya dipakai untuk tombol &quot;Buka di Google Maps&quot;. Kosongkan untuk memakai alamat di bawah.
+                    </p>
                   </div>
 
                   <div className="md:col-span-2">

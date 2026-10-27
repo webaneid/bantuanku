@@ -12,7 +12,7 @@ Dokumen ini menyerap dan mengoreksi root `00-helper-kontak.md`. Helper lama bena
 | Backend helper | `apps/api/src/lib/contact-helpers.ts` |
 | Admin contact form | `apps/admin/src/components/forms/ContactForm.tsx` |
 | Organization contact settings | `apps/admin/src/app/dashboard/settings/general/page.tsx`, `apps/api/src/routes/admin/settings.ts` |
-| Public settings consumer | `apps/web/src/services/settings.ts`, `apps/web/src/components/organisms/Footer/Footer.tsx`, `apps/web/src/components/UniversalInvoice.tsx` |
+| Public settings consumer | `apps/web/src/services/settings.ts`, `apps/web/src/app/kontak/page.tsx`, `apps/web/src/components/organisms/Footer/Footer.tsx`, `apps/web/src/components/UniversalInvoice.tsx` |
 | WhatsApp template variables | `apps/api/src/services/whatsapp.ts` |
 | Entity schemas | `donatur`, `users`, `employees`, `vendors`, `mustahiqs`, `mitra` |
 | Domain API | Admin/public donatur, employees, vendors, mustahiqs, mitra, auth/profile |
@@ -138,6 +138,15 @@ Consumer penting:
 | `arsitektur-karyawan.md`, `arsitektur-vendor.md`, `arsitektur-mustahiq.md`, `arsitektur-mitra.md` | Field kontak per entity |
 | `arsitektur-universal-payment.md` | Invoice membaca kontak organisasi dari settings |
 | `arsitektur-seo.md` | Organization contact untuk structured data |
+
+## Halaman Kontak Publik (`/kontak`)
+
+`apps/web/src/app/kontak/page.tsx` (server component) menampilkan kontak organisasi dari settings publik (`GET /v1/settings`): `organization_address`/`organization_detail_address`, `organization_phone`, `organization_whatsapp`, `organization_email`, `organization_website`, dan `social_media_*`. Field kosong tidak ditampilkan; bila semua kosong muncul pesan "belum tersedia".
+
+- Teks lewat namespace i18n `kontak` (id/en), dibaca server dengan `translate(locale, ...)`.
+- Peta: setting `organization_map_url` (Pengaturan → Umum, kolom "URL Google Maps"; kode iframe "Sematkan peta" diambil src-nya saat simpan). `parseMapUrl` hanya menerima https + domain Google; URL berbentuk embed dipakai sebagai iframe, tautan biasa (`maps.app.goo.gl`) hanya untuk tombol "Buka di Google Maps". Kosong → iframe `maps?q=<alamat>&output=embed` (tanpa API key), hanya bila alamat ada.
+- Link WhatsApp: `0...` diubah ke `62...` untuk `wa.me`. URL website/sosial hanya diterima bila `http(s)` (`safeUrl`).
+- Terdaftar di `sitemap.ts` dan `url-registry.ts` admin. Belum ada formulir pesan (hanya info kontak).
 
 ## Gap dan Rekomendasi
 

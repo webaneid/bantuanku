@@ -7,6 +7,7 @@ import { footer } from "./footer";
 import { home } from "./home";
 import { invoice } from "./invoice";
 import { keranjang } from "./keranjang";
+import { kontak } from "./kontak";
 import { laporanDetail } from "./laporanDetail";
 import { payment } from "./payment";
 import { qurbanCard } from "./qurbanCard";
@@ -31,6 +32,7 @@ export const enMessages: Messages = {
   home,
   invoice,
   keranjang,
+  kontak,
   laporanDetail,
   payment,
   qurbanCard,

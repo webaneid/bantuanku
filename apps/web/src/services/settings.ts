@@ -28,6 +28,7 @@ export interface PublicSettings {
   organization_email?: string;
   organization_website?: string;
   organization_address?: string;
+  organization_map_url?: string;
   organization_detail_address?: string;
   organization_province_code?: string;
   organization_regency_code?: string;

@@ -29,6 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${appUrl}/wakaf`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${appUrl}/daftar-mitra`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${appUrl}/laporan`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
+    { url: `${appUrl}/kontak`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
   ];
 
   // Zakat calculator pages
