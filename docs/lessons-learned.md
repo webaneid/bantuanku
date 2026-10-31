@@ -650,3 +650,8 @@
 **Konteks:** audit `/dashboard/reports/mitra` sebelum dipindah ke grup Keuangan.
 **Masalah:** `/mitra-summary` dan `/mitra-detail` menjumlahkan `revenue_shares` tanpa memeriksa `transactions.payment_status = 'paid'`, sehingga transaksi yang kemudian dibatalkan tetap menambah hak mitra; ringkasan detail dihitung dari daftar yang dibatasi 200 baris; kolom "Total Income" sebenarnya basis perhitungan.
 **Pelajaran:** semua laporan hak bagi hasil harus join ke transaksi `paid` dan menghitung ringkasan di SQL, bukan dari daftar berpaginasi. Cek paritas dengan Keuangan → Bagi Hasil setelah memperbaiki.
+
+### [2026-10-31] Bot WA gagal untuk semua pesan yang butuh tool setelah ganti model Gemini
+**Konteks:** model Gemini lama (`gemini-2.0-flash`) dimatikan Google (404); admin mengganti ke `gemini-3.8-flash`. Sapaan biasa berhasil, tetapi pesan yang memicu tool (fidyah, qurban) gagal di "round 1" dengan 400.
+**Masalah:** (1) `callGemini` mengirim hasil tool dengan `role: "function"`, yang ditolak model baru (hanya `user`/`model`). (2) Bagian `functionCall` disusun ulang dari `name`+`args` sehingga `thoughtSignature` dari model seri 3 terbuang. (3) Default model di kode dan form admin menunjuk model yang sudah mati. (4) Log lama bercampur dengan log baru, sehingga sempat disangka cache atau key rusak; "bad decrypt" yang muncul berasal dari halaman Settings admin yang mendekripsi semua secret, bukan dari key Gemini.
+**Pelajaran:** kirim hasil tool dengan `role: "user"` dan kembalikan `functionCallPart` asli. Saat men-debug, ambil log baru (`pm2 logs --lines 0`) lalu kirim satu pesan uji; jangan membaca ekor log lama. Default model harus model yang masih aktif, dan perubahan model Gemini diuji dengan pesan yang memicu tool, bukan sapaan.

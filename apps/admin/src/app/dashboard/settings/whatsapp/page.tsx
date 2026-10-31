@@ -499,7 +499,7 @@ export default function WhatsAppSettingsPage() {
     whatsapp_bot_enabled: "false",
     whatsapp_bot_ai_provider: "gemini",
     whatsapp_bot_ai_api_key: "",
-    whatsapp_bot_ai_model: "gemini-2.0-flash",
+    whatsapp_bot_ai_model: "gemini-3.8-flash",
     whatsapp_bot_system_prompt: "",
   });
 
@@ -1102,7 +1102,7 @@ export default function WhatsAppSettingsPage() {
                       whatsapp_bot_ai_provider: e.target.value,
                       whatsapp_bot_ai_model:
                         e.target.value === "gemini"
-                          ? "gemini-2.0-flash"
+                          ? "gemini-3.8-flash"
                           : "claude-sonnet-4-5-20250929",
                     }))
                   }
@@ -1127,14 +1127,14 @@ export default function WhatsAppSettingsPage() {
                   }
                   placeholder={
                     botForm.whatsapp_bot_ai_provider === "gemini"
-                      ? "gemini-2.0-flash"
+                      ? "gemini-3.8-flash"
                       : "claude-sonnet-4-5-20250929"
                   }
                   className="form-input"
                 />
                 <p className="text-xs text-gray-400 mt-1">
                   {botForm.whatsapp_bot_ai_provider === "gemini"
-                    ? "Contoh: gemini-2.0-flash, gemini-1.5-pro"
+                    ? "Contoh: gemini-3.8-flash"
                     : "Contoh: claude-sonnet-4-5-20250929, claude-haiku-4-5-20251001"}
                 </p>
               </div>

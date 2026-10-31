@@ -230,9 +230,11 @@ async function getProgramOverview(db: Database): Promise<string> {
     .orderBy(desc(campaigns.donorCount))
     .limit(50);
 
-  const donasiRegular = donasi.filter((c) => c.pillar !== "fidyah" && c.pillar !== "wakaf");
-  const fidyahList = donasi.filter((c) => c.pillar === "fidyah");
-  const wakafList = donasi.filter((c) => c.pillar === "wakaf");
+  // Pilar disimpan sebagai slug huruf kecil; samakan dengan web (toLowerCase)
+  const pillarOf = (c: { pillar: string | null }) => (c.pillar || "").toLowerCase();
+  const donasiRegular = donasi.filter((c) => pillarOf(c) !== "fidyah" && pillarOf(c) !== "wakaf");
+  const fidyahList = donasi.filter((c) => pillarOf(c) === "fidyah");
+  const wakafList = donasi.filter((c) => pillarOf(c) === "wakaf");
 
   // 2. Zakat types
   const zakatList = await db
@@ -560,134 +562,6 @@ async function getZakatPrograms(
       return `${i + 1}. *${z.name}*${desc ? `\n   ${desc}` : ""}\n   ID: ${z.id}`;
     })
     .join("\n\n");
-}
-
-async function createDonation(
-  db: Database,
-  params: { campaignId: string; amount: number; donorName: string; donorPhone: string },
-  envFrontendUrl?: string
-): Promise<string> {
-  if (!params.campaignId || !params.amount || !params.donorName || !params.donorPhone) {
-    return "Parameter tidak lengkap. Dibutuhkan: campaignId, amount, donorName, donorPhone.";
-  }
-
-  if (params.amount < 10000) {
-    return "Nominal minimum donasi adalah Rp 10.000.";
-  }
-
-  const campaign = await db.query.campaigns.findFirst({
-    where: eq(campaigns.id, params.campaignId),
-  });
-
-  if (!campaign || campaign.status !== "active") {
-    return "Program tidak ditemukan atau tidak aktif.";
-  }
-
-  try {
-    const txService = new TransactionService(db);
-    const tx = await txService.create({
-      product_type: "campaign",
-      product_id: params.campaignId,
-      quantity: 1,
-      unit_price: params.amount,
-      donor_name: params.donorName,
-      donor_phone: params.donorPhone,
-      include_unique_code: true,
-    });
-
-    const transferAmount = tx.totalAmount + (tx.uniqueCode || 0);
-
-    const frontendUrl = await getFrontendUrl(db, envFrontendUrl);
-    const invoiceUrl = frontendUrl ? `${frontendUrl}/invoice/${tx.id}` : "";
-
-    return [
-      "Transaksi donasi berhasil dibuat!",
-      `ID Transaksi: ${tx.id}`,
-      `No. Transaksi: ${tx.transactionNumber}`,
-      `Program: ${tx.productName}`,
-      `Nominal: Rp ${tx.totalAmount.toLocaleString("id-ID")}`,
-      tx.uniqueCode ? `Kode Unik: ${tx.uniqueCode}` : "",
-      tx.uniqueCode ? `Total Transfer: Rp ${transferAmount.toLocaleString("id-ID")}` : "",
-      `Status: Menunggu Pembayaran`,
-      "",
-      invoiceUrl ? `Link Invoice: ${invoiceUrl}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
-  } catch (err: any) {
-    console.error("createDonation error:", err);
-    return `Gagal membuat transaksi: ${err.message || "Terjadi kesalahan"}`;
-  }
-}
-
-async function createZakatPayment(
-  db: Database,
-  params: { zakatTypeId: string; amount: number; donorName: string; donorPhone: string; quantity?: number },
-  envFrontendUrl?: string
-): Promise<string> {
-  if (!params.zakatTypeId || !params.amount || !params.donorName || !params.donorPhone) {
-    return "Parameter tidak lengkap. Dibutuhkan: zakatTypeId, amount, donorName, donorPhone.";
-  }
-
-  if (params.amount < 10000) {
-    return "Nominal minimum zakat adalah Rp 10.000.";
-  }
-
-  const quantity = Math.max(1, Math.round(Number(params.quantity) || 1));
-
-  // Find active zakat period for this type
-  const period = await db.query.zakatPeriods.findFirst({
-    where: and(
-      eq(zakatPeriods.zakatTypeId, params.zakatTypeId),
-      eq(zakatPeriods.status, "active")
-    ),
-    with: { zakatType: true },
-  });
-
-  if (!period) {
-    return "Tidak ada periode zakat aktif untuk jenis zakat ini.";
-  }
-
-  // For fitrah with quantity > 1: unit_price = per-jiwa amount, quantity = jumlah jiwa
-  // For others: quantity = 1, unit_price = total amount
-  const unitPrice = quantity > 1 ? Math.round(params.amount / quantity) : params.amount;
-
-  try {
-    const txService = new TransactionService(db);
-    const tx = await txService.create({
-      product_type: "zakat",
-      product_id: period.id,
-      quantity: quantity,
-      unit_price: unitPrice,
-      donor_name: params.donorName,
-      donor_phone: params.donorPhone,
-      include_unique_code: true,
-    });
-
-    const transferAmount = tx.totalAmount + (tx.uniqueCode || 0);
-
-    const frontendUrl = await getFrontendUrl(db, envFrontendUrl);
-    const invoiceUrl = frontendUrl ? `${frontendUrl}/invoice/${tx.id}` : "";
-
-    return [
-      "Transaksi zakat berhasil dibuat!",
-      `ID Transaksi: ${tx.id}`,
-      `No. Transaksi: ${tx.transactionNumber}`,
-      `Jenis Zakat: ${period.zakatType?.name || period.name}`,
-      quantity > 1 ? `Jumlah Jiwa: ${quantity} orang × Rp ${unitPrice.toLocaleString("id-ID")}` : "",
-      `Nominal: Rp ${tx.totalAmount.toLocaleString("id-ID")}`,
-      tx.uniqueCode ? `Kode Unik: ${tx.uniqueCode}` : "",
-      tx.uniqueCode ? `Total Transfer: Rp ${transferAmount.toLocaleString("id-ID")}` : "",
-      `Status: Menunggu Pembayaran`,
-      "",
-      invoiceUrl ? `Link Invoice: ${invoiceUrl}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
-  } catch (err: any) {
-    console.error("createZakatPayment error:", err);
-    return `Gagal membuat transaksi zakat: ${err.message || "Terjadi kesalahan"}`;
-  }
 }
 
 async function getPaymentLink(
@@ -1681,7 +1555,7 @@ async function getAIConfig(db: Database): Promise<{
   return {
     provider: map["whatsapp_bot_ai_provider"] || "gemini",
     apiKey: decrypt(map["whatsapp_bot_ai_api_key"] || ""),
-    model: map["whatsapp_bot_ai_model"] || "gemini-2.0-flash",
+    model: map["whatsapp_bot_ai_model"] || "gemini-3.8-flash",
     systemPrompt: map["whatsapp_bot_system_prompt"] || "",
   };
 }
@@ -1751,7 +1625,7 @@ async function callGemini(
     },
   ];
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   // Force Gemini to always call a tool (mode: "ANY") so it never responds
   // with just text when an action is needed. The respond_to_user tool is
@@ -1773,7 +1647,7 @@ async function callGemini(
 
     const res = await fetchWithRetry(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify(requestBody),
     });
 
@@ -1784,6 +1658,13 @@ async function callGemini(
     }
 
     const data = (await res.json()) as any;
+    // Baseline pemakaian token per putaran (tanpa PII) untuk optimasi
+    const usage = data.usageMetadata;
+    if (usage) {
+      console.log(
+        `[WA AI] usage model=${model} round=${round} prompt=${usage.promptTokenCount ?? 0} output=${usage.candidatesTokenCount ?? 0} thoughts=${usage.thoughtsTokenCount ?? 0} total=${usage.totalTokenCount ?? 0}`
+      );
+    }
     const parts = data.candidates?.[0]?.content?.parts || [];
 
     // Find function call in response
@@ -1811,12 +1692,14 @@ async function callGemini(
     if (execState?.flowTrigger) return "";
 
     // Append model's function call + tool result to conversation for next round
+    // Kirim balik part asli (termasuk thoughtSignature) — model seri 3 menolak function call tanpa signature
     currentContents.push({
       role: "model",
-      parts: [{ functionCall: { name: toolName, args: toolArgs } }],
+      parts: [functionCallPart],
     });
+    // Model baru menolak role "function"; hasil tool dikirim sebagai role "user"
     currentContents.push({
-      role: "function",
+      role: "user",
       parts: [
         {
           functionResponse: {

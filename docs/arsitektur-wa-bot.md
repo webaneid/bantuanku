@@ -122,7 +122,7 @@ interface ConversationContext {
 | `whatsapp_bot_enabled` | `"true"/"false"` | — | Master switch bot |
 | `whatsapp_bot_ai_provider` | string | `"gemini"` | Provider yang aktif |
 | `whatsapp_bot_ai_api_key` | string | — | API key provider |
-| `whatsapp_bot_ai_model` | string | `"gemini-2.0-flash"` | Model yang dipakai |
+| `whatsapp_bot_ai_model` | string | `"gemini-3.8-flash"` | Model yang dipakai (default lama `gemini-2.0-flash` sudah dimatikan Google) |
 | `whatsapp_bot_system_prompt` | string | (lihat bawah) | Override system prompt |
 
 ### Provider yang Didukung
@@ -148,7 +148,7 @@ processIncomingMessage()
        └─ jika hanya teks → kirim ke donatur, break loop
 ```
 
-**Gemini khusus:** Mode `"ANY"` — harus selalu return tool call (tidak bisa reply teks langsung). Retry 2x saat rate limit 429, delay 3 detik.
+**Gemini khusus:** Mode `"ANY"` — harus selalu return tool call (tidak bisa reply teks langsung). Retry 2x saat rate limit 429, delay 3 detik. API key dikirim lewat header `x-goog-api-key` (bukan query string). Hasil tool dikirim balik dengan `role: "user"` (role `function` ditolak model baru) dan `functionCall` asli dikembalikan utuh agar `thoughtSignature` ikut. Setiap putaran mencatat `[WA AI] usage ... prompt= output= thoughts= total=` (tanpa PII) sebagai baseline token.
 
 ---
 
@@ -431,8 +431,8 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | `start_donation_flow` meneruskan `amount` dari LLM tanpa validasi minimum; `TransactionService.create` tidak memvalidasi `unit_price`/`quantity` | Transaksi bernilai negatif/Rp 1 lewat prompt injection (data kotor, tidak bisa menandai lunas) | Medium |
 | Path media GOWA hanya di-allowlist karakter (bukan prefiks `statics/media/` & `media/download/`); `readBodyWithLimit` memuat penuh sebelum cek ukuran bila tanpa `content-length`; fetch tanpa timeout | Hardening; payload hanya dikontrol GOWA dan webhook sudah bertandatangan | Low |
 | `get_campaign_detail` tidak memfilter status | Campaign draft terbaca jika ID diketahui | Low |
-| Kunci Gemini di query string URL, body error dilog utuh | Kunci bisa muncul di log/proxy; pindah ke header `x-goog-api-key` | Low |
-| Kode mati `createDonation`, `createZakatPayment`, `calculateZakat` di `whatsapp-ai.ts` menerima identitas dari argumen | Celah bila didaftarkan lagi ke dispatcher | Low |
+| Kode mati `calculateZakat` di `whatsapp-ai.ts` (nisab/rate dari `settings`, berbeda dari `services/zakat.ts`) | Tiga implementasi hitung zakat; diganti satu sumber di Fase 2 rencana pengembangan (bagian N) | Medium |
+| `decrypt()` gagal mengembalikan teks terenkripsi mentah, lalu dikirim ke Gemini sebagai API key | Gagal diam-diam (400/403 dari Google) bila `ENCRYPTION_KEY` berubah | Low |
 | `send_qris` belum diuji runtime (mengirim WA sungguhan) | Hanya diuji lewat helper kepemilikan yang sama dengan tool lain | Low |
 
 ## Perbaikan
@@ -442,6 +442,7 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | 2026-10-22 | Webhook wajib HMAC (fail-closed), payload tidak di-log, JSON rusak → 400, Map dedup/percakapan diberi batas |
 | 2026-10-22 | SSRF unduhan media ditutup: hanya origin GOWA, magic bytes, batas 10 MB, tanpa redirect |
 | 2026-10-22 | Kepemilikan tool bot: identitas dari konteks, `findOwnedTransaction`, `phoneMatches`, validasi nominal |
+| 2026-10-31 | Gemini: hasil tool `role: "user"` + `functionCall` asli (thoughtSignature), API key ke header `x-goog-api-key`, default model `gemini-3.8-flash` (API + form admin), log pemakaian token, filter pilar tidak peka huruf, kode mati `createDonation`/`createZakatPayment` dihapus |
 | 2026-10-22 | `register_donatur` memakai nomor pengirim, tidak membocorkan data donatur lain; `bodyLimit` 1 MB di webhook |
 
 ---
@@ -456,3 +457,22 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 6. **Update system prompt** untuk mendeskripsikan kapan dan bagaimana trigger flow ini
 7. **Tambahkan case** di `handleFlowStep()` dispatcher di `whatsapp-ai.ts`
 8. **Test:** pastikan cancel, timeout, dan error path semua clear `ctx.flowState`
+
+
+---
+
+## N. Rencana Pengembangan: Bot Pintar (disetujui 2026-10-31)
+
+Tujuan: bot menjawab info semua modul (campaign per pilar, zakat, fidyah, wakaf, qurban, profil lembaga) dan menghitung zakat, dengan token tetap hemat. Prinsip: data diambil lewat tool sesuai pertanyaan, bukan dimasukkan ke prompt.
+
+| Fase | Isi | Status |
+|------|-----|--------|
+| 0 | Perbaikan `role: "function"` dan `thoughtSignature` | Selesai (belum deploy) |
+| 1 | Stabilisasi: default model, key ke header, filter pilar, hapus kode mati, log token | Selesai (belum deploy) |
+| 2 | Hitung zakat satu sumber (`services/zakat.ts` + `zakat_calculator_configs`) dipakai alur dan tool `calculate_zakat` | Belum |
+| 3 | Tool `get_info(topik)`: profil, cara bayar, fidyah, wakaf, zakat, qurban, laporan kegiatan, Pages CMS (publik, dipotong) | Belum |
+| 4 | Hemat token: ukur baseline, `thinkingConfig` rendah, pangkas prompt 11 KB, ringkas tool, caching | Belum |
+| 5 | Skrip uji `scripts/e2e-wa-bot.ts` (~25 pertanyaan, hanya DB localhost, gateway WA dimatikan) | Belum |
+| 6 | Sinkron dokumen, ADR, lesson learned | Belum |
+
+**Catatan audit Fase 1:** dugaan "filter pilar salah" tidak terbukti; `campaigns.pillar` menyimpan slug huruf kecil (`sedekah`, `wakaf`). Filter tetap dibuat tidak peka huruf besar-kecil agar sama dengan web.
