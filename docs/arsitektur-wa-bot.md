@@ -144,9 +144,9 @@ interface ConversationContext {
 | `claude` | `api.anthropic.com/v1/messages` | Anthropic Messages API |
 | `grok` | `api.x.ai/v1/chat/completions` | OpenAI-compatible |
 
-### System Prompt Default
+### System Prompt (2026-10-31, ADR-0019)
 
-System prompt multi-bagian yang hardcoded sebagai fallback. Konten: peran asisten donasi islami, aturan (wajib pakai tool untuk aksi, jangan mengarang data), flow registrasi donatur, alur setiap jenis transaksi, konfirmasi pembayaran (wajib ada gambar). Template variables `{store_name}`, `{store_website}`, `{store_whatsapp}` di-inject dari `WhatsAppService.getGlobalVariables()`.
+`buildBotSystemPrompt(db, { adminPrompt, donor })` (`whatsapp-ai.ts`) menyusun prompt untuk semua provider: **inti ringkas bawaan** (`BOT_CORE_PROMPT`, ±3,5 KB: aturan inti, pilihan tool, registrasi, bukti transfer) + **instruksi tambahan admin** (setting `whatsapp_bot_system_prompt`, ditambahkan di bawah inti; inti menang bila bertentangan) + INFO LEMBAGA + blok donatur. Setting itu tidak lagi menggantikan prompt secara utuh. Template `{store_name}`, `{store_website}`, `{store_whatsapp}` di-inject dari `WhatsAppService.getGlobalVariables()`. Definisi tool dipangkas ±35% (10,5 KB → 6,8 KB); panduan pemakaian tool ada di inti prompt.
 
 ### Loop AI
 
@@ -523,8 +523,8 @@ Tujuan: bot menjawab info semua modul (campaign per pilar, zakat, fidyah, wakaf,
 | 1 | Stabilisasi: default model, key ke header, filter pilar, hapus kode mati, log token | Selesai |
 | 2 | Hitung zakat satu sumber (`services/zakat-calculator.ts`, parameter dari `settings`, ADR-0017) dipakai alur, tool `calculate_zakat`, dan `/zakat/config`+`/calculate/maal` | Selesai (belum deploy) |
 | 3 | Tool `get_info(topik)`: profil, zakat, fidyah, qurban, laporan kegiatan, Pages CMS (publik, dipotong); wakaf lewat `search_campaigns` pilar | Selesai (belum deploy) |
-| 4 | Hemat token: `thinkingConfig` rendah + batas output + log cache (selesai); pemangkasan prompt dan tool menunggu keputusan override prompt dan harness uji (Fase 5) | Sebagian (belum deploy) |
-| 5 | Skrip uji `scripts/e2e-wa-bot.ts` (~25 pertanyaan, hanya DB localhost, gateway WA dimatikan) | Belum |
-| 6 | Sinkron dokumen, ADR, lesson learned | Belum |
+| 4 | Hemat token: `thinkingConfig` rendah + batas output + log cache; inti prompt ringkas + prompt admin sebagai tambahan (ADR-0019); definisi tool dipangkas ±35% | Selesai |
+| 5 | Skrip uji `scripts/e2e-wa-bot.ts` (22 pertanyaan, hanya DB localhost, jaringan selain Gemini diblokir). Baseline prompt DB lama: 21/22, 5.605 token/pertanyaan; prompt baru: 22/22, 5.443 token/pertanyaan | Selesai |
+| 6 | Sinkron dokumen, ADR, lesson learned | Selesai |
 
 **Catatan audit Fase 1:** dugaan "filter pilar salah" tidak terbukti; `campaigns.pillar` menyimpan slug huruf kecil (`sedekah`, `wakaf`). Filter tetap dibuat tidak peka huruf besar-kecil agar sama dengan web.

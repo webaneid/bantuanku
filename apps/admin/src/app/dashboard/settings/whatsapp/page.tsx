@@ -1174,7 +1174,9 @@ export default function WhatsAppSettingsPage() {
                 System Prompt
               </label>
               <p className="text-xs text-gray-400 mb-2">
-                Instruksi untuk AI bot. Variable yang tersedia: {"{store_name}"},{" "}
+                Instruksi tambahan untuk AI bot (gaya bahasa, info khusus). Aturan inti bot
+                (pakai tool, registrasi, bukti transfer) sudah bawaan dan tidak perlu ditulis
+                ulang; bila bertentangan, aturan inti yang berlaku. Variable: {"{store_name}"},{" "}
                 {"{store_website}"}, {"{store_whatsapp}"}
               </p>
               <textarea
@@ -1187,7 +1189,7 @@ export default function WhatsAppSettingsPage() {
                 }
                 rows={16}
                 className="form-input w-full font-mono text-sm"
-                placeholder="Kamu adalah asisten donasi {store_name} di WhatsApp..."
+                placeholder="Contoh: Sapa donatur dengan salam. Gunakan bahasa santun dan hangat."
               />
             </div>
 

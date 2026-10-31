@@ -675,3 +675,8 @@
 **Konteks:** Fase 4 (hemat token) akan memangkas prompt default ±12 ribu karakter. Sebelum memangkas, ukuran baseline dari log (`prompt=1993` pada putaran pertama) tidak cocok dengan prompt sebesar itu.
 **Masalah:** `aiConfig.systemPrompt || defaultPrompt` berarti kalau admin pernah menyimpan prompt di Settings → WhatsApp, prompt default (dan semua aturan operasional serta blok konteks donatur di dalamnya) tidak dipakai sama sekali. Di DB dev override-nya adalah versi lama prompt default (879 karakter). Akibatnya arahan yang ditambahkan ke prompt default di Fase 1–3 tidak berlaku, dan ±85% token per putaran adalah definisi tool (±10,5 ribu karakter), bukan prompt.
 **Pelajaran:** sebelum mengoptimasi atau mengubah prompt, cek setting override di DB (`select length(value) from settings where key='whatsapp_bot_system_prompt'`) dan cocokkan ukuran prompt dengan angka `prompt=` di log. Arahan yang harus selalu berlaku sebaiknya ada di deskripsi tool atau di bagian prompt yang tidak bisa ditimpa admin, bukan hanya di prompt default.
+
+### [2026-10-31] Memangkas token tidak selalu mengurangi token: ukur lawan yang benar
+**Konteks:** Fase 4 bot WA: prompt bawaan dipangkas ke inti ringkas dan definisi tool dipangkas 35%.
+**Masalah:** Produksi memakai prompt admin 879 karakter, bukan prompt bawaan 12 KB. Inti baru (3,5 KB) justru menambah teks dibanding yang efektif di produksi; total token hampir sama (5.605 → 5.443). Manfaat nyata ada di kualitas (aturan inti selalu berlaku, 22/22 lulus), bukan di jumlah token.
+**Pelajaran:** Bandingkan terhadap konfigurasi yang benar-benar berjalan (cek override di DB), bukan terhadap default di kode. Jangan menjanjikan penghematan sebelum baseline terukur dengan skrip uji.

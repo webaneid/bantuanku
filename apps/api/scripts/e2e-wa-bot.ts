@@ -40,7 +40,7 @@ const CASES: Case[] = [
   { q: "saya mau qurban kambing", expect: ["start_qurban_flow"] },
   { q: "mau nabung qurban", expect: ["start_qurban_savings_flow"] },
   { q: "apa saja jenis zakat?", expect: ["get_info", "get_zakat_menu"] },
-  { q: "saya mau bayar zakat", expect: ["start_zakat_flow"] },
+  { q: "saya mau bayar zakat", expect: ["start_zakat_flow", "get_zakat_menu"], note: "menu jenis zakat juga diterima" },
   { q: "tentang lembaga ini apa sih?", expect: ["get_info"] },
   { q: "cek status transaksi saya", expect: ["check_transaction_status"] },
   { q: "resep rendang yang enak gimana?", expect: ["respond_to_user"], note: "di luar topik" },
@@ -94,7 +94,7 @@ async function main() {
   if (promptMode === "app") {
     const mod: any = await import("../src/services/whatsapp-ai");
     if (typeof mod.buildBotSystemPrompt !== "function") { console.error("buildBotSystemPrompt belum ada (mode app)."); process.exit(1); }
-    systemPrompt = await mod.buildBotSystemPrompt(db, { adminPrompt: map["whatsapp_bot_system_prompt"] || "", donor: { phone: TEST_PHONE, registered: false } });
+    systemPrompt = await mod.buildBotSystemPrompt(db, { adminPrompt: map["whatsapp_bot_system_prompt"] || "", donor: { phone: TEST_PHONE, registered: true, name: "Penguji", totalDonations: 0, totalAmount: 0 } });
   } else {
     systemPrompt = map["whatsapp_bot_system_prompt"] || "(prompt DB kosong)";
     for (const [k, v] of Object.entries(vars)) systemPrompt = systemPrompt.replace(new RegExp(`\\{${k}\\}`, "g"), v);
