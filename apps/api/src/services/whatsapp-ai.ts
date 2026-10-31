@@ -1577,6 +1577,7 @@ export async function callGemini(
 
   const MAX_ROUNDS = 5;
   const guard = createLoopGuard();
+  let timedOutOnce = false;
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
     if (guard.expired()) {
@@ -1595,12 +1596,25 @@ export async function callGemini(
       },
     };
 
-    const res = await fetchWithRetry(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify(requestBody),
-      signal: AbortSignal.timeout(AI_FETCH_TIMEOUT_MS),
-    });
+    const callStarted = Date.now();
+    let res: Response;
+    try {
+      res = await fetchWithRetry(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify(requestBody),
+        signal: AbortSignal.timeout(AI_FETCH_TIMEOUT_MS),
+      });
+    } catch (err) {
+      // Timeout sesekali dari provider: ulangi satu kali bila waktu total masih ada, selebihnya lempar (balasan "terjadi gangguan")
+      if ((err as Error)?.name === "TimeoutError" && !guard.expired() && !timedOutOnce) {
+        timedOutOnce = true;
+        console.warn(`[WA AI] timeout ${Date.now() - callStarted}ms pada round=${round}, mencoba ulang sekali`);
+        round--;
+        continue;
+      }
+      throw err;
+    }
 
     if (!res.ok) {
       const errText = await res.text();
@@ -1619,7 +1633,7 @@ export async function callGemini(
     const usage = data.usageMetadata;
     if (usage) {
       console.log(
-        `[WA AI] usage model=${model} round=${round} prompt=${usage.promptTokenCount ?? 0} cached=${usage.cachedContentTokenCount ?? 0} output=${usage.candidatesTokenCount ?? 0} thoughts=${usage.thoughtsTokenCount ?? 0} total=${usage.totalTokenCount ?? 0} thinking=${useThinkingConfig ? GEMINI_THINKING_LEVEL : "off"}`
+        `[WA AI] usage model=${model} round=${round} prompt=${usage.promptTokenCount ?? 0} cached=${usage.cachedContentTokenCount ?? 0} output=${usage.candidatesTokenCount ?? 0} thoughts=${usage.thoughtsTokenCount ?? 0} total=${usage.totalTokenCount ?? 0} thinking=${useThinkingConfig ? GEMINI_THINKING_LEVEL : "off"} ms=${Date.now() - callStarted}`
       );
     }
     const parts = data.candidates?.[0]?.content?.parts || [];

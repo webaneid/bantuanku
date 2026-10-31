@@ -116,7 +116,15 @@ async function main() {
       const c = CASES[i];
       captured = [];
       const started = Date.now();
-      const reply = await callGemini(apiKey, model, systemPrompt, [], c.q, db, undefined, { phone: TEST_PHONE }, {});
+      let reply: string;
+      let error = "";
+      try {
+        reply = await callGemini(apiKey, model, systemPrompt, [], c.q, db, undefined, { phone: TEST_PHONE }, {});
+      } catch (e) {
+        // Error satu pertanyaan (mis. timeout) dicatat sebagai GAGAL; uji lanjut ke pertanyaan berikutnya
+        error = `${(e as Error)?.name || "Error"}: ${(e as Error)?.message || e}`;
+        reply = `[EXCEPTION] ${error}`;
+      }
       const tools = captured.filter((l) => l.includes(" tool=")).map((l) => /tool=(\S+)/.exec(l)![1]);
       const usage = captured.filter((l) => l.includes(" usage "));
       const sum = (key: string) => usage.reduce((n, l) => n + Number(new RegExp(`${key}=(\\d+)`).exec(l)?.[1] || 0), 0);

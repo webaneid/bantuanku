@@ -165,6 +165,8 @@ processIncomingMessage()
 
 **Batas token Gemini (2026-10-31):** `generationConfig.maxOutputTokens = 2048` dan `thinkingConfig.thinkingLevel = "low"` (di log sebelumnya model memakai 158–629 token thinking untuk jawaban pendek). Nama parameter thinking bisa berbeda antar generasi model; bila API menolaknya (400 yang menyebut "thinking") model itu dicatat di `geminiNoThinkingModels` dan permintaan diulang tanpa `thinkingConfig` (log `diulang tanpa thinking`, `thinking=off`). Fallback ini diuji dengan `fetch` palsu; nama parameter yang benar untuk model produksi belum diverifikasi ke Google.
 
+**Timeout provider (2026-10-31):** tiap panggilan Gemini punya timeout 20 detik; pada `TimeoutError` pertama dalam satu pesan, panggilan diulang **satu kali** selama batas total 25 detik belum habis (log `timeout ...ms pada round=N, mencoba ulang sekali`); timeout kedua melempar exception sehingga donatur menerima "terjadi gangguan". Log usage menambah `ms=` (durasi panggilan) untuk melihat pencilan. Latensi normal terukur 2–4 detik per panggilan; satu pencilan >20 detik tertangkap saat uji (pertanyaan hitung zakat).
+
 ---
 
 ## D. Tools AI (21 Tools)
@@ -492,6 +494,7 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | 2026-10-31 | Zakat satu sumber (`services/zakat-calculator.ts`, ADR-0017): alur zakat bot memakai modul itu (nisab ikut dicek untuk pertanian/peternakan/bisnis seperti web), tool baru `calculate_zakat`, kalkulator lama dan scraper Pluang di bot dihapus |
 | 2026-10-31 | Tool `get_info` (profil, zakat, fidyah, qurban, laporan, halaman CMS) di `services/whatsapp-knowledge.ts`, ADR-0018; prompt diarahkan memakai `get_info` untuk pertanyaan informasi |
 | 2026-10-31 | Hemat token (sebagian): `maxOutputTokens` 2048, `thinkingLevel` rendah dengan fallback otomatis, log `cached=`; ukuran tool terukur ±10,5 ribu karakter, prompt default ±12 ribu karakter |
+| 2026-10-31 | Timeout Gemini dicoba ulang satu kali; log usage menambah `ms=`; skrip uji `scripts/e2e-wa-bot.ts` (22 pertanyaan, hanya mesin dev, jaringan selain Gemini diblokir) |
 | 2026-10-22 | `register_donatur` memakai nomor pengirim, tidak membocorkan data donatur lain; `bodyLimit` 1 MB di webhook |
 
 ---
