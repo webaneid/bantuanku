@@ -2,7 +2,7 @@
  * Uji bot WA terhadap Gemini asli (Fase 5, arsitektur-wa-bot.md bagian N).
  *
  * Aman dijalankan di DB dev:
- *  - menolak jalan bila DATABASE_URL bukan localhost
+ *  - menolak jalan bila DATABASE_URL bukan localhost, bila folder kerja di /var/www/, atau NODE_ENV=production
  *  - semua fetch selain ke generativelanguage.googleapis.com DIBLOKIR (tidak ada WhatsApp/gateway nyata)
  *  - hanya pertanyaan baca/info; donatur uji (nomor fiktif) dihapus di akhir
  *
@@ -55,6 +55,11 @@ const only = opt("only")?.split(",").map((n) => Number(n) - 1);
 const asJson = args.includes("--json");
 
 async function main() {
+  // Server produksi juga punya DB di localhost, jadi cek lokasi dan mode, bukan hanya host DB
+  if (process.cwd().startsWith("/var/www/") || process.env.NODE_ENV === "production") {
+    console.error("DITOLAK: terdeteksi lingkungan server/produksi. Jalankan skrip ini hanya di mesin dev.");
+    process.exit(1);
+  }
   const dbUrl = process.env.DATABASE_URL || "";
   if (!/@(localhost|127\.0\.0\.1)(:|\/)/.test(dbUrl)) {
     console.error("DITOLAK: DATABASE_URL bukan localhost. Skrip ini hanya untuk DB dev.");
