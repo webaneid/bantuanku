@@ -1635,6 +1635,7 @@ export async function callGemini(
 
     const toolName = functionCallPart.functionCall.name;
     const toolArgs = functionCallPart.functionCall.args || {};
+    console.log(`[WA AI] tool=${toolName} round=${round}`);
 
     // If AI just wants to send a text response, return it directly
     if (toolName === "respond_to_user") {
