@@ -453,7 +453,6 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | Donatur belum terdaftar saat trigger flow | Error string ke AI, AI diminta register dulu |
 | Gambar saat flow aktif | Flow di-clear, diproses sebagai bukti transfer |
 | QRIS tidak ada | Return error string ke AI |
-| Gold scraper gagal | Fallback ke setting DB |
 | History overflow | Slice 20 pesan terakhir |
 
 ---
@@ -463,7 +462,6 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | Gap | Dampak | Prioritas |
 |-----|--------|-----------|
 | Conversation context hilang saat API restart | Donatur yang sedang di-flow harus mulai ulang | Medium |
-| Gold price scraper bergantung pada struktur HTML Pluang | Bisa rusak jika Pluang update halaman | Medium |
 | Tidak ada mechanism retry pengiriman WA dari bot | Jika GOWA down saat reply, pesan hilang tanpa notifikasi | Medium |
 | History 20 pesan tidak persistent | Jika API restart di tengah percakapan panjang, konteks hilang | Low |
 | Bot tidak handle sticker/voice/video/dokumen secara eksplisit | Dokumen → `"[Pengguna mengirim dokumen]"` (treated as no image) | Low |
@@ -477,9 +475,13 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | Alur zakat bot belum menanyakan pengeluaran (profesi) dan biaya produksi (pertanian); tool `calculate_zakat` sudah menerimanya | Hasil alur bisa lebih besar dari web untuk pengguna yang punya pengeluaran/biaya | Low |
 | Pencarian `halaman` memakai `ilike` pada kolom `content` (tanpa indeks teks) | Cukup untuk puluhan halaman; lambat bila CMS besar | Low |
 | Info `profil` membaca `organization_*`; `contact_email`/`contact_phone` (key lama) bisa berbeda nilainya | Bot hanya menampilkan `organization_*` | Low |
-| Setting `whatsapp_bot_system_prompt` (kalau terisi) **menggantikan seluruh** prompt default, termasuk aturan operasional (registrasi wajib, larangan transaksi ganda, aturan bukti transfer) dan blok konteks donatur; semua arahan prompt baru (fidyah, `calculate_zakat`, `get_info`) hanya ada di prompt default. Di DB dev override-nya adalah versi lama prompt default (879 karakter) | Bot berjalan tanpa aturan operasional dan tanpa konteks donatur; arahan tool hanya mengandalkan deskripsi tool. Keputusan desain (override jadi "tambahan" vs tetap menggantikan) menunggu user | Medium |
+| Prompt admin kini hanya tambahan di atas inti bawaan (ADR-0019), tetapi teks lama admin yang bertentangan (mis. "buat transaksi dari data chat") tetap ikut terkirim dan membuang token | Perlu admin mengganti teksnya; inti menang bila bertentangan | Low |
 | `decrypt()` gagal mengembalikan teks terenkripsi mentah, lalu dikirim ke Gemini sebagai API key | Gagal diam-diam (400/403 dari Google) bila `ENCRYPTION_KEY` berubah | Low |
 | `send_qris` belum diuji runtime (mengirim WA sungguhan) | Hanya diuji lewat helper kepemilikan yang sama dengan tool lain | Low |
+| Implicit cache Gemini tidak terpakai (`cached=0`); definisi tool ±1.700 token dikirim ulang di setiap putaran | Token per pertanyaan ±5.400; context caching eksplisit atau pembatasan tool di putaran ≥1 belum dievaluasi (ukur dengan `scripts/e2e-wa-bot.ts`) | Medium |
+| Skrip uji `e2e-wa-bot.ts` hanya manual di mesin dev (butuh key Gemini), belum masuk CI; hanya 22 pertanyaan info/baca, belum menguji alur transaksi multi-pesan | Regresi prompt/tool baru ketahuan bila skrip dijalankan manual | Low |
+| Pesan yang sedang antre/diproses hilang saat API restart (webhook sudah dibalas 200) | Donatur harus mengirim ulang | Low |
+| Gap kalkulator web (nisab/rate hardcode, kunci `zakat_fidyah_amount`, harga beras kosong, harga emas basi) | Lihat tabel Gap Kalkulasi di `arsitektur-zakat.md` | Medium |
 
 ## Perbaikan
 
