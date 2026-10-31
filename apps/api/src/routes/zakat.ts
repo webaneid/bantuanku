@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import { eq, and, desc, inArray } from "drizzle-orm";
-import { mitra, settings, zakatPeriods, zakatTypes, zakatCalculatorConfigs } from "@bantuanku/db";
+import { mitra, settings, zakatPeriods, zakatTypes } from "@bantuanku/db";
 import { z } from "zod";
 import { success, error } from "../lib/response";
 import { optionalAuthMiddleware } from "../middleware/auth";
 import { getGoldPrice, saveCalculationLog } from "../services/zakat";
+import { loadZakatParams } from "../services/zakat-calculator";
 import type { Env, Variables } from "../types";
 
 const zakat = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -45,12 +46,10 @@ zakat.get("/config", async (c) => {
     }
   });
 
-  // Baca nisab dan rate dari zakatCalculatorConfigs; fallback ke default jika belum di-seed
-  const maalConfig = await db.query.zakatCalculatorConfigs.findFirst({
-    where: eq(zakatCalculatorConfigs.type, "maal"),
-  });
-  config.nisabGoldGrams = maalConfig?.nisabGoldGram ? parseFloat(maalConfig.nisabGoldGram as string) : 85;
-  config.zakatMaalRateBps = maalConfig?.rateBps ?? 250;
+  // Nisab dan rate dari settings (satu-satunya sumber yang bisa diubah admin; sama dengan bot WA)
+  const zakatParams = await loadZakatParams(db);
+  config.nisabGoldGrams = zakatParams.nisabGoldGram;
+  config.zakatMaalRateBps = Math.round(zakatParams.maalRatePct * 100);
 
   return success(c, config);
 });
@@ -157,12 +156,9 @@ zakat.post("/calculate/maal", optionalAuthMiddleware, async (c) => {
   const input = parsed.data;
 
   const goldPrice = await getGoldPrice(db);
-  const maalConfig = await db.query.zakatCalculatorConfigs.findFirst({
-    where: eq(zakatCalculatorConfigs.type, "maal"),
-  });
-
-  const nisabGoldGram = maalConfig?.nisabGoldGram ? parseFloat(maalConfig.nisabGoldGram as string) : 85;
-  const rateBps = maalConfig?.rateBps ?? 250;
+  const zakatParams = await loadZakatParams(db);
+  const nisabGoldGram = zakatParams.nisabGoldGram;
+  const rateBps = Math.round(zakatParams.maalRatePct * 100);
   const nisabValue = Math.round(nisabGoldGram * goldPrice);
 
   const totalAssets = input.uangTunai + input.saham + input.realEstate + input.emas + input.kendaraan;

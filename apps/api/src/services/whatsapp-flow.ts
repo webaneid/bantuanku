@@ -6,7 +6,8 @@ import { eq, and, or, ilike, desc } from "drizzle-orm";
 import { campaigns, zakatTypes, zakatPeriods, settings, donatur, qurbanPackages, qurbanPeriods, qurbanPackagePeriods, qurbanSharedGroups, qurbanSavings } from "@bantuanku/db";
 import type { Database } from "@bantuanku/db";
 import { TransactionService } from "./transaction";
-import { getGoldPrice, getFrontendUrl, stripHtml, truncateText } from "./whatsapp-ai";
+import { getFrontendUrl, stripHtml, truncateText } from "./whatsapp-ai";
+import { calculateZakat, loadZakatParams, normalizeZakatKind } from "./zakat-calculator";
 import { WhatsAppService } from "./whatsapp";
 
 // ---------------------------------------------------------------------------
@@ -702,125 +703,39 @@ interface CalcResult {
 }
 
 async function calculateZakatAmount(db: Database, flow: FlowState): Promise<CalcResult> {
-  const ct = flow.data.calculatorType!;
+  const kind = normalizeZakatKind(flow.data.calculatorType) ?? "umum";
+  const d = flow.data;
 
-  // Load settings
-  const zakatSettings = await db.select().from(settings).where(
-    or(
-      eq(settings.key, "zakat_fitrah_amount"),
-      eq(settings.key, "zakat_gold_price"),
-      eq(settings.key, "zakat_nisab_gold"),
-      eq(settings.key, "zakat_mal_percentage"),
-      eq(settings.key, "zakat_profession_percentage"),
-    )
-  );
-  const getSetting = (key: string) => zakatSettings.find((s) => s.key === key)?.value;
-
-  // Load zakatType for fitrahAmount
-  const zakatType = await db.query.zakatTypes.findFirst({
-    where: eq(zakatTypes.id, flow.data.zakatTypeId),
-  });
-
-  switch (ct) {
-    case "fitrah": {
-      const jumlahJiwa = flow.data.jumlah_jiwa || 1;
-      const hargaPerJiwa = Number(zakatType?.fitrahAmount) || Number(getSetting("zakat_fitrah_amount")) || 45000;
-      const total = jumlahJiwa * hargaPerJiwa;
-      return {
-        amount: total,
-        explanation: `${jumlahJiwa} jiwa × Rp ${fmt(hargaPerJiwa)} = Rp ${fmt(total)}`,
-        nisabNotMet: false,
-      };
-    }
-    case "maal": {
-      const totalHarta = flow.data.total_harta || 0;
-      const hutang = flow.data.hutang || 0;
-      const nett = totalHarta - hutang;
-      if (nett <= 0) {
-        return { amount: 0, explanation: "", nisabNotMet: true, nisabMessage: "Total harta setelah dikurangi hutang bernilai negatif atau nol. Tidak ada kewajiban zakat maal." };
-      }
-      const goldPrice = await getGoldPrice(db);
-      const nisabGold = Number(getSetting("zakat_nisab_gold")) || 85;
-      const nisab = nisabGold * goldPrice;
-      const pct = Number(getSetting("zakat_mal_percentage")) || 2.5;
-      if (nett < nisab) {
-        return {
-          amount: 0, explanation: "", nisabNotMet: true,
-          nisabMessage: [
-            `Total harta bersih Anda: Rp ${fmt(nett)} (harta Rp ${fmt(totalHarta)} - hutang Rp ${fmt(hutang)}).`,
-            ``,
-            `Nisab zakat maal: ${nisabGold} gram emas × Rp ${fmt(goldPrice)}/gram = *Rp ${fmt(nisab)}*`,
-            `(Harga emas terkini dari Pluang)`,
-            ``,
-            `Harta bersih Anda belum mencapai nisab, sehingga tidak wajib zakat maal. Namun Anda tetap bisa beramal melalui infaq atau sedekah.`,
-          ].join("\n"),
-        };
-      }
-      const total = Math.round(nett * (pct / 100));
-      return {
-        amount: total, nisabNotMet: false,
-        explanation: [
-          `Harta bersih: Rp ${fmt(totalHarta)} - Rp ${fmt(hutang)} = Rp ${fmt(nett)}`,
-          `Nisab: ${nisabGold}g emas × Rp ${fmt(goldPrice)} = Rp ${fmt(nisab)} ✓`,
-          `Zakat: ${pct}% × Rp ${fmt(nett)} = Rp ${fmt(total)}`,
-        ].join("\n"),
-      };
-    }
-    case "penghasilan":
-    case "profesi": {
-      const penghasilan = flow.data.penghasilan || 0;
-      const goldPrice = await getGoldPrice(db);
-      const nisabGold = Number(getSetting("zakat_nisab_gold")) || 85;
-      const nisab = nisabGold * goldPrice;
-      const pct = Number(getSetting("zakat_profession_percentage")) || 2.5;
-      if (penghasilan < nisab / 12) {
-        return {
-          amount: 0, explanation: "", nisabNotMet: true,
-          nisabMessage: [
-            `Penghasilan Rp ${fmt(penghasilan)}/bulan belum mencapai nisab.`,
-            ``,
-            `Nisab zakat penghasilan: ${nisabGold} gram emas × Rp ${fmt(goldPrice)} = Rp ${fmt(nisab)}/tahun (≈ Rp ${fmt(Math.round(nisab / 12))}/bulan).`,
-            ``,
-            `Tidak wajib zakat penghasilan, namun Anda tetap bisa beramal melalui infaq atau sedekah.`,
-          ].join("\n"),
-        };
-      }
-      const total = Math.round(penghasilan * (pct / 100));
-      return { amount: total, nisabNotMet: false, explanation: `${pct}% × Rp ${fmt(penghasilan)} = Rp ${fmt(total)}` };
-    }
-    case "pertanian": {
-      const hasilPanen = flow.data.hasil_panen || 0;
-      const irigasi = flow.data.irigasi === true;
-      const rate = irigasi ? 5 : 10;
-      const total = Math.round(hasilPanen * (rate / 100));
-      return { amount: total, nisabNotMet: false, explanation: `${rate}% × Rp ${fmt(hasilPanen)} = Rp ${fmt(total)}` };
-    }
-    case "peternakan": {
-      const nilaiTernak = flow.data.nilai_ternak || 0;
-      const pct = Number(getSetting("zakat_mal_percentage")) || 2.5;
-      const total = Math.round(nilaiTernak * (pct / 100));
-      return { amount: total, nisabNotMet: false, explanation: `${pct}% × Rp ${fmt(nilaiTernak)} = Rp ${fmt(total)}` };
-    }
-    case "bisnis":
-    case "perdagangan": {
-      const modal = flow.data.modal_usaha || 0;
-      const keuntungan = flow.data.keuntungan || 0;
-      const piutang = flow.data.piutang || 0;
-      const hutang = flow.data.hutang || 0;
-      const nett = modal + keuntungan + piutang - hutang;
-      const pct = Number(getSetting("zakat_mal_percentage")) || 2.5;
-      if (nett <= 0) {
-        return { amount: 0, explanation: "", nisabNotMet: true, nisabMessage: "Nilai bersih usaha tidak mencukupi untuk zakat bisnis." };
-      }
-      const total = Math.round(nett * (pct / 100));
-      return { amount: total, nisabNotMet: false, explanation: `${pct}% × Rp ${fmt(nett)} = Rp ${fmt(total)}` };
-    }
-    default: {
-      const amount = flow.data.generic_amount || 0;
-      const total = Math.round(amount * 0.025);
-      return { amount: total, nisabNotMet: false, explanation: `2.5% × Rp ${fmt(amount)} = Rp ${fmt(total)}` };
-    }
+  // fitrah: nominal per jiwa bisa khusus per jenis zakat (zakat_types.fitrah_amount)
+  let fitrahPerPerson: number | undefined;
+  if (kind === "fitrah" && d.zakatTypeId) {
+    const zakatType = await db.query.zakatTypes.findFirst({ where: eq(zakatTypes.id, d.zakatTypeId) });
+    fitrahPerPerson = Number(zakatType?.fitrahAmount) || undefined;
   }
+
+  // Perhitungan satu sumber: services/zakat-calculator.ts (sama dengan tool calculate_zakat)
+  const params = await loadZakatParams(db);
+  const r = calculateZakat(kind, {
+    jumlahJiwa: Number(d.jumlah_jiwa),
+    fitrahPerPerson,
+    totalHarta: Number(d.total_harta),
+    hutang: Number(d.hutang),
+    penghasilan: Number(d.penghasilan),
+    hasilPanen: Number(d.hasil_panen),
+    irigasi: d.irigasi === true,
+    nilaiTernak: Number(d.nilai_ternak),
+    modalUsaha: Number(d.modal_usaha),
+    keuntungan: Number(d.keuntungan),
+    piutang: Number(d.piutang),
+    nilai: Number(d.generic_amount),
+  }, params);
+
+  return {
+    amount: r.amount,
+    explanation: r.explanation,
+    nisabNotMet: !r.nisabMet,
+    nisabMessage: r.notMetMessage,
+  };
 }
 
 async function calculateAndShowResult(db: Database, ctx: FlowContext, flow: FlowState, wa: WhatsAppService): Promise<void> {

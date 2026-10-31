@@ -6,6 +6,7 @@ import { WhatsAppService } from "./whatsapp";
 import { TransactionService } from "./transaction";
 import { decrypt } from "../lib/encryption";
 import { paymentMethodError } from "./cash-book";
+import { calculateZakat, loadZakatParams, normalizeZakatKind, type ZakatInput } from "./zakat-calculator";
 import { handleFlowStep, generateFirstFlowMessage, createZakatFlowState, createDonationFlowState, createFidyahFlowState, createQurbanFlowState, createQurbanSavingsFlowState, createQurbanSavingsDepositFlowState, type FlowState, type FlowContext } from "./whatsapp-flow";
 
 // ---------------------------------------------------------------------------
@@ -37,59 +38,6 @@ async function findOwnedTransaction(db: Database, transactionId: string, ownerPh
 }
 
 const NO_OWNER_MSG = "Nomor HP pengirim tidak tersedia.";
-
-// ---------------------------------------------------------------------------
-// Gold Price Scraper (Pluang) with 1-hour cache
-// ---------------------------------------------------------------------------
-let _goldPriceCache: { price: number; fetchedAt: number } | null = null;
-const GOLD_CACHE_TTL = 60 * 60 * 1000; // 1 hour
-
-async function fetchGoldPriceFromPluang(): Promise<number | null> {
-  // Return cache if still fresh
-  if (_goldPriceCache && Date.now() - _goldPriceCache.fetchedAt < GOLD_CACHE_TTL) {
-    return _goldPriceCache.price;
-  }
-
-  try {
-    const res = await fetch("https://pluang.com/asset/gold", {
-      headers: { "User-Agent": "Jaladana-ZakatBot/1.0" },
-      signal: AbortSignal.timeout(5000), // 5s timeout
-    });
-    if (!res.ok) return null;
-
-    const html = await res.text();
-    // Extract __NEXT_DATA__ JSON
-    const match = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-    if (!match?.[1]) return null;
-
-    const nextData = JSON.parse(match[1]);
-    const priceText = nextData?.props?.pageProps?.goldAssetPerformance?.currentMidPrice;
-    if (!priceText) return null;
-
-    // "Rp2.735.207" → 2735207
-    const numericPrice = Number(priceText.replace(/[^0-9]/g, ""));
-    if (!numericPrice || numericPrice < 100000) return null; // sanity check
-
-    _goldPriceCache = { price: numericPrice, fetchedAt: Date.now() };
-    console.log(`[Zakat] Gold price from Pluang: Rp ${numericPrice.toLocaleString("id-ID")}/gram`);
-    return numericPrice;
-  } catch (err) {
-    console.warn("[Zakat] Pluang scrape failed, will use DB setting:", (err as Error).message);
-    return null;
-  }
-}
-
-export async function getGoldPrice(db: Database): Promise<number> {
-  // 1. Try live Pluang price
-  const livePrice = await fetchGoldPriceFromPluang();
-  if (livePrice) return livePrice;
-
-  // 2. Fallback to DB setting
-  const row = await db.query.settings.findFirst({
-    where: eq(settings.key, "zakat_gold_price"),
-  });
-  return Number(row?.value) || 1_000_000;
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -604,150 +552,54 @@ async function getPaymentLink(
   ].join("\n");
 }
 
-async function calculateZakat(
-  db: Database,
-  params: { zakatTypeId: string; params: Record<string, any> }
-): Promise<string> {
-  if (!params.zakatTypeId) {
-    return "Parameter zakatTypeId diperlukan.";
+// Tool: hitung zakat (hanya perhitungan, tanpa transaksi). Angka dari LLM tidak tepercaya → divalidasi.
+const ZAKAT_TOOL_NUM_FIELDS: Record<string, keyof ZakatInput> = {
+  jumlah_jiwa: "jumlahJiwa",
+  total_harta: "totalHarta",
+  hutang: "hutang",
+  penghasilan: "penghasilan",
+  bonus: "bonus",
+  penghasilan_lain: "penghasilanLain",
+  pengeluaran: "pengeluaran",
+  hasil_panen: "hasilPanen",
+  biaya_produksi: "biayaProduksi",
+  nilai_ternak: "nilaiTernak",
+  modal_usaha: "modalUsaha",
+  keuntungan: "keuntungan",
+  piutang: "piutang",
+};
+const ZAKAT_TOOL_MAX = 1e15;
+const ZAKAT_KIND_LABEL: Record<string, string> = {
+  fitrah: "Zakat Fitrah", maal: "Zakat Maal", profesi: "Zakat Penghasilan/Profesi",
+  pertanian: "Zakat Pertanian", peternakan: "Zakat Peternakan", bisnis: "Zakat Bisnis",
+};
+
+async function calculateZakatTool(db: Database, params: Record<string, any>): Promise<string> {
+  const kind = normalizeZakatKind(typeof params.jenis === "string" ? params.jenis : "");
+  if (!kind || kind === "umum") {
+    return "Jenis zakat tidak dikenal. Pilihan: fitrah, maal, profesi, pertanian, peternakan, bisnis.";
   }
 
-  const zakatType = await db.query.zakatTypes.findFirst({
-    where: eq(zakatTypes.id, params.zakatTypeId),
-  });
-
-  if (!zakatType) {
-    return "Jenis zakat tidak ditemukan.";
+  const input: ZakatInput = {};
+  for (const [argName, field] of Object.entries(ZAKAT_TOOL_NUM_FIELDS)) {
+    const raw = params[argName];
+    if (raw === undefined || raw === null || raw === "") continue;
+    const num = Number(raw);
+    if (!Number.isFinite(num) || num < 0 || num > ZAKAT_TOOL_MAX) {
+      return `Angka "${argName}" tidak valid. Mohon minta donatur menyebutkan nominal dalam Rupiah (angka saja).`;
+    }
+    (input as any)[field] = num;
   }
+  input.irigasi = params.irigasi === true || params.irigasi === "true";
 
-  const rawCalcType = zakatType.calculatorType || zakatType.slug;
-  // Normalize: DB stores "zakat-fitrah" → strip prefix to match switch cases "fitrah"
-  const calcType = rawCalcType.startsWith("zakat-") ? rawCalcType.replace("zakat-", "") : rawCalcType;
-  const p = params.params || {};
-
-  // Load zakat settings from DB (no hardcodes)
-  const zakatSettings = await db.select().from(settings).where(
-    or(
-      eq(settings.key, "zakat_fitrah_amount"),
-      eq(settings.key, "zakat_gold_price"),
-      eq(settings.key, "zakat_nisab_gold"),
-      eq(settings.key, "zakat_mal_percentage"),
-      eq(settings.key, "zakat_profession_percentage"),
-    )
-  );
-  const getSetting = (key: string) => zakatSettings.find(s => s.key === key)?.value;
-
-  let result: number = 0;
-  let explanation = "";
-
-  switch (calcType) {
-    case "fitrah": {
-      const jumlahJiwa = Number(p.jumlah_jiwa) || 1;
-      const hargaPerJiwa = Number(zakatType.fitrahAmount) || Number(getSetting("zakat_fitrah_amount")) || 45000;
-      result = jumlahJiwa * hargaPerJiwa;
-      explanation = `${jumlahJiwa} jiwa × Rp ${hargaPerJiwa.toLocaleString("id-ID")} = Rp ${result.toLocaleString("id-ID")}`;
-      break;
-    }
-    case "penghasilan":
-    case "profesi": {
-      const penghasilan = Number(p.penghasilan) || 0;
-      if (penghasilan <= 0) {
-        return "Mohon informasikan penghasilan bulanan Anda (angka).";
-      }
-      const goldPriceProfesi = await getGoldPrice(db);
-      const nisabGoldProfesi = Number(getSetting("zakat_nisab_gold")) || 85;
-      const nisabProfesi = nisabGoldProfesi * goldPriceProfesi;
-      const pctProfesi = Number(getSetting("zakat_profession_percentage")) || 2.5;
-      if (penghasilan < nisabProfesi / 12) {
-        return [
-          `Penghasilan Rp ${penghasilan.toLocaleString("id-ID")}/bulan belum mencapai nisab.`,
-          ``,
-          `Nisab zakat penghasilan: ${nisabGoldProfesi} gram emas × Rp ${goldPriceProfesi.toLocaleString("id-ID")} = Rp ${nisabProfesi.toLocaleString("id-ID")}/tahun (≈ Rp ${Math.round(nisabProfesi / 12).toLocaleString("id-ID")}/bulan).`,
-          ``,
-          `Tidak wajib zakat penghasilan, namun Anda tetap bisa beramal melalui infaq atau sedekah untuk program-program kami. Apakah Anda tertarik berdonasi?`,
-        ].join("\n");
-      }
-      result = Math.round(penghasilan * (pctProfesi / 100));
-      explanation = `${pctProfesi}% × Rp ${penghasilan.toLocaleString("id-ID")} = Rp ${result.toLocaleString("id-ID")}`;
-      break;
-    }
-    case "maal": {
-      const totalHarta = Number(p.total_harta) || 0;
-      const hutang = Number(p.hutang) || 0;
-      if (totalHarta <= 0) {
-        return "Mohon informasikan total harta Anda (angka). Contoh: 500000000 untuk Rp 500 juta.";
-      }
-      const nett = totalHarta - hutang;
-      if (nett <= 0) {
-        return "Total harta setelah dikurangi hutang bernilai negatif atau nol. Tidak ada kewajiban zakat maal.";
-      }
-      // Nisab check: nett harta harus >= 85 gram emas
-      const goldPriceMaal = await getGoldPrice(db);
-      const nisabGoldMaal = Number(getSetting("zakat_nisab_gold")) || 85;
-      const nisabMaal = nisabGoldMaal * goldPriceMaal;
-      const pctMaal = Number(getSetting("zakat_mal_percentage")) || 2.5;
-      if (nett < nisabMaal) {
-        return [
-          `Total harta bersih Anda: Rp ${nett.toLocaleString("id-ID")} (harta Rp ${totalHarta.toLocaleString("id-ID")} - hutang Rp ${hutang.toLocaleString("id-ID")}).`,
-          ``,
-          `Nisab zakat maal: ${nisabGoldMaal} gram emas × Rp ${goldPriceMaal.toLocaleString("id-ID")}/gram = *Rp ${nisabMaal.toLocaleString("id-ID")}*`,
-          `(Harga emas terkini dari Pluang)`,
-          ``,
-          `Harta bersih Anda belum mencapai nisab, sehingga tidak wajib zakat maal. Namun Anda tetap bisa beramal melalui infaq atau sedekah untuk program-program kami. Apakah Anda tertarik berdonasi?`,
-        ].join("\n");
-      }
-      result = Math.round(nett * (pctMaal / 100));
-      explanation = [
-        `Harta bersih: Rp ${totalHarta.toLocaleString("id-ID")} - Rp ${hutang.toLocaleString("id-ID")} = Rp ${nett.toLocaleString("id-ID")}`,
-        `Nisab: ${nisabGoldMaal}g emas × Rp ${goldPriceMaal.toLocaleString("id-ID")} = Rp ${nisabMaal.toLocaleString("id-ID")} ✓`,
-        `Zakat: ${pctMaal}% × Rp ${nett.toLocaleString("id-ID")} = Rp ${result.toLocaleString("id-ID")}`,
-      ].join("\n");
-      break;
-    }
-    case "pertanian": {
-      const hasilPanen = Number(p.hasil_panen) || 0;
-      const irigasi = p.irigasi === true || p.irigasi === "true";
-      const rate = irigasi ? 0.05 : 0.1;
-      result = Math.round(hasilPanen * rate);
-      explanation = `${irigasi ? "5%" : "10%"} × Rp ${hasilPanen.toLocaleString("id-ID")} = Rp ${result.toLocaleString("id-ID")}`;
-      break;
-    }
-    case "peternakan": {
-      const nilaiTernak = Number(p.nilai_ternak) || 0;
-      const pctMaalPeternakan = Number(getSetting("zakat_mal_percentage")) || 2.5;
-      result = Math.round(nilaiTernak * (pctMaalPeternakan / 100));
-      explanation = `${pctMaalPeternakan}% × Rp ${nilaiTernak.toLocaleString("id-ID")} = Rp ${result.toLocaleString("id-ID")}`;
-      break;
-    }
-    case "bisnis":
-    case "perdagangan": {
-      const modalUsaha = Number(p.modal_usaha) || 0;
-      const keuntungan = Number(p.keuntungan) || 0;
-      const piutang = Number(p.piutang) || 0;
-      const hutangUsaha = Number(p.hutang) || 0;
-      const nettBisnis = modalUsaha + keuntungan + piutang - hutangUsaha;
-      const pctMaalBisnis = Number(getSetting("zakat_mal_percentage")) || 2.5;
-      if (nettBisnis <= 0) {
-        return "Nilai bersih usaha tidak mencukupi untuk zakat bisnis.";
-      }
-      result = Math.round(nettBisnis * (pctMaalBisnis / 100));
-      explanation = `${pctMaalBisnis}% × Rp ${nettBisnis.toLocaleString("id-ID")} = Rp ${result.toLocaleString("id-ID")}`;
-      break;
-    }
-    default: {
-      // Generic: 2.5% of amount
-      const amount = Number(p.amount) || 0;
-      if (amount <= 0) {
-        return `Untuk menghitung zakat ${zakatType.name}, mohon berikan nominal hartanya.`;
-      }
-      result = Math.round(amount * 0.025);
-      explanation = `2.5% × Rp ${amount.toLocaleString("id-ID")} = Rp ${result.toLocaleString("id-ID")}`;
-    }
-  }
-
-  // Return ONLY the calculation data — no instructions, no "gunakan tool", no formatting
-  // The system prompt (LANGKAH 5) handles what the AI should say/do next (konfirmasi)
-  return `Perhitungan: ${explanation}. Total zakat: Rp ${result.toLocaleString("id-ID")}. Nama program: ${zakatType.name}.`;
+  const r = calculateZakat(kind, input, await loadZakatParams(db));
+  if (!r.nisabMet) return r.notMetMessage || "Belum mencapai nisab.";
+  return [
+    `Hasil perhitungan ${ZAKAT_KIND_LABEL[kind]}:`,
+    r.explanation,
+    `Total zakat: Rp ${r.amount.toLocaleString("id-ID")}`,
+    "Tawarkan donatur untuk membayar; jika setuju panggil start_zakat_flow.",
+  ].join("\n");
 }
 
 async function registerDonatur(
@@ -1147,6 +999,8 @@ export async function executeTool(
     case "check_transaction_status":
       if (!context?.phone) return NO_OWNER_MSG;
       return checkTransactionStatus(db, params as any, context.phone);
+    case "calculate_zakat":
+      return calculateZakatTool(db, params);
     case "get_zakat_menu":
       return getZakatMenu(db);
     case "get_zakat_programs":
@@ -1378,6 +1232,31 @@ const TOOL_DEFINITIONS = [
       properties: {
         transactionNumber: { type: "string", description: "Nomor transaksi (misal TRX-20260219-58636)" },
       },
+    },
+  },
+  {
+    name: "calculate_zakat",
+    description: "Hitung zakat (hanya hitungan, TIDAK membuat transaksi). Gunakan untuk 'berapa zakat saya', 'hitung zakat', 'sudah wajib zakat belum'. Angka dalam Rupiah. Tanyakan data yang kurang dulu; jangan menghitung sendiri.",
+    parameters: {
+      type: "object",
+      properties: {
+        jenis: { type: "string", enum: ["fitrah", "maal", "profesi", "pertanian", "peternakan", "bisnis"] },
+        jumlah_jiwa: { type: "number", description: "fitrah: jumlah jiwa" },
+        total_harta: { type: "number", description: "maal: total harta" },
+        hutang: { type: "number", description: "maal/bisnis: hutang jatuh tempo" },
+        penghasilan: { type: "number", description: "profesi: gaji per bulan" },
+        bonus: { type: "number", description: "profesi: bonus per bulan" },
+        penghasilan_lain: { type: "number", description: "profesi: penghasilan lain per bulan" },
+        pengeluaran: { type: "number", description: "profesi: pengeluaran pokok per bulan" },
+        hasil_panen: { type: "number", description: "pertanian: nilai hasil panen" },
+        biaya_produksi: { type: "number", description: "pertanian: biaya produksi" },
+        irigasi: { type: "boolean", description: "pertanian: true jika berbiaya (irigasi), false jika tadah hujan" },
+        nilai_ternak: { type: "number", description: "peternakan: total nilai ternak" },
+        modal_usaha: { type: "number", description: "bisnis: modal/aset usaha" },
+        keuntungan: { type: "number", description: "bisnis: keuntungan" },
+        piutang: { type: "number", description: "bisnis: piutang lancar" },
+      },
+      required: ["jenis"],
     },
   },
   {
@@ -2230,6 +2109,7 @@ FLOW ZAKAT (HANYA jika donatur sudah terdaftar — jika belum, jalankan FLOW REG
 - DILARANG mengarang/mengetik daftar jenis zakat sendiri. Semua HARUS melalui start_zakat_flow.
 - DILARANG panggil start_zakat_flow lebih dari 1x untuk permintaan yang sama.
 - get_zakat_menu HANYA untuk pertanyaan informasi (misal "apa saja jenis zakat?"), BUKAN untuk proses pembayaran.
+- Donatur HANYA ingin MENGHITUNG zakat (bukan membayar), misal "berapa zakat gaji 15 juta?" → panggil calculate_zakat. Data yang kurang tanyakan dulu via respond_to_user; JANGAN menghitung sendiri. Jika sesudah itu ingin membayar → start_zakat_flow.
 
 FLOW QURBAN (HANYA jika donatur sudah terdaftar):
 - Donatur bilang "qurban" / "mau qurban" / "pesan qurban" / "beli qurban" → LANGSUNG panggil start_qurban_flow()

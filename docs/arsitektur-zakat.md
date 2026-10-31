@@ -42,7 +42,9 @@ description     text
 mitraId         text FK mitra.id        -- periode milik mitra tertentu
 ```
 
-### `zakat_calculator_configs` — Konfigurasi nisab & rate per jenis
+### `zakat_calculator_configs` — Konfigurasi nisab & rate per jenis (LEGACY sejak 2026-10-31)
+
+> Tabel ini **tidak lagi dibaca** `/zakat/config`, `/zakat/calculate/maal`, maupun bot WA, dan tidak punya UI admin. Sumber nisab/rate kini tabel `settings` (ADR-0017). Tabel dibiarkan; hapus setelah dipastikan tidak ada pemakai lain.
 ```
 id          text PK
 type        text UNIQUE     -- "maal" | "income" | "trade" | "gold" | "fitrah"
@@ -160,7 +162,7 @@ Ada dualisme distribusi yang masih harus dibereskan di implementasi: route CRUD 
 
 Sumber:
 - `goldPricePerGram`, `zakatFitrahPerPerson`, `ricePricePerKg`, `fidyahPerDay` → tabel `settings` (category = "zakat")
-- `nisabGoldGrams`, `zakatMaalRateBps` → tabel `zakat_calculator_configs` (type = "maal"), fallback 85g / 250bps
+- `nisabGoldGrams` (`zakat_nisab_gold`), `zakatMaalRateBps` (`zakat_mal_percentage` × 100) → tabel `settings`, fallback 85g / 250bps (via `loadZakatParams`, ADR-0017)
 
 ---
 
@@ -389,6 +391,33 @@ Setiap pembayaran zakat yang lunas menghasilkan record `revenue_shares`:
 - **Tidak ada skip** khusus zakat — semua jenis zakat dikalkulasi
 
 > Detail formula dan semua pihak penerima: lihat `arsitektur-revenue-share.md`.
+
+---
+
+## Kalkulasi Satu Sumber (ADR-0017, 2026-10-31)
+
+Hitung zakat di server ada di satu modul: `apps/api/src/services/zakat-calculator.ts` (`calculateZakat`, `loadZakatParams`, `normalizeZakatKind`). Dipakai oleh `POST /zakat/calculate/maal` (parameter), `GET /zakat/config`, alur zakat bot WA, dan tool bot `calculate_zakat`. Parameter hanya dari `settings`: `zakat_gold_price`, `zakat_nisab_gold`, `zakat_mal_percentage`, `zakat_profession_percentage`, `zakat_rice_price`, `zakat_fitrah_amount`.
+
+| Jenis | Basis | Nisab | Rate |
+|-------|-------|-------|------|
+| Maal | harta − hutang | `zakat_nisab_gold` gram × harga emas | `zakat_mal_percentage` |
+| Profesi/penghasilan | (gaji + bonus + lain) − pengeluaran, per bulan | nisab tahunan / 12 | `zakat_profession_percentage` |
+| Pertanian | panen − biaya produksi | 750 kg × `zakat_rice_price` (dilewati bila kosong) | 10% tadah hujan, 5% irigasi |
+| Peternakan | nilai ternak | seperti maal | `zakat_mal_percentage` |
+| Bisnis | modal + keuntungan + piutang − hutang | seperti maal | `zakat_mal_percentage` |
+| Fitrah | jiwa × nominal | — | `zakat_types.fitrah_amount` atau `zakat_fitrah_amount` |
+
+Pembulatan `Math.floor`.
+
+### Gap Kalkulasi
+
+| Gap | Dampak | Prioritas |
+|-----|--------|-----------|
+| Kalkulator web profesi, pertanian, peternakan menghitung di browser dengan 85 gram dan 2,5% ditulis langsung di kode | Admin mengubah nisab/rate di Settings tidak memengaruhi halaman itu (bot dan maal ikut). Solusi: endpoint server yang memakai modul di atas | Medium |
+| Halaman web penghasilan dan bisnis memanggil `/zakat/calculate/income` dan `/trade` yang tidak ada | Halaman itu gagal bila dipakai; di DB dev tidak ada jenis zakat yang mengarah ke sana | Low |
+| `services/zakat.ts` (income, trade, gold, fitrah, fidyah) tidak terhubung ke route mana pun; `zakat_calculator_configs` tidak dipakai | Kode dan tabel mati | Low |
+| `GET /zakat/config` membaca `zakat_fidyah_amount` sedangkan nominal fidyah sebenarnya `fidyah_amount_per_day` | `fidyahPerDay` di web memakai default 50.000, bukan nilai setting | Medium |
+| Harga emas hanya diperbarui lewat admin/cron (bot tidak lagi scrape Pluang) | Bila `zakat_gold_price` basi, web dan bot sama-sama basi | Medium |
 
 ---
 

@@ -163,7 +163,7 @@ processIncomingMessage()
 
 ---
 
-## D. Tools AI (19 Tools)
+## D. Tools AI (20 Tools)
 
 ### Info / Lookup Tools
 
@@ -173,6 +173,7 @@ processIncomingMessage()
 | `search_campaigns` | Cari campaign aktif: `pillar` (slug huruf kecil: fidyah, wakaf, sedekah) dan/atau `query` (cocok ke judul ATAU pilar). Pilar adalah pengelompokan utama program. |
 | `get_campaign_detail` | Detail campaign + progress donasi |
 | `check_transaction_status` | Cek status transaksi by phone atau kode TRX-... |
+| `calculate_zakat` | Hitung zakat (fitrah, maal, profesi, pertanian, peternakan, bisnis); hanya hitungan, tanpa transaksi (bagian H) |
 | `get_zakat_menu` | Menu jenis zakat (info saja, bukan bayar) |
 | `get_zakat_programs` | Daftar program per jenis zakat |
 | `get_bank_details` | Info rekening bank, filter by program type (zakat/qurban/wakaf/umum) |
@@ -349,15 +350,17 @@ Flow di-clear, pesan diteruskan ke AI. AI menginterpretasi sebagai bukti transfe
 
 ---
 
-## H. Gold Price Scraper
+## H. Kalkulasi Zakat (Satu Sumber, ADR-0017)
 
-**Digunakan untuk:** Kalkulasi zakat maal (menentukan nisab berbasis harga emas).
+Semua hitung zakat bot memakai `apps/api/src/services/zakat-calculator.ts` (`calculateZakat` + `loadZakatParams`), sama dengan `/zakat/config` dan `/zakat/calculate/maal` di web. Parameter hanya dari tabel `settings` (`zakat_gold_price`, `zakat_nisab_gold`, `zakat_mal_percentage`, `zakat_profession_percentage`, `zakat_rice_price`, `zakat_fitrah_amount`).
 
-**Sumber:** `https://pluang.com/asset/gold` — scrape HTML `__NEXT_DATA__` JSON, ambil `props.pageProps.goldAssetPerformance.currentMidPrice`.
+Dipakai di dua tempat:
+- **Alur zakat** (`calculateZakatAmount` di `whatsapp-flow.ts`) saat mesin menghitung sebelum konfirmasi.
+- **Tool `calculate_zakat`** untuk pertanyaan murni hitungan ("berapa zakat gaji 15 juta?"): hanya perhitungan, tidak membuat transaksi, tidak butuh donatur terdaftar. Argumen angka dari LLM divalidasi (finite, 0..1e15) dan jenis dinormalkan lewat `normalizeZakatKind`.
 
-**Cache:** In-memory `{ price, fetchedAt }`. TTL 1 jam. Timeout fetch 5 detik.
+Aturan: maal/peternakan/bisnis nisab = nisab gram × harga emas; profesi nisab/12 per bulan atas penghasilan bersih (+ bonus + lain − pengeluaran); pertanian nisab 750 kg × harga beras (dilewati bila `zakat_rice_price` kosong), 10% tadah hujan / 5% irigasi; fitrah = jiwa × nominal. Hasil di bawah nisab dijawab "belum wajib" + tawaran infaq/sedekah.
 
-**Fallback:** Jika scrape gagal / harga < 100.000 (sanity check) → baca setting DB `zakat_gold_price`.
+Scraper harga emas Pluang di bot sudah **dihapus** (2026-10-31); harga emas bot sama dengan web (`zakat_gold_price`, diperbarui lewat admin/cron).
 
 ---
 
@@ -444,7 +447,7 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | `start_donation_flow` meneruskan `amount` dari LLM tanpa validasi minimum; `TransactionService.create` tidak memvalidasi `unit_price`/`quantity` | Transaksi bernilai negatif/Rp 1 lewat prompt injection (data kotor, tidak bisa menandai lunas) | Medium |
 | Path media GOWA hanya di-allowlist karakter (bukan prefiks `statics/media/` & `media/download/`); `readBodyWithLimit` memuat penuh sebelum cek ukuran bila tanpa `content-length`; fetch tanpa timeout | Hardening; payload hanya dikontrol GOWA dan webhook sudah bertandatangan | Low |
 | `get_campaign_detail` tidak memfilter status | Campaign draft terbaca jika ID diketahui | Low |
-| Kode mati `calculateZakat` di `whatsapp-ai.ts` (nisab/rate dari `settings`, berbeda dari `services/zakat.ts`) | Tiga implementasi hitung zakat; diganti satu sumber di Fase 2 rencana pengembangan (bagian N) | Medium |
+| Alur zakat bot belum menanyakan pengeluaran (profesi) dan biaya produksi (pertanian); tool `calculate_zakat` sudah menerimanya | Hasil alur bisa lebih besar dari web untuk pengguna yang punya pengeluaran/biaya | Low |
 | `decrypt()` gagal mengembalikan teks terenkripsi mentah, lalu dikirim ke Gemini sebagai API key | Gagal diam-diam (400/403 dari Google) bila `ENCRYPTION_KEY` berubah | Low |
 | `send_qris` belum diuji runtime (mengirim WA sungguhan) | Hanya diuji lewat helper kepemilikan yang sama dengan tool lain | Low |
 
@@ -458,6 +461,7 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | 2026-10-31 | Gemini: hasil tool `role: "user"` + `functionCall` asli (thoughtSignature), API key ke header `x-goog-api-key`, default model `gemini-3.8-flash` (API + form admin), log pemakaian token, filter pilar tidak peka huruf, kode mati `createDonation`/`createZakatPayment` dihapus |
 | 2026-10-31 | Fidyah/wakaf dicari lewat pilar: `search_campaigns` punya parameter `pillar` dan `query` ikut mencocokkan pilar; `start_fidyah_flow` menentukan campaign fidyah di server (tanpa ID dari LLM), prompt diperbarui |
 | 2026-10-31 | Webhook dibalas 200 segera + antrean per nomor (`lib/keyed-queue.ts`, batas 5); pengaman loop AI (batas 25 dtk, tool berulang, timeout 20 dtk); fallback aman menggantikan hasil tool mentah |
+| 2026-10-31 | Zakat satu sumber (`services/zakat-calculator.ts`, ADR-0017): alur zakat bot memakai modul itu (nisab ikut dicek untuk pertanian/peternakan/bisnis seperti web), tool baru `calculate_zakat`, kalkulator lama dan scraper Pluang di bot dihapus |
 | 2026-10-22 | `register_donatur` memakai nomor pengirim, tidak membocorkan data donatur lain; `bodyLimit` 1 MB di webhook |
 
 ---
@@ -482,9 +486,9 @@ Tujuan: bot menjawab info semua modul (campaign per pilar, zakat, fidyah, wakaf,
 
 | Fase | Isi | Status |
 |------|-----|--------|
-| 0 | Perbaikan `role: "function"` dan `thoughtSignature` | Selesai (belum deploy) |
-| 1 | Stabilisasi: default model, key ke header, filter pilar, hapus kode mati, log token | Selesai (belum deploy) |
-| 2 | Hitung zakat satu sumber (`services/zakat.ts` + `zakat_calculator_configs`) dipakai alur dan tool `calculate_zakat` | Belum |
+| 0 | Perbaikan `role: "function"` dan `thoughtSignature` | Selesai |
+| 1 | Stabilisasi: default model, key ke header, filter pilar, hapus kode mati, log token | Selesai |
+| 2 | Hitung zakat satu sumber (`services/zakat-calculator.ts`, parameter dari `settings`, ADR-0017) dipakai alur, tool `calculate_zakat`, dan `/zakat/config`+`/calculate/maal` | Selesai (belum deploy) |
 | 3 | Tool `get_info(topik)`: profil, cara bayar, fidyah, wakaf, zakat, qurban, laporan kegiatan, Pages CMS (publik, dipotong) | Belum |
 | 4 | Hemat token: ukur baseline, `thinkingConfig` rendah, pangkas prompt 11 KB, ringkas tool, caching | Belum |
 | 5 | Skrip uji `scripts/e2e-wa-bot.ts` (~25 pertanyaan, hanya DB localhost, gateway WA dimatikan) | Belum |
