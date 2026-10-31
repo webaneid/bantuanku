@@ -1512,7 +1512,14 @@ async function fetchWithRetry(
   return fetch(url, options);
 }
 
-async function callGemini(
+// Batasi token "berpikir" model Gemini (di log: 158-629 token thinking untuk satu jawaban pendek).
+// Nama parameter bisa berbeda antar generasi model; bila API menolaknya (400 menyebut thinking),
+// model itu dicatat dan permintaan diulang tanpa thinkingConfig (tidak merusak bot).
+const GEMINI_THINKING_LEVEL = "low";
+const GEMINI_MAX_OUTPUT_TOKENS = 2048;
+const geminiNoThinkingModels = new Set<string>();
+
+export async function callGemini(
   apiKey: string,
   model: string,
   systemPrompt: string,
@@ -1576,11 +1583,16 @@ async function callGemini(
       console.warn("[WA AI] batas waktu loop habis, balasan fallback");
       return AI_FALLBACK_REPLY;
     }
+    const useThinkingConfig = !geminiNoThinkingModels.has(model);
     const requestBody = {
       system_instruction: { parts: [{ text: systemPrompt }] },
       contents: currentContents,
       tools,
       tool_config: toolConfig,
+      generationConfig: {
+        maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
+        ...(useThinkingConfig ? { thinkingConfig: { thinkingLevel: GEMINI_THINKING_LEVEL } } : {}),
+      },
     };
 
     const res = await fetchWithRetry(url, {
@@ -1592,6 +1604,12 @@ async function callGemini(
 
     if (!res.ok) {
       const errText = await res.text();
+      if (res.status === 400 && useThinkingConfig && /thinking/i.test(errText)) {
+        console.warn(`[WA AI] model ${model} menolak thinkingConfig, diulang tanpa thinking`);
+        geminiNoThinkingModels.add(model);
+        round--; // ulangi putaran ini
+        continue;
+      }
       console.error(`Gemini API error (round ${round}):`, res.status, errText);
       return AI_FALLBACK_REPLY;
     }
@@ -1601,7 +1619,7 @@ async function callGemini(
     const usage = data.usageMetadata;
     if (usage) {
       console.log(
-        `[WA AI] usage model=${model} round=${round} prompt=${usage.promptTokenCount ?? 0} output=${usage.candidatesTokenCount ?? 0} thoughts=${usage.thoughtsTokenCount ?? 0} total=${usage.totalTokenCount ?? 0}`
+        `[WA AI] usage model=${model} round=${round} prompt=${usage.promptTokenCount ?? 0} cached=${usage.cachedContentTokenCount ?? 0} output=${usage.candidatesTokenCount ?? 0} thoughts=${usage.thoughtsTokenCount ?? 0} total=${usage.totalTokenCount ?? 0} thinking=${useThinkingConfig ? GEMINI_THINKING_LEVEL : "off"}`
       );
     }
     const parts = data.candidates?.[0]?.content?.parts || [];

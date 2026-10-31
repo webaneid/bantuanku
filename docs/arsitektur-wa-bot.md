@@ -161,7 +161,9 @@ processIncomingMessage()
 
 **Pengaman loop** (`createLoopGuard`, semua provider): berhenti dengan `AI_FALLBACK_REPLY` bila (a) total waktu > 25 detik, (b) model memanggil tool yang sama dengan argumen yang sama (macet), (c) putaran habis, (d) provider error. Setiap panggilan ke provider punya timeout 20 detik (`AbortSignal.timeout`); timeout melempar exception sehingga donatur menerima "terjadi gangguan". **Hasil tool mentah tidak pernah dikirim sebagai balasan** (bisa berisi `[ID: ...]` internal).
 
-**Gemini khusus:** Mode `"ANY"` — harus selalu return tool call (tidak bisa reply teks langsung). Retry 2x saat rate limit 429, delay 3 detik. API key dikirim lewat header `x-goog-api-key` (bukan query string). Hasil tool dikirim balik dengan `role: "user"` (role `function` ditolak model baru) dan `functionCall` asli dikembalikan utuh agar `thoughtSignature` ikut. Setiap putaran mencatat `[WA AI] usage ... prompt= output= thoughts= total=` (tanpa PII) sebagai baseline token.
+**Gemini khusus:** Mode `"ANY"` — harus selalu return tool call (tidak bisa reply teks langsung). Retry 2x saat rate limit 429, delay 3 detik. API key dikirim lewat header `x-goog-api-key` (bukan query string). Hasil tool dikirim balik dengan `role: "user"` (role `function` ditolak model baru) dan `functionCall` asli dikembalikan utuh agar `thoughtSignature` ikut. Setiap putaran mencatat `[WA AI] usage model= round= prompt= cached= output= thoughts= total= thinking=` (tanpa PII) sebagai baseline token (`cached` = token yang dilayani implicit caching Gemini).
+
+**Batas token Gemini (2026-10-31):** `generationConfig.maxOutputTokens = 2048` dan `thinkingConfig.thinkingLevel = "low"` (di log sebelumnya model memakai 158–629 token thinking untuk jawaban pendek). Nama parameter thinking bisa berbeda antar generasi model; bila API menolaknya (400 yang menyebut "thinking") model itu dicatat di `geminiNoThinkingModels` dan permintaan diulang tanpa `thinkingConfig` (log `diulang tanpa thinking`, `thinking=off`). Fallback ini diuji dengan `fetch` palsu; nama parameter yang benar untuk model produksi belum diverifikasi ke Google.
 
 ---
 
@@ -473,6 +475,7 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | Alur zakat bot belum menanyakan pengeluaran (profesi) dan biaya produksi (pertanian); tool `calculate_zakat` sudah menerimanya | Hasil alur bisa lebih besar dari web untuk pengguna yang punya pengeluaran/biaya | Low |
 | Pencarian `halaman` memakai `ilike` pada kolom `content` (tanpa indeks teks) | Cukup untuk puluhan halaman; lambat bila CMS besar | Low |
 | Info `profil` membaca `organization_*`; `contact_email`/`contact_phone` (key lama) bisa berbeda nilainya | Bot hanya menampilkan `organization_*` | Low |
+| Setting `whatsapp_bot_system_prompt` (kalau terisi) **menggantikan seluruh** prompt default, termasuk aturan operasional (registrasi wajib, larangan transaksi ganda, aturan bukti transfer) dan blok konteks donatur; semua arahan prompt baru (fidyah, `calculate_zakat`, `get_info`) hanya ada di prompt default. Di DB dev override-nya adalah versi lama prompt default (879 karakter) | Bot berjalan tanpa aturan operasional dan tanpa konteks donatur; arahan tool hanya mengandalkan deskripsi tool. Keputusan desain (override jadi "tambahan" vs tetap menggantikan) menunggu user | Medium |
 | `decrypt()` gagal mengembalikan teks terenkripsi mentah, lalu dikirim ke Gemini sebagai API key | Gagal diam-diam (400/403 dari Google) bila `ENCRYPTION_KEY` berubah | Low |
 | `send_qris` belum diuji runtime (mengirim WA sungguhan) | Hanya diuji lewat helper kepemilikan yang sama dengan tool lain | Low |
 
@@ -488,6 +491,7 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | 2026-10-31 | Webhook dibalas 200 segera + antrean per nomor (`lib/keyed-queue.ts`, batas 5); pengaman loop AI (batas 25 dtk, tool berulang, timeout 20 dtk); fallback aman menggantikan hasil tool mentah |
 | 2026-10-31 | Zakat satu sumber (`services/zakat-calculator.ts`, ADR-0017): alur zakat bot memakai modul itu (nisab ikut dicek untuk pertanian/peternakan/bisnis seperti web), tool baru `calculate_zakat`, kalkulator lama dan scraper Pluang di bot dihapus |
 | 2026-10-31 | Tool `get_info` (profil, zakat, fidyah, qurban, laporan, halaman CMS) di `services/whatsapp-knowledge.ts`, ADR-0018; prompt diarahkan memakai `get_info` untuk pertanyaan informasi |
+| 2026-10-31 | Hemat token (sebagian): `maxOutputTokens` 2048, `thinkingLevel` rendah dengan fallback otomatis, log `cached=`; ukuran tool terukur ±10,5 ribu karakter, prompt default ±12 ribu karakter |
 | 2026-10-22 | `register_donatur` memakai nomor pengirim, tidak membocorkan data donatur lain; `bodyLimit` 1 MB di webhook |
 
 ---
@@ -516,7 +520,7 @@ Tujuan: bot menjawab info semua modul (campaign per pilar, zakat, fidyah, wakaf,
 | 1 | Stabilisasi: default model, key ke header, filter pilar, hapus kode mati, log token | Selesai |
 | 2 | Hitung zakat satu sumber (`services/zakat-calculator.ts`, parameter dari `settings`, ADR-0017) dipakai alur, tool `calculate_zakat`, dan `/zakat/config`+`/calculate/maal` | Selesai (belum deploy) |
 | 3 | Tool `get_info(topik)`: profil, zakat, fidyah, qurban, laporan kegiatan, Pages CMS (publik, dipotong); wakaf lewat `search_campaigns` pilar | Selesai (belum deploy) |
-| 4 | Hemat token: ukur baseline, `thinkingConfig` rendah, pangkas prompt 11 KB, ringkas tool, caching | Belum |
+| 4 | Hemat token: `thinkingConfig` rendah + batas output + log cache (selesai); pemangkasan prompt dan tool menunggu keputusan override prompt dan harness uji (Fase 5) | Sebagian (belum deploy) |
 | 5 | Skrip uji `scripts/e2e-wa-bot.ts` (~25 pertanyaan, hanya DB localhost, gateway WA dimatikan) | Belum |
 | 6 | Sinkron dokumen, ADR, lesson learned | Belum |
 
