@@ -159,7 +159,7 @@ processIncomingMessage()
 | Tool | Fungsi |
 |------|--------|
 | `get_program_overview` | Ringkasan semua program: donasi, zakat, qurban, fidyah, wakaf |
-| `search_campaigns` | Cari campaign by keyword (filter status=active) |
+| `search_campaigns` | Cari campaign aktif: `pillar` (slug huruf kecil: fidyah, wakaf, sedekah) dan/atau `query` (cocok ke judul ATAU pilar). Pilar adalah pengelompokan utama program. |
 | `get_campaign_detail` | Detail campaign + progress donasi |
 | `check_transaction_status` | Cek status transaksi by phone atau kode TRX-... |
 | `get_zakat_menu` | Menu jenis zakat (info saja, bukan bayar) |
@@ -174,7 +174,7 @@ processIncomingMessage()
 |------|------------------|
 | `start_zakat_flow` | Flow zakat |
 | `start_donation_flow` | Flow donasi |
-| `start_fidyah_flow` | Flow fidyah |
+| `start_fidyah_flow` | Flow fidyah. Campaign dicari server lewat pilar `fidyah` (tanpa `search_campaigns`); nama dari DB, `campaignId` dari LLM hanya dipakai bila ada >1 program dan harus cocok dengan salah satunya |
 | `start_qurban_flow` | Flow qurban |
 | `start_qurban_savings_flow` | Flow tabungan qurban |
 | `start_savings_deposit_flow` | Flow setor tabungan |
@@ -443,6 +443,7 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | 2026-10-22 | SSRF unduhan media ditutup: hanya origin GOWA, magic bytes, batas 10 MB, tanpa redirect |
 | 2026-10-22 | Kepemilikan tool bot: identitas dari konteks, `findOwnedTransaction`, `phoneMatches`, validasi nominal |
 | 2026-10-31 | Gemini: hasil tool `role: "user"` + `functionCall` asli (thoughtSignature), API key ke header `x-goog-api-key`, default model `gemini-3.8-flash` (API + form admin), log pemakaian token, filter pilar tidak peka huruf, kode mati `createDonation`/`createZakatPayment` dihapus |
+| 2026-10-31 | Fidyah/wakaf dicari lewat pilar: `search_campaigns` punya parameter `pillar` dan `query` ikut mencocokkan pilar; `start_fidyah_flow` menentukan campaign fidyah di server (tanpa ID dari LLM), prompt diperbarui |
 | 2026-10-22 | `register_donatur` memakai nomor pengirim, tidak membocorkan data donatur lain; `bodyLimit` 1 MB di webhook |
 
 ---

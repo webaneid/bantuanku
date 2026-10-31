@@ -182,8 +182,10 @@ function getConversation(phone: string, profileName: string): ConversationContex
 
 async function searchCampaigns(
   db: Database,
-  params: { query?: string; category?: string }
+  params: { query?: string; pillar?: string }
 ): Promise<string> {
+  const pillarFilter = typeof params.pillar === "string" ? params.pillar.trim().toLowerCase().slice(0, 50) : "";
+  const queryText = typeof params.query === "string" ? params.query.trim().slice(0, 100) : "";
   const results = await db
     .select({
       id: campaigns.id,
@@ -199,14 +201,18 @@ async function searchCampaigns(
     .where(
       and(
         eq(campaigns.status, "active"),
-        params.query ? ilike(campaigns.title, `%${params.query}%`) : undefined
+        // Pilar (fidyah, wakaf, sedekah, ...) adalah sumber utama pengelompokan program; slug huruf kecil
+        pillarFilter ? sql`lower(${campaigns.pillar}) = ${pillarFilter}` : undefined,
+        queryText ? or(ilike(campaigns.title, `%${queryText}%`), ilike(campaigns.pillar, `%${queryText}%`)) : undefined
       )
     )
     .orderBy(desc(campaigns.donorCount))
     .limit(20);
 
   if (results.length === 0) {
-    return "Tidak ditemukan program yang sesuai dengan pencarian.";
+    return pillarFilter
+      ? `Belum ada program aktif dengan pilar "${pillarFilter}" saat ini.`
+      : "Tidak ditemukan program yang sesuai dengan pencarian.";
   }
 
   return results
@@ -214,7 +220,7 @@ async function searchCampaigns(
       const pct = c.goal
         ? Math.round(((c.collected || 0) / c.goal) * 100)
         : 0;
-      return `${i + 1}. *${c.title}*\n   Target: Rp ${(c.goal || 0).toLocaleString("id-ID")}\n   Terkumpul: Rp ${(c.collected || 0).toLocaleString("id-ID")} (${pct}%)\n   ID: ${c.id}`;
+      return `${i + 1}. *${c.title}*\n   Pilar: ${c.pillar || "-"}\n   Target: Rp ${(c.goal || 0).toLocaleString("id-ID")}\n   Terkumpul: Rp ${(c.collected || 0).toLocaleString("id-ID")} (${pct}%)\n   ID: ${c.id}`;
     })
     .join("\n\n");
 }
@@ -1212,14 +1218,27 @@ export async function executeTool(
       return "FLOW_ACTIVATED";
     }
     case "start_fidyah_flow": {
-      if (!params.campaignId || !params.campaignName) return "Parameter campaignId dan campaignName diperlukan.";
       // Check donor registration
       if (context?.phone) {
         const ph = context.phone.replace(/[^0-9]/g, "");
         const donor = await db.query.donatur.findFirst({ where: phoneMatches(donatur.phone, ph) });
         if (!donor) return "Donatur belum terdaftar. Silakan daftarkan terlebih dahulu menggunakan tool register_donatur.";
       }
-      if (execState) execState.flowTrigger = createFidyahFlowState(params as any);
+      // Campaign fidyah ditentukan server lewat pilar "fidyah" (id dari LLM tidak dipercaya, nama dari DB)
+      const fidyahCampaigns = await db
+        .select({ id: campaigns.id, title: campaigns.title })
+        .from(campaigns)
+        .where(and(eq(campaigns.status, "active"), sql`lower(${campaigns.pillar}) = 'fidyah'`))
+        .orderBy(desc(campaigns.donorCount))
+        .limit(10);
+      if (fidyahCampaigns.length === 0) return "Program fidyah belum tersedia saat ini. Sampaikan dengan sopan ke donatur dan tawarkan program lain.";
+      const chosenFidyah = fidyahCampaigns.length === 1
+        ? fidyahCampaigns[0]
+        : fidyahCampaigns.find((c) => c.id === params.campaignId);
+      if (!chosenFidyah) {
+        return `Ada beberapa program fidyah. Tanyakan donatur mau yang mana (tanpa menampilkan ID), lalu panggil start_fidyah_flow dengan campaignId yang dipilih:\n${fidyahCampaigns.map((c, i) => `${i + 1}. ${c.title} [ID: ${c.id}]`).join("\n")}`;
+      }
+      if (execState) execState.flowTrigger = createFidyahFlowState({ campaignId: chosenFidyah.id, campaignName: chosenFidyah.title });
       return "FLOW_ACTIVATED";
     }
     case "start_qurban_flow": {
@@ -1335,7 +1354,8 @@ const TOOL_DEFINITIONS = [
     parameters: {
       type: "object",
       properties: {
-        query: { type: "string", description: "Kata kunci pencarian" },
+        query: { type: "string", description: "Kata kunci pencarian (judul atau pilar)" },
+        pillar: { type: "string", description: "Filter pilar program, slug huruf kecil: fidyah, wakaf, sedekah. Pakai ini untuk wakaf atau pertanyaan per kategori." },
       },
     },
   },
@@ -1410,14 +1430,12 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: "start_fidyah_flow",
-    description: "Mulai proses pembayaran fidyah. Panggil ketika donatur ingin MEMBAYAR fidyah. Sistem akan menanyakan jumlah orang, jumlah hari, dan atas nama siapa secara otomatis.",
+    description: "Mulai proses pembayaran fidyah. Panggil ketika donatur ingin MEMBAYAR fidyah. Program fidyah dicari otomatis lewat pilar fidyah, TIDAK perlu search_campaigns dulu. Sistem akan menanyakan jumlah orang, jumlah hari, dan atas nama siapa secara otomatis.",
     parameters: {
       type: "object",
       properties: {
-        campaignId: { type: "string", description: "ID campaign fidyah" },
-        campaignName: { type: "string", description: "Nama campaign fidyah" },
+        campaignId: { type: "string", description: "ID program fidyah, HANYA diisi bila sistem meminta memilih di antara beberapa program" },
       },
-      required: ["campaignId", "campaignName"],
     },
   },
   {
@@ -2107,7 +2125,7 @@ ATURAN:
 - Untuk cek status transaksi, langsung gunakan tool check_transaction_status dengan nomor HP donatur yang sudah diketahui.
 - DILARANG KERAS: Jangan pernah bilang "mohon tunggu", "sebentar ya", "akan saya kirimkan", "akan saya buatkan" atau sejenisnya TANPA memanggil tool. Jika kamu ingin melakukan aksi, HARUS langsung panggil tool. Jangan pernah merespons dengan teks yang menjanjikan aksi — langsung panggil tool-nya.
 - DILARANG KERAS: Jangan pernah merespons dengan HANYA teks ketika user meminta aksi (bayar, transfer, QRIS, kirim, buat transaksi). Kamu WAJIB memanggil tool.
-- Ketika donatur ingin MEMBAYAR donasi → panggil start_donation_flow. Ketika ingin MEMBAYAR zakat → panggil start_zakat_flow. Ketika ingin MEMBAYAR fidyah → cari campaign fidyah dulu (search_campaigns "fidyah"), lalu panggil start_fidyah_flow. Proses selanjutnya otomatis oleh sistem.
+- Ketika donatur ingin MEMBAYAR donasi → panggil start_donation_flow. Ketika ingin MEMBAYAR zakat → panggil start_zakat_flow. Ketika ingin MEMBAYAR fidyah → LANGSUNG panggil start_fidyah_flow (program fidyah dicari otomatis lewat pilar, tanpa search_campaigns). Proses selanjutnya otomatis oleh sistem.
 - Ketika donatur pilih QRIS, LANGSUNG panggil tool send_qris. Ketika pilih transfer bank, LANGSUNG panggil tool get_bank_details.
 - ID Transaksi dari tool sebelumnya ada di riwayat percakapan. Ambil dari sana.
 - DILARANG KERAS: Jangan pernah memanggil start_donation_flow, start_zakat_flow, atau start_fidyah_flow lebih dari SATU KALI untuk permintaan yang sama. Jika transaksi sudah dibuat (ada TRX- di percakapan), gunakan ID Transaksi yang sudah ada. JANGAN buat transaksi baru.
@@ -2143,14 +2161,15 @@ FORMAT TAMPILAN PROGRAM — WAJIB KONSISTEN:
 
 FLOW DONASI (HANYA jika donatur sudah terdaftar):
 1. Tanya/cari program yang diminati (gunakan tool search_campaigns untuk cari spesifik)
-2. Jika campaign dengan pillar "fidyah" → gunakan FLOW FIDYAH, BUKAN flow donasi biasa.
+2. Jika campaign dengan pillar "fidyah" → gunakan FLOW FIDYAH, BUKAN flow donasi biasa. Untuk WAKAF cari dengan search_campaigns({ pillar: "wakaf" }), lalu gunakan flow donasi biasa.
 3. Donatur pilih program dan ingin MEMBAYAR → panggil start_donation_flow({ campaignId, campaignName, amount? })
 4. Proses selanjutnya OTOMATIS oleh sistem (tanya nominal, konfirmasi, buat transaksi).
 5. DILARANG panggil start_donation_flow lebih dari 1x untuk permintaan yang sama.
 
 FLOW FIDYAH (HANYA jika donatur sudah terdaftar):
-- Donatur bilang "fidyah" / "mau bayar fidyah" → cari campaign fidyah: search_campaigns("fidyah")
-- Setelah dapat campaign fidyah → LANGSUNG panggil start_fidyah_flow({ campaignId, campaignName })
+- Donatur bilang "fidyah" / "mau bayar fidyah" / "lupa bayar puasa" → LANGSUNG panggil start_fidyah_flow() tanpa parameter. Sistem mencari program fidyah sendiri lewat pilar.
+- Jika sistem menjawab ada beberapa program fidyah → tanyakan pilihan donatur, lalu panggil start_fidyah_flow({ campaignId }).
+- Jika sistem menjawab program fidyah belum tersedia → sampaikan dengan sopan, jangan mencari program lain atas inisiatif sendiri.
 - Proses selanjutnya OTOMATIS oleh sistem (tanya jumlah orang, jumlah hari, atas nama siapa, hitung, konfirmasi, buat transaksi).
 - DILARANG panggil start_fidyah_flow lebih dari 1x untuk permintaan yang sama.
 
