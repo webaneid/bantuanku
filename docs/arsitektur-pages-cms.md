@@ -31,6 +31,8 @@ Dokumen terkait:
 - `arsitektur-permission-rbac.md` — role guard `super_admin` dan `admin_campaign`.
 - `arsitektur-komponen-admin.md` — `PageForm`, `SEOPanel`, `MediaLibrary`, `RichTextEditor`.
 
+> **Konsumen bot WA (2026-10-31):** tool `get_info` (topik `halaman`) membaca `pages` yang `isPublished = true` dan `noIndex = false`, memotong kutipan 700 karakter. Halaman `noindex` tidak terbaca bot. Lihat `arsitektur-wa-bot.md` bagian H2 dan ADR-0018.
+
 ---
 
 ## Source of Truth Implementasi

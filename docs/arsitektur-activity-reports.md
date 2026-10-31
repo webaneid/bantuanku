@@ -2,6 +2,8 @@
 
 Dokumen ini adalah source of truth untuk modul activity reports / laporan kegiatan. Semua klaim di bawah disesuaikan dengan implementasi kode aktual, bukan blueprint lama.
 
+> **Konsumen bot WA (2026-10-31):** tool `get_info` (topik `laporan`) membaca laporan `status = published` dan `noIndex = false` (5 terbaru, judul + tanggal + tautan `/laporan/{slug}`). Lihat `arsitektur-wa-bot.md` bagian H2.
+
 ## Ruang Lingkup Implementasi
 
 Activity reports adalah laporan naratif kegiatan yang dapat dikaitkan ke beberapa domain bisnis:
