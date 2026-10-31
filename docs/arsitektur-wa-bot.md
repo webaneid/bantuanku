@@ -25,6 +25,7 @@ Flow transaksi dieksekusi oleh **deterministic state machine** (bukan AI), sedan
 | `apps/api/src/routes/whatsapp.ts` | 136 | Webhook receiver, dedup, routing ke `processIncomingMessage` |
 | `apps/api/src/services/whatsapp-ai.ts` | ~2423 | Logika AI: tools, context, provider adapters, gold scraper |
 | `apps/api/src/services/whatsapp-flow.ts` | ~2324 | State machine semua flow transaksi |
+| `apps/api/src/lib/keyed-queue.ts` | ~35 | Antrean per kunci (nomor HP): berurutan per nomor, paralel antar nomor, batas antrean |
 
 ---
 
@@ -76,6 +77,14 @@ Payload tidak dicetak ke log. Body dibatasi 1 MB (`bodyLimit`, `413`) sebelum di
 3. **Dedup** — `processedMessages Map<id, timestamp>` TTL 60 detik; jika messageId sudah ada → skip
 4. **Bot disabled** — setting `whatsapp_bot_enabled !== "true"` → return OK tanpa proses
 5. **AI key kosong** — log warning → return OK tanpa proses
+
+### Pemrosesan Latar Belakang (2026-10-31)
+
+Setelah lolos semua filter di atas, webhook **langsung membalas `200`**; `processIncomingMessage` berjalan di latar belakang lewat `createKeyedQueue` (kunci = nomor pengirim). Alasannya: satu pesan bisa memakan puluhan detik (beberapa putaran AI), dan GOWA mengirim ulang webhook bila respons lambat.
+- Pesan dari nomor yang sama diproses **berurutan** (konteks percakapan in-memory tidak balapan, urutan balasan terjaga); nomor berbeda paralel.
+- Antrean per nomor dibatasi `WA_QUEUE_MAX_PENDING = 5`; selebihnya dibuang dengan log `antrean penuh` (juga meredam spam).
+- Error pemrosesan tertangkap di dalam tugas; satu tugas gagal tidak menghentikan antrean.
+- Konsekuensi: pesan yang sedang diproses/antre hilang bila API restart (GOWA sudah menerima `200`, tidak mengirim ulang).
 
 ### Pra-processing URL Gambar
 
@@ -147,6 +156,8 @@ processIncomingMessage()
        ├─ jika flow trigger terdeteksi → break loop
        └─ jika hanya teks → kirim ke donatur, break loop
 ```
+
+**Pengaman loop** (`createLoopGuard`, semua provider): berhenti dengan `AI_FALLBACK_REPLY` bila (a) total waktu > 25 detik, (b) model memanggil tool yang sama dengan argumen yang sama (macet), (c) putaran habis, (d) provider error. Setiap panggilan ke provider punya timeout 20 detik (`AbortSignal.timeout`); timeout melempar exception sehingga donatur menerima "terjadi gangguan". **Hasil tool mentah tidak pernah dikirim sebagai balasan** (bisa berisi `[ID: ...]` internal).
 
 **Gemini khusus:** Mode `"ANY"` — harus selalu return tool call (tidak bisa reply teks langsung). Retry 2x saat rate limit 429, delay 3 detik. API key dikirim lewat header `x-goog-api-key` (bukan query string). Hasil tool dikirim balik dengan `role: "user"` (role `function` ditolak model baru) dan `functionCall` asli dikembalikan utuh agar `thoughtSignature` ikut. Setiap putaran mencatat `[WA AI] usage ... prompt= output= thoughts= total=` (tanpa PII) sebagai baseline token.
 
@@ -406,6 +417,8 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | Bot disabled | Return OK tanpa reply |
 | AI API key kosong | Log warning, return OK tanpa reply |
 | AI error (exception) | Reply "terjadi gangguan" — flow tidak ikut di-clear |
+| AI macet/lambat/putaran habis | `AI_FALLBACK_REPLY` (pesan ramah tetap), bukan hasil tool mentah |
+| API restart saat pesan diproses/antre | Pesan hilang (webhook sudah dibalas 200) |
 | Conversation TTL expired | Context hilang, percakapan mulai dari awal |
 | Donatur belum terdaftar saat trigger flow | Error string ke AI, AI diminta register dulu |
 | Gambar saat flow aktif | Flow di-clear, diproses sebagai bukti transfer |
@@ -424,7 +437,7 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | Tidak ada mechanism retry pengiriman WA dari bot | Jika GOWA down saat reply, pesan hilang tanpa notifikasi | Medium |
 | History 20 pesan tidak persistent | Jika API restart di tengah percakapan panjang, konteks hilang | Low |
 | Bot tidak handle sticker/voice/video/dokumen secara eksplisit | Dokumen → `"[Pengguna mengirim dokumen]"` (treated as no image) | Low |
-| Tidak ada rate limit per user | Donatur bisa spam bot tanpa throttle | Low |
+| Rate limit per user hanya berupa batas antrean 5 pesan per nomor (bukan per waktu) | Pesan beruntun yang melewati batas dibuang; tidak ada throttle token per hari | Low |
 | `console.log` flow/AI masih mencetak nomor HP dan potongan teks | PII di log PM2 | Medium |
 | Link unsubscribe (`signUnsubscribeToken`) belum dipasang di template broadcast/birthday/re-engagement; hanya footer "Balas BERHENTI" | Opt-out via link tidak bisa dipakai donatur. Saat dipasang, buat `/berhenti` meminta klik konfirmasi (POST), jangan unsubscribe otomatis saat halaman dimuat | Medium |
 | `confirm_payment` tidak atomik: cek status lalu update terpisah; status `failed/expired/partial` bisa dihidupkan ke `processing`; `paymentDate` dari LLM tanpa validasi | Pesan bukti bersamaan bisa menggandakan baris payment dan `paidAmount` (admin tetap memverifikasi) | Medium |
@@ -444,6 +457,7 @@ Semua konfigurasi bot di-set via admin panel (Settings → WhatsApp) dan tersimp
 | 2026-10-22 | Kepemilikan tool bot: identitas dari konteks, `findOwnedTransaction`, `phoneMatches`, validasi nominal |
 | 2026-10-31 | Gemini: hasil tool `role: "user"` + `functionCall` asli (thoughtSignature), API key ke header `x-goog-api-key`, default model `gemini-3.8-flash` (API + form admin), log pemakaian token, filter pilar tidak peka huruf, kode mati `createDonation`/`createZakatPayment` dihapus |
 | 2026-10-31 | Fidyah/wakaf dicari lewat pilar: `search_campaigns` punya parameter `pillar` dan `query` ikut mencocokkan pilar; `start_fidyah_flow` menentukan campaign fidyah di server (tanpa ID dari LLM), prompt diperbarui |
+| 2026-10-31 | Webhook dibalas 200 segera + antrean per nomor (`lib/keyed-queue.ts`, batas 5); pengaman loop AI (batas 25 dtk, tool berulang, timeout 20 dtk); fallback aman menggantikan hasil tool mentah |
 | 2026-10-22 | `register_donatur` memakai nomor pengirim, tidak membocorkan data donatur lain; `bodyLimit` 1 MB di webhook |
 
 ---

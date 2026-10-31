@@ -1578,6 +1578,28 @@ async function getAIConfig(db: Database): Promise<{
   };
 }
 
+// Balasan aman bila AI gagal/macet. Jangan pernah mengirim hasil tool mentah ke donatur
+// (bisa berisi [ID: ...] internal atau pesan error).
+const AI_FALLBACK_REPLY =
+  "Maaf, saya belum bisa memproses pesan Anda saat ini. Silakan coba lagi sebentar lagi dengan kalimat yang lebih singkat, atau hubungi admin kami untuk bantuan langsung.";
+const AI_FETCH_TIMEOUT_MS = 20_000; // satu panggilan ke provider AI tidak boleh menggantung (antrean per nomor ikut macet)
+const AI_MAX_ELAPSED_MS = 25_000; // batas total satu pesan; GOWA tidak lagi menunggu (webhook dibalas segera)
+
+// Pengaman loop tool: berhenti bila waktu habis atau model memanggil tool yang sama dengan argumen yang sama
+function createLoopGuard() {
+  const start = Date.now();
+  const seen = new Set<string>();
+  return {
+    expired: () => Date.now() - start > AI_MAX_ELAPSED_MS,
+    isRepeat: (name: string, args: unknown) => {
+      const key = `${name}:${JSON.stringify(args ?? {})}`;
+      if (seen.has(key)) return true;
+      seen.add(key);
+      return false;
+    },
+  };
+}
+
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
@@ -1653,9 +1675,13 @@ async function callGemini(
   };
 
   const MAX_ROUNDS = 5;
-  let lastToolResult = "";
+  const guard = createLoopGuard();
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
+    if (guard.expired()) {
+      console.warn("[WA AI] batas waktu loop habis, balasan fallback");
+      return AI_FALLBACK_REPLY;
+    }
     const requestBody = {
       system_instruction: { parts: [{ text: systemPrompt }] },
       contents: currentContents,
@@ -1667,12 +1693,13 @@ async function callGemini(
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(AI_FETCH_TIMEOUT_MS),
     });
 
     if (!res.ok) {
       const errText = await res.text();
       console.error(`Gemini API error (round ${round}):`, res.status, errText);
-      return lastToolResult || "Maaf, terjadi gangguan. Silakan coba lagi nanti.";
+      return AI_FALLBACK_REPLY;
     }
 
     const data = (await res.json()) as any;
@@ -1691,7 +1718,7 @@ async function callGemini(
     if (!functionCallPart) {
       // No function call (shouldn't happen with mode: ANY, but handle gracefully)
       const textPart = parts.find((p: any) => p.text);
-      return textPart?.text || lastToolResult || "Maaf, saya tidak bisa memproses pesan Anda saat ini.";
+      return textPart?.text || AI_FALLBACK_REPLY;
     }
 
     const toolName = functionCallPart.functionCall.name;
@@ -1699,12 +1726,17 @@ async function callGemini(
 
     // If AI just wants to send a text response, return it directly
     if (toolName === "respond_to_user") {
-      return toolArgs.message || lastToolResult || "";
+      return toolArgs.message || AI_FALLBACK_REPLY;
+    }
+
+    // Model mengulang tool yang sama dengan argumen yang sama = macet, hentikan
+    if (guard.isRepeat(toolName, toolArgs)) {
+      console.warn(`[WA AI] tool berulang dihentikan: ${toolName}`);
+      return AI_FALLBACK_REPLY;
     }
 
     // Execute the actual tool
     const toolResult = await executeTool(db, toolName, toolArgs, envFrontendUrl, context, execState);
-    lastToolResult = toolResult;
 
     // Check if a deterministic flow was triggered — break AI loop
     if (execState?.flowTrigger) return "";
@@ -1733,8 +1765,8 @@ async function callGemini(
     // - Call respond_to_user to format and return the final message
   }
 
-  // Max rounds reached — return whatever we have
-  return lastToolResult || "Maaf, terjadi gangguan. Silakan coba lagi.";
+  // Putaran habis — kirim balasan aman, bukan hasil tool mentah
+  return AI_FALLBACK_REPLY;
 }
 
 async function callClaude(
@@ -1789,9 +1821,13 @@ async function callClaude(
   }));
 
   const MAX_ROUNDS = 5;
-  let lastToolResult = "";
+  const guard = createLoopGuard();
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
+    if (guard.expired()) {
+      console.warn("[WA AI] batas waktu loop habis, balasan fallback");
+      return AI_FALLBACK_REPLY;
+    }
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -1799,6 +1835,7 @@ async function callClaude(
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
       },
+      signal: AbortSignal.timeout(AI_FETCH_TIMEOUT_MS),
       body: JSON.stringify({
         model,
         max_tokens: 1024,
@@ -1811,7 +1848,7 @@ async function callClaude(
     if (!res.ok) {
       const errText = await res.text();
       console.error(`Claude API error (round ${round}):`, res.status, errText);
-      return lastToolResult || "Maaf, terjadi gangguan. Silakan coba lagi nanti.";
+      return AI_FALLBACK_REPLY;
     }
 
     const data = (await res.json()) as any;
@@ -1821,17 +1858,21 @@ async function callClaude(
     if (!toolUseBlock) {
       // No tool call — return text response
       const textBlock = data.content?.find((b: any) => b.type === "text");
-      return textBlock?.text || lastToolResult || "Maaf, saya tidak bisa memproses pesan Anda saat ini.";
+      return textBlock?.text || AI_FALLBACK_REPLY;
     }
 
     // Handle respond_to_user shortcut
     if (toolUseBlock.name === "respond_to_user") {
-      return toolUseBlock.input?.message || lastToolResult || "";
+      return toolUseBlock.input?.message || AI_FALLBACK_REPLY;
+    }
+
+    if (guard.isRepeat(toolUseBlock.name, toolUseBlock.input)) {
+      console.warn(`[WA AI] tool berulang dihentikan: ${toolUseBlock.name}`);
+      return AI_FALLBACK_REPLY;
     }
 
     // Execute tool
     const toolResult = await executeTool(db, toolUseBlock.name, toolUseBlock.input || {}, envFrontendUrl, context, execState);
-    lastToolResult = toolResult;
 
     // Check if a deterministic flow was triggered — break AI loop
     if (execState?.flowTrigger) return "";
@@ -1850,7 +1891,7 @@ async function callClaude(
     });
   }
 
-  return lastToolResult || "Maaf, terjadi gangguan. Silakan coba lagi.";
+  return AI_FALLBACK_REPLY;
 }
 
 async function callGrok(
@@ -1908,15 +1949,20 @@ async function callGrok(
   }));
 
   const MAX_ROUNDS = 5;
-  let lastToolResult = "";
+  const guard = createLoopGuard();
 
   for (let round = 0; round < MAX_ROUNDS; round++) {
+    if (guard.expired()) {
+      console.warn("[WA AI] batas waktu loop habis, balasan fallback");
+      return AI_FALLBACK_REPLY;
+    }
     const res = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
+      signal: AbortSignal.timeout(AI_FETCH_TIMEOUT_MS),
       body: JSON.stringify({
         model: model || "grok-3-mini-fast",
         messages: currentMessages,
@@ -1928,7 +1974,7 @@ async function callGrok(
     if (!res.ok) {
       const errText = await res.text();
       console.error(`Grok API error (round ${round}):`, res.status, errText);
-      return lastToolResult || "Maaf, terjadi gangguan. Silakan coba lagi nanti.";
+      return AI_FALLBACK_REPLY;
     }
 
     const data = (await res.json()) as any;
@@ -1937,7 +1983,7 @@ async function callGrok(
 
     // No tool calls — return text response
     if (!assistantMsg?.tool_calls?.length) {
-      return assistantMsg?.content || lastToolResult || "Maaf, saya tidak bisa memproses pesan Anda saat ini.";
+      return assistantMsg?.content || AI_FALLBACK_REPLY;
     }
 
     const toolCall = assistantMsg.tool_calls[0];
@@ -1949,12 +1995,16 @@ async function callGrok(
 
     // Handle respond_to_user shortcut
     if (toolName === "respond_to_user") {
-      return toolArgs.message || lastToolResult || "";
+      return toolArgs.message || AI_FALLBACK_REPLY;
+    }
+
+    if (guard.isRepeat(toolName, toolArgs)) {
+      console.warn(`[WA AI] tool berulang dihentikan: ${toolName}`);
+      return AI_FALLBACK_REPLY;
     }
 
     // Execute tool
     const toolResult = await executeTool(db, toolName, toolArgs, envFrontendUrl, context, execState);
-    lastToolResult = toolResult;
 
     // Check if a deterministic flow was triggered — break AI loop
     if (execState?.flowTrigger) return "";
@@ -1968,7 +2018,7 @@ async function callGrok(
     });
   }
 
-  return lastToolResult || "Maaf, terjadi gangguan. Silakan coba lagi.";
+  return AI_FALLBACK_REPLY;
 }
 
 // ---------------------------------------------------------------------------

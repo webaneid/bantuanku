@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { settings } from "@bantuanku/db";
 import { WhatsAppService } from "../services/whatsapp";
 import { timingSafeEqualString } from "../lib/security";
+import { createKeyedQueue } from "../lib/keyed-queue";
 import type { Env, Variables } from "../types";
 
 const whatsappRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -13,6 +14,11 @@ const whatsappRoute = new Hono<{ Bindings: Env; Variables: Variables }>();
 const processedMessages = new Map<string, number>();
 const DEDUP_TTL = 60_000; // 60 seconds
 const DEDUP_MAX_ENTRIES = 5_000; // batas memori, jaga-jaga kalau webhook dibanjiri
+
+// Webhook dibalas 200 segera; pesan diproses di latar belakang. Pesan dari nomor yang sama
+// diproses berurutan (konteks percakapan in-memory tidak balapan), antrean per nomor dibatasi.
+const WA_QUEUE_MAX_PENDING = 5;
+const waQueue = createKeyedQueue(WA_QUEUE_MAX_PENDING);
 
 function isDuplicate(messageId: string): boolean {
   const now = Date.now();
@@ -157,18 +163,24 @@ whatsappRoute.post("/webhook", async (c) => {
     // Check if bot is enabled
     const botEnabled = await getSettingValue(db, "whatsapp_bot_enabled");
     if (botEnabled === "true") {
-      try {
-        const { processIncomingMessage } = await import("../services/whatsapp-ai");
-        await processIncomingMessage(db, {
-          from,
-          text: effectiveText,
-          messageId,
-          profileName,
-          imageUrl,
-          imageMimeType,
-        }, c.env.FRONTEND_URL);
-      } catch (err) {
-        console.error("Error processing WA message:", err);
+      const frontendUrl = c.env.FRONTEND_URL;
+      const queued = waQueue.enqueue(from, async () => {
+        try {
+          const { processIncomingMessage } = await import("../services/whatsapp-ai");
+          await processIncomingMessage(db, {
+            from,
+            text: effectiveText,
+            messageId,
+            profileName,
+            imageUrl,
+            imageMimeType,
+          }, frontendUrl);
+        } catch (err) {
+          console.error("Error processing WA message:", err);
+        }
+      });
+      if (!queued) {
+        console.warn("[WA WEBHOOK] antrean penuh, pesan dibuang:", messageId);
       }
     }
   }
