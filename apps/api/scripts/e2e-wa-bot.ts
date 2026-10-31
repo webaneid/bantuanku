@@ -128,6 +128,8 @@ async function main() {
         prompt: sum("prompt"), output: sum("output"), thoughts: sum("thoughts"), total: sum("total"), cached: sum("cached"),
         ms: Date.now() - started, pass: usage.length > 0 && pass && !leak, reply: reply.replace(/\s+/g, " ").slice(0, 140),
       });
+      const last = results[results.length - 1];
+      process.stderr.write(`  [${results.length}/${idxs.length}] #${last.no} ${last.pass ? "OK" : "GAGAL"} ${last.ms}ms tools=[${last.tools.join(",")}]\n`);
     }
   } finally {
     console.log = realLog;
