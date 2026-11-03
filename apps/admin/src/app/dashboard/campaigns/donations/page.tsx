@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Autocomplete from "@/components/Autocomplete";
 import Pagination from "@/components/Pagination";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { formatRupiah } from "@/lib/format";
 
 const ITEMS_PER_PAGE = 10;
@@ -34,6 +35,9 @@ const getStatusBadgeClass = (status: string) => {
 
 export default function CampaignDonationsPage() {
   const router = useRouter();
+  const roles = useAuth((state) => state.user?.roles) || [];
+  // admin_campaign hanya boleh melihat (read-only)
+  const canMutate = roles.includes("super_admin") || roles.includes("admin_finance");
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
   const [campaignFilter, setCampaignFilter] = useState("");
@@ -180,14 +184,16 @@ export default function CampaignDonationsPage() {
           <h1 className="text-2xl font-bold text-dark">Campaign Donations</h1>
           <p className="text-gray-600 mt-1">Semua transaksi donasi campaign</p>
         </div>
-        <button
-          type="button"
-          className="btn btn-primary btn-md"
-          onClick={() => router.push("/dashboard/transactions/create?product_type=campaign")}
-        >
-          <PlusIcon className="w-5 h-5" />
-          Tambah Donasi
-        </button>
+        {canMutate && (
+          <button
+            type="button"
+            className="btn btn-primary btn-md"
+            onClick={() => router.push("/dashboard/transactions/create?product_type=campaign")}
+          >
+            <PlusIcon className="w-5 h-5" />
+            Tambah Donasi
+          </button>
+        )}
       </div>
 
       {/* Search Bar */}

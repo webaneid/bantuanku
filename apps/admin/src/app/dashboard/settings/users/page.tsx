@@ -73,7 +73,14 @@ export default function UsersSettingsPage() {
   const { data: usersData, isLoading } = useQuery({
     queryKey: ["settings-users"],
     queryFn: async () => {
-      const response = await api.get("/admin/users");
+      // Filter role di server + limit besar: default API hanya 10 user terbaru,
+      // sehingga admin lama terpotong jika banyak user donatur/karyawan.
+      const response = await api.get("/admin/users", {
+        params: {
+          roles: "super_admin,admin_campaign,admin_finance,program_coordinator,employee",
+          limit: 200,
+        },
+      });
       return response.data?.data || [];
     },
   });

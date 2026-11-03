@@ -227,6 +227,7 @@ const staffOnly = requireRole(
 | Qurban periods | `super_admin`, `admin_campaign` |
 | Qurban packages/package-periods | `super_admin`, `admin_campaign`, `mitra` |
 | Qurban orders/payments/executions | mayoritas `super_admin`, `admin_campaign` |
+| Transactions list `GET /transactions` | `super_admin`, `admin_finance`, `admin_campaign` (read-only; `admin_campaign` dipaksa `product_type=campaign`). Aksi ubah (payments/approve/reject) tetap `super_admin`, `admin_finance`. UI `campaigns/donations` & `transactions/[id]` menyembunyikan tombol aksi untuk `admin_campaign`. |
 | Campaign create | `super_admin`, `admin_campaign`, `program_coordinator`, `mitra` |
 | Campaign update/publish/unpublish/read helper | `super_admin`, `admin_campaign`, `program_coordinator`, `employee`, `mitra` |
 | Campaign delete/feature | `super_admin`, `admin_campaign` |
@@ -263,6 +264,7 @@ Catatan implementasi:
 
 | Endpoint | Guard | Perilaku |
 |----------|-------|----------|
+| `GET /admin/users?roles=a,b&limit=N` | `super_admin` | Filter role slug di server (default limit 10 — halaman Settings > Users memakai `roles` + `limit=200` agar admin lama tidak terpotong). |
 | `PATCH /admin/users/:id/roles` | `super_admin` | Replace semua role user berdasarkan `roleIds`. |
 | `POST /admin/employees/:id/activate-user` | `super_admin` | Buat/link user employee dan assign `roleSlug`. Untuk employee yang sudah punya user, role lama dihapus lalu diganti satu role baru. |
 | `PUT /admin/employees/:id/change-role` | `super_admin`, `admin_campaign` | Replace role user employee dengan satu `roleSlug`. |

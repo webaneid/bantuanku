@@ -288,14 +288,22 @@ app.post("/", transactionCreateRateLimit, optionalAuthMiddleware, async (c) => {
 });
 
 // GET /transactions - List transactions (NEW) - Admin only
-app.get("/", authMiddleware, requireRole("super_admin", "admin_finance"), async (c) => {
+// admin_campaign: read-only dan hanya transaksi product_type=campaign
+app.get("/", authMiddleware, requireRole("super_admin", "admin_finance", "admin_campaign"), async (c) => {
   const db = c.get("db");
   const query = c.req.query();
+  const roles = c.get("user")?.roles || [];
+  const campaignOnly =
+    roles.includes("admin_campaign") &&
+    !roles.includes("super_admin") &&
+    !roles.includes("admin_finance");
 
   try {
     const service = new TransactionService(db);
     const result = await service.list({
-      product_type: query.product_type && query.product_type.trim() !== "" ? query.product_type : undefined,
+      product_type: campaignOnly
+        ? "campaign"
+        : query.product_type && query.product_type.trim() !== "" ? query.product_type : undefined,
       product_id: query.product_id && query.product_id.trim() !== "" ? query.product_id : undefined,
       status: query.status && query.status.trim() !== "" ? query.status : undefined,
       donor_email: query.donor_email && query.donor_email.trim() !== "" ? query.donor_email : undefined,

@@ -17,11 +17,15 @@ import AdminPaymentMethodList from "@/components/AdminPaymentMethodList";
 import MediaLibrary from "@/components/MediaLibrary";
 import FeedbackDialog from "@/components/FeedbackDialog";
 import api from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { formatDateWIB, todayWIBDateInput } from "@/lib/timezone";
 
 export default function TransactionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = use(params);
+  const roles = useAuth((state) => state.user?.roles) || [];
+  // admin_campaign hanya boleh melihat (read-only)
+  const canMutate = roles.includes("super_admin") || roles.includes("admin_finance");
   const [isApproving, setIsApproving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -540,7 +544,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
         </div>
 
         <div className="flex gap-3 flex-wrap">
-          {(transaction.paymentStatus === "pending" || transaction.paymentStatus === "partial") && (
+          {canMutate && (transaction.paymentStatus === "pending" || transaction.paymentStatus === "partial") && (
             <button
               onClick={handleOpenPaymentModal}
               className="px-4 py-2 bg-info-600 text-white rounded-lg hover:bg-info-700"
@@ -548,7 +552,7 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
               Upload Bukti Pembayaran
             </button>
           )}
-          {(transaction.paymentStatus === "processing" || transaction.paymentStatus === "pending") && (
+          {canMutate && (transaction.paymentStatus === "processing" || transaction.paymentStatus === "pending") && (
             <>
               <button
                 onClick={() => setShowRejectModal(true)}
@@ -566,12 +570,14 @@ export default function TransactionDetailPage({ params }: { params: Promise<{ id
               </button>
             </>
           )}
-          <button
-            onClick={() => router.push("/dashboard/transactions/create")}
-            className="px-4 py-2 bg-info-600 text-white rounded-lg hover:bg-info-700"
-          >
-            Create Another
-          </button>
+          {canMutate && (
+            <button
+              onClick={() => router.push("/dashboard/transactions/create")}
+              className="px-4 py-2 bg-info-600 text-white rounded-lg hover:bg-info-700"
+            >
+              Create Another
+            </button>
+          )}
           <button
             onClick={() => {
               const webUrl = process.env.NEXT_PUBLIC_WEB_URL || window.location.origin;

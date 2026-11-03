@@ -43,6 +43,16 @@ usersAdmin.get("/", async (c) => {
   if (search) {
     conditions.push(like(users.name, `%${search}%`));
   }
+  // Filter by role slug (comma-separated), mis. ?roles=super_admin,admin_campaign
+  const roleSlugs = (c.req.query("roles") || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (roleSlugs.length > 0) {
+    conditions.push(
+      sql`exists (select 1 from ${userRoles} ur join ${roles} r on r.id = ur.role_id where ur.user_id = ${users.id} and r.slug in (${sql.join(roleSlugs.map((s) => sql`${s}`), sql`, `)}))`
+    );
+  }
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
