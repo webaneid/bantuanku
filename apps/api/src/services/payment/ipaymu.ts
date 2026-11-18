@@ -64,6 +64,26 @@ const CHANNEL_CACHE_TTL_MS = 10 * 60 * 1000;
 const CHANNEL_FALLBACK_TTL_MS = 60 * 1000;
 const channelCache = new Map<string, { expiresAt: number; groups: IpaymuChannelGroup[] }>();
 
+const CONNECT_ERROR_CODES = new Set(["ENOTFOUND", "EAI_AGAIN", "ECONNREFUSED", "UND_ERR_CONNECT_TIMEOUT"]);
+
+function fetchErrorCode(err: unknown): string | undefined {
+  const cause = (err as { cause?: { code?: string } } | undefined)?.cause;
+  return cause?.code;
+}
+
+/** Gagal sambung (belum ada request yang sampai ke iPaymu) — aman diulang */
+function isConnectError(err: unknown): boolean {
+  const code = fetchErrorCode(err);
+  return !!code && CONNECT_ERROR_CODES.has(code);
+}
+
+/** Ringkas penyebab asli "fetch failed" (undici menyimpannya di err.cause) untuk log */
+function describeFetchError(err: unknown): string {
+  const cause = (err as { cause?: { code?: string; message?: string } } | undefined)?.cause;
+  const msg = err instanceof Error ? err.message : String(err);
+  return cause ? `${msg} (cause: ${cause.code ?? ""} ${cause.message ?? ""})`.trim() : msg;
+}
+
 export class IPaymuAdapter implements PaymentGatewayAdapter {
   code = "ipaymu";
   private va: string;
@@ -183,7 +203,7 @@ export class IPaymuAdapter implements PaymentGatewayAdapter {
       channelCache.set(cacheKey, { expiresAt: Date.now() + CHANNEL_CACHE_TTL_MS, groups });
       return groups;
     } catch (err) {
-      console.error("iPaymu payment-channels gagal, memakai daftar bawaan:", err instanceof Error ? err.message : err);
+      console.error("iPaymu payment-channels gagal, memakai daftar bawaan:", describeFetchError(err));
       channelCache.set(cacheKey, { expiresAt: Date.now() + CHANNEL_FALLBACK_TTL_MS, groups: FALLBACK_CHANNELS });
       return FALLBACK_CHANNELS;
     }
@@ -220,13 +240,25 @@ export class IPaymuAdapter implements PaymentGatewayAdapter {
     try {
       const bodyJson = JSON.stringify(body);
 
-      const response = await fetch(`${this.baseUrl}/payment/direct`, {
-        method: "POST",
-        headers: await this.buildHeaders("POST", bodyJson),
-        body: bodyJson,
-        // Tanpa timeout, gangguan di sisi iPaymu (mis. VA sandbox) membuat request checkout menggantung
-        signal: AbortSignal.timeout(30_000),
-      });
+      const doFetch = async () =>
+        fetch(`${this.baseUrl}/payment/direct`, {
+          method: "POST",
+          headers: await this.buildHeaders("POST", bodyJson),
+          body: bodyJson,
+          // Tanpa timeout, gangguan di sisi iPaymu (mis. VA sandbox) membuat request checkout menggantung
+          signal: AbortSignal.timeout(30_000),
+        });
+
+      let response: Response;
+      try {
+        response = await doFetch();
+      } catch (firstErr) {
+        // Ulangi sekali hanya untuk gagal SAMBUNG (request belum sampai ke iPaymu) agar tidak dobel bayar
+        if (!isConnectError(firstErr)) throw firstErr;
+        console.warn("iPaymu gagal tersambung, mencoba ulang sekali:", describeFetchError(firstErr));
+        await new Promise((r) => setTimeout(r, 800));
+        response = await doFetch();
+      }
 
       const result = (await response.json()) as {
         Success?: boolean;
@@ -270,6 +302,10 @@ export class IPaymuAdapter implements PaymentGatewayAdapter {
     } catch (err) {
       if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
         return { success: false, error: "iPaymu tidak merespons (timeout 30 detik), coba lagi atau pilih metode lain" };
+      }
+      console.error("iPaymu create payment gagal (jaringan):", describeFetchError(err));
+      if (err instanceof Error && err.message === "fetch failed") {
+        return { success: false, error: "Tidak dapat terhubung ke iPaymu, coba lagi sebentar atau pilih metode lain" };
       }
       return {
         success: false,
