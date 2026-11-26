@@ -6,7 +6,7 @@ export const panduanUploadGambarDoc: DocumentationPage = {
     category: "Operasional",
     summary:
         "Panduan rekomendasi ukuran dan rasio gambar untuk Campaign, Zakat, Qurban, serta penjelasan sistem pemotongan otomatis (Autocrop).",
-    updatedAt: "2026-02-20",
+    updatedAt: "2026-11-26",
     sections: [
         {
             id: "ukuran-ideal",

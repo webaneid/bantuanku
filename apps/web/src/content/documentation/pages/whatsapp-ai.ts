@@ -4,62 +4,64 @@ export const whatsappAiDoc: DocumentationPage = {
     slug: "whatsapp-ai",
     title: "Robot AI WhatsApp (Chatbot)",
     category: "Fitur",
-    summary:
-        "Panduan tentang Robot AI WhatsApp yang interaktif untuk melayani donatur, cek status, dan tanya jawab program.",
-    updatedAt: "2026-02-20",
+    summary: "Bot dua arah yang melayani donatur lewat WhatsApp: tanya jawab, donasi, zakat, qurban, dan konfirmasi pembayaran.",
+    updatedAt: "2026-11-26",
     sections: [
         {
             id: "konsep-dasar-ai",
             heading: "Apa itu Robot AI WhatsApp?",
             bodyHtml: `
-                <p>Berbeda dengan <em>Notifikasi Otomatis</em> yang bersifat 1-arah (sistem mengirim info ke donatur), <strong>Robot AI WhatsApp</strong> bersifat <strong>2-arah (Interaktif)</strong>.</p>
-                <p>Fitur ini mengintegrasikan nomor WhatsApp lembaga Anda dengan mesin Kecerdasan Buatan (seperti Google Gemini atau Claude) sehingga donatur dapat "mengobrol" layaknya bersama Customer Service manusia sungguhan selama 24 jam penuh.</p>
-            `,
+<p>Berbeda dengan <a href="/documentation/whatsapp-notifikasi">notifikasi otomatis</a> yang satu arah, Robot AI bersifat <strong>dua arah</strong>: donatur mengirim pesan ke nomor WhatsApp lembaga dan dijawab otomatis, 24 jam.</p>
+<p>Robot memakai model AI (Gemini, Claude, atau Grok) untuk memahami maksud pesan, tetapi <strong>proses transaksi dijalankan oleh alur baku di sistem</strong>, bukan oleh AI. Jadi nominal, tagihan, dan nomor rekening selalu berasal dari data Jaladana.</p>`,
         },
         {
             id: "kemampuan-ai",
-            heading: "Kemampuan Utama AI",
+            heading: "Yang Bisa Dilakukan Robot",
             bodyHtml: `
-                <p>Robot AI tidak hanya menjawab dari teks statis (seperti Auto-Reply biasa), tetapi AI tersebut memiliki akses internal ke database Jaladana milik Anda, sehingga ia mampu:</p>
-                <ol class="doc-steps">
-                    <li>
-                        <strong>Memandu Proses Berdonasi Langsung:</strong>
-                        <br/>
-                        Donatur mengetik: <em>"Saya mau sedekah Rp 50.000 untuk panti asuhan"</em>. 
-                        AI akan mencarikan program Panti Asuhan yang aktif, membuatkan <em>order transaksi</em> langsung di sistem, lalu membalas dengan total tagihan dan nomor rekening tujuannya.
-                    </li>
-                    <li>
-                        <strong>Menghitung Zakat Otomatis:</strong>
-                        <br/>
-                        Donatur mengetik: <em>"Gaji saya 10 juta per bulan, berapa zakat profesi saya?"</em>.
-                        AI akan memahami pertanyaannya, menghitung nominal sesuai standar Nishab zakat, lalu langsung membuatkan tagihan pembayarannya.
-                    </li>
-                    <li>
-                        <strong>Mengecek Status Pembayaran & Program:</strong>
-                        <br/>
-                        Donatur bisa menanyakan status konfirmasi transfer mereka: <em>"Tolong cek tagihan INV-2026-001 apakah sudah lunas?"</em> AI akan melihat status di database secara <em>real-time</em> dan menjawab.
-                    </li>
-                    <li>
-                        <strong>Tanya Jawab Program:</strong>
-                        <br/>
-                        AI mampu mempelajari detail seluruh program yang Anda terbitkan. Jika donatur bertanya: <em>"Apa saja program bantuan Palestina yang lagi buka?"</em> AI akan melakukan pencarian dan merangkumkan daftar kampanyenya beserta link amalnya.
-                    </li>
-                </ol>
-            `,
+<ul>
+<li><strong>Menjawab pertanyaan</strong> tentang program, laporan kegiatan, halaman informasi, harga emas, rekening, dan cara pembayaran.</li>
+<li><strong>Memandu berdonasi</strong> ke campaign, <strong>membayar zakat</strong> (termasuk menghitungnya), <strong>fidyah</strong>, <strong>qurban</strong> (individu dan patungan), serta <strong>tabungan qurban</strong> dan setoran cicilannya.</li>
+<li><strong>Mendaftarkan donatur baru</strong> memakai nomor pengirim.</li>
+<li><strong>Mengecek status transaksi</strong> milik pengirim dan mengirimkan tautan pembayaran atau QRIS.</li>
+<li><strong>Menerima bukti transfer</strong>: donatur mengirim foto bukti, lalu transaksi masuk antrean verifikasi admin.</li>
+</ul>`,
+        },
+        {
+            id: "pengaturan-bot",
+            heading: "Mengaktifkan Robot",
+            bodyHtml: `
+<p>Pengaturan ada di <strong>Settings → Notifikasi WhatsApp</strong>, tab <strong>Bot</strong>. Tab ini hanya terlihat oleh akun Super Admin pengembang platform. Isinya:</p>
+<ul>
+<li>Saklar aktif/nonaktif bot.</li>
+<li>Penyedia AI (<code>gemini</code>, <code>claude</code>, atau <code>grok</code>), API key, dan nama model.</li>
+<li>Tambahan instruksi (system prompt) dari admin.</li>
+<li>Log percakapan bot untuk ditinjau.</li>
+</ul>
+<p>Robot memerlukan koneksi WhatsApp (GOWA) yang sudah aktif. Lihat pengaturan koneksi di <a href="/documentation/whatsapp-notifikasi">Notifikasi WhatsApp</a>.</p>`,
         },
         {
             id: "batasan-dan-pengawasan",
-            heading: "Batasan & Handover (Oper Alih ke Manusia)",
+            heading: "Batasan dan Keamanan",
             bodyHtml: `
-                <p>Untuk menjaga kendali, AI bekerja dengan sistem <em>Guardrails</em> (pagar pembatas):</p>
-                <ul>
-                    <li>AI menolak memberikan diskon donasi atau memodifikasi invoice jika tidak sesuai perintah sistem.</li>
-                    <li>Terdapat batasan <em>rate-limiting</em> untuk mencegah biaya API jebol jika ada donatur yang memberikan pesan spam secara terus menerus.</li>
-                    <li>
-                        <strong>Human Handover:</strong> Jika AI tidak mampu menjawab, kebingungan, atau dimarahi oleh donatur yang komplain terkait masalah teknis, AI akan secara otomatis memutus sesinya dan memberi tanda bahwa <strong>Admin Manusia harus mengambil alih percakapan (Takeover)</strong>.
-                    </li>
-                </ul>
-            `,
+<div class="doc-callout doc-callout-warn"><span class="doc-callout-title">Bukti bayar wajib gambar</span>Robot tidak akan mengonfirmasi pembayaran tanpa foto bukti transfer, dan tidak boleh mengatakan "pembayaran diterima" tanpa itu. Status <code>paid</code> tetap menunggu verifikasi admin.</div>
+<ul>
+<li><strong>Hanya data milik pengirim.</strong> Robot mengenali pengirim dari nomor WhatsApp-nya; transaksi milik nomor lain dijawab "tidak ditemukan".</li>
+<li><strong>Tidak mengubah harga.</strong> Nominal berasal dari data program dan pengaturan; robot tidak dapat memberi diskon atau mengubah tagihan.</li>
+<li><strong>Percakapan sementara.</strong> Konteks disimpan 30 menit tanpa aktivitas, maksimal 20 pesan terakhir, dan hilang bila server API dimulai ulang. Donatur yang sedang di tengah alur mungkin perlu memulai ulang.</li>
+<li><strong>Batas antrean.</strong> Jika pesan beruntun dari satu nomor menumpuk (lebih dari 5), kelebihannya diabaikan.</li>
+<li><strong>Tidak ada pengalihan otomatis ke admin.</strong> Untuk keluhan yang tidak terjawab, donatur perlu dihubungi manual oleh tim lewat nomor admin atau kontak lembaga.</li>
+</ul>`,
         },
-    ]
+        {
+            id: "tips",
+            heading: "Praktik Baik",
+            bodyHtml: `
+<ul>
+<li>Pastikan program, rekening, dan harga emas di sistem selalu mutakhir; itulah sumber jawaban robot.</li>
+<li>Gunakan nomor WhatsApp khusus lembaga, bukan nomor pribadi.</li>
+<li>Tinjau log percakapan secara berkala untuk menemukan pertanyaan yang belum terjawab baik.</li>
+<li>Pantau biaya penggunaan API di akun penyedia AI.</li>
+</ul>`,
+        },
+    ],
 };

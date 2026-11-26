@@ -6,7 +6,7 @@ export const konsepMitraDoc: DocumentationPage = {
   category: "Operasional",
   summary:
     "Memahami model mitra lembaga, pendaftaran, hak akses, dan batasan data kepemilikan.",
-  updatedAt: "2026-02-20",
+  updatedAt: "2026-11-26",
   sections: [
     {
       id: "definisi",
@@ -27,7 +27,7 @@ export const konsepMitraDoc: DocumentationPage = {
         '<li>Admin memverifikasi dan meng-approve pendaftaran.</li>' +
         '<li>Setelah disetujui, mitra mendapatkan akun login ke admin panel dengan role <strong>mitra</strong>.</li>' +
         '</ol>' +
-        '<p>Status mitra: <strong>pending</strong> → <strong>verified</strong> (atau <strong>rejected</strong> dengan alasan).</p>',
+        '<p>Setiap mitra juga memiliki halaman publik <code>/mitra/[slug]</code>. Donatur yang masuk lewat halaman itu otomatis membawa kode referral mitra, sehingga donasinya tercatat sebagai referral.</p><p>Status mitra: <strong>pending</strong> → <strong>verified</strong> (atau <strong>rejected</strong> dengan alasan).</p>',
     },
     {
       id: "ownership",

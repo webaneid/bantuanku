@@ -705,3 +705,8 @@
 **Konteks:** fase 4 Documentation Center (screenshot baru + blok visual).
 **Masalah:** (1) halaman lama menulis `<div className="bg-warning-50 ...">` di `bodyHtml`; karena di-parse sebagai HTML, `className` diabaikan dan kotak catatan tampil polos. (2) DB dev memuat logo/nama tenant nyata, nama donatur, dan kredensial gateway WhatsApp; screenshot mentah akan membocorkannya. (3) Default filter "Bulan Ini" di buku kas membuat halaman tampak kosong.
 **Pelajaran:** (1) pakai class `doc-*` (SCSS), bukan className/Tailwind di bodyHtml; (2) ambil screenshot lewat skrip yang menyamarkan email/HP, mengganti logo, memburamkan kolom identitas, dan memeriksa teks halaman sebelum menyimpan; jangan potret halaman kredensial; (3) pilih filter "Semua Waktu" untuk laporan.
+
+### [2026-11-26] Dokumentasi menjanjikan fitur yang tidak ada (handover bot, validasi saat dibuat)
+**Konteks:** audit halaman Robot AI WhatsApp, Kategori Keuangan, dan Influencer.
+**Masalah:** halaman lama menulis bot "otomatis menyerahkan ke admin manusia" (tidak ada di kode), validasi rekening zakat "saat memilih kategori" (sebenarnya saat pencairan ditandai `paid`), dan referral "hanya selama tab terbuka" (sebenarnya localStorage 7 hari + cookie server 30 hari).
+**Pelajaran:** tulis klaim perilaku dari kode atau dokumen arsitektur yang diverifikasi, bukan dari niat desain; untuk fitur yang tidak ada, katakan terus terang (mis. "tidak ada pengalihan otomatis").

@@ -6,7 +6,7 @@ export const fundraiserDoc: DocumentationPage = {
     category: "Operasional",
     summary:
         "Panduan mengelola influencer: pendaftaran, kode referral, tracking komisi, dan pencairan.",
-    updatedAt: "2026-02-20",
+    updatedAt: "2026-11-26",
     sections: [
         {
             id: "apa-itu-fundraiser",
@@ -56,8 +56,8 @@ export const fundraiserDoc: DocumentationPage = {
                 '<p>Cara kerja referral:</p>' +
                 '<ol class="doc-steps">' +
                 '<li>Influencer membagikan link dengan parameter <code>?ref=FRS6200001</code> ke program tertentu.</li>' +
-                '<li>Saat donatur mengklik link, sistem menyimpan <strong>sesi referral</strong> di browser (hanya berlaku selama tab browser terbuka / belum ditutup).</li>' +
-                '<li>Saat donatur berdonasi, cookie dicocokkan → referral tercatat.</li>' +
+                '<li>Saat donatur mengklik link, sistem menyimpan kode referral di browser donatur selama <strong>7 hari</strong>, dan juga membuat cookie di server (30 hari) sebagai cadangan saat checkout.</li>' +
+                '<li>Saat donatur berdonasi, kode tersebut dikirim bersama transaksi → referral tercatat.</li>' +
                 '<li>Model atribusi: <strong>last-click</strong> (klik terakhir yang dihitung).</li>' +
                 '</ol>' +
                 '<p>Influencer bisa melihat daftar program aktif yang tersedia untuk dishare (campaign, zakat, qurban).</p>',
@@ -90,7 +90,7 @@ export const fundraiserDoc: DocumentationPage = {
             bodyHtml:
                 '<p>Influencer bisa mengajukan pencairan komisi:</p>' +
                 '<ol class="doc-steps">' +
-                '<li>Buka halaman <strong>Influencer Portal</strong> (website) atau <strong>Influencer Saya</strong> (admin).</li>' +
+                '<li>Buka halaman <strong>Akun → Influencer</strong> (website, <code>/account/fundraiser</code>) atau <strong>Influencer Saya</strong> (admin).</li>' +
                 '<li>Pastikan <strong>rekening bank</strong> sudah terdaftar.</li>' +
                 '<li>Cek <strong>saldo tersedia</strong> (Current Balance).</li>' +
                 '<li>Isi jumlah yang ingin dicairkan dan tujuan pencairan.</li>' +

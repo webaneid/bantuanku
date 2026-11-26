@@ -6,17 +6,17 @@ export const seoDoc: DocumentationPage = {
     category: "Operasional",
     summary:
         "Panduan komprehensif optimasi SEO: komponen SEO Panel, SEO per campaign/zakat/qurban, SEO halaman arsip, dan SEO kategori & pilar.",
-    updatedAt: "2026-02-20",
+    updatedAt: "2026-11-26",
     sections: [
         {
             id: "overview",
             heading: "Overview SEO di Jaladana",
             bodyHtml:
-                '<p>Jaladana memiliki sistem SEO terintegrasi yang memungkinkan optimasi pencarian di setiap konten. SEO dikelola di <strong>4 tempat berbeda</strong> sesuai jenis konten:</p>' +
+                '<p>Jaladana memiliki sistem SEO terintegrasi yang memungkinkan optimasi pencarian di setiap konten. SEO dikelola di <strong>beberapa tempat</strong> sesuai jenis konten:</p>' +
                 '<table style="width:100%; border-collapse:collapse; margin:16px 0;">' +
                 '<thead><tr style="background:#f3f4f6;"><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Konten</th><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Lokasi Pengaturan SEO</th></tr></thead>' +
                 '<tbody>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Campaign, Zakat, Qurban</td><td style="padding:10px; border:1px solid #e5e7eb;">Di form <strong>Create / Edit</strong> masing-masing (ada panel SEO di bagian bawah)</td></tr>' +
+                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Campaign, Jenis Zakat, Paket Qurban, Pages, Laporan Kegiatan</td><td style="padding:10px; border:1px solid #e5e7eb;">Di form <strong>Create / Edit</strong> masing-masing (ada panel SEO di bagian bawah)</td></tr>' +
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Homepage, Arsip Program, Arsip Zakat, Arsip Qurban, Arsip Wakaf</td><td style="padding:10px; border:1px solid #e5e7eb;"><strong>Settings → SEO Halaman</strong></td></tr>' +
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Kategori Campaign</td><td style="padding:10px; border:1px solid #e5e7eb;"><strong>Campaigns → Categories</strong> (edit kategori)</td></tr>' +
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Pilar Campaign</td><td style="padding:10px; border:1px solid #e5e7eb;"><strong>Campaigns → Pillars</strong> (edit pilar)</td></tr>' +
@@ -73,7 +73,7 @@ export const seoDoc: DocumentationPage = {
                 '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Panjang SEO title</td><td style="padding:8px; border:1px solid #e5e7eb;">Ideal: 50–60 karakter</td></tr>' +
                 '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Panjang meta description</td><td style="padding:8px; border:1px solid #e5e7eb;">Ideal: 120–155 karakter</td></tr>' +
                 '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Panjang konten</td><td style="padding:8px; border:1px solid #e5e7eb;">Minimal 300 kata (disarankan)</td></tr>' +
-                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Internal links</td><td style="padding:8px; border:1px solid #e5e7eb;">Minimal 2 link ke halaman internal</td></tr>' +
+                '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Internal links</td><td style="padding:8px; border:1px solid #e5e7eb;">Minimal 1 link ke halaman internal</td></tr>' +
                 '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Gambar dengan alt keyphrase</td><td style="padding:8px; border:1px solid #e5e7eb;">Setidaknya 1 gambar memiliki alt text mengandung keyphrase</td></tr>' +
                 '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Featured image / OG image</td><td style="padding:8px; border:1px solid #e5e7eb;">Gambar unggulan sudah diset</td></tr>' +
                 '<tr><td style="padding:8px; border:1px solid #e5e7eb;">Panjang slug</td><td style="padding:8px; border:1px solid #e5e7eb;">Idealnya ≤ 75 karakter</td></tr>' +

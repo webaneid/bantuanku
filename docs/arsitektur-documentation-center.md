@@ -162,7 +162,7 @@ Registry `documentationPages` saat ini memetakan slug ke object page:
 | `whatsapp-notifikasi` | `whatsappNotificationDoc` |
 | `whatsapp-ai` | `whatsappAiDoc` |
 
-Diperbarui 2026-11-26 (fase 1–2, dicocokkan dengan kode): `pengenalan`, `arsitektur-sistem`, `login-dan-akses`, `navigasi-dashboard`, `cara-membuat-campaign`, `mengelola-transaksi`, `kode-unik`, `flip-payment`, `bagi-hasil-amil`, `alur-pencairan`, `laporan-keuangan`, `zakat`, `qurban`, `whatsapp-notifikasi`. Masih `2026-02-20` dan BELUM diaudit: `kategori-keuangan`, `konsep-mitra`, `fundraiser`, `seo`, `whatsapp-ai`, `panduan-upload-gambar`.
+Semua halaman diaudit terhadap kode dan diperbarui 2026-11-26 (fase 1–5). Halaman baru ikut memakai tanggal itu. Saat fitur berubah, perbarui halaman terkait dan `updatedAt`.
 
 ---
 
@@ -480,7 +480,7 @@ Implikasi:
 
 ## Gap Implementasi (audit 2026-11-26)
 
-1. 6 halaman lama belum diaudit (lihat daftar di atas). Halaman yang sudah diaudit tetap memakai screenshot Februari.
+1. (Selesai fase 5) Semua halaman sudah diaudit. Perbaikan utama fase 5: kategori pengeluaran sesuai UI, validasi rekening zakat, referral 7 hari + cookie 30 hari, halaman mitra publik, SEO Panel juga di Pages/Laporan Kegiatan, dan Robot AI tanpa klaim handover.
 2. Fase 3 (2026-11-26) menambah 10 halaman: buku-kas, pengaturan-pembayaran, wakaf, laporan-kegiatan, alur-donatur, donatur, pages-cms, master-data, program-coordinator, pengaturan-umum. Belum ada: Midtrans (tidak ada di UI Payments), Settings Integration/Google Maps/Users, tema multi-klien, tracking Meta, Dokumentasi mitra (daftar-mitra).
 3. (Selesai fase 4) Screenshot diganti; halaman yang belum punya gambar: Kategori Keuangan, Konsep Mitra (daftar mitra dev kosong), Vendor (kosong), Fundraiser/SEO memakai gambar baru.
 4. Belum ada pencarian dan sitemap untuk dokumentasi; komponen callout/langkah/figure sudah ada.

@@ -53,7 +53,7 @@ export const documentationManifest: DocumentationManifest = {
       items: [
         {
           slug: "kategori-keuangan",
-          title: "Sistem Kategori Keuangan (COA)",
+          title: "Sistem Kategori Keuangan",
         },
         {
           slug: "kode-unik",
