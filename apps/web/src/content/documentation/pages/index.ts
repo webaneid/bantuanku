@@ -19,9 +19,29 @@ import { fundraiserDoc } from "./fundraiser";
 import { amilRevenueDoc as bagiHasilAmilDoc } from "./bagi-hasil-amil";
 import { whatsappNotificationDoc } from "./whatsapp-notifikasi";
 import { whatsappAiDoc } from "./whatsapp-ai";
+import { bukuKasDoc } from "./buku-kas";
+import { pengaturanPembayaranDoc } from "./pengaturan-pembayaran";
+import { wakafDoc } from "./wakaf";
+import { laporanKegiatanDoc } from "./laporan-kegiatan";
+import { donaturDoc } from "./donatur";
+import { pagesCmsDoc } from "./pages-cms";
+import { masterDataDoc } from "./master-data";
+import { programCoordinatorDoc } from "./program-coordinator";
+import { alurDonaturDoc } from "./alur-donatur";
+import { pengaturanUmumDoc } from "./pengaturan-umum";
 
 export {
   pengenalanDoc,
+  bukuKasDoc,
+  pengaturanPembayaranDoc,
+  wakafDoc,
+  laporanKegiatanDoc,
+  donaturDoc,
+  pagesCmsDoc,
+  masterDataDoc,
+  programCoordinatorDoc,
+  alurDonaturDoc,
+  pengaturanUmumDoc,
   arsitekturSistemDoc,
   loginDanAksesDoc,
   navigasiDashboardDoc,
@@ -45,6 +65,16 @@ export {
 
 export const documentationPages: Record<string, any> = {
   "pengenalan": pengenalanDoc,
+  "buku-kas": bukuKasDoc,
+  "pengaturan-pembayaran": pengaturanPembayaranDoc,
+  "wakaf": wakafDoc,
+  "laporan-kegiatan": laporanKegiatanDoc,
+  "donatur": donaturDoc,
+  "pages-cms": pagesCmsDoc,
+  "master-data": masterDataDoc,
+  "program-coordinator": programCoordinatorDoc,
+  "alur-donatur": alurDonaturDoc,
+  "pengaturan-umum": pengaturanUmumDoc,
   "arsitektur-sistem": arsitekturSistemDoc,
   "login-dan-akses": loginDanAksesDoc,
   "navigasi-dashboard": navigasiDashboardDoc,

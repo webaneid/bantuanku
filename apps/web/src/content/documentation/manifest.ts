@@ -33,6 +33,18 @@ export const documentationManifest: DocumentationManifest = {
           slug: "mengelola-transaksi",
           title: "Mengelola Transaksi",
         },
+        {
+          slug: "wakaf",
+          title: "Wakaf",
+        },
+        {
+          slug: "laporan-kegiatan",
+          title: "Laporan Kegiatan",
+        },
+        {
+          slug: "alur-donatur",
+          title: "Alur Donasi dari Sisi Donatur",
+        },
       ],
     },
     {
@@ -62,6 +74,14 @@ export const documentationManifest: DocumentationManifest = {
         {
           slug: "laporan-keuangan",
           title: "Laporan Keuangan",
+        },
+        {
+          slug: "buku-kas",
+          title: "Buku Kas (Menu Keuangan)",
+        },
+        {
+          slug: "pengaturan-pembayaran",
+          title: "Pengaturan Metode Pembayaran",
         },
       ],
     },
@@ -93,6 +113,22 @@ export const documentationManifest: DocumentationManifest = {
           slug: "panduan-upload-gambar",
           title: "Panduan Upload Gambar Utama",
         },
+        {
+          slug: "donatur",
+          title: "Donatur & Import Data",
+        },
+        {
+          slug: "pages-cms",
+          title: "Halaman Statis (Pages)",
+        },
+        {
+          slug: "master-data",
+          title: "Data Master",
+        },
+        {
+          slug: "program-coordinator",
+          title: "Program Coordinator",
+        },
       ],
     },
     {
@@ -106,6 +142,16 @@ export const documentationManifest: DocumentationManifest = {
         {
           slug: "whatsapp-ai",
           title: "Robot AI WhatsApp (Chatbot)",
+        },
+      ],
+    },
+    {
+      id: "pengaturan",
+      label: "Pengaturan",
+      items: [
+        {
+          slug: "pengaturan-umum",
+          title: "Pengaturan Umum & Tampilan",
         },
       ],
     },

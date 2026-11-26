@@ -118,11 +118,12 @@ Kategori:
 | ID | Label | Slug di Manifest |
 |----|-------|------------------|
 | `memulai` | Memulai | `pengenalan`, `login-dan-akses`, `navigasi-dashboard` |
-| `campaign` | Campaign & Donasi | `cara-membuat-campaign`, `mengelola-transaksi` |
-| `keuangan` | Keuangan | `kategori-keuangan`, `kode-unik`, `flip-payment`, `bagi-hasil-amil`, `alur-pencairan`, `laporan-keuangan` |
-| `operasional` | Operasional | `konsep-mitra`, `zakat`, `qurban`, `fundraiser`, `seo`, `panduan-upload-gambar` |
+| `campaign` | Campaign & Donasi | `cara-membuat-campaign`, `mengelola-transaksi`, `wakaf`, `laporan-kegiatan`, `alur-donatur` |
+| `keuangan` | Keuangan | `kategori-keuangan`, `kode-unik`, `flip-payment`, `bagi-hasil-amil`, `alur-pencairan`, `laporan-keuangan`, `buku-kas`, `pengaturan-pembayaran` |
+| `operasional` | Operasional | `konsep-mitra`, `zakat`, `qurban`, `fundraiser`, `seo`, `panduan-upload-gambar`, `donatur`, `pages-cms`, `master-data`, `program-coordinator` |
 | `fitur` | Fitur | `whatsapp-notifikasi`, `whatsapp-ai` |
 | `developer` | Developer | `arsitektur-sistem` |
+| `pengaturan` | Pengaturan | `pengaturan-umum` |
 
 Urutan kategori dan urutan item di sidebar sepenuhnya mengikuti `documentationManifest.categories`.
 
@@ -480,6 +481,6 @@ Implikasi:
 ## Gap Implementasi (audit 2026-11-26)
 
 1. 6 halaman lama belum diaudit (lihat daftar di atas). Halaman yang sudah diaudit tetap memakai screenshot Februari.
-2. Belum ada halaman: Buku Kas, gateway iPaymu/Xendit/Midtrans, Donatur, WA Broadcast, Wakaf, Laporan Kegiatan, Pages CMS, Voucher, Vendor, Statistik, Branding/Tema, checkout & akun donatur.
+2. Fase 3 (2026-11-26) menambah 10 halaman: buku-kas, pengaturan-pembayaran, wakaf, laporan-kegiatan, alur-donatur, donatur, pages-cms, master-data, program-coordinator, pengaturan-umum. Belum ada: Midtrans (tidak ada di UI Payments), Settings Integration/Google Maps/Users, tema multi-klien, tracking Meta, Dokumentasi mitra (daftar-mitra).
 3. 15 screenshot di `apps/web/public/docs/` bertanggal 2026-02-20, perlu diganti.
 4. Belum ada pencarian, sitemap, dan komponen callout/langkah/figure.
