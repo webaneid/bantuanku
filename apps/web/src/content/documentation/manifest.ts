@@ -109,5 +109,15 @@ export const documentationManifest: DocumentationManifest = {
         },
       ],
     },
+    {
+      id: "developer",
+      label: "Developer",
+      items: [
+        {
+          slug: "arsitektur-sistem",
+          title: "Arsitektur Sistem",
+        },
+      ],
+    },
   ],
 };

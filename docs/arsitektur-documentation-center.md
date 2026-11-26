@@ -1,6 +1,6 @@
 # Arsitektur Documentation Center
 
-> Terakhir di-sync: 2026-07-02
+> Terakhir di-sync: 2026-11-26
 
 ---
 
@@ -47,7 +47,7 @@ Dokumen terkait:
 | Type contract | `apps/web/src/content/documentation/types.ts` |
 | Page registry | `apps/web/src/content/documentation/pages/index.ts` |
 | Content pages | `apps/web/src/content/documentation/pages/*.ts` |
-| Logo web documentation | `apps/web/public/brand/logo-webane.svg` |
+| Logo web documentation | `apps/web/public/brand/logo-webane.svg` (sengaja tetap logo Webane; hanya nama aplikasi yang Jaladana) |
 | Link admin Developer | `apps/admin/src/app/dashboard/settings/developer/page.tsx` |
 | Link footer web | `apps/web/src/components/organisms/Footer/Footer.tsx` |
 | Default menu frontend | `apps/admin/src/app/dashboard/settings/frontend/page.tsx` |
@@ -122,6 +122,7 @@ Kategori:
 | `keuangan` | Keuangan | `kategori-keuangan`, `kode-unik`, `flip-payment`, `bagi-hasil-amil`, `alur-pencairan`, `laporan-keuangan` |
 | `operasional` | Operasional | `konsep-mitra`, `zakat`, `qurban`, `fundraiser`, `seo`, `panduan-upload-gambar` |
 | `fitur` | Fitur | `whatsapp-notifikasi`, `whatsapp-ai` |
+| `developer` | Developer | `arsitektur-sistem` |
 
 Urutan kategori dan urutan item di sidebar sepenuhnya mengikuti `documentationManifest.categories`.
 
@@ -140,6 +141,7 @@ Registry `documentationPages` saat ini memetakan slug ke object page:
 | Slug | Export |
 |------|--------|
 | `pengenalan` | `pengenalanDoc` |
+| `arsitektur-sistem` | `arsitekturSistemDoc` |
 | `login-dan-akses` | `loginDanAksesDoc` |
 | `navigasi-dashboard` | `navigasiDashboardDoc` |
 | `panduan-upload-gambar` | `uploadGambarDoc` |
@@ -159,7 +161,7 @@ Registry `documentationPages` saat ini memetakan slug ke object page:
 | `whatsapp-notifikasi` | `whatsappNotificationDoc` |
 | `whatsapp-ai` | `whatsappAiDoc` |
 
-Semua content page yang terdaftar memakai `updatedAt: "2026-02-20"` saat audit ini.
+`pengenalan` dan `arsitektur-sistem` diperbarui 2026-11-26; halaman lain masih `2026-02-20` (usang, menunggu fase 2).
 
 ---
 
@@ -233,14 +235,14 @@ Metadata detail:
 | Field | Source |
 |-------|--------|
 | `title` | `${page.title} | Dokumentasi` |
-| `description` | `page.summary || "Dokumentasi operasional aplikasi Bantuanku."` |
+| `description` | `page.summary || "Dokumentasi operasional aplikasi Jaladana."` |
 
 Layout metadata global:
 
 | Field | Value |
 |-------|-------|
 | `title` | `Dokumentasi` |
-| `description` | `Dokumentasi dan tutorial operasional aplikasi Bantuanku.` |
+| `description` | `Dokumentasi dan tutorial operasional aplikasi Jaladana.` |
 
 ---
 
@@ -257,7 +259,7 @@ Struktur UI:
 | Area | Implementasi |
 |------|--------------|
 | Container | `min-h-screen bg-gray-50`, `.container`, padding responsive |
-| Header internal | Card putih berisi logo Webane + judul "Dokumentasi Bantuanku" |
+| Header internal | Card putih berisi logo Webane + judul "Dokumentasi Jaladana" |
 | Sidebar kiri | Kategori manifest sebagai `<details>` accordion |
 | Content tengah | Title, summary, updatedAt, sections |
 | TOC kanan | List section heading, hanya tampil `xl:block` |
@@ -472,3 +474,12 @@ Implikasi:
 6. `bodyHtml` harus dianggap trusted repo content, bukan user-generated content.
 7. Update documentation membutuhkan perubahan kode dan deploy web.
 8. Documentation center tidak boleh menggantikan source of truth arsitektur `docs/arsitektur-*.md`.
+
+---
+
+## Gap Implementasi (audit 2026-11-26)
+
+1. 17 halaman lama belum diaudit terhadap kode (konten Februari 2026).
+2. Belum ada halaman: Buku Kas, gateway iPaymu/Xendit/Midtrans, Donatur, WA Broadcast, Wakaf, Laporan Kegiatan, Pages CMS, Voucher, Vendor, Statistik, Branding/Tema, checkout & akun donatur.
+3. 15 screenshot di `apps/web/public/docs/` bertanggal 2026-02-20, perlu diganti.
+4. Belum ada pencarian, sitemap, dan komponen callout/langkah/figure.
