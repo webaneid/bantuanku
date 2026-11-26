@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { formatRupiah } from "@/lib/format";
+import Pagination from "@/components/Pagination";
 import ExportButton from "@/components/reports/ExportButton";
 import { exportToExcel } from "@/utils/export-excel";
 import { formatDateWIB } from "@/lib/timezone";
 
 interface TopDonor {
-  userId: string | null;
+  donaturId: string | null;
   donorName: string;
   donorEmail: string;
   totalDonations: number;
@@ -31,6 +32,21 @@ interface DonorDetail {
     category: string;
   }[];
 }
+
+interface DonorSummary {
+  totalDonors: number;
+  totalDonations: number;
+  totalAmount: number;
+}
+
+interface DonorPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+const PAGE_SIZE = 20;
 
 const TYPE_LABELS: Record<string, string> = {
   campaign: "Campaign",
@@ -54,13 +70,32 @@ export default function DonaturReportPage() {
   const [selectedDonorId, setSelectedDonorId] = useState<string | null>(null);
   const [searchEmail, setSearchEmail] = useState("");
 
-  // Top donors from donor-analytics
+  const [listSearch, setListSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(listSearch.trim()), 400);
+    return () => clearTimeout(t);
+  }, [listSearch]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [startDate, endDate, debouncedSearch]);
+
+  // Semua donatur (terurut total terbesar), berpaginasi
   const { data: analyticsData, isLoading } = useQuery({
-    queryKey: ["donor-analytics", startDate, endDate],
+    queryKey: ["donor-analytics", startDate, endDate, debouncedSearch, page],
     queryFn: async () => {
-      const params = new URLSearchParams({ startDate, endDate });
+      const params = new URLSearchParams({
+        startDate,
+        endDate,
+        page: String(page),
+        limit: String(PAGE_SIZE),
+      });
+      if (debouncedSearch) params.set("search", debouncedSearch);
       const res = await api.get(`/admin/reports/donor-analytics?${params}`);
-      return res.data?.data as { topDonors: TopDonor[] };
+      return res.data?.data as { donors: TopDonor[]; summary: DonorSummary; pagination: DonorPagination };
     },
   });
 
@@ -85,11 +120,30 @@ export default function DonaturReportPage() {
     enabled: !!selectedDonorId,
   });
 
-  const topDonors = analyticsData?.topDonors || [];
+  const topDonors = analyticsData?.donors || [];
+  const summary = analyticsData?.summary;
+  const pagination = analyticsData?.pagination;
+  const rankOffset = ((pagination?.page || 1) - 1) * PAGE_SIZE;
 
-  const handleExport = () => {
+  // Export: ambil seluruh donatur (bukan hanya halaman aktif)
+  const handleExportAll = async () => {
+    const all: TopDonor[] = [];
+    let p = 1;
+    let totalPages = 1;
+    do {
+      const params = new URLSearchParams({ startDate, endDate, page: String(p), limit: "100" });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      const res = await api.get(`/admin/reports/donor-analytics?${params}`);
+      all.push(...((res.data?.data?.donors || []) as TopDonor[]));
+      totalPages = res.data?.data?.pagination?.totalPages || 1;
+      p++;
+    } while (p <= totalPages);
+    runExport(all);
+  };
+
+  const runExport = (list: TopDonor[]) => {
     exportToExcel({
-      data: topDonors.map((d, i) => ({
+      data: list.map((d, i) => ({
         rank: i + 1,
         name: d.donorName || "Anonim",
         email: d.donorEmail || "-",
@@ -107,8 +161,8 @@ export default function DonaturReportPage() {
         { header: "Rata-rata", key: "avg", width: 18, format: "currency" },
         { header: "Terakhir", key: "lastDonation", width: 14 },
       ],
-      filename: `Top-Donatur-${startDate}-${endDate}`,
-      title: "Laporan Top Donatur",
+      filename: `Laporan-Donatur-${startDate}-${endDate}`,
+      title: "Laporan Donatur",
       subtitle: `Periode: ${startDate} s/d ${endDate}`,
     });
   };
@@ -120,13 +174,13 @@ export default function DonaturReportPage() {
           <h1 className="text-2xl font-bold text-dark">Laporan Donatur</h1>
           <p className="text-gray-600 mt-1">Analitik donatur dan riwayat donasi</p>
         </div>
-        <ExportButton onExportExcel={handleExport} onPrint={() => window.print()} />
+        <ExportButton onExportExcel={handleExportAll} onPrint={() => window.print()} />
       </div>
 
       <div className="space-y-6">
         {/* Filters */}
         <div className="card no-print">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Dari Tanggal</label>
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="form-input w-full" />
@@ -136,7 +190,17 @@ export default function DonaturReportPage() {
               <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="form-input w-full" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cari Donatur</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Filter Daftar</label>
+              <input
+                type="text"
+                placeholder="Nama/email/HP donatur..."
+                value={listSearch}
+                onChange={(e) => setListSearch(e.target.value)}
+                className="form-input w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Lihat Detail Donatur</label>
               <input
                 type="text"
                 placeholder="Ketik nama/email (min 3 huruf)..."
@@ -165,7 +229,7 @@ export default function DonaturReportPage() {
           <>
             {/* Detail View */}
             <div className="no-print">
-              <button className="btn btn-outline btn-sm mb-4" onClick={() => { setSelectedDonorId(null); setSearchEmail(""); }}>← Kembali ke Top Donatur</button>
+              <button className="btn btn-outline btn-sm mb-4" onClick={() => { setSelectedDonorId(null); setSearchEmail(""); }}>← Kembali ke Daftar Donatur</button>
             </div>
 
             {loadingDetail ? (
@@ -223,6 +287,11 @@ export default function DonaturReportPage() {
                     )}
                   </table>
                   {detailData.transactions.length === 0 && <div className="p-6 text-center text-gray-500">Tidak ada transaksi</div>}
+                  {detailData.transactions.length < detailData.summary.totalTransactions && (
+                    <div className="p-3 text-center text-xs text-gray-500">
+                      Menampilkan {detailData.transactions.length} transaksi terbaru dari {detailData.summary.totalTransactions}. Total di atas mencakup semuanya.
+                    </div>
+                  )}
                 </div>
 
                 {/* Mobile Cards */}
@@ -255,7 +324,12 @@ export default function DonaturReportPage() {
             {/* Top 20 Donors - Desktop */}
             <div className="table-container">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-dark">Top 20 Donatur</h2>
+                <h2 className="text-lg font-semibold text-dark">Daftar Donatur</h2>
+                {summary && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    {summary.totalDonors} donatur · {summary.totalDonations}x donasi · Total Rp {formatRupiah(summary.totalAmount)}
+                  </p>
+                )}
               </div>
               {isLoading ? (
                 <div className="p-6 text-center text-gray-500">Loading...</div>
@@ -273,8 +347,8 @@ export default function DonaturReportPage() {
                   </thead>
                   <tbody>
                     {topDonors.map((d, i) => (
-                      <tr key={`${d.donorEmail || 'no-email'}-${d.donorName || 'anonim'}-${i}`} className="hover:bg-light">
-                        <td className="text-sm text-gray-500">{i + 1}</td>
+                      <tr key={`${d.donaturId || d.donorEmail || 'anonim'}-${i}`} className="hover:bg-light">
+                        <td className="text-sm text-gray-500">{rankOffset + i + 1}</td>
                         <td>
                           <div className="text-sm font-medium text-dark">{d.donorName || "Anonim"}</div>
                           <div className="text-xs text-gray-500">{d.donorEmail || "-"}</div>
@@ -288,20 +362,40 @@ export default function DonaturReportPage() {
                       </tr>
                     ))}
                   </tbody>
+                  {topDonors.length > 0 && (
+                  <tfoot className="bg-light border-t-2 border-gray-300">
+                    <tr>
+                      <td colSpan={2} className="font-bold">TOTAL (semua donatur)</td>
+                      <td className="text-center font-bold">{summary?.totalDonations ?? 0}x</td>
+                      <td className="text-right font-bold text-success-600 mono">Rp {formatRupiah(summary?.totalAmount ?? 0)}</td>
+                      <td colSpan={2}></td>
+                    </tr>
+                  </tfoot>
+                  )}
                 </table>
               )}
               {!isLoading && topDonors.length === 0 && (
                 <div className="p-6 text-center text-gray-500">Belum ada data donatur</div>
+              )}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="no-print p-4">
+                  <Pagination
+                    currentPage={pagination.page}
+                    totalPages={pagination.totalPages}
+                    totalItems={pagination.total}
+                    onPageChange={setPage}
+                  />
+                </div>
               )}
             </div>
 
             {/* Top Donors - Mobile */}
             <div className="table-mobile-cards">
               {topDonors.map((d, i) => (
-                <div key={`${d.donorEmail || 'no-email'}-${d.donorName || 'anonim'}-${i}`} className="table-card">
+                <div key={`${d.donaturId || d.donorEmail || 'anonim'}-${i}`} className="table-card">
                   <div className="table-card-header">
                     <div className="table-card-header-left">
-                      <div className="table-card-header-title">#{i + 1} {d.donorName || "Anonim"}</div>
+                      <div className="table-card-header-title">#{rankOffset + i + 1} {d.donorName || "Anonim"}</div>
                       <div className="table-card-header-subtitle">{d.donorEmail || "-"} · {Number(d.totalDonations)}x donasi</div>
                     </div>
                   </div>

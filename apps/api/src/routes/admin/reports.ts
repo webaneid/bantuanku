@@ -559,49 +559,63 @@ reportsAdmin.get("/donor-analytics", requireRole("super_admin", "admin_finance")
   const db = c.get("db");
   const startDate = c.req.query("startDate");
   const endDate = c.req.query("endDate");
+  const search = (c.req.query("search") || "").trim();
+  const page = Math.max(1, parseInt(c.req.query("page") || "1", 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(c.req.query("limit") || "20", 10) || 20));
 
-  const conditions = [eq(transactions.paymentStatus, "paid")];
-
-  if (startDate) {
-    conditions.push(gte(transactions.createdAt, startOfDayWIB(startDate)));
+  // Periode memakai paidAt (tanggal uang diterima), konsisten dengan /donor-detail
+  const conditions: any[] = [eq(transactions.paymentStatus, "paid")];
+  if (startDate) conditions.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
+  if (endDate) conditions.push(lte(transactions.paidAt, endOfDay(endDate)));
+  if (search) {
+    const pattern = `%${search.replace(/[%_\\]/g, "\\$&")}%`;
+    conditions.push(
+      sql`(${donatur.name} ILIKE ${pattern} OR ${transactions.donorName} ILIKE ${pattern} OR ${transactions.donorEmail} ILIKE ${pattern} OR ${donatur.phone} ILIKE ${pattern})`
+    );
   }
+  const whereClause = and(...conditions);
 
-  if (endDate) {
-    conditions.push(lte(transactions.createdAt, endOfDay(endDate)));
-  }
+  // Satu baris per donatur: donaturId; fallback email (lowercase) untuk transaksi lama tanpa donaturId
+  const groupKey = sql<string>`coalesce(${transactions.donaturId}, 'email:' || lower(${transactions.donorEmail}), 'anonim')`;
 
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-  const topDonors = await db
+  const rows = await db
     .select({
-      userId: transactions.userId,
-      donorName: transactions.donorName,
-      donorEmail: transactions.donorEmail,
-      totalDonations: sql<number>`count(*)`,
-      totalAmount: sql<number>`sum(${transactions.totalAmount})`,
-      avgDonation: sql<number>`avg(${transactions.totalAmount})`,
-      lastDonation: sql<Date>`max(${transactions.createdAt})`,
+      donaturId: sql<string | null>`max(${transactions.donaturId})`,
+      donorName: sql<string>`coalesce(max(${donatur.name}), max(${transactions.donorName}))`,
+      donorEmail: sql<string>`coalesce(max(${donatur.email}), max(${transactions.donorEmail}))`,
+      totalDonations: sql<number>`count(*)::int`,
+      totalAmount: sql<number>`coalesce(sum(${transactions.totalAmount}), 0)::float8`,
+      avgDonation: sql<number>`coalesce(avg(${transactions.totalAmount}), 0)::float8`,
+      lastDonation: sql<Date>`max(${transactions.paidAt})`,
     })
     .from(transactions)
+    .leftJoin(donatur, eq(transactions.donaturId, donatur.id))
     .where(whereClause)
-    .groupBy(transactions.userId, transactions.donorName, transactions.donorEmail)
-    .orderBy(desc(sql<number>`sum(${transactions.totalAmount})`))
-    .limit(20);
+    .groupBy(groupKey)
+    .orderBy(desc(sql`sum(${transactions.totalAmount})`), groupKey)
+    .limit(limit)
+    .offset((page - 1) * limit);
 
-  const donorRetention = await db
+  // Total keseluruhan (semua donatur pada filter yang sama, bukan hanya halaman ini)
+  const [summary] = await db
     .select({
-      month: sql<string>`to_char(${transactions.createdAt} AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM')`,
-      newDonors: sql<number>`0`,
-      returningDonors: sql<number>`0`,
+      totalDonors: sql<number>`count(distinct ${groupKey})::int`,
+      totalDonations: sql<number>`count(*)::int`,
+      totalAmount: sql<number>`coalesce(sum(${transactions.totalAmount}), 0)::float8`,
     })
     .from(transactions)
-    .where(whereClause)
-    .groupBy(sql`to_char(${transactions.createdAt} AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM')`)
-    .orderBy(sql`to_char(${transactions.createdAt} AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM')`);
+    .leftJoin(donatur, eq(transactions.donaturId, donatur.id))
+    .where(whereClause);
 
   return success(c, {
-    topDonors,
-    donorRetention,
+    donors: rows,
+    summary,
+    pagination: {
+      page,
+      limit,
+      total: summary?.totalDonors ?? 0,
+      totalPages: Math.ceil((summary?.totalDonors ?? 0) / limit),
+    },
   });
 });
 
@@ -2682,7 +2696,11 @@ reportsAdmin.get("/donor-detail", requireRole("super_admin", "admin_finance"), a
     // Transactions by this donor (match by email)
     const txConds: any[] = [
       eq(transactions.paymentStatus, "paid"),
-      eq(transactions.donorEmail, donor.email),
+      // Utama: donaturId. Fallback email hanya untuk transaksi lama yang belum punya donaturId.
+      or(
+        eq(transactions.donaturId, donor.id),
+        and(sql`${transactions.donaturId} IS NULL`, sql`lower(${transactions.donorEmail}) = lower(${donor.email})`)
+      ),
     ];
     if (startDate) txConds.push(gte(transactions.paidAt, startOfDayWIB(startDate)));
     if (endDate) txConds.push(lte(transactions.paidAt, endOfDay(endDate)));
@@ -2703,19 +2721,29 @@ reportsAdmin.get("/donor-detail", requireRole("super_admin", "admin_finance"), a
       .orderBy(desc(transactions.paidAt))
       .limit(200);
 
-    const totalAmount = txList.reduce((s, t) => s + Number(t.totalAmount), 0);
+    // Ringkasan dihitung di SQL (bukan dari txList) agar tidak terpotong limit 200 baris
+    const typeRows = await db
+      .select({
+        productType: transactions.productType,
+        count: sql<number>`count(*)::int`,
+        total: sql<number>`coalesce(sum(${transactions.totalAmount}), 0)::float8`,
+      })
+      .from(transactions)
+      .where(and(...txConds))
+      .groupBy(transactions.productType);
 
-    // By product type
     const byType: Record<string, { count: number; total: number }> = {};
-    for (const t of txList) {
-      if (!byType[t.productType]) byType[t.productType] = { count: 0, total: 0 };
-      byType[t.productType].count++;
-      byType[t.productType].total += Number(t.totalAmount);
+    let totalAmount = 0;
+    let totalTransactions = 0;
+    for (const r of typeRows) {
+      byType[r.productType] = { count: r.count, total: r.total };
+      totalAmount += r.total;
+      totalTransactions += r.count;
     }
 
     return success(c, {
       donor: { id: donor.id, name: donor.name, email: donor.email, phone: donor.phone },
-      summary: { totalTransactions: txList.length, totalAmount, byProductType: byType },
+      summary: { totalTransactions, totalAmount, byProductType: byType },
       transactions: txList.map(t => ({ ...t, totalAmount: Number(t.totalAmount) })),
     });
   } catch (err) {

@@ -58,7 +58,7 @@ Base path: `/admin/reports`. Semua `GET`. Kolom "Kolom tanggal" adalah kolom yan
 | `/campaigns-performance` | `super_admin`, `admin_campaign` | Performa campaign by kategori/pilar | `campaigns.createdAt` | Filter tanggal hanya menyaring **campaign yang dibuat** di rentang itu; `collected` tetap all-time. |
 | `/financial-statement` | `super_admin`, `admin_finance` | Neraca + laba rugi ringkas | `COALESCE(paid_at, created_at)` | Sintetis, bukan double-entry (lihat § Financial Statement). Tanggal opsional, tetapi jika diisi harus `YYYY-MM-DD` (selain itu `400`). |
 | `/ledger-summary` | `super_admin`, `admin_finance` | **Ringkasan disbursement** (jumlah per status, top 10 campaign) — bukan ledger | `disbursements.createdAt` | Nama endpoint menyesatkan; tidak menyentuh ledger/COA. |
-| `/donor-analytics` | `super_admin`, `admin_finance` | Top 20 donatur + retensi bulanan | `transactions.createdAt` | `donorRetention.newDonors`/`returningDonors` **hardcoded 0** (stub). Pengelompokan top donor per `userId+donorName+donorEmail`. |
+| `/donor-analytics` | `super_admin`, `admin_finance` | **Semua** donatur ber-transaksi `paid` (bukan lagi Top 20), berpaginasi (`page`, `limit` ≤100, `search` nama/email/HP), terurut total terbesar. Respons: `donors`, `summary` (total donatur/donasi/nominal seluruh filter), `pagination` | `transactions.paidAt` | Satu baris per **`donaturId`** (fallback `lower(donorEmail)` untuk transaksi lama tanpa `donaturId`); nama/email diambil dari tabel `donatur`. Semua `product_type` ikut. `donorRetention` sudah dihapus (sebelumnya stub 0). |
 | `/liability-balance` | `super_admin`, `admin_finance` | Saldo titipan dana per campaign (donasi − disbursement) | Tidak ada filter tanggal (all-time) | Campaign-only (`product_type='campaign'`, `reference_type='campaign'`), paid saja. Bukan dari ledger 2010. |
 | `/account-balance/:code` | `super_admin`, `admin_finance` | **Deprecated — selalu `410 Gone`** | — | Pesan mengarahkan ke `/financial-statement`. Tidak dipakai UI. |
 | `/cash-flow` | `super_admin`, `admin_finance` | Mutasi kas & bank: kas masuk (transaksi paid), kas keluar (disbursement paid), kode unik | `COALESCE(paid_at, created_at)` | `startDate`/`endDate` **wajib**. Param: `accountCode`, `refType`, `search`, `page`, `limit` (default 50, maks 200). Paginasi & search di memori. Baris yang tidak ter-resolve ke akun kas dibuang diam-diam. `openingBalance` selalu 0. Lihat § Cash Flow. |
@@ -77,7 +77,7 @@ Base path: `/admin/reports`. Semua `GET`. Kolom "Kolom tanggal" adalah kolom yan
 | `/fundraiser-detail` | `super_admin`, `admin_finance` | Detail satu fundraiser (`fundraiserId` wajib) | Referral: `paidAt`; disbursement: `createdAt` | `commissionPercentage`/`commissionAmount` per referral dari `revenue_shares` (diperbaiki 2026-10-26; sebelumnya hardcoded 0). Ringkasan dihitung di SQL; daftar dibatasi 200 referral / 100 disbursement. |
 | `/rekening-summary` | `super_admin`, `admin_finance` | Kas masuk per rekening bank (dari settings `payment_bank_accounts`) | **Tidak ada filter tanggal** | **Income-only**: `balance = totalIn` (disbursement tidak terhubung ke rekening). Menjumlahkan dua bentuk `payment_method_id` (lihat § Rekening). Paginasi di memori. |
 | `/rekening-detail` | `super_admin`, `admin_finance` | Mutasi satu rekening (`bankAccountId`, `startDate`, `endDate` semua wajib) | `COALESCE(paid_at, created_at)` | `kasOut` selalu 0, `openingBalance` selalu 0. Query sudah **parameterized** (lihat Perbaikan). |
-| `/donor-detail` | `super_admin`, `admin_finance` | Riwayat transaksi satu donatur (`donorId` wajib) | `paidAt` | Dicocokkan via **`donorEmail`**, bukan `donaturId`. Dibatasi 200 baris. `404` jika donatur tidak ada. |
+| `/donor-detail` | `super_admin`, `admin_finance` | Riwayat transaksi satu donatur (`donorId` wajib) | `paidAt` | Dicocokkan via **`donaturId`** (fallback email hanya untuk transaksi tanpa `donaturId`). Daftar dibatasi 200 baris, tetapi `summary` dihitung di SQL sehingga mencakup semua transaksi. `404` jika donatur tidak ada. |
 | `/consistency-check` | `super_admin`, `admin_finance` | Cek konsistensi kategori | Transaksi: `paidAt`; disbursement: `createdAt` | Hanya cek "kategori ada di daftar kategori valid" — **bukan** rekonsiliasi nominal/ledger. |
 | `/consistency-check/details` | `super_admin`, `admin_finance` | Detail baris dengan kategori invalid | Sama dengan di atas | Param: `source` (`all`/`transactions`/`disbursements`), `search`, `page`, `limit` (default 20, maks 100). Paginasi di memori. Kategori kosong/null tidak muncul di detail walau dihitung di summary. |
 
@@ -209,7 +209,7 @@ Sejak 2026-09-22 semua filter `startDate`/`endDate` di `reports.ts`, `analytics.
 
 Catatan lingkungan: di produksi, migrasi 111 mengonversi kolom ke `timestamptz` dan menyetel timezone database ke **UTC**. Karena itu sebelum perbaikan, `startDate=endDate=2026-02-24` memakai jendela 00:00–23:59 UTC (= 07:00–06:59 WIB) dan melewatkan transaksi 00:00–06:59 WIB. Database dev yang belum menjalankan migrasi 111 masih memakai kolom `timestamp` tanpa zona sehingga hasil uji di sana **tidak representatif** — verifikasi perubahan boundary waktu harus memakai database dengan migrasi 111 (lihat Perbaikan).
 
-Kolom tanggal yang dipakai tetap bervariasi per endpoint: `transactions.paidAt` (mayoritas), `createdAt` (`/donations-summary`, `/donor-analytics`), `COALESCE(paid_at, created_at)` (`/financial-statement`, `/cash-flow`, `/rekening-detail`, `/zakat` income), `disbursements.createdAt` (`/ledger-summary`, `/fundraiser-detail`, `/consistency-check*`), `revenue_shares.calculatedAt`, `qurbanExecutions.executionDate` — lihat kolom "Kolom tanggal" di tabel endpoint. `/admin/statistics/*` (dokumen terpisah) belum memakai helper ini.
+Kolom tanggal yang dipakai tetap bervariasi per endpoint: `transactions.paidAt` (mayoritas), `createdAt` (`/donations-summary`), `COALESCE(paid_at, created_at)` (`/financial-statement`, `/cash-flow`, `/rekening-detail`, `/zakat` income), `disbursements.createdAt` (`/ledger-summary`, `/fundraiser-detail`, `/consistency-check*`), `revenue_shares.calculatedAt`, `qurbanExecutions.executionDate` — lihat kolom "Kolom tanggal" di tabel endpoint. `/admin/statistics/*` (dokumen terpisah) belum memakai helper ini.
 
 ## Definisi Donatur Unik
 
@@ -229,7 +229,7 @@ Angka "jumlah donatur" berbeda antar tempat karena definisi berbeda:
 3. Kategori laporan adalah string di kode, bukan enum database.
 4. Tiga endpoint memakai raw SQL string (`sql.raw`) — `/financial-statement` dan `/cash-flow` aman hanya karena tanggal divalidasi regex ketat; **jangan pernah** menginterpolasi param lain ke `sql.raw` (lihat Perbaikan `/rekening-detail`). Untuk param baru gunakan template `sql` (parameter terikat).
 5. Jika ada perbedaan angka antara dashboard, reports, dan statistics, cek dulu kolom tanggal, timezone boundary, filter status, dan definisi donatur pada tabel di atas.
-6. Endpoint detail (`/program-detail`, `/mitra-detail`, `/fundraiser-detail`, `/donor-detail`) membatasi jumlah baris (100–200) dan menghitung summary dari baris terbatas itu.
+6. Endpoint detail (`/program-detail`, `/mitra-detail`, `/fundraiser-detail`, `/donor-detail`) membatasi jumlah baris (100–200) dan menghitung summary dari baris terbatas itu. **Pengecualian:** `/donor-detail` menghitung `summary` di SQL (mencakup semua transaksi), hanya daftar barisnya yang dibatasi 200.
 
 ## Gap Implementasi
 
@@ -238,7 +238,7 @@ Angka "jumlah donatur" berbeda antar tempat karena definisi berbeda:
 | `/rekening-summary` & `/rekening-detail` income-only (`kasOut`, saldo awal = 0) | Saldo rekening = total masuk, bukan saldo bank sebenarnya |
 | `/cash-flow` membuang baris yang tidak ter-resolve ke akun kas, `openingBalance` = 0 | Total bisa lebih kecil dari mutasi sebenarnya tanpa peringatan |
 | `/ledger-summary` adalah ringkasan disbursement, namanya menyesatkan | Konsumen API salah mengira ini laporan ledger |
-| `/donor-analytics.donorRetention` (`newDonors`/`returningDonors`) hardcoded 0; `/donations-summary.totalFees` hardcoded 0; `/qurban-execution` `donorName`/`onBehalfOf` selalu null | Field ada di respons tapi tidak bermakna |
+| `/donations-summary.totalFees` hardcoded 0; `/qurban-execution` `donorName`/`onBehalfOf` selalu null | Field ada di respons tapi tidak bermakna |
 | `/campaign`: validasi kategori income no-op | Tidak ada proteksi kategori invalid di endpoint ini |
 | Detail endpoints dibatasi 100–200 baris dan summary dihitung dari list terbatas | Summary under-count untuk entitas dengan banyak transaksi |
 | Paginasi in-memory di `/program-summary`, `/mitra-summary`, `/fundraiser-summary`, `/rekening-summary`, `/consistency-check/details`, `/cash-flow` | Seluruh dataset dimuat per request; tidak scalable |
@@ -250,8 +250,7 @@ Angka "jumlah donatur" berbeda antar tempat karena definisi berbeda:
 | Nama file export CSV memakai `toISOString()` (tanggal UTC) | Nama file bisa berbeda satu hari dari tanggal WIB |
 | `ledger_lines.account_id` di DB dev masih FK ke tabel legacy `ledger_accounts`, sedangkan schema Drizzle (`ledgerAccounts` = alias `chart_of_accounts`) menunjuk `chart_of_accounts` | Drift schema vs DB; ekspor ledger COA tidak bisa diuji end-to-end di DB dev |
 | `/reports/campaigns-performance` dibuka untuk `admin_campaign`, tetapi tidak ada halaman UI yang memanggilnya (menu Laporan hanya untuk `super_admin`/`admin_finance`) | Izin API tidak punya jalur pakai |
-| `/donor-detail` mencocokkan donatur via email, bukan `donaturId` | Donatur dengan email placeholder (`donor-*@temp.local`) atau email ganda tercampur/terlewat |
-| `/donations-summary` dan `/donor-analytics` memfilter `transactions.createdAt`, sedangkan `/dashboard` memfilter `paidAt` | Transaksi dibuat di akhir bulan tapi dibayar bulan berikutnya masuk periode berbeda; selisih angka antar laporan |
+| `/donations-summary` memfilter `transactions.createdAt`, sedangkan `/dashboard` memfilter `paidAt` | Transaksi dibuat di akhir bulan tapi dibayar bulan berikutnya masuk periode berbeda; selisih angka antar laporan |
 
 ## Perbaikan
 
@@ -259,6 +258,7 @@ Angka "jumlah donatur" berbeda antar tempat karena definisi berbeda:
 
 | Fix | File | Detail |
 |-----|------|--------|
+| Laporan Donatur: semua donatur, bukan Top 20 | `reports.ts` (`/donor-analytics`, `/donor-detail`), `admin/.../reports/donatur/page.tsx` | 2026-11-26. Sebelumnya `limit(20)`, grup `userId+nama+email` (satu donatur bisa pecah jadi beberapa baris), filter `createdAt`, detail via email dan summary dari 200 baris. Kini grup per `donaturId`, filter `paidAt`, paginasi + pencarian + total keseluruhan, export Excel mengambil semua halaman. Terverifikasi di DB dev: 3 baris → 2 donatur, total cocok dengan `sum(transactions)`. |
 | Batas tanggal laporan UTC → WIB | `utils/timezone.ts` (`startOfDayWIB`, `endOfDayWIB`, `APP_TIMEZONE`), `reports.ts`, `analytics.ts`, `export.ts` | Sebelumnya `endOfDay` memakai `setUTCHours` dan `new Date(startDate)` (UTC), raw SQL memakai `::timestamp` yang tergantung `TimeZone` sesi DB (UTC di produksi), `/revenue-sharing` memakai timezone proses Node. Semua diganti batas WIB eksplisit. Diverifikasi pada database yang meniru produksi (salinan data + migrasi 111, timezone DB UTC): filter 24 Feb → batas UTC lama menghasilkan **0** transaksi, kini **5** (Rp 4.050.000, cocok dengan hitungan langsung `psql`); `/financial-statement` 4.052.447 dan `/cash-flow` 10 baris cocok; 23 Feb → 1 transaksi (19:45 WIB) benar. |
 | `GET /admin/analytics/growth` selalu `500` | `analytics.ts` | Bug lama: format `to_char` dikirim sebagai parameter terikat sehingga ekspresi di `SELECT` dan `GROUP BY` menjadi placeholder berbeda (`must appear in the GROUP BY clause`). Kini ekspresi bucket identik (literal dari whitelist) di ketiga klausa; keempat `period` diverifikasi berjalan. |
 | Handler `/admin/export/ledger` legacy dihapus | `export.ts` | Handler pertama (tabel `ledger` legacy, kolom disbursement, abaikan `accountCode`) tidak dipakai siapa pun dan menutupi handler kedua. Handler kedua kini aktif dan diperbaiki: sebelumnya `startDate`/`endDate` hanya dipakai pada query `entries` yang hasilnya tidak digunakan (filter tanggal tidak berpengaruh) — sekarang diterapkan pada query baris jurnal dengan batas WIB, plus `accountCode`. Diverifikasi dengan data uji: 24 Feb → 2 baris, 23 Feb → 0, filter akun bekerja. |

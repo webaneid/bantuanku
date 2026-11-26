@@ -199,7 +199,7 @@ Export Excel mengambil data yang sudah difetch halaman dari `/admin/reports/**`;
 | `reports/revenue-sharing` | `exportToExcel` | `/admin/reports/revenue-sharing` |
 | `reports/fundraiser` | `exportToExcel` | `/admin/reports/fundraiser-summary/detail` |
 | `reports/mitra` | `exportToExcel` | `/admin/reports/mitra-summary/detail` |
-| `reports/donatur` | `exportToExcel` | `/admin/reports/donor-detail` |
+| `reports/donatur` | `exportToExcel` | `/admin/reports/donor-analytics` (loop semua halaman, `limit=100`, ikut filter periode & pencarian) |
 | `reports/unique-codes` | `exportToExcel` | `/admin/reports/unique-codes` |
 
 Komponen `ExportButton` hanya membungkus dua action:
