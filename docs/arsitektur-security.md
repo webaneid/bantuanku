@@ -242,7 +242,7 @@ Gap security:
 
 1. AES-CBC tidak memberi integrity/authentication tag seperti AES-GCM.
 2. `encrypt()` mengembalikan plaintext saat gagal.
-3. `decrypt()` mengembalikan input asli saat gagal.
+3. ~~`decrypt()` mengembalikan input asli saat gagal.~~ **Diperbaiki 2026-11-26:** nilai yang berbentuk ciphertext (`<iv 32 hex>:<hex>`) tapi gagal dibuka sekarang menghasilkan `""` (bukan ciphertext) dan dicatat satu kali per setting (`[encryption] Gagal dekripsi setting <key>`, tanpa nilai). Nilai yang bukan ciphertext (setting lama plaintext) tetap dikembalikan apa adanya. Akibatnya Meta CAPI melewati pengiriman, dan gateway/AI melihat key kosong, bukan ciphertext yang terkirim sebagai kredensial.
 4. Sensitive key detection hanya berbasis substring `_api_key`, `_secret`, `_access_token`.
 5. Key seperti `gcs_private_key` tidak otomatis masuk pola sensitif tersebut.
 

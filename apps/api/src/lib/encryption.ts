@@ -30,8 +30,28 @@ export function encrypt(text: string): string {
     }
 }
 
-export function decrypt(text: string): string {
+// Bentuk hasil encrypt(): "<iv 32 hex>:<data hex>". Nilai lain (mis. setting lama yang tersimpan
+// plaintext) dianggap bukan ciphertext dan dikembalikan apa adanya oleh decrypt().
+const CIPHERTEXT_PATTERN = /^[0-9a-f]{32}:[0-9a-f]+$/i;
+
+export function looksEncrypted(text: string): boolean {
+    return !!text && CIPHERTEXT_PATTERN.test(text);
+}
+
+// Dedup log: satu peringatan per label per proses, agar log tidak banjir tiap request.
+const warnedLabels = new Set<string>();
+
+/**
+ * Dekripsi nilai setting.
+ * - Bukan ciphertext (plaintext lama) → dikembalikan apa adanya.
+ * - Ciphertext valid → plaintext.
+ * - Ciphertext TAPI gagal dibuka (kunci beda / data rusak) → "" (string kosong), BUKAN ciphertext.
+ *   Sebelumnya ciphertext dikembalikan dan terkirim ke pihak ketiga sebagai kredensial (mis. token Meta CAPI → 401).
+ *   `label` (nama setting) hanya untuk log; nilai tidak pernah ikut di-log.
+ */
+export function decrypt(text: string, label?: string): string {
     if (!text || !text.includes(":")) return text;
+    if (!looksEncrypted(text)) return text;
 
     try {
         const textParts = text.split(":");
@@ -46,8 +66,14 @@ export function decrypt(text: string): string {
         decrypted = Buffer.concat([decrypted, decipher.final()]);
         return decrypted.toString();
     } catch (error) {
-        console.error("Decryption failed:", error);
-        // Return empty or original text on failure depending on security requirements
-        return text;
+        const tag = label || "(tanpa label)";
+        if (!warnedLabels.has(tag)) {
+            warnedLabels.add(tag);
+            console.error(
+                `[encryption] Gagal dekripsi setting ${tag}: kunci ENCRYPTION_KEY/JWT_SECRET berbeda dari saat disimpan, atau data rusak. Isi ulang nilainya di Settings.`,
+                (error as any)?.code || ""
+            );
+        }
+        return "";
     }
 }

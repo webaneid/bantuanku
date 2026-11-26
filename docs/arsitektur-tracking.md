@@ -112,6 +112,8 @@ Nilai `meta_event_id`, `meta_fbc`, dan `meta_fbp` dikirim ke API di `type_specif
 
 `sendCAPIEvent()` mengirim ke Graph API `v21.0`.
 
+**Token tidak terbaca (2026-11-26):** jika `meta_capi_access_token` gagal didekripsi (kunci `ENCRYPTION_KEY`/`JWT_SECRET` beda dari saat disimpan), `getCapiSettings()` mengembalikan `null` sehingga event dilewati dengan log `Skipped`, bukan mengirim ciphertext ke Meta (sebelumnya 401 `Cannot parse access token`). Pulihkan dengan mengisi ulang token di Settings > Integrasi.
+
 Payload event:
 
 | Field | Implementasi |

@@ -390,6 +390,8 @@ Provider: **Resend** (`https://api.resend.com/emails`). Tidak menggunakan SMTP a
 new EmailService(apiKey, fromEmail, fromName?)
 ```
 
+**Header `from` (2026-11-26):** dibentuk oleh `buildFrom()`: `Nama <email>` jika `fromName` terisi, hanya `email` jika kosong (sebelumnya `" <email>"` ditolak Resend 422 `Invalid from field`). `fromName` disanitasi dari `<>"` dan newline. Jika `FROM_EMAIL` kosong/format salah, `send()` tidak memanggil Resend dan mencatat `[email] FROM_EMAIL kosong atau format salah`. Domain pengirim harus terverifikasi di Resend.
+
 ### Template yang Tersedia
 
 | Method | Keterangan |

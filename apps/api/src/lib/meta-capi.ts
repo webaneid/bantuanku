@@ -76,7 +76,9 @@ async function getCapiSettings(db: any): Promise<{ pixelId: string; accessToken:
 
   if (!pixelId || !rawToken) return null;
   // Token may be encrypted — decrypt gracefully (returns original if not encrypted)
-  const accessToken = decrypt(rawToken);
+  const accessToken = decrypt(rawToken, "meta_capi_access_token");
+  // Gagal dekripsi → "": lewati pengiriman (jangan kirim token kosong/rusak ke Meta)
+  if (!accessToken) return null;
   return { pixelId, accessToken };
 }
 

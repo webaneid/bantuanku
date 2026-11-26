@@ -300,7 +300,7 @@ settingsAdmin.get("/", requireRole("super_admin", "admin_finance", "admin_campai
       // Decrypt sensitive API keys for display in admin
       let displayValue = setting.value;
       if (setting.key.includes("_api_key") || setting.key.includes("_secret") || setting.key.includes("_access_token")) {
-        displayValue = decrypt(setting.value);
+        displayValue = decrypt(setting.value, setting.key);
       }
 
       const parsedSetting = { ...setting, value: displayValue };

@@ -62,7 +62,7 @@ testimonialsRoutes.get("/", async (c) => {
     const lang = c.req.query("lang") || "id";
 
     // Decrypt API key before using it
-    config.apiKey = decrypt(config.apiKey);
+    config.apiKey = decrypt(config.apiKey, "testimonial_ai_api_key");
 
     // Check Cache
     const now = Date.now();

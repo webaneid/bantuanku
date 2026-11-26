@@ -103,7 +103,7 @@ function getIpaymuConfig(paymentSettings: any[]) {
   const find = (...keys: string[]) => paymentSettings.find((s: any) => keys.includes(s.key))?.value;
   return {
     va: find("payment_ipaymu_va", "ipaymu_va") as string | undefined,
-    apiKey: decrypt(find("payment_ipaymu_api_key", "ipaymu_api_key") || ""),
+    apiKey: decrypt(find("payment_ipaymu_api_key", "ipaymu_api_key") || "", "payment_ipaymu_api_key"),
     isProduction: (find("payment_ipaymu_environment", "payment_ipaymu_mode", "ipaymu_mode") || "sandbox") === "production",
   };
 }
@@ -367,7 +367,7 @@ paymentsRoute.post("/create", paymentRateLimit, zValidator("json", createPayment
       };
       isProduction = ipaymuProduction;
     } else if (methodId === "xendit") {
-      const secretKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_xendit_secret_key" || s.key === "xendit_secret_key")?.value || "");
+      const secretKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_xendit_secret_key" || s.key === "xendit_secret_key")?.value || "", "payment_xendit_secret_key");
       const callbackToken = paymentSettings.find((s: any) => s.key === "payment_xendit_callback_token" || s.key === "xendit_callback_token")?.value;
 
       if (!secretKey) {
@@ -380,7 +380,7 @@ paymentsRoute.post("/create", paymentRateLimit, zValidator("json", createPayment
       };
     } else if (methodId === "flip") {
       // Phase 1: Fixed key mismatch — match admin UI keys
-      const secretKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_flip_api_key" || s.key === "payment_flip_secret_key")?.value || "");
+      const secretKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_flip_api_key" || s.key === "payment_flip_secret_key")?.value || "", "payment_flip_api_key");
       const validationToken = paymentSettings.find((s: any) => s.key === "payment_flip_webhook" || s.key === "payment_flip_validation_token")?.value;
       const mode = paymentSettings.find((s: any) => s.key === "payment_flip_environment" || s.key === "payment_flip_mode")?.value || "sandbox";
 
@@ -533,7 +533,7 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
       isProduction = ipaymuProduction;
     } else if (gatewayCode === "flip") {
       // Phase 1: Fixed key mismatch — match admin UI keys
-      const secretKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_flip_api_key" || s.key === "payment_flip_secret_key")?.value || "");
+      const secretKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_flip_api_key" || s.key === "payment_flip_secret_key")?.value || "", "payment_flip_api_key");
       const validationToken = paymentSettings.find((s: any) => s.key === "payment_flip_webhook" || s.key === "payment_flip_validation_token")?.value;
       const mode = paymentSettings.find((s: any) => s.key === "payment_flip_environment" || s.key === "payment_flip_mode")?.value || "sandbox";
 
@@ -547,7 +547,7 @@ paymentsRoute.post("/:gateway/webhook", async (c) => {
       };
       isProduction = mode === "production";
     } else if (gatewayCode === "xendit") {
-      const secretKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_xendit_secret_key" || s.key === "xendit_secret_key")?.value || "");
+      const secretKey = decrypt(paymentSettings.find((s: any) => s.key === "payment_xendit_secret_key" || s.key === "xendit_secret_key")?.value || "", "payment_xendit_secret_key");
       const callbackToken = paymentSettings.find((s: any) => s.key === "payment_xendit_callback_token" || s.key === "xendit_callback_token")?.value;
 
       if (!secretKey) {

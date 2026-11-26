@@ -62,8 +62,26 @@ export class EmailService {
     this.adminUrl = adminUrl.replace(/\/+$/, "");
   }
 
+  /**
+   * Bentuk header `from` yang valid untuk Resend: "Nama <email>" atau "email".
+   * Nama kosong → hanya email (sebelumnya jadi " <email>" yang ditolak Resend 422).
+   * Mengembalikan null jika email pengirim tidak valid (FROM_EMAIL kosong/salah format).
+   */
+  private buildFrom(override?: string): string | null {
+    if (override) return override;
+    const email = (this.fromEmail || "").trim();
+    if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)) return null;
+    const name = (this.fromName || "").replace(/[<>"\r\n]/g, "").trim();
+    return name ? `${name} <${email}>` : email;
+  }
+
   async send(params: EmailParams): Promise<boolean> {
     try {
+      const from = this.buildFrom(params.from);
+      if (!from) {
+        console.error("[email] FROM_EMAIL kosong atau format salah — email tidak dikirim. Isi FROM_EMAIL (mis. noreply@domain-terverifikasi-resend) di .env API.");
+        return false;
+      }
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -71,7 +89,7 @@ export class EmailService {
           Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          from: params.from || `${this.fromName} <${this.fromEmail}>`,
+          from,
           to: params.to,
           subject: params.subject,
           html: params.html,
