@@ -10,7 +10,7 @@ export const laporanKegiatanDoc: DocumentationPage = {
     {
       id: "apa-itu",
       heading: "Apa Itu Laporan Kegiatan?",
-      bodyHtml: `<p>Laporan kegiatan adalah laporan naratif tentang penyaluran dana: foto, ringkasan, penerima manfaat, dan lokasi. Laporan dikaitkan dengan salah satu:</p>
+      bodyHtml: `<figure class="doc-figure"><img src="/docs/screenshot-activity-reports.png" alt="Daftar laporan kegiatan" loading="lazy" /><figcaption>Daftar laporan kegiatan</figcaption></figure><p>Laporan kegiatan adalah laporan naratif tentang penyaluran dana: foto, ringkasan, penerima manfaat, dan lokasi. Laporan dikaitkan dengan salah satu:</p>
 <ul>
 <li><strong>Campaign</strong> — tampil di tab update halaman program.</li>
 <li><strong>Periode zakat</strong> atau <strong>penyaluran zakat</strong> — tampil di laporan publik zakat.</li>
@@ -21,7 +21,7 @@ export const laporanKegiatanDoc: DocumentationPage = {
     {
       id: "membuat",
       heading: "Membuat Laporan",
-      bodyHtml: `<ol>
+      bodyHtml: `<figure class="doc-figure"><img src="/docs/screenshot-activity-report-create.png" alt="Form Buat Laporan Kegiatan" loading="lazy" /><figcaption>Form Buat Laporan Kegiatan</figcaption></figure><ol class="doc-steps">
 <li>Buka <strong>Laporan Kegiatan</strong> di sidebar lalu klik <strong>Buat Laporan Kegiatan</strong>.</li>
 <li>Pilih jenis rujukan (campaign, periode zakat, penyaluran zakat, atau periode qurban) lalu pilih datanya.</li>
 <li>Isi judul, ringkasan, tanggal, area distribusi, jumlah penerima manfaat, dan unggah galeri foto kegiatan. Video opsional.</li>

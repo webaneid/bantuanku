@@ -13,9 +13,9 @@ export const kategoriKeuanganDoc: DocumentationPage = {
             heading: "Konsep Dasar: Selamat Tinggal Debit & Kredit!",
             bodyHtml: `
                 <p>Platform Jaladana dirancang untuk memudahkan pengelola lembaga amal (yayasan) dalam mencatat keuangan <strong>tanpa harus mengerti ilmu akuntansi (Debit & Kredit)</strong>. Kami menggunakan sistem <strong>Kategori (Category System)</strong> yang jauh lebih human-friendly.</p>
-                <div className="bg-success-50 border border-success-200 rounded-lg p-4 my-4">
-                    <h4 className="font-semibold text-success-800 mb-2">Mengapa Sistem Kategori?</h4>
-                    <ul className="list-disc pl-5 space-y-1 text-success-900">
+                <div class="doc-callout">
+                    <h4>Mengapa Sistem Kategori?</h4>
+                    <ul>
                         <li><strong>Lebih Mudah:</strong> Anda hanya perlu memilih "Uang Masuk" atau "Uang Keluar" beserta tujuannya (misal: "Penyaluran ke Fakir").</li>
                         <li><strong>Otomatis Update:</strong> Saldo rekening bank akan bertambah atau berkurang secara otomatis.</li>
                         <li><strong>Laporan Praktis:</strong> Pelacakan dana (Zakat, Campaign, Qurban, Operasional) langsung dikelompokkan berdasarkan kategori.</li>
@@ -28,54 +28,54 @@ export const kategoriKeuanganDoc: DocumentationPage = {
             heading: "Kategori Pemasukan (Income)",
             bodyHtml: `
                 <p>Setiap donasi yang masuk atau berhasil terbayar (<em>paid</em>), sistem akan <strong>secara otomatis</strong> menetapkan kategorinya berdasarkan program yang dipilih donatur. Anda tidak perlu mengaturnya secara manual.</p>
-                <div className="overflow-x-auto mt-4 mb-4">
-                    <table className="w-full border-collapse">
+                <div>
+                    <table>
                         <thead>
-                            <tr className="bg-light border-b">
-                                <th className="py-2 px-4 text-left font-semibold">Grup</th>
-                                <th className="py-2 px-4 text-left font-semibold">Nama Kategori di Sistem</th>
-                                <th className="py-2 px-4 text-left font-semibold">Keterangan</th>
+                            <tr>
+                                <th>Grup</th>
+                                <th>Nama Kategori di Sistem</th>
+                                <th>Keterangan</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr className="border-b">
-                                <td className="py-2 px-4 font-semibold">Campaign</td>
-                                <td className="py-2 px-4 font-mono text-sm text-info-600">campaign_donation</td>
-                                <td className="py-2 px-4">Donasi campaign umum / donasi reguler</td>
+                            <tr>
+                                <td>Campaign</td>
+                                <td>campaign_donation</td>
+                                <td>Donasi campaign umum / donasi reguler</td>
                             </tr>
-                            <tr className="border-b">
-                                <td className="py-2 px-4 font-semibold" rowSpan="5">Zakat</td>
-                                <td className="py-2 px-4 font-mono text-sm text-info-600">zakat_fitrah</td>
-                                <td className="py-2 px-4">Pembayaran Zakat Fitrah</td>
+                            <tr>
+                                <td rowSpan="5">Zakat</td>
+                                <td>zakat_fitrah</td>
+                                <td>Pembayaran Zakat Fitrah</td>
                             </tr>
-                            <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-info-600">zakat_maal</td>
-                                <td className="py-2 px-4">Pembayaran Zakat Maal</td>
+                            <tr>
+                                <td>zakat_maal</td>
+                                <td>Pembayaran Zakat Maal</td>
                             </tr>
-                            <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-info-600">zakat_profesi</td>
-                                <td className="py-2 px-4">Pembayaran Zakat Profesi</td>
+                            <tr>
+                                <td>zakat_profesi</td>
+                                <td>Pembayaran Zakat Profesi</td>
                             </tr>
-                            <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-info-600">zakat_pertanian</td>
-                                <td className="py-2 px-4">Pembayaran Zakat Pertanian</td>
+                            <tr>
+                                <td>zakat_pertanian</td>
+                                <td>Pembayaran Zakat Pertanian</td>
                             </tr>
-                            <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-info-600">zakat_peternakan</td>
-                                <td className="py-2 px-4">Pembayaran Zakat Peternakan</td>
+                            <tr>
+                                <td>zakat_peternakan</td>
+                                <td>Pembayaran Zakat Peternakan</td>
                             </tr>
-                            <tr className="border-b">
-                                <td className="py-2 px-4 font-semibold" rowSpan="3">Qurban</td>
-                                <td className="py-2 px-4 font-mono text-sm text-info-600">qurban_payment</td>
-                                <td className="py-2 px-4">Pembayaran lunas hewan Qurban</td>
+                            <tr>
+                                <td rowSpan="3">Qurban</td>
+                                <td>qurban_payment</td>
+                                <td>Pembayaran lunas hewan Qurban</td>
                             </tr>
-                            <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-info-600">qurban_savings</td>
-                                <td className="py-2 px-4">Tabungan hewan Qurban cicilan</td>
+                            <tr>
+                                <td>qurban_savings</td>
+                                <td>Tabungan hewan Qurban cicilan</td>
                             </tr>
-                            <tr className="border-b">
-                                <td className="py-2 px-4 font-mono text-sm text-info-600">qurban_admin_fee</td>
-                                <td className="py-2 px-4">Biaya tambahan administrasi Qurban</td>
+                            <tr>
+                                <td>qurban_admin_fee</td>
+                                <td>Biaya tambahan administrasi Qurban</td>
                             </tr>
                         </tbody>
                     </table>
@@ -87,10 +87,10 @@ export const kategoriKeuanganDoc: DocumentationPage = {
             heading: "Kategori Pengeluaran (Expense / Pencairan)",
             bodyHtml: `
                 <p>Saat Anda ingin mencairkan dana (melalui menu <em>Buat Pencairan Dana</em>), Anda akan dihadapkan pada pilihan <strong>Dropdown Kategori Pengeluaran</strong>. Pilihlah sesuai dengan tujuan kemana uang tersebut digunakan:</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <div className="border border-gray-200 rounded p-4">
-                        <h5 className="font-bold border-b pb-2 mb-2">Distribusi Zakat (8 Asnaf)</h5>
-                        <ul className="list-disc pl-5 text-sm space-y-1">
+                <div>
+                    <div>
+                        <h5>Distribusi Zakat (8 Asnaf)</h5>
+                        <ul>
                             <li>Penyaluran ke Fakir</li>
                             <li>Penyaluran ke Miskin</li>
                             <li>Penyaluran ke Amil</li>
@@ -101,16 +101,16 @@ export const kategoriKeuanganDoc: DocumentationPage = {
                             <li>Penyaluran ke Ibnus Sabil</li>
                         </ul>
                     </div>
-                    <div className="border border-gray-200 rounded p-4">
-                        <h5 className="font-bold border-b pb-2 mb-2">Pencairan Campaign Umum</h5>
-                        <ul className="list-disc pl-5 text-sm space-y-1">
+                    <div>
+                        <h5>Pencairan Campaign Umum</h5>
+                        <ul>
                             <li>Pencairan untuk Penerima Manfaat</li>
                             <li>Pembayaran Vendor/Supplier</li>
                         </ul>
                     </div>
-                    <div className="border border-gray-200 rounded p-4">
-                        <h5 className="font-bold border-b pb-2 mb-2">Beban Operasional Yayasan</h5>
-                        <ul className="list-disc pl-5 text-sm space-y-1">
+                    <div>
+                        <h5>Beban Operasional Yayasan</h5>
+                        <ul>
                             <li>Gaji & Tunjangan</li>
                             <li>Sewa Kantor</li>
                             <li>Listrik & Air</li>
@@ -121,9 +121,9 @@ export const kategoriKeuanganDoc: DocumentationPage = {
                             <li>Beban Lain-lain</li>
                         </ul>
                     </div>
-                    <div className="border border-gray-200 rounded p-4">
-                        <h5 className="font-bold border-b pb-2 mb-2">Qurban & Bagi Hasil</h5>
-                        <ul className="list-disc pl-5 text-sm space-y-1">
+                    <div>
+                        <h5>Qurban & Bagi Hasil</h5>
+                        <ul>
                             <li>Pembelian Hewan (Sapi/Kambing/Domba)</li>
                             <li>Biaya Penyembelihan & Distribusi</li>
                             <li>Pencairan Bagi Hasil Mitra</li>
@@ -139,7 +139,7 @@ export const kategoriKeuanganDoc: DocumentationPage = {
             heading: "Validasi Pintar Saat Pencairan",
             bodyHtml: `
                 <p>Sistem Kategori Jaladana melarang manipulasi asal-asalan demi kepatuhan Syariat dan transparansi logis. Contoh penerapan peringatan di sistem kami:</p>
-                <ul className="list-disc pl-5 mt-2 space-y-2">
+                <ul>
                     <li>⚠️ <strong>Kepatuhan Rekening Zakat:</strong> Jika Anda memilih Kategori <em>"Penyaluran ke Fakir"</em> (Grup Zakat), maka sistem otomatis <strong>mewajibkan</strong> akun Bank Sumber berasal dari Bank Khusus Zakat. Anda tidak bisa menggunakan Bank Operasional.</li>
                     <li>⚠️ <strong>Validasi Saldo:</strong> Jika jumlah pencairan yang diminta <strong>melebihi</strong> sisa saldo riil di Bank Pemotong, sistem akan menolak atau memberikan peringatan.</li>
                 </ul>

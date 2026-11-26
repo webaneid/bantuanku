@@ -10,13 +10,13 @@ export const donaturDoc: DocumentationPage = {
     {
       id: "data",
       heading: "Data Donatur",
-      bodyHtml: `<p>Menu <strong>Master → Donatur</strong> (Super Admin, Admin Campaign, Admin Finance) menampilkan seluruh donatur beserta kontak, status, dan tanggal bergabung. Klik satu donatur untuk melihat profil dan riwayat donasinya, atau mengedit datanya, termasuk alamat lengkap bertingkat provinsi sampai desa.</p>
+      bodyHtml: `<figure class="doc-figure"><img src="/docs/screenshot-donatur.png" alt="Daftar donatur (data pribadi diburamkan)" loading="lazy" /><figcaption>Daftar donatur (data pribadi diburamkan)</figcaption></figure><p>Menu <strong>Master → Donatur</strong> (Super Admin, Admin Campaign, Admin Finance) menampilkan seluruh donatur beserta kontak, status, dan tanggal bergabung. Klik satu donatur untuk melihat profil dan riwayat donasinya, atau mengedit datanya, termasuk alamat lengkap bertingkat provinsi sampai desa.</p>
 <p>Donatur dapat berasal dari akun yang dibuat sendiri di website, dari donasi sebagai tamu, atau dari import. Sistem mencocokkan donatur lewat email dan nomor HP agar satu orang tidak terpecah menjadi banyak data.</p>`,
     },
     {
       id: "import",
       heading: "Import dari Excel/CSV",
-      bodyHtml: `<ol>
+      bodyHtml: `<ol class="doc-steps">
 <li>Di halaman Donatur klik <strong>Import</strong>.</li>
 <li>Unduh template, isi data. Kolom wajib: <strong>Nama</strong> dan <strong>WhatsApp</strong>. Kolom lain opsional: email, telepon, alamat lengkap, jenis kelamin (laki-laki/perempuan), NIK (16 digit), NPWP, tempat dan tanggal lahir (<code>YYYY-MM-DD</code>).</li>
 <li>Unggah file. Sistem menampilkan <strong>pratinjau</strong> beserta kesalahan per baris; belum ada data yang tersimpan.</li>

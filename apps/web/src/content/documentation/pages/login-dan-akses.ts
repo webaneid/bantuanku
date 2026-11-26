@@ -11,12 +11,12 @@ export const loginDanAksesDoc: DocumentationPage = {
             id: "cara-login",
             heading: "Cara Login",
             bodyHtml: `
-<ol>
+<ol class="doc-steps">
 <li>Buka alamat dashboard admin lembaga Anda (contoh: <code>https://admin.domainlembaga.org</code>).</li>
 <li>Masukkan <strong>Email</strong> dan <strong>Password</strong> akun Anda.</li>
 <li>Klik <strong>Login</strong>. Anda akan masuk ke halaman Dashboard.</li>
 </ol>
-<img src="/docs/screenshot-login.png" alt="Halaman login dashboard admin" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />
+<figure class="doc-figure"><img src="/docs/screenshot-login.png" alt="Halaman login dashboard admin" loading="lazy" /><figcaption>Halaman login dashboard admin</figcaption></figure>
 <p>Lupa password? Klik tautan <strong>Lupa password</strong> di bawah kolom password, lalu ikuti petunjuk yang dikirim ke email Anda.</p>
 <p>Akun dashboard dibuat oleh Super Admin lewat <strong>Settings → Users</strong>. Akun donatur di website publik adalah akun terpisah dan tidak bisa masuk ke dashboard.</p>`,
         },

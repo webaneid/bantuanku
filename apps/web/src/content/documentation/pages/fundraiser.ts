@@ -18,7 +18,7 @@ export const fundraiserDoc: DocumentationPage = {
                 '<li><strong>Donatur</strong> — Donatur luar yang mendaftar sendiri secara mandiri lewat akun mereka di website publik</li>' +
                 '<li><strong>Employee</strong> — Staff/karyawan yang mendaftar sendiri lewat admin panel atau didaftarkan admin</li>' +
                 '</ul>' +
-                '<img src="/docs/screenshot-fundraisers.png" alt="Halaman Influencer" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
+                '<figure class="doc-figure"><img src="/docs/screenshot-fundraisers.png" alt="Halaman Influencer" loading="lazy" /><figcaption>Halaman Influencer</figcaption></figure>' +
                 '<p><em>Tampilan halaman influencer pada admin panel — menampilkan kode, nama, tipe, status, total referral, total donasi, dan komisi.</em></p>',
         },
         {
@@ -26,14 +26,14 @@ export const fundraiserDoc: DocumentationPage = {
             heading: "Alur Pendaftaran",
             bodyHtml:
                 '<h4 style="margin-top:12px;">Dari Website (Donatur)</h4>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Donatur login ke akun di website publik.</li>' +
                 '<li>Buka menu Akun / Profil lalu pilih <strong>Influencer</strong>.</li>' +
                 '<li>Klik tombol daftar/pengajuan sebagai Influencer.</li>' +
                 '<li>Status pendaftaran akan masuk sebagai <strong>pending</strong> dan menunggu disetujui <em>(approve)</em> oleh Admin.</li>' +
                 '</ol>' +
                 '<h4 style="margin-top:16px;">Dari Admin Panel (Employee)</h4>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Employee login ke admin panel.</li>' +
                 '<li>Buka menu <strong>Influencer Saya</strong> di sidebar.</li>' +
                 '<li>Lengkapi data <strong>rekening bank</strong> terlebih dahulu.</li>' +
@@ -41,7 +41,7 @@ export const fundraiserDoc: DocumentationPage = {
                 '<li>Status: <strong>pending</strong> → admin harus approve.</li>' +
                 '</ol>' +
                 '<h4 style="margin-top:16px;">Dari Admin Panel (Admin membuat manual)</h4>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Buka menu <strong>Influencer</strong> → klik <strong>+ Tambah Influencer</strong>.</li>' +
                 '<li>Pilih sumber: <strong>Donatur</strong> atau <strong>Employee</strong>.</li>' +
                 '<li>Atur persentase komisi sesuai kebijakan.</li>' +
@@ -54,7 +54,7 @@ export const fundraiserDoc: DocumentationPage = {
             bodyHtml:
                 '<p>Setiap influencer mendapatkan <strong>kode unik</strong> berformat <code>FRS62XXXXX</code> (contoh: FRS6200001).</p>' +
                 '<p>Cara kerja referral:</p>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Influencer membagikan link dengan parameter <code>?ref=FRS6200001</code> ke program tertentu.</li>' +
                 '<li>Saat donatur mengklik link, sistem menyimpan <strong>sesi referral</strong> di browser (hanya berlaku selama tab browser terbuka / belum ditutup).</li>' +
                 '<li>Saat donatur berdonasi, cookie dicocokkan → referral tercatat.</li>' +
@@ -89,7 +89,7 @@ export const fundraiserDoc: DocumentationPage = {
             heading: "Pencairan Komisi",
             bodyHtml:
                 '<p>Influencer bisa mengajukan pencairan komisi:</p>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Buka halaman <strong>Influencer Portal</strong> (website) atau <strong>Influencer Saya</strong> (admin).</li>' +
                 '<li>Pastikan <strong>rekening bank</strong> sudah terdaftar.</li>' +
                 '<li>Cek <strong>saldo tersedia</strong> (Current Balance).</li>' +

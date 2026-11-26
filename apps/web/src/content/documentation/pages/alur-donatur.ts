@@ -10,7 +10,7 @@ export const alurDonaturDoc: DocumentationPage = {
     {
       id: "checkout",
       heading: "Checkout",
-      bodyHtml: `<ol>
+      bodyHtml: `<ol class="doc-steps">
 <li>Donatur memilih program lalu menekan donasi, atau menambahkannya ke <strong>Keranjang Bantuan</strong> untuk beberapa program sekaligus.</li>
 <li>Di checkout donatur mengisi satu isian <strong>email atau nomor HP</strong> lalu menekan <strong>Lanjutkan</strong>. Sistem mengenali donatur yang sudah terdaftar dan menentukan identitasnya di server; donatur baru mengisi nama dan data lain.</li>
 <li>Donatur memilih metode bayar yang diaktifkan di <a href="/documentation/pengaturan-pembayaran">Settings → Payments</a>.</li>

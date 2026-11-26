@@ -16,7 +16,7 @@ export const programCoordinatorDoc: DocumentationPage = {
     {
       id: "mengaktifkan",
       heading: "Menjadikan Karyawan sebagai Koordinator",
-      bodyHtml: `<ol>
+      bodyHtml: `<ol class="doc-steps">
 <li>Pastikan karyawan sudah ada di <strong>Master → Employees</strong> dengan email.</li>
 <li>Super Admin mengaktifkan akun login karyawan dan memilih peran <code>program_coordinator</code> (juga bisa lewat <strong>Settings → Users</strong>).</li>
 <li>Pada form campaign, isi <strong>Penanggung Jawab Program</strong> dengan karyawan tersebut.</li>

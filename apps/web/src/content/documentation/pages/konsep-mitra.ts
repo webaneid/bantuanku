@@ -13,7 +13,7 @@ export const konsepMitraDoc: DocumentationPage = {
       heading: "Apa Itu Mitra?",
       bodyHtml:
         '<p><strong>Mitra</strong> adalah lembaga/organisasi partner yang memiliki akun sendiri di admin panel untuk mengelola program yang dimilikinya. Mitra bisa membuat campaign, mengelola zakat, dan mengatur paket qurban sesuai otorisasi.</p>' +
-        '<img src="/docs/screenshot-mitra.png" alt="Halaman Mitra" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
+        '' +
         '<p><em>Tampilan daftar mitra pada admin panel.</em></p>',
     },
     {
@@ -21,7 +21,7 @@ export const konsepMitraDoc: DocumentationPage = {
       heading: "Pendaftaran Mitra",
       bodyHtml:
         '<p>Alur pendaftaran mitra:</p>' +
-        '<ol>' +
+        '<ol class="doc-steps">' +
         '<li>Calon mitra mendaftar melalui halaman <strong>Daftar Mitra</strong> di website publik.</li>' +
         '<li>Mengisi data: nama lembaga, PIC, kontak, alamat, dan dokumen pendukung (KTP, buku rekening, NPWP).</li>' +
         '<li>Admin memverifikasi dan meng-approve pendaftaran.</li>' +

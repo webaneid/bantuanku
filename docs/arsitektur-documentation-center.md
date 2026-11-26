@@ -482,5 +482,21 @@ Implikasi:
 
 1. 6 halaman lama belum diaudit (lihat daftar di atas). Halaman yang sudah diaudit tetap memakai screenshot Februari.
 2. Fase 3 (2026-11-26) menambah 10 halaman: buku-kas, pengaturan-pembayaran, wakaf, laporan-kegiatan, alur-donatur, donatur, pages-cms, master-data, program-coordinator, pengaturan-umum. Belum ada: Midtrans (tidak ada di UI Payments), Settings Integration/Google Maps/Users, tema multi-klien, tracking Meta, Dokumentasi mitra (daftar-mitra).
-3. 15 screenshot di `apps/web/public/docs/` bertanggal 2026-02-20, perlu diganti.
-4. Belum ada pencarian, sitemap, dan komponen callout/langkah/figure.
+3. (Selesai fase 4) Screenshot diganti; halaman yang belum punya gambar: Kategori Keuangan, Konsep Mitra (daftar mitra dev kosong), Vendor (kosong), Fundraiser/SEO memakai gambar baru.
+4. Belum ada pencarian dan sitemap untuk dokumentasi; komponen callout/langkah/figure sudah ada.
+
+---
+
+## Blok Visual dan Screenshot (fase 4, 2026-11-26)
+
+Konten `bodyHtml` memakai class dari `apps/web/src/styles/components/_documentation.scss`:
+
+| Class | Fungsi |
+|-------|--------|
+| `<figure class="doc-figure"><img ...><figcaption>…</figcaption></figure>` | Gambar dengan bingkai dan caption |
+| `<ol class="doc-steps">` | Langkah bernomor |
+| `<div class="doc-callout [doc-callout-warn\|danger\|info]"><span class="doc-callout-title">…</span>…</div>` | Kotak catatan |
+
+Jangan memakai `className`/class Tailwind di dalam `bodyHtml`: string itu di-parse sebagai HTML biasa sehingga `className` diabaikan dan class utilitas tidak ter-generate.
+
+Screenshot ada di `apps/web/public/docs/screenshot-*.png` (1600×1000), diambil dari dev server admin dengan data dev. Aturan privasi: logo/nama lembaga diganti placeholder "Logo Lembaga", email dan HP disamarkan, kolom nama donatur/penerima diburamkan, dan halaman yang memuat kredensial (Settings → WhatsApp tab Konfigurasi, Integration) tidak diambil. Ambil ulang saat tampilan admin berubah; jangan menambah screenshot yang memuat data donatur nyata.

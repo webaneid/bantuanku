@@ -21,19 +21,19 @@ export const flipPaymentDoc: DocumentationPage = {
             heading: "Langkah 1: Persiapan Akun & Kredensial",
             bodyHtml: `
                 <p>Sebelum fitur ini bisa digunakan, Anda harus memiliki akun Flip for Business dan menyalin beberapa kunci rahasia (Kredensial) ke dalam sistem Jaladana.</p>
-                <ol className="list-decimal pl-5 mt-2 space-y-2">
-                    <li>Login ke dashboard Flip for Business di <a href="https://business.flip.id" target="_blank" rel="noreferrer" className="text-info-600 underline">https://business.flip.id</a>.</li>
+                <ol class="doc-steps">
+                    <li>Login ke dashboard Flip for Business di <a href="https://business.flip.id" target="_blank" rel="noreferrer">https://business.flip.id</a>.</li>
                     <li>Masuk ke menu <strong>Developer</strong> di bilah sebelah kiri, lalu pilih tab <strong>Credentials</strong>.</li>
                     <li>Di sana Anda akan menemukan bagian <strong>Accept Payment</strong>.</li>
                     <li>Catat atau salin dua hal penting berikut:
-                        <ul className="list-disc pl-5 mt-1">
+                        <ul>
                             <li><strong>Secret Key</strong> (Ini adalah kunci utama API Anda).</li>
                             <li><strong>Validation Token</strong> (Keamanan tambahan untuk webhook).</li>
                         </ul>
                     </li>
                 </ol>
-                <div className="bg-warning-50 border border-warning-200 rounded-lg p-3 my-4">
-                    <p className="text-sm text-warning-800">
+                <div class="doc-callout doc-callout-warn">
+                    <p>
                         <strong>⚠️ Penting:</strong> Di dashboard Flip, Anda akan melihat tab <em>Production</em> (untuk transaksi uang asli) dan <em>Sandbox</em> (untuk ujicoba). Kredensial di kedua tab ini <strong>berbeda</strong>. Pastikan Anda menyalin dari tab yang sesuai dengan kebutuhan Anda saat ini.
                     </p>
                 </div>
@@ -44,7 +44,7 @@ export const flipPaymentDoc: DocumentationPage = {
             heading: "Langkah 2: Pengaturan di Aplikasi Jaladana",
             bodyHtml: `
                 <p>Setelah mendapatkan kunci kredensial dari Flip, masukkan kunci tersebut ke dalam pengaturan aplikasi Jaladana:</p>
-                <ol className="list-decimal pl-5 mt-2 space-y-2">
+                <ol class="doc-steps">
                     <li>Masuk ke Dashboard Admin Jaladana, lalu tuju menu <strong>Settings &rarr; Payments</strong>.</li>
                     <li>Cari kartu gateway <strong>Flip</strong> lalu aktifkan.</li>
                     <li>Pilih <strong>Environment</strong> yang sesuai (Production untuk uang asli, atau Sandbox untuk simulasi).</li>
@@ -60,12 +60,12 @@ export const flipPaymentDoc: DocumentationPage = {
             heading: "Langkah 3: Menghubungkan Webhook (Sangat Penting!)",
             bodyHtml: `
                 <p>Langkah ini adalah yang <strong>paling sering terlupa</strong>. Jika Anda tidak mengatur Webhook, maka setiap kali donatur membayar, status di aplikasi Jaladana akan terus <em>"Pending"</em> selamanya.</p>
-                <ol className="list-decimal pl-5 mt-2 space-y-2">
+                <ol class="doc-steps">
                     <li>Kembali ke Dashboard Flip (menu <strong>Developer &rarr; Credentials</strong>).</li>
                     <li>Cari kolom isian <strong>Callback URL</strong> (atau Webhook URL) di bagian <em>Accept Payment</em>.</li>
                     <li>Masukkan URL Webhook sistem Jaladana Anda. Pola umumnya adalah:
                         <br/>
-                        <code className="bg-gray-100 px-2 py-1 rounded text-danger-600 block mt-2 mb-2">https://api.domain-anda.com/v1/payments/flip/webhook</code>
+                        <code>https://api.domain-anda.com/v1/payments/flip/webhook</code>
                     </li>
                     <li>Simpan pengaturan di Flip.</li>
                 </ol>
@@ -76,7 +76,7 @@ export const flipPaymentDoc: DocumentationPage = {
             id: "info-tambahan",
             heading: "Informasi Tambahan & Limitasi",
             bodyHtml: `
-                <ul className="list-disc pl-5 mt-2 space-y-2">
+                <ul>
                     <li><strong>Minimal Transaksi:</strong> Flip memiliki ketentuan nominal batas bawah yaitu Rp 10.000,- per transaksi. Pastikan nominal donasi minimum program Anda tidak di bawah angka ini bila Flip diaktifkan.</li>
                     <li><strong>Masa Berlaku Link (Expired):</strong> Tautan pembayaran atau nomor Virtual Account memiliki masa berlaku yang ditentukan Flip. Jika sudah kedaluwarsa, donatur perlu membuat transaksi donasi baru.</li>
                     <li><strong>Channel Pembayaran:</strong> Dengan metode Payment Link, Flip memungkinkan donatur untuk memilih bank atau e-wallet mereka langsung di halaman situs Flip yang sudah terenkripsi aman.</li>

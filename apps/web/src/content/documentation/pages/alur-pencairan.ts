@@ -20,14 +20,14 @@ export const alurPencairanDoc: DocumentationPage = {
 <li><strong>Vendor</strong> — pembayaran ke vendor/supplier.</li>
 <li><strong>Revenue Share</strong> — pencairan bagi hasil mitra, influencer, atau developer.</li>
 </ul>
-<img src="/docs/screenshot-disbursements.png" alt="Halaman Disbursements" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />
+<figure class="doc-figure"><img src="/docs/screenshot-disbursements.png" alt="Halaman Disbursements" loading="lazy" /><figcaption>Halaman Disbursements</figcaption></figure>
 <p>Submenu: <strong>Semua Pencairan</strong>, <strong>Pengajuan</strong>, dan <strong>Disetujui</strong>. Akun mitra hanya melihat pencairan program miliknya.</p>`,
     },
     {
       id: "pengajuan",
       heading: "1. Pengajuan (Draft → Submitted)",
-      bodyHtml: `
-<ol>
+      bodyHtml: `<figure class="doc-figure"><img src="/docs/screenshot-disbursement-create.png" alt="Form Buat Pencairan" loading="lazy" /><figcaption>Form Buat Pencairan</figcaption></figure>
+<ol class="doc-steps">
 <li>Buka <strong>Disbursements</strong> lalu klik <strong>Buat Pencairan</strong>.</li>
 <li>Pilih tipe pencairan, program/periode terkait, dan kategori pengeluaran.</li>
 <li>Isi jumlah, tujuan, dan data penerima (nama, bank, nomor rekening).</li>
@@ -45,7 +45,7 @@ export const alurPencairanDoc: DocumentationPage = {
       id: "pembayaran",
       heading: "3. Pembayaran (Approved → Paid)",
       bodyHtml: `
-<ol>
+<ol class="doc-steps">
 <li>Transfer dana ke rekening penerima.</li>
 <li>Unggah bukti transfer, isi tanggal dan jumlah yang ditransfer.</li>
 <li>Status berubah ke <code>paid</code>.</li>

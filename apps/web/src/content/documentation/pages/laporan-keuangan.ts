@@ -38,7 +38,7 @@ export const laporanKeuanganDoc: DocumentationPage = {
     {
       id: "menu-reports",
       heading: "Menu Reports",
-      bodyHtml: `
+      bodyHtml: `<figure class="doc-figure"><img src="/docs/screenshot-reports.png" alt="Dashboard Laporan di menu Reports" loading="lazy" /><figcaption>Dashboard Laporan di menu Reports</figcaption></figure>
 <table>
 <thead><tr><th>Kelompok</th><th>Laporan</th></tr></thead>
 <tbody>

@@ -13,7 +13,7 @@ export const qurbanDoc: DocumentationPage = {
             heading: "Overview Modul Qurban",
             bodyHtml:
                 '<p>Modul qurban mendukung seluruh siklus qurban dari pendaftaran hingga eksekusi:</p>' +
-                '<img src="/docs/screenshot-qurban.png" alt="Halaman Qurban" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
+                '<figure class="doc-figure"><img src="/docs/screenshot-qurban.png" alt="Halaman Qurban" loading="lazy" /><figcaption>Halaman Qurban</figcaption></figure>' +
                 '<p>Sub-modul yang tersedia:</p>' +
                 '<ul>' +
                 '<li><strong>Periods</strong> — Periode qurban (mis: Idul Adha 1447H)</li>' +
@@ -71,7 +71,7 @@ export const qurbanDoc: DocumentationPage = {
             heading: "Eksekusi & Dokumentasi",
             bodyHtml:
                 '<p>Setelah seluruh pesanan terkonfirmasi dan pembayaran lunas:</p>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Admin mengatur jadwal penyembelihan per paket/grup.</li>' +
                 '<li>Setelah penyembelihan, catat <strong>execution</strong> beserta foto/video dokumentasi.</li>' +
                 '<li>Status pesanan berubah ke <strong>executed</strong>.</li>' +
@@ -82,7 +82,7 @@ export const qurbanDoc: DocumentationPage = {
             id: "diskon-voucher",
             heading: "Diskon & Voucher",
             bodyHtml:
-                '<p>Menu <strong>Qurban → Diskon &amp; Voucher</strong> (Super Admin dan Admin Campaign) memberi potongan pada harga hewan:</p>' +
+                '<figure class="doc-figure"><img src="/docs/screenshot-qurban-discounts.png" alt="Daftar Diskon & Voucher Qurban" loading="lazy" /><figcaption>Daftar Diskon & Voucher Qurban</figcaption></figure>' + '<p>Menu <strong>Qurban → Diskon &amp; Voucher</strong> (Super Admin dan Admin Campaign) memberi potongan pada harga hewan:</p>' +
                 '<ul>' +
                 '<li><strong>Otomatis</strong> — berlaku untuk semua pesanan yang cocok dengan cakupannya, tanpa kode.</li>' +
                 '<li><strong>Voucher</strong> — donatur memasukkan kode saat memesan. Voucher ditolak bila paket sudah punya diskon otomatis aktif.</li>' +

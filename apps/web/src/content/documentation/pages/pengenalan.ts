@@ -53,7 +53,7 @@ export const pengenalanDoc: DocumentationPage = {
             id: "mulai-dari-mana",
             heading: "Mulai Dari Mana?",
             bodyHtml:
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Baca <a href="/documentation/login-dan-akses">Login &amp; Hak Akses</a> lalu <a href="/documentation/navigasi-dashboard">Navigasi Dashboard</a> untuk mengenal tampilan.</li>' +
                 '<li>Buat program pertama lewat <a href="/documentation/cara-membuat-campaign">Cara Membuat Campaign</a>.</li>' +
                 '<li>Pelajari cara memeriksa donasi di <a href="/documentation/mengelola-transaksi">Mengelola Transaksi</a>.</li>' +

@@ -13,7 +13,7 @@ export const zakatDoc: DocumentationPage = {
             heading: "Overview Modul Zakat",
             bodyHtml:
                 '<p>Modul zakat di Jaladana mencakup pengumpulan, penghitungan, dan distribusi zakat secara lengkap.</p>' +
-                '<img src="/docs/screenshot-zakat.png" alt="Halaman Zakat" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
+                '<figure class="doc-figure"><img src="/docs/screenshot-zakat.png" alt="Halaman Zakat" loading="lazy" /><figcaption>Halaman Zakat</figcaption></figure>' +
                 '<p>Sub-modul yang tersedia di admin panel:</p>' +
                 '<ul>' +
                 '<li><strong>Jenis Zakat</strong> — Kelola jenis zakat yang ditawarkan</li>' +
@@ -38,14 +38,14 @@ export const zakatDoc: DocumentationPage = {
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Zakat Fitrah</td><td style="padding:10px; border:1px solid #e5e7eb;">Zakat wajib di bulan Ramadhan, per jiwa</td></tr>' +
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Fidyah</td><td style="padding:10px; border:1px solid #e5e7eb;">Pengganti puasa bagi yang tidak mampu</td></tr>' +
                 '</tbody></table>' +
-                '<p>Nilai yang dipakai kalkulator (harga emas/perak per gram, nisab, persentase zakat maal dan profesi, nominal fitrah, fidyah) diatur di <strong>Settings → General</strong> bagian Zakat. Perubahan langsung dipakai kalkulator web, admin, dan bot WhatsApp. Jenis zakat yang tampil ke donatur diatur di <strong>Zakat → Jenis Zakat</strong>.</p>',
+                '<p>Nilai yang dipakai kalkulator (harga emas/perak per gram, nisab, persentase zakat maal dan profesi, nominal fitrah, fidyah) diatur di <strong>Settings → General Settings</strong> pada tab Setting Zakat. Perubahan langsung dipakai kalkulator web, admin, dan bot WhatsApp. Jenis zakat yang tampil ke donatur diatur di <strong>Zakat → Jenis Zakat</strong>.</p>',
         },
         {
             id: "distribusi",
             heading: "Distribusi Zakat",
             bodyHtml:
                 '<p>Alur distribusi zakat:</p>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Pastikan data <strong>Mustahiq</strong> (penerima zakat) sudah diinput di menu Master.</li>' +
                 '<li>Buka <strong>Zakat → Penyaluran</strong> dan buat distribusi baru.</li>' +
                 '<li>Pilih mustahiq, jumlah, dan periode zakat.</li>' +

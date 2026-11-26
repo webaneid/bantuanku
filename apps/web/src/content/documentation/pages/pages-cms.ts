@@ -10,7 +10,7 @@ export const pagesCmsDoc: DocumentationPage = {
     {
       id: "membuat",
       heading: "Membuat Halaman",
-      bodyHtml: `<ol>
+      bodyHtml: `<figure class="doc-figure"><img src="/docs/screenshot-pages.png" alt="Daftar halaman statis" loading="lazy" /><figcaption>Daftar halaman statis</figcaption></figure><ol class="doc-steps">
 <li>Buka <strong>Pages</strong> di sidebar (Super Admin dan Admin Campaign) lalu buat halaman baru.</li>
 <li>Isi judul, deskripsi singkat, isi lengkap dengan editor teks, dan gambar (Feature Image).</li>
 <li>Pilih <strong>Status Publish</strong>: <code>Draft</code> (belum tampil) atau <code>Published</code>.</li>
@@ -21,7 +21,7 @@ export const pagesCmsDoc: DocumentationPage = {
     {
       id: "menu",
       heading: "Menautkan ke Menu",
-      bodyHtml: `<p>Halaman tidak otomatis masuk menu. Buka <strong>Settings → Frontend</strong>, bagian <strong>Header Menu</strong> atau <strong>Footer Menu</strong>, tambahkan item baru, lalu pilih URL halaman Anda dari daftar tautan.</p>`,
+      bodyHtml: `<p>Halaman tidak otomatis masuk menu. Buka <strong>Settings → Front-end</strong>, bagian <strong>Header Menu</strong> atau <strong>Footer Menu</strong>, tambahkan item baru, lalu pilih URL halaman Anda dari daftar tautan.</p>`,
     },
     {
       id: "tips",

@@ -22,7 +22,7 @@ export const amilRevenueDoc: DocumentationPage = {
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>Influencer</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Penggalang dana yang mereferensikan donatur via link referral. Komisi dipotong dari <em>bagian amil</em>, hanya jika transaksi melalui referral.</td></tr>' +
                 '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>Mitra</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Lembaga/organisasi pemilik program. Mendapat bagi hasil dari <em>bagian amil</em> sesuai pengaturan.</td></tr>' +
                 '</tbody></table>' +
-                '<p>💡 <strong>Penting:</strong> Seluruh potongan (platform provider, influencer, mitra) diambil dari <strong>bagian amil</strong>, bukan dari dana program/mustahiq. Dana program selalu utuh sesuai persentase yang ditetapkan.</p>',
+                '<div class="doc-callout"><span class="doc-callout-title">Penting</span>Seluruh potongan (platform provider, influencer, mitra) diambil dari <strong>bagian amil</strong>, bukan dari dana program/mustahiq. Dana program selalu utuh sesuai persentase yang ditetapkan.</div>',
         },
         {
             id: "aturan-syariat",
@@ -162,7 +162,7 @@ export const amilRevenueDoc: DocumentationPage = {
             id: "settings",
             heading: "Pengaturan via Settings",
             bodyHtml:
-                '<p>Semua persentase dikelola melalui <strong>Settings → Administrasi Amil</strong>:</p>' +
+                '<figure class="doc-figure"><img src="/docs/screenshot-settings-amil.png" alt="Settings → Administrasi Amil" loading="lazy" /><figcaption>Settings → Administrasi Amil</figcaption></figure>' + '<p>Semua persentase dikelola melalui <strong>Settings → Administrasi Amil</strong>:</p>' +
                 '<table style="width:100%; border-collapse:collapse; margin:16px 0;">' +
                 '<thead><tr style="background:#f3f4f6;"><th style="padding:8px; text-align:left; border:1px solid #e5e7eb;">Label</th><th style="padding:8px; text-align:left; border:1px solid #e5e7eb;">Keterangan</th></tr></thead>' +
                 '<tbody>' +
@@ -176,14 +176,14 @@ export const amilRevenueDoc: DocumentationPage = {
                 '<tr><td style="padding:8px; border:1px solid #e5e7eb;"><strong>Admin Qurban Sapi (Rp)</strong></td><td style="padding:8px; border:1px solid #e5e7eb;">Nominal tetap admin fee per ekor sapi</td></tr>' +
                 '<tr><td style="padding:8px; border:1px solid #e5e7eb;"><strong>Prosentasi Biaya Admin Qurban Pemilik Aplikasi (%)</strong></td><td style="padding:8px; border:1px solid #e5e7eb;">Porsi pemilik app dari admin fee qurban; sisa = mitra</td></tr>' +
                 '</tbody></table>' +
-                '<p>⚠️ <strong>Validasi penting:</strong> Pastikan total potongan (Platform Provider% + Influencer% + Mitra%) <strong>tidak melebihi</strong> persentase amil (X%). Jika melebihi, sistem akan menolak dan menampilkan error.</p>',
+                '<div class="doc-callout doc-callout-warn"><span class="doc-callout-title">Validasi penting</span>Pastikan total potongan (Platform Provider% + Influencer% + Mitra%) <strong>tidak melebihi</strong> persentase amil (X%). Jika melebihi, sistem akan menolak dan menampilkan error.</div>',
         },
         {
             id: "kapan-dihitung",
             heading: "Kapan Bagi Hasil Dihitung?",
             bodyHtml:
                 '<p>Revenue sharing dihitung <strong>otomatis saat transaksi dikonfirmasi (paid)</strong>, bukan saat transaksi dibuat. Alurnya:</p>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Donatur melakukan pembayaran → transaksi berstatus <strong>pending</strong>.</li>' +
                 '<li>Admin memverifikasi pembayaran → status menjadi <strong>paid</strong>.</li>' +
                 '<li>Sistem mengecek pengecualian:<br/>' +
@@ -196,7 +196,7 @@ export const amilRevenueDoc: DocumentationPage = {
                 '<li>Simpan record bagi hasil ke tabel <code>revenue_shares</code>.</li>' +
                 '<li>Update saldo masing-masing pihak (influencer, mitra).</li>' +
                 '</ol>' +
-                '<p>📌 Perubahan persentase di Settings <strong>hanya berlaku untuk transaksi baru</strong>. Transaksi lama tetap menggunakan persentase saat dihitung (tersimpan sebagai snapshot).</p>',
+                '<div class="doc-callout doc-callout-info"><span class="doc-callout-title">Catatan</span>Perubahan persentase di Settings <strong>hanya berlaku untuk transaksi baru</strong>. Transaksi lama tetap menggunakan persentase saat dihitung (tersimpan sebagai snapshot).</div>',
         },
         {
             id: "laporan",

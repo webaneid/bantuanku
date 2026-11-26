@@ -12,7 +12,7 @@ export const navigasiDashboardDoc: DocumentationPage = {
             heading: "Halaman Dashboard",
             bodyHtml: `
 <p>Setelah login Anda masuk ke Dashboard yang berisi ringkasan data penting, antara lain total pemasukan, jumlah transaksi, campaign aktif, donatur, dan pencairan yang menunggu persetujuan.</p>
-<img src="/docs/screenshot-dashboard.png" alt="Dashboard admin" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />
+<figure class="doc-figure"><img src="/docs/screenshot-dashboard.png" alt="Dashboard admin" loading="lazy" /><figcaption>Dashboard admin</figcaption></figure>
 <p>Di bagian tengah ada grafik tren pemasukan (7, 30, atau 90 hari) dan komposisi pemasukan menurut jenis: campaign, zakat, dan qurban. Angka yang tampil menyesuaikan peran Anda.</p>`,
         },
         {

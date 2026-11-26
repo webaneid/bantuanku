@@ -10,11 +10,12 @@ export const pengaturanPembayaranDoc: DocumentationPage = {
     {
       id: "gambaran",
       heading: "Gambaran Umum",
-      bodyHtml: `<p>Semua metode pembayaran diatur di <strong>Settings → Payments</strong>. Metode yang aktif muncul sebagai pilihan bagi donatur di checkout.</p>
+      bodyHtml: `<figure class="doc-figure"><img src="/docs/screenshot-settings-payments.png" alt="Settings → Payments: daftar metode pembayaran" loading="lazy" /><figcaption>Settings → Payments: daftar metode pembayaran</figcaption></figure><p>Semua metode pembayaran diatur di <strong>Settings → Payments</strong>. Metode yang aktif muncul sebagai pilihan bagi donatur di checkout.</p>
 <table>
 <thead><tr><th>Metode</th><th>Cara kerja</th><th>Konfirmasi</th></tr></thead>
 <tbody>
 <tr><td>Bank Transfer</td><td>Donatur transfer ke rekening lembaga lalu mengunggah bukti.</td><td>Manual oleh admin</td></tr>
+<tr><td>Tunai / Cash</td><td>Donatur menyerahkan uang langsung.</td><td>Manual oleh admin</td></tr>
 <tr><td>QRIS</td><td>Donatur memindai QRIS lembaga.</td><td>Manual oleh admin</td></tr>
 <tr><td>Flip, iPaymu, Xendit</td><td>Donatur membayar lewat gateway (VA, e-wallet, dll).</td><td>Otomatis lewat webhook</td></tr>
 </tbody>
@@ -49,7 +50,7 @@ export const pengaturanPembayaranDoc: DocumentationPage = {
       heading: "Webhook (Wajib)",
       bodyHtml: `<p>Gateway memberi tahu Jaladana bahwa pembayaran berhasil lewat webhook. Daftarkan URL berikut di dashboard gateway:</p>
 <p><code>https://api.domain-anda.com/v1/payments/&lt;gateway&gt;/webhook</code> dengan <code>&lt;gateway&gt;</code> berisi <code>flip</code>, <code>ipaymu</code>, atau <code>xendit</code>.</p>
-<p>Tanpa webhook, transaksi gateway akan tetap <code>pending</code>. Setelah mengatur, lakukan satu pembayaran uji dengan nominal kecil dan pastikan statusnya berubah menjadi <code>paid</code> serta muncul di <strong>Keuangan → Arus Kas</strong>.</p>`,
+<div class="doc-callout doc-callout-warn"><span class="doc-callout-title">Jangan lupa</span>Tanpa webhook, transaksi gateway akan tetap <code>pending</code>. Setelah mengatur, lakukan satu pembayaran uji dengan nominal kecil dan pastikan statusnya berubah menjadi <code>paid</code> serta muncul di <strong>Keuangan → Arus Kas</strong>.</div>`,
     },
   ],
 };

@@ -28,7 +28,7 @@ export const seoDoc: DocumentationPage = {
             heading: "Komponen SEO Panel",
             bodyHtml:
                 '<p>SEO Panel adalah komponen terpadu yang muncul di setiap form create/edit. Panel ini terdiri dari 3 bagian utama:</p>' +
-                '<img src="/docs/screenshot-seo-panel.png" alt="SEO Panel pada Campaign Edit" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
+                '<figure class="doc-figure"><img src="/docs/screenshot-seo-panel.png" alt="SEO Panel pada Campaign Edit" loading="lazy" /><figcaption>SEO Panel pada Campaign Edit</figcaption></figure>' +
                 '<p><em>Tampilan SEO Panel saat mengedit campaign — menampilkan Preview Google, Analisis SEO, dan menu Social Media & Advanced.</em></p>' +
 
                 '<h4 style="margin-top:20px;">1. SEO Dasar</h4>' +
@@ -94,7 +94,7 @@ export const seoDoc: DocumentationPage = {
             heading: "SEO di Campaign, Zakat & Qurban",
             bodyHtml:
                 '<p>Saat <strong>membuat atau mengedit</strong> Campaign, Zakat Type, atau Qurban Package, SEO Panel akan muncul di bagian bawah form:</p>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Buka halaman <strong>Create</strong> atau <strong>Edit</strong> konten.</li>' +
                 '<li>Isi semua field konten terlebih dahulu (judul, deskripsi, gambar, dll).</li>' +
                 '<li>Scroll ke bawah — Anda akan melihat <strong>panel SEO</strong>.</li>' +
@@ -119,7 +119,7 @@ export const seoDoc: DocumentationPage = {
             heading: "SEO Halaman Home & Arsip",
             bodyHtml:
                 '<p>Halaman-halaman yang tidak memiliki form create/edit individu dikelola SEO-nya secara global melalui <strong>Settings → SEO Halaman</strong>:</p>' +
-                '<img src="/docs/screenshot-seo-settings.png" alt="SEO Settings" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
+                '<figure class="doc-figure"><img src="/docs/screenshot-seo-settings.png" alt="SEO Settings" loading="lazy" /><figcaption>SEO Settings</figcaption></figure>' +
                 '<p>Tersedia 5 tab halaman:</p>' +
                 '<table style="width:100%; border-collapse:collapse; margin:12px 0;">' +
                 '<thead><tr style="background:#f3f4f6;"><th style="padding:8px; text-align:left; border:1px solid #e5e7eb;">Tab</th><th style="padding:8px; text-align:left; border:1px solid #e5e7eb;">Halaman</th><th style="padding:8px; text-align:left; border:1px solid #e5e7eb;">URL</th></tr></thead>' +
@@ -132,7 +132,7 @@ export const seoDoc: DocumentationPage = {
                 '</tbody></table>' +
 
                 '<p><strong>Cara menggunakan:</strong></p>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Buka <strong>Settings → SEO Halaman</strong> di sidebar.</li>' +
                 '<li>Pilih tab halaman yang ingin dioptimasi (Homepage, Arsip Program, dll).</li>' +
                 '<li>Isi Focus Keyphrase, SEO Title, dan Meta Description.</li>' +
@@ -145,11 +145,11 @@ export const seoDoc: DocumentationPage = {
             heading: "SEO Kategori & Pilar",
             bodyHtml:
                 '<p>Kategori dan pilar campaign juga memiliki pengaturan SEO sendiri karena setiap kategori/pilar menghasilkan halaman arsip di website publik.</p>' +
-                '<img src="/docs/screenshot-categories.png" alt="Daftar Kategori" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
+                '<figure class="doc-figure"><img src="/docs/screenshot-categories.png" alt="Daftar Kategori" loading="lazy" /><figcaption>Daftar Kategori</figcaption></figure>' +
                 '<p><em>Daftar kategori campaign — klik ikon edit (✏️) untuk mengatur SEO.</em></p>' +
 
                 '<h4 style="margin-top:16px;">Kategori</h4>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Buka <strong>Campaigns → Categories</strong>.</li>' +
                 '<li>Klik ikon <strong>✏️ Edit</strong> pada kategori yang ingin dioptimasi.</li>' +
                 '<li>Di form edit, Anda akan menemukan <strong>panel SEO</strong> dengan semua field standar.</li>' +
@@ -158,7 +158,7 @@ export const seoDoc: DocumentationPage = {
                 '</ol>' +
 
                 '<h4 style="margin-top:16px;">Pilar</h4>' +
-                '<ol>' +
+                '<ol class="doc-steps">' +
                 '<li>Buka <strong>Campaigns → Pillars</strong>.</li>' +
                 '<li>Klik ikon <strong>✏️ Edit</strong> pada pilar yang ingin dioptimasi.</li>' +
                 '<li>Di form edit, Anda akan menemukan <strong>panel SEO</strong> dengan field standar.</li>' +

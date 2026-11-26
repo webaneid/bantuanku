@@ -1,0 +1,83 @@
+// ============================================================================
+// DOCUMENTATION CENTER — blok visual untuk konten /documentation
+// Dipakai lewat class di bodyHtml: .doc-callout, .doc-steps, .doc-figure
+// Warna latar memakai alpha agar tetap terbaca di mode terang maupun gelap.
+// ============================================================================
+
+.doc-callout {
+  --doc-accent: rgb(var(--color-primary-500));
+  margin: 1.25rem 0;
+  padding: 0.875rem 1rem;
+  border-left: 4px solid var(--doc-accent);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--doc-accent) 12%, transparent);
+
+  > :first-child { margin-top: 0; }
+  > :last-child { margin-bottom: 0; }
+
+  .doc-callout-title {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 700;
+    color: var(--doc-accent);
+  }
+
+  &.doc-callout-warn { --doc-accent: #d97706; }
+  &.doc-callout-danger { --doc-accent: #dc2626; }
+  &.doc-callout-info { --doc-accent: #2563eb; }
+}
+
+.doc-steps {
+  counter-reset: doc-step;
+  list-style: none !important;
+  padding-left: 0 !important;
+  margin: 1.25rem 0;
+
+  > li {
+    counter-increment: doc-step;
+    position: relative;
+    margin-bottom: 0.875rem;
+    padding-left: 2.75rem;
+    min-height: 2rem;
+
+    &::marker { content: none; }
+
+    &::before {
+      content: counter(doc-step);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 9999px;
+      background: rgb(var(--color-primary-600));
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+}
+
+.doc-figure {
+  margin: 1.25rem 0;
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(var(--color-primary-200));
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+  }
+
+  figcaption {
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    text-align: center;
+    opacity: 0.75;
+  }
+}

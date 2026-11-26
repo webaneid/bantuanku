@@ -23,7 +23,7 @@ export const caraMembuatCampaignDoc: DocumentationPage = {
             heading: "2. Buka Halaman Campaign",
             bodyHtml: `
 <p>Dari sidebar klik <strong>Campaigns → All Campaigns</strong>, lalu klik <strong>Buat Campaign</strong> di pojok kanan atas.</p>
-<img src="/docs/screenshot-campaigns-list.png" alt="Daftar Campaign" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />
+<figure class="doc-figure"><img src="/docs/screenshot-campaigns-list.png" alt="Daftar Campaign" loading="lazy" /><figcaption>Daftar Campaign</figcaption></figure>
 <p>Di daftar ini Anda bisa mencari, menyaring menurut kategori dan status, serta melihat, mengedit, atau menghapus campaign.</p>`,
         },
         {
@@ -43,7 +43,7 @@ export const caraMembuatCampaignDoc: DocumentationPage = {
 <tr><td>Gambar Utama</td><td>Pilih/unggah dari Media Library.</td><td>—</td></tr>
 </tbody>
 </table>
-<img src="/docs/screenshot-campaign-form-top.png" alt="Form Campaign Bagian Atas" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />
+<figure class="doc-figure"><img src="/docs/screenshot-campaign-form-top.png" alt="Form Campaign Bagian Atas" loading="lazy" /><figcaption>Form Campaign Bagian Atas</figcaption></figure>
 <p>Kolom kanan/bawah:</p>
 <ul>
 <li><strong>Status</strong> — Draft, Aktif, Selesai, atau Dibatalkan. Akun mitra selalu Draft sampai ditinjau admin.</li>
@@ -63,7 +63,7 @@ export const caraMembuatCampaignDoc: DocumentationPage = {
 <li><strong>Tanggal Mulai &amp; Berakhir</strong> (opsional).</li>
 <li><strong>Panel SEO</strong> — focus keyphrase, meta title, dan meta description. Lihat <a href="/documentation/seo">Tutorial SEO</a>.</li>
 </ul>
-<img src="/docs/screenshot-campaign-form-bottom.png" alt="Form Campaign Bagian Bawah" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />`,
+<figure class="doc-figure"><img src="/docs/screenshot-campaign-form-bottom.png" alt="Form Campaign Bagian Bawah" loading="lazy" /><figcaption>Form Campaign Bagian Bawah</figcaption></figure>`,
         },
         {
             id: "simpan-publish",

@@ -24,7 +24,7 @@ export const mengelolaTransaksiDoc: DocumentationPage = {
             heading: "Halaman Transactions",
             bodyHtml: `
 <p>Menu <strong>Transactions</strong> dapat dibuka oleh Super Admin dan Admin Finance. Admin Campaign melihat donasi campaign lewat <strong>Campaigns → Donations</strong>.</p>
-<img src="/docs/screenshot-transactions.png" alt="Halaman Transactions" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />
+<figure class="doc-figure"><img src="/docs/screenshot-transactions.png" alt="Halaman Transactions" loading="lazy" /><figcaption>Halaman Transactions</figcaption></figure>
 <p>Yang bisa dilakukan:</p>
 <ul>
 <li>Cari berdasarkan <strong>email donatur</strong>.</li>

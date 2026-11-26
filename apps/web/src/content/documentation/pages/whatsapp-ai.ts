@@ -21,7 +21,7 @@ export const whatsappAiDoc: DocumentationPage = {
             heading: "Kemampuan Utama AI",
             bodyHtml: `
                 <p>Robot AI tidak hanya menjawab dari teks statis (seperti Auto-Reply biasa), tetapi AI tersebut memiliki akses internal ke database Jaladana milik Anda, sehingga ia mampu:</p>
-                <ol className="list-decimal pl-5 mt-2 space-y-3">
+                <ol class="doc-steps">
                     <li>
                         <strong>Memandu Proses Berdonasi Langsung:</strong>
                         <br/>
@@ -52,7 +52,7 @@ export const whatsappAiDoc: DocumentationPage = {
             heading: "Batasan & Handover (Oper Alih ke Manusia)",
             bodyHtml: `
                 <p>Untuk menjaga kendali, AI bekerja dengan sistem <em>Guardrails</em> (pagar pembatas):</p>
-                <ul className="list-disc pl-5 mt-2 space-y-1">
+                <ul>
                     <li>AI menolak memberikan diskon donasi atau memodifikasi invoice jika tidak sesuai perintah sistem.</li>
                     <li>Terdapat batasan <em>rate-limiting</em> untuk mencegah biaya API jebol jika ada donatur yang memberikan pesan spam secara terus menerus.</li>
                     <li>
