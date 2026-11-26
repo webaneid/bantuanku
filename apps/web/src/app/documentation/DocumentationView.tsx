@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DocumentationSearch from "./DocumentationSearch";
 import { RenderContent } from "@/lib/render-content";
 import { getDocumentationManifest, getDocumentationPageBySlug } from "@/lib/documentation";
 
@@ -38,6 +39,7 @@ export default function DocumentationView({ slug }: DocumentationViewProps) {
               <p className="text-xs uppercase tracking-wide text-gray-500 mb-3">
                 Menu Dokumentasi
               </p>
+              <DocumentationSearch />
               <div className="space-y-3">
                 {manifest.categories.map((category) => {
                   const isCurrentGroup = category.items.some((item) => item.slug === slug);

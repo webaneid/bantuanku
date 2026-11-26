@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { inferCanonicalReportUrl } from '@/lib/report-url';
+import { getAllDocumentationSlugs } from '@/lib/documentation';
 
 // Generate sitemap at request time, not build time.
 // `force-dynamic` saja TIDAK menjamin fetch di route metadata ini tidak di-cache oleh Next 14 (terbukti di produksi:
@@ -32,6 +33,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${appUrl}/kontak`, lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
   ];
 
+  // Documentation center (konten statis)
+  const documentationPages: MetadataRoute.Sitemap = [
+    { url: `${appUrl}/documentation`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
+    ...getAllDocumentationSlugs().map((slug) => ({
+      url: `${appUrl}/documentation/${slug}`,
+      lastModified: now,
+      changeFrequency: 'monthly' as const,
+      priority: 0.4,
+    })),
+  ];
+
   // Zakat calculator pages
   const zakatCalculators = [
     'zakat-fitrah', 'zakat-maal', 'zakat-penghasilan',
@@ -58,6 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...staticPages,
     ...calculatorPages,
+    ...documentationPages,
     ...campaignPages,
     ...zakatTypePages,
     ...qurbanPages,

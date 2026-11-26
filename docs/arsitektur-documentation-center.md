@@ -370,16 +370,9 @@ Default about links menyertakan:
 
 Route `/documentation/[slug]` punya dynamic metadata berdasarkan static content.
 
-Namun sitemap saat ini belum memasukkan:
+Sejak 2026-11-27 sitemap memuat `/documentation` dan semua `/documentation/[slug]` (dari `getAllDocumentationSlugs()`, priority 0.4, monthly) di `apps/web/src/app/sitemap.ts`.
 
-```text
-/documentation
-/documentation/[slug]
-```
-
-`apps/web/src/app/sitemap.ts` hanya memasukkan static pages utama, zakat calculator, campaign, zakat type, qurban, category, pillar, CMS pages, dan activity reports. Documentation center tidak dipanggil dari sitemap.
-
-Documentation center juga tidak masuk:
+Documentation center tidak masuk:
 
 - `/v1/search`;
 - `/v1/autocomplete`;
@@ -390,7 +383,7 @@ Implikasi:
 
 1. Dokumentasi bisa ditemukan lewat footer/menu/link langsung.
 2. Dokumentasi belum optimal untuk crawler discovery.
-3. Dokumentasi tidak searchable di search publik.
+3. Dokumentasi tidak searchable di search publik (`/v1/search`); pencarian dokumentasi punya kotak cari sendiri (lihat bagian Pencarian Dokumentasi).
 
 ---
 
@@ -440,11 +433,9 @@ Implikasi:
 
 | Gap | Dampak | Rekomendasi |
 |-----|--------|-------------|
-| Documentation tidak masuk sitemap | Crawler discovery lemah | Tambah `/documentation` dan semua slug manifest ke sitemap |
 | Tidak ada validasi manifest vs registry | Slug bisa 404 atau konten orphan tanpa terdeteksi | Tambah unit/script check |
 | `bodyHtml` raw HTML tanpa lint/sanitizer | Risiko HTML berbahaya masuk via code review yang lolos | Tambah lint/check pola `<script`, `onClick=`, `onerror=`, iframe |
 | `/documentation` render default page tanpa canonical/redirect ke slug | Potensi duplikasi dengan `/documentation/pengenalan` jika keduanya diindeks | Tambah canonical atau redirect eksplisit |
-| Tidak ada search documentation | User tidak bisa mencari topik dokumentasi | Tambah client-side search dari manifest/pages atau endpoint static |
 | TOC kanan tanpa active section state | Navigasi panjang kurang informatif | Tambah active anchor tracking bila konten makin panjang |
 | Semua `updatedAt` content sama | Informasi update kurang bermakna | Update per page saat konten berubah |
 | Tidak ada relation ke docs arsitektur | Dokumentasi operasional bisa drift dari source-of-truth arsitektur | Saat arsitektur berubah, audit content documentation terkait |
@@ -455,12 +446,12 @@ Implikasi:
 ## Rekomendasi Arsitektur
 
 1. **Pertahankan documentation center sebagai static content**, bukan CMS, selama targetnya dokumentasi operasional internal/publik yang dikurasi developer.
-2. **Tambahkan sitemap documentation** dengan semua slug dari `getAllDocumentationSlugs()`.
+2. ~~Tambahkan sitemap documentation~~ — selesai 2026-11-27.
 3. **Buat script validasi manifest-registry** agar setiap slug manifest punya page dan setiap page punya manifest entry.
 4. **Tambahkan lint keamanan untuk `bodyHtml`** supaya raw HTML tetap terkendali.
 5. **Jangan campur documentation center dengan Pages CMS**. Pages CMS untuk halaman editorial organisasi; documentation center untuk panduan operasional produk.
 6. **Audit isi documentation terhadap arsitektur resmi** karena beberapa halaman documentation adalah tutorial operasional dan bisa drift dari implementasi.
-7. **Pertimbangkan search lokal** jika jumlah page bertambah, cukup berbasis static data di client tanpa API.
+7. ~~Search lokal~~ — selesai 2026-11-27.
 8. **Perbaiki canonical `/documentation`** agar tidak ambigu dengan default slug `pengenalan`.
 
 ---
@@ -483,7 +474,15 @@ Implikasi:
 1. (Selesai fase 5) Semua halaman sudah diaudit. Perbaikan utama fase 5: kategori pengeluaran sesuai UI, validasi rekening zakat, referral 7 hari + cookie 30 hari, halaman mitra publik, SEO Panel juga di Pages/Laporan Kegiatan, dan Robot AI tanpa klaim handover.
 2. Fase 3 (2026-11-26) menambah 10 halaman: buku-kas, pengaturan-pembayaran, wakaf, laporan-kegiatan, alur-donatur, donatur, pages-cms, master-data, program-coordinator, pengaturan-umum. Belum ada: Midtrans (tidak ada di UI Payments), Settings Integration/Google Maps/Users, tema multi-klien, tracking Meta, Dokumentasi mitra (daftar-mitra).
 3. (Selesai fase 4) Screenshot diganti; halaman yang belum punya gambar: Kategori Keuangan, Konsep Mitra (daftar mitra dev kosong), Vendor (kosong), Fundraiser/SEO memakai gambar baru.
-4. Belum ada pencarian dan sitemap untuk dokumentasi; komponen callout/langkah/figure sudah ada.
+4. (Selesai 2026-11-27) Pencarian dan sitemap dokumentasi sudah ada.
+
+---
+
+## Pencarian Dokumentasi (2026-11-27)
+
+- `apps/web/src/app/documentation/search-index/route.ts` — route handler `force-static` yang membangun indeks (slug, judul, ringkasan, tiap section: id, heading, teks tanpa tag HTML) dari konten statis. Tidak memakai API/DB.
+- `apps/web/src/app/documentation/DocumentationSearch.tsx` — client component di sidebar. Indeks baru di-fetch saat kotak cari pertama kali fokus. Cocok bila SEMUA kata (min. 2 huruf) ada; skor: heading 4, judul/ringkasan 3, isi 1; maksimal 8 hasil, tiap hasil menaut ke `/documentation/<slug>#<section-id>`.
+- Teks UI pencarian hardcoded Indonesia, sama seperti sisa DocumentationView (dokumentasi tidak ikut i18n).
 
 ---
 
