@@ -6,7 +6,7 @@ export const flipPaymentDoc: DocumentationPage = {
     category: "Keuangan",
     summary:
         "Panduan integrasi dan pengaturan Flip Payment Gateway untuk menerima donasi secara otomatis melalui berbagai bank dan e-wallet.",
-    updatedAt: "2026-02-20",
+    updatedAt: "2026-11-26",
     sections: [
         {
             id: "pengenalan-flip",
@@ -45,8 +45,8 @@ export const flipPaymentDoc: DocumentationPage = {
             bodyHtml: `
                 <p>Setelah mendapatkan kunci kredensial dari Flip, masukkan kunci tersebut ke dalam pengaturan aplikasi Jaladana:</p>
                 <ol className="list-decimal pl-5 mt-2 space-y-2">
-                    <li>Masuk ke Dashboard Admin Jaladana, lalu tuju menu <strong>Settings &rarr; Payment Gateways</strong>.</li>
-                    <li>Pilih tab pengaturan untuk <strong>Flip</strong>.</li>
+                    <li>Masuk ke Dashboard Admin Jaladana, lalu tuju menu <strong>Settings &rarr; Payments</strong>.</li>
+                    <li>Cari kartu gateway <strong>Flip</strong> lalu aktifkan.</li>
                     <li>Pilih <strong>Environment</strong> yang sesuai (Production untuk uang asli, atau Sandbox untuk simulasi).</li>
                     <li>Masukkan <strong>API Key</strong> (ini adalah <em>Secret Key</em> dari Flip tadi).</li>
                     <li>Masukkan <strong>Webhook Token</strong> (ini adalah <em>Validation Token</em> dari Flip tadi).</li>
@@ -77,9 +77,9 @@ export const flipPaymentDoc: DocumentationPage = {
             heading: "Informasi Tambahan & Limitasi",
             bodyHtml: `
                 <ul className="list-disc pl-5 mt-2 space-y-2">
-                    <li><strong>Minimal Transaksi:</strong> Flip memiliki ketentuan nominal batas bawah yaitu Rp 10.000,- per transaksi. Sistem Jaladana sudah harus memastikan donatur tidak bisa berdonasi di bawah nominal tersebut jika memilih metode Flip.</li>
-                    <li><strong>Masa Berlaku Link (Expired):</strong> Tautan pembayaran atau nomor Virtual Account secara default akan kadaluwarsa dalam 24 jam. Jika lewat dari masa itu, donatur harus membuat transaksi donasi baru.</li>
-                    <li><strong>Channel Pembayaran:</strong> Berbeda dengan Midtrans yang mengharuskan kita memilih bank di halaman web kita sendiri, Flip (dengan metode Payment Link tunggal) memungkinkan donatur untuk memilih bank atau e-wallet mereka langsung di halaman situs Flip yang sudah terenkripsi aman.</li>
+                    <li><strong>Minimal Transaksi:</strong> Flip memiliki ketentuan nominal batas bawah yaitu Rp 10.000,- per transaksi. Pastikan nominal donasi minimum program Anda tidak di bawah angka ini bila Flip diaktifkan.</li>
+                    <li><strong>Masa Berlaku Link (Expired):</strong> Tautan pembayaran atau nomor Virtual Account memiliki masa berlaku yang ditentukan Flip. Jika sudah kedaluwarsa, donatur perlu membuat transaksi donasi baru.</li>
+                    <li><strong>Channel Pembayaran:</strong> Dengan metode Payment Link, Flip memungkinkan donatur untuk memilih bank atau e-wallet mereka langsung di halaman situs Flip yang sudah terenkripsi aman.</li>
                 </ul>
             `,
         },

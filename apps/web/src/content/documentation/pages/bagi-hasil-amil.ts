@@ -6,7 +6,7 @@ export const amilRevenueDoc: DocumentationPage = {
     category: "Keuangan",
     summary:
         "Panduan lengkap revenue sharing: aturan syariat, formula per produk, pengecualian wakaf & qurban, settings, dan laporan.",
-    updatedAt: "2026-02-20",
+    updatedAt: "2026-11-26",
     sections: [
         {
             id: "pengertian",

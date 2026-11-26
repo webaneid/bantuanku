@@ -4,54 +4,43 @@ export const navigasiDashboardDoc: DocumentationPage = {
     slug: "navigasi-dashboard",
     title: "Navigasi Dashboard",
     category: "Memulai",
-    summary:
-        "Mengenal tampilan dashboard admin dan menu-menu utama yang tersedia.",
-    updatedAt: "2026-02-20",
+    summary: "Mengenal halaman dashboard dan menu sidebar beserta peran yang dapat mengaksesnya.",
+    updatedAt: "2026-11-26",
     sections: [
         {
             id: "overview-dashboard",
             heading: "Halaman Dashboard",
-            bodyHtml:
-                '<p>Setelah login, Anda akan masuk ke halaman <strong>Dashboard</strong> yang menampilkan ringkasan data penting:</p>' +
-                '<img src="/docs/screenshot-dashboard.png" alt="Dashboard Admin Jaladana" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
-                '<p>Dashboard menampilkan:</p>' +
-                '<ul>' +
-                '<li><strong>Total Pemasukan</strong> — Total dana masuk dan persentase pertumbuhan</li>' +
-                '<li><strong>Transaksi 30 Hari</strong> — Jumlah transaksi dalam 30 hari terakhir</li>' +
-                '<li><strong>Campaign Aktif</strong> — Jumlah program yang sedang berjalan</li>' +
-                '<li><strong>Donatur Unik</strong> — Total donatur yang pernah berdonasi</li>' +
-                '<li><strong>Pencairan Menunggu</strong> — Jumlah pencairan yang menunggu persetujuan</li>' +
-                '</ul>',
-        },
-        {
-            id: "tren-chart",
-            heading: "Grafik & Komposisi",
-            bodyHtml:
-                '<p>Pada bagian tengah dashboard terdapat:</p>' +
-                '<ul>' +
-                '<li><strong>Tren Pemasukan</strong> — Grafik garis yang menampilkan tren donasi masuk dalam 7, 30, atau 90 hari terakhir.</li>' +
-                '<li><strong>Komposisi Pemasukan</strong> — Diagram donut yang menampilkan proporsi pemasukan berdasarkan jenis: Zakat, Campaign, dan Qurban.</li>' +
-                '</ul>',
+            bodyHtml: `
+<p>Setelah login Anda masuk ke Dashboard yang berisi ringkasan data penting, antara lain total pemasukan, jumlah transaksi, campaign aktif, donatur, dan pencairan yang menunggu persetujuan.</p>
+<img src="/docs/screenshot-dashboard.png" alt="Dashboard admin" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />
+<p>Di bagian tengah ada grafik tren pemasukan (7, 30, atau 90 hari) dan komposisi pemasukan menurut jenis: campaign, zakat, dan qurban. Angka yang tampil menyesuaikan peran Anda.</p>`,
         },
         {
             id: "menu-sidebar",
             heading: "Menu Sidebar",
-            bodyHtml:
-                '<p>Panel navigasi di sisi kiri menyediakan akses ke seluruh modul:</p>' +
-                '<table style="width:100%; border-collapse:collapse; margin:16px 0;">' +
-                '<thead><tr style="background:#f3f4f6;"><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Menu</th><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Fungsi</th></tr></thead>' +
-                '<tbody>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Dashboard</td><td style="padding:10px; border:1px solid #e5e7eb;">Ringkasan statistik utama</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Campaigns</td><td style="padding:10px; border:1px solid #e5e7eb;">Kelola program (All Campaigns, Donations, Categories, Pillars)</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Zakat</td><td style="padding:10px; border:1px solid #e5e7eb;">Kelola jenis zakat, periode, donasi, distribusi, statistik</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Qurban</td><td style="padding:10px; border:1px solid #e5e7eb;">Kelola periode, paket, pesanan, tabungan qurban</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Pages</td><td style="padding:10px; border:1px solid #e5e7eb;">CMS halaman statis</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Laporan Kegiatan</td><td style="padding:10px; border:1px solid #e5e7eb;">Activity reports untuk disbursement</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Transactions</td><td style="padding:10px; border:1px solid #e5e7eb;">Semua transaksi masuk (campaign, zakat, qurban)</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Influencer</td><td style="padding:10px; border:1px solid #e5e7eb;">Kelola influencer dan komisi referral</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">Profile</td><td style="padding:10px; border:1px solid #e5e7eb;">Profil pengguna yang sedang login</td></tr>' +
-                '</tbody></table>' +
-                '<p>Menu tambahan tersedia di dashboard tergantung role: <em>Donatur, Users, Ledger, Master, Mitra, Disbursements, Reports, Settings</em>, dan lainnya.</p>',
+            bodyHtml: `
+<p>Menu di sisi kiri dikelompokkan per modul. Menu yang tidak diizinkan untuk peran Anda otomatis disembunyikan.</p>
+<table>
+<thead><tr><th>Menu</th><th>Isi</th><th>Peran</th></tr></thead>
+<tbody>
+<tr><td>Campaigns</td><td>All Campaigns, Donations, Categories, Pillars</td><td>Admin, koordinator, mitra (terbatas)</td></tr>
+<tr><td>Zakat</td><td>Dashboard Zakat, Jenis, Periode, Pembayaran, Penyaluran, Kalkulator</td><td>Admin, mitra (jenis &amp; periode)</td></tr>
+<tr><td>Qurban</td><td>Periode, Paket Hewan, Orders, Tabungan Qurban, Grup Patungan, Diskon &amp; Voucher</td><td>Admin, mitra (periode &amp; paket)</td></tr>
+<tr><td>Pages</td><td>Halaman statis (CMS)</td><td>Super Admin, Admin Campaign</td></tr>
+<tr><td>Laporan Kegiatan</td><td>Laporan penyaluran untuk donatur</td><td>Admin, koordinator</td></tr>
+<tr><td>Transactions</td><td>Semua transaksi masuk</td><td>Super Admin, Admin Finance</td></tr>
+<tr><td>Influencer</td><td>Influencer dan komisi referral</td><td>Admin</td></tr>
+<tr><td>Mitra</td><td>Lembaga partner</td><td>Super Admin, Admin Campaign, mitra</td></tr>
+<tr><td>Disbursements</td><td>Pengajuan dan persetujuan pencairan dana</td><td>Admin, koordinator, mitra</td></tr>
+<tr><td>Master</td><td>Donatur, Vendors, Employees, Mustahiq, Penghasilan Bulanan</td><td>Admin</td></tr>
+<tr><td>Statistics</td><td>Statistik donatur dan mustahiq</td><td>Admin</td></tr>
+<tr><td>Keuangan</td><td>Buku kas: Arus Kas, Sirkulasi Rekening, Dana per Sumber, Bagi Hasil, per Mitra/Influencer/Program, Perlu Ditinjau</td><td>Super Admin, Admin Finance</td></tr>
+<tr><td>Reports</td><td>Laporan keuangan (Cash Flow, Neraca, Zakat, Qurban, Bagi Hasil Amil, per Rekening, per Donatur, dan lainnya)</td><td>Super Admin, Admin Finance</td></tr>
+<tr><td>WhatsApp</td><td>Broadcast ke donatur</td><td>Super Admin, Admin Finance</td></tr>
+<tr><td>Influencer Saya</td><td>Kode referral dan komisi pribadi</td><td>Employee, koordinator</td></tr>
+<tr><td>Settings</td><td>Pengaturan umum, pembayaran, branding, SEO, WhatsApp, integrasi, dan lainnya</td><td>Super Admin, Admin Finance (sebagian)</td></tr>
+</tbody>
+</table>`,
         },
     ],
 };

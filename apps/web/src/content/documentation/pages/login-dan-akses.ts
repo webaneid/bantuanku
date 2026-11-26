@@ -4,54 +4,52 @@ export const loginDanAksesDoc: DocumentationPage = {
     slug: "login-dan-akses",
     title: "Login & Hak Akses",
     category: "Memulai",
-    summary:
-        "Panduan login ke admin panel dan memahami hak akses berdasarkan role.",
-    updatedAt: "2026-02-20",
+    summary: "Cara masuk ke dashboard admin dan memahami menu yang bisa diakses tiap peran.",
+    updatedAt: "2026-11-26",
     sections: [
         {
             id: "cara-login",
             heading: "Cara Login",
-            bodyHtml:
-                '<ol>' +
-                '<li>Buka panel admin di <code>https://admin.namadomain.com</code> (atau <code>http://localhost:3001</code> untuk development).</li>' +
-                '<li>Masukkan <strong>Email</strong> dan <strong>Password</strong> akun Anda.</li>' +
-                '<li>Klik tombol <strong>Login</strong>.</li>' +
-                '</ol>' +
-                '<img src="/docs/screenshot-login.png" alt="Halaman Login Jaladana Admin" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
-                '<p><em>Tampilan halaman login admin panel Jaladana.</em></p>',
+            bodyHtml: `
+<ol>
+<li>Buka alamat dashboard admin lembaga Anda (contoh: <code>https://admin.domainlembaga.org</code>).</li>
+<li>Masukkan <strong>Email</strong> dan <strong>Password</strong> akun Anda.</li>
+<li>Klik <strong>Login</strong>. Anda akan masuk ke halaman Dashboard.</li>
+</ol>
+<img src="/docs/screenshot-login.png" alt="Halaman login dashboard admin" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />
+<p>Lupa password? Klik tautan <strong>Lupa password</strong> di bawah kolom password, lalu ikuti petunjuk yang dikirim ke email Anda.</p>
+<p>Akun dashboard dibuat oleh Super Admin lewat <strong>Settings → Users</strong>. Akun donatur di website publik adalah akun terpisah dan tidak bisa masuk ke dashboard.</p>`,
         },
         {
             id: "role-sistem",
-            heading: "Role Dalam Sistem",
-            bodyHtml:
-                '<p>Jaladana menggunakan <strong>Role-Based Access Control (RBAC)</strong> dengan 6 role:</p>' +
-                '<table style="width:100%; border-collapse:collapse; margin:16px 0;">' +
-                '<thead><tr style="background:#f3f4f6;"><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Role</th><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Akses</th></tr></thead>' +
-                '<tbody>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>super_admin</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Akses penuh ke seluruh sistem</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>admin_finance</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Keuangan, pencairan, ledger, laporan, export</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>admin_campaign</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Campaign, pages, kategori, pilar</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>program_coordinator</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Koordinator program — mengelola kampanye yang ditugaskan</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>employee</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Staff — akses dasar ke data operasional</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;"><strong>mitra</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Lembaga partner — hanya melihat data miliknya sendiri</td></tr>' +
-                '</tbody></table>',
+            heading: "Peran (Role) dalam Sistem",
+            bodyHtml: `
+<p>Menu dan data yang tampil bergantung pada peran akun. Ada 6 peran:</p>
+<table>
+<thead><tr><th>Peran</th><th>Akses utama</th></tr></thead>
+<tbody>
+<tr><td><code>super_admin</code></td><td>Seluruh sistem, termasuk Settings dan manajemen pengguna.</td></tr>
+<tr><td><code>admin_finance</code></td><td>Transaksi, pencairan, Keuangan (buku kas), Reports, data master, dan WhatsApp Broadcast. Juga melihat Campaign, Zakat, dan Qurban.</td></tr>
+<tr><td><code>admin_campaign</code></td><td>Campaign (termasuk donasinya), kategori &amp; pilar, Pages, Zakat, Qurban, Influencer, Mitra, data master, dan statistik.</td></tr>
+<tr><td><code>program_coordinator</code></td><td>Mengelola campaign yang ditugaskan kepadanya, pencairan, dan laporan kegiatan.</td></tr>
+<tr><td><code>employee</code></td><td>Akses dasar operasional dan menu Influencer Saya.</td></tr>
+<tr><td><code>mitra</code></td><td>Lembaga partner; hanya melihat dan mengelola data miliknya sendiri.</td></tr>
+</tbody>
+</table>
+<p>Satu akun bisa memiliki lebih dari satu peran. Jika menu yang Anda butuhkan tidak muncul, hubungi Super Admin untuk menyesuaikan peran.</p>`,
         },
         {
             id: "hak-akses-mitra",
             heading: "Batasan Akses Mitra",
-            bodyHtml:
-                '<p>Role <strong>mitra</strong> memiliki akses terbatas. Mitra <strong>BISA</strong> mengakses:</p>' +
-                '<ul>' +
-                '<li>Campaigns (miliknya sendiri)</li>' +
-                '<li>Categories & Pillars (lihat saja)</li>' +
-                '<li>Media Library (upload gambar)</li>' +
-                '<li>Zakat Types & Periods (miliknya)</li>' +
-                '<li>Qurban (miliknya)</li>' +
-                '<li>Disbursements (pengajuan pencairan)</li>' +
-                '<li>Activity Reports (miliknya)</li>' +
-                '<li>Address lookup & Profile</li>' +
-                '</ul>' +
-                '<p>Mitra <strong>TIDAK BISA</strong> mengakses: Dashboard statistik, Users, Roles, Finance/Ledger, Reports, Analytics, Settings, Audit log, Export, Vendors, Employees.</p>',
+            bodyHtml: `
+<p>Akun mitra hanya melihat menu yang relevan dengan programnya:</p>
+<ul>
+<li>Dashboard dan <strong>Campaigns</strong> milik mitra (campaign baru selalu berstatus Draft sampai ditinjau admin).</li>
+<li><strong>Zakat</strong> (jenis dan periode) dan <strong>Qurban</strong> (periode, paket) milik mitra.</li>
+<li><strong>Disbursements</strong> untuk mengajukan pencairan.</li>
+<li>Profil <strong>Mitra</strong> lembaganya sendiri.</li>
+</ul>
+<p>Mitra tidak dapat membuka Transactions, Keuangan, Reports, Settings, maupun data milik mitra lain.</p>`,
         },
     ],
 };

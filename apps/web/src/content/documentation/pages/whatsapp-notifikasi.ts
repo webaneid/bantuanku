@@ -6,7 +6,7 @@ export const whatsappNotificationDoc: DocumentationPage = {
     category: "Fitur",
     summary:
         "Panduan mengelola dan menyesuaikan template notifikasi WhatsApp otomatis untuk donatur dan admin.",
-    updatedAt: "2026-02-20",
+    updatedAt: "2026-11-26",
     sections: [
         {
             id: "konsep-dasar",
@@ -25,7 +25,7 @@ export const whatsappNotificationDoc: DocumentationPage = {
             id: "manajemen-template",
             heading: "Mengelola Template Pesan",
             bodyHtml: `
-                <p>Seluruh teks notifikasi dapat Anda ubah melalui menu <strong>Settings > WhatsApp Templates</strong>. Terdapat lebih dari 20 template yang bisa Anda aktif/non-aktifkan (toggle), dibagi dalam beberapa kategori:</p>
+                <p>Seluruh teks notifikasi dapat Anda ubah melalui menu <strong>Settings → WhatsApp</strong>. Terdapat lebih dari 20 template yang bisa Anda aktif/non-aktifkan (toggle), dibagi dalam beberapa kategori:</p>
                 <ul className="list-disc pl-5 mt-2 space-y-1">
                     <li><strong>Registrasi & Akun:</strong> Pesan selamat datang dan OTP verifikasi.</li>
                     <li><strong>Transaksi Baru:</strong> Tagihan Donasi Campaign, Zakat, dan Qurban (memuat nominal & rekening bank).</li>
@@ -56,6 +56,19 @@ Ke Rekening:
                     </code>
                 </pre>
                 <p><em>Untuk melihat daftar lengkap ratusan variabel yang didukung (mulai dari data lembaga, transaksi, kalkulasi zakat, hingga data qurban), Anda dapat merujuk ke petunjuk di halaman pengaturan WhatsApp Templates.</em></p>
+            `,
+        },
+        {
+            id: "community-care",
+            heading: "Pesan Terjadwal & Broadcast",
+            bodyHtml: `
+                <p>Selain notifikasi per transaksi, sistem mengirim pesan untuk merawat hubungan dengan donatur:</p>
+                <ul>
+                    <li><strong>Broadcast program baru</strong> — aktifkan toggle <em>Sebarkan ke donatur via WhatsApp</em> saat mempublikasikan campaign. Pesan dikirim bertahap.</li>
+                    <li><strong>Broadcast manual</strong> — buat dan pantau pengiriman di menu <strong>WhatsApp → Broadcast</strong> (Super Admin dan Admin Finance).</li>
+                    <li><strong>Ucapan ulang tahun</strong> dan <strong>pengingat donatur lama tak aktif</strong> — dikirim otomatis setiap hari.</li>
+                </ul>
+                <p><strong>Berhenti berlangganan:</strong> donatur dapat menolak pesan non-transaksi lewat tautan berhenti di pesan atau di profil akunnya. Donatur yang berhenti tidak akan dikirimi broadcast, ulang tahun, maupun pengingat, dan status ini juga bisa dilihat di data donatur di admin.</p>
             `,
         },
     ]

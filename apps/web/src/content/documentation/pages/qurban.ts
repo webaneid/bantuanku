@@ -6,7 +6,7 @@ export const qurbanDoc: DocumentationPage = {
     category: "Operasional",
     summary:
         "Panduan mengelola periode qurban, paket, pesanan, tabungan qurban, dan eksekusi penyembelihan.",
-    updatedAt: "2026-02-20",
+    updatedAt: "2026-11-26",
     sections: [
         {
             id: "overview",
@@ -19,8 +19,8 @@ export const qurbanDoc: DocumentationPage = {
                 '<li><strong>Periods</strong> — Periode qurban (mis: Idul Adha 1447H)</li>' +
                 '<li><strong>Packages</strong> — Paket hewan qurban (kambing, sapi utuh, sapi 1/7, dll)</li>' +
                 '<li><strong>Orders</strong> — Pesanan qurban yang masuk</li>' +
-                '<li><strong>Savings</strong> — Tabungan qurban dengan cicilan</li>' +
-                '<li><strong>Executions</strong> — Dokumentasi pelaksanaan penyembelihan</li>' +
+                '<li><strong>Tabungan Qurban</strong> dan <strong>Grup Patungan</strong> — cicilan dan patungan sapi</li>' +
+                '<li><strong>Diskon &amp; Voucher</strong> — potongan harga hewan; dokumentasi penyembelihan ada di Reports → Penyembelihan Qurban</li>' +
                 '</ul>',
         },
         {
@@ -77,6 +77,18 @@ export const qurbanDoc: DocumentationPage = {
                 '<li>Status pesanan berubah ke <strong>executed</strong>.</li>' +
                 '<li>Donatur bisa melihat dokumentasi di akun mereka.</li>' +
                 '</ol>',
+        },
+        {
+            id: "diskon-voucher",
+            heading: "Diskon & Voucher",
+            bodyHtml:
+                '<p>Menu <strong>Qurban → Diskon &amp; Voucher</strong> (Super Admin dan Admin Campaign) memberi potongan pada harga hewan:</p>' +
+                '<ul>' +
+                '<li><strong>Otomatis</strong> — berlaku untuk semua pesanan yang cocok dengan cakupannya, tanpa kode.</li>' +
+                '<li><strong>Voucher</strong> — donatur memasukkan kode saat memesan. Voucher ditolak bila paket sudah punya diskon otomatis aktif.</li>' +
+                '</ul>' +
+                '<p>Cakupan: satu paket-periode, satu paket, jenis hewan, atau semua paket. Jika beberapa diskon otomatis cocok, yang paling spesifik dipakai. Satu donatur (akun atau nomor HP) hanya dapat memakai satu diskon satu kali. Biaya admin tidak dipotong. Untuk tabungan qurban, diskon diterapkan saat tabungan dibuat.</p>' +
+                '<p>Diskon berlaku mulai pukul 00:00 WIB tanggal mulai sampai 23:59 WIB tanggal berakhir.</p>',
         },
     ],
 };

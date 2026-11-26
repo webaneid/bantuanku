@@ -161,7 +161,7 @@ Registry `documentationPages` saat ini memetakan slug ke object page:
 | `whatsapp-notifikasi` | `whatsappNotificationDoc` |
 | `whatsapp-ai` | `whatsappAiDoc` |
 
-`pengenalan` dan `arsitektur-sistem` diperbarui 2026-11-26; halaman lain masih `2026-02-20` (usang, menunggu fase 2).
+Diperbarui 2026-11-26 (fase 1–2, dicocokkan dengan kode): `pengenalan`, `arsitektur-sistem`, `login-dan-akses`, `navigasi-dashboard`, `cara-membuat-campaign`, `mengelola-transaksi`, `kode-unik`, `flip-payment`, `bagi-hasil-amil`, `alur-pencairan`, `laporan-keuangan`, `zakat`, `qurban`, `whatsapp-notifikasi`. Masih `2026-02-20` dan BELUM diaudit: `kategori-keuangan`, `konsep-mitra`, `fundraiser`, `seo`, `whatsapp-ai`, `panduan-upload-gambar`.
 
 ---
 
@@ -479,7 +479,7 @@ Implikasi:
 
 ## Gap Implementasi (audit 2026-11-26)
 
-1. 17 halaman lama belum diaudit terhadap kode (konten Februari 2026).
+1. 6 halaman lama belum diaudit (lihat daftar di atas). Halaman yang sudah diaudit tetap memakai screenshot Februari.
 2. Belum ada halaman: Buku Kas, gateway iPaymu/Xendit/Midtrans, Donatur, WA Broadcast, Wakaf, Laporan Kegiatan, Pages CMS, Voucher, Vendor, Statistik, Branding/Tema, checkout & akun donatur.
 3. 15 screenshot di `apps/web/public/docs/` bertanggal 2026-02-20, perlu diganti.
 4. Belum ada pencarian, sitemap, dan komponen callout/langkah/figure.

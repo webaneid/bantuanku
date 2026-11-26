@@ -4,63 +4,55 @@ export const mengelolaTransaksiDoc: DocumentationPage = {
     slug: "mengelola-transaksi",
     title: "Mengelola Transaksi",
     category: "Campaign & Donasi",
-    summary:
-        "Panduan melihat, memverifikasi, dan mengelola transaksi donasi yang masuk.",
-    updatedAt: "2026-02-20",
+    summary: "Melihat, menyaring, dan memeriksa transaksi donasi, zakat, dan qurban yang masuk.",
+    updatedAt: "2026-11-26",
     sections: [
         {
             id: "jenis-transaksi",
             heading: "Jenis Transaksi",
-            bodyHtml:
-                '<p>Semua donasi masuk tercatat sebagai <strong>Universal Transaction</strong> dengan 3 jenis produk:</p>' +
-                '<ul>' +
-                '<li><strong>Campaign</strong> — Donasi ke program/campaign tertentu</li>' +
-                '<li><strong>Zakat</strong> — Pembayaran zakat (penghasilan, maal, emas, dll)</li>' +
-                '<li><strong>Qurban</strong> — Pesanan paket qurban (langsung atau tabungan)</li>' +
-                '</ul>' +
-                '<p>Setiap transaksi memiliki nomor unik, data donor, jumlah, status pembayaran, dan referensi ke produk terkait.</p>',
+            bodyHtml: `
+<p>Semua pembayaran masuk tercatat sebagai satu jenis data transaksi dengan tiga tipe produk:</p>
+<ul>
+<li><strong>Campaign</strong> — donasi ke program tertentu.</li>
+<li><strong>Zakat</strong> — fitrah, maal, profesi, pertanian, peternakan, dan lainnya.</li>
+<li><strong>Qurban</strong> — pembayaran paket, tabungan qurban, dan biaya admin.</li>
+</ul>
+<p>Setiap transaksi memiliki nomor unik, data donatur, jumlah, metode, status pembayaran, dan referensi ke produknya.</p>`,
         },
         {
             id: "halaman-transaksi",
-            heading: "Halaman Transaksi",
-            bodyHtml:
-                '<p>Buka menu <strong>Transactions</strong> di sidebar untuk melihat semua transaksi masuk:</p>' +
-                '<img src="/docs/screenshot-transactions.png" alt="Halaman Transaksi" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
-                '<p>Fitur yang tersedia:</p>' +
-                '<ul>' +
-                '<li>Filter berdasarkan <strong>status pembayaran</strong> (pending, paid, cancelled)</li>' +
-                '<li>Filter berdasarkan <strong>jenis produk</strong> (campaign, zakat, qurban)</li>' +
-                '<li>Search berdasarkan <strong>nama donor</strong> atau <strong>nomor transaksi</strong></li>' +
-                '<li>Lihat detail transaksi dengan klik pada baris</li>' +
-                '</ul>',
+            heading: "Halaman Transactions",
+            bodyHtml: `
+<p>Menu <strong>Transactions</strong> dapat dibuka oleh Super Admin dan Admin Finance. Admin Campaign melihat donasi campaign lewat <strong>Campaigns → Donations</strong>.</p>
+<img src="/docs/screenshot-transactions.png" alt="Halaman Transactions" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />
+<p>Yang bisa dilakukan:</p>
+<ul>
+<li>Cari berdasarkan <strong>email donatur</strong>.</li>
+<li>Saring menurut <strong>Tipe</strong> (campaign/zakat/qurban), <strong>Status</strong>, <strong>Kategori</strong> (mis. Zakat Fitrah, Tabungan Qurban), dan <strong>rentang tanggal</strong>.</li>
+<li>Klik baris untuk membuka detail transaksi.</li>
+<li>Gunakan <strong>Create</strong> untuk mencatat transaksi manual (misalnya donasi tunai).</li>
+</ul>`,
         },
         {
             id: "status-pembayaran",
             heading: "Status Pembayaran",
-            bodyHtml:
-                '<table style="width:100%; border-collapse:collapse; margin:16px 0;">' +
-                '<thead><tr style="background:#f3f4f6;"><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Status</th><th style="padding:10px; text-align:left; border:1px solid #e5e7eb;">Keterangan</th></tr></thead>' +
-                '<tbody>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">🟡 <strong>pending</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Menunggu pembayaran dari donatur</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">🟢 <strong>paid</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Pembayaran sudah diterima dan terverifikasi</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">🔵 <strong>partial</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Pembayaran sebagian (untuk cicilan qurban)</td></tr>' +
-                '<tr><td style="padding:10px; border:1px solid #e5e7eb;">🔴 <strong>cancelled</strong></td><td style="padding:10px; border:1px solid #e5e7eb;">Transaksi dibatalkan atau kedaluwarsa</td></tr>' +
-                '</tbody></table>' +
-                '<p>Untuk pembayaran <strong>manual via transfer bank</strong>, admin perlu memverifikasi bukti transfer secara manual dan mengubah status ke <em>paid</em>.</p>',
+            bodyHtml: `
+<table>
+<thead><tr><th>Status</th><th>Arti</th></tr></thead>
+<tbody>
+<tr><td><code>pending</code></td><td>Menunggu pembayaran dari donatur.</td></tr>
+<tr><td><code>partial</code></td><td>Terbayar sebagian (cicilan/tabungan qurban).</td></tr>
+<tr><td><code>paid</code></td><td>Pembayaran diterima dan terverifikasi.</td></tr>
+<tr><td><code>cancelled</code></td><td>Dibatalkan atau kedaluwarsa.</td></tr>
+</tbody>
+</table>
+<p>Pembayaran lewat <strong>gateway</strong> (Flip, iPaymu, Xendit, Midtrans) berubah ke <code>paid</code> otomatis lewat webhook. Untuk <strong>transfer manual</strong>, periksa bukti transfer donatur lalu verifikasi dari halaman detail transaksi.</p>`,
         },
         {
             id: "revenue-share",
-            heading: "Revenue Share Otomatis",
-            bodyHtml:
-                '<p>Setiap transaksi yang berstatus <strong>paid</strong> akan otomatis menghitung pembagian pendapatan:</p>' +
-                '<ul>' +
-                '<li><strong>Program</strong> — Dana untuk program yang dituju</li>' +
-                '<li><strong>Amil</strong> — Bagian operasional lembaga</li>' +
-                '<li><strong>Platform Provider</strong> — Fee platform (jika diset)</li>' +
-                '<li><strong>Influencer</strong> — Komisi referral (jika ada influencer)</li>' +
-                '<li><strong>Mitra</strong> — Bagian lembaga partner (jika campaign milik mitra)</li>' +
-                '</ul>' +
-                '<p>Konfigurasi persentase bisa diatur di menu <strong>Settings</strong>.</p>',
+            heading: "Bagi Hasil Otomatis",
+            bodyHtml: `
+<p>Transaksi berstatus <code>paid</code> otomatis dihitung pembagiannya sesuai pengaturan: porsi program, amil, influencer (jika ada kode referral), dan mitra (jika campaign milik mitra). Hasilnya dapat dilihat di menu <strong>Keuangan → Bagi Hasil</strong> dan laporan Bagi Hasil Amil. Penjelasan lengkap ada di halaman <a href="/documentation/bagi-hasil-amil">Sistem Bagi Hasil Amil</a>.</p>`,
         },
     ],
 };

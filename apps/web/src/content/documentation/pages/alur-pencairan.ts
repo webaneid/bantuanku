@@ -4,75 +4,60 @@ export const alurPencairanDoc: DocumentationPage = {
   slug: "alur-pencairan",
   title: "Alur Pencairan Dana",
   category: "Keuangan",
-  summary:
-    "Panduan lengkap alur pengajuan, persetujuan, hingga pencairan dana pada sistem disbursements.",
-  updatedAt: "2026-02-20",
+  summary: "Cara mengajukan, menyetujui, dan membayar pencairan dana keluar, sampai tercatat di buku kas.",
+  updatedAt: "2026-11-26",
   sections: [
     {
       id: "overview",
       heading: "Overview Sistem Pencairan",
-      bodyHtml:
-        '<p>Sistem <strong>Disbursements</strong> menangani seluruh pencairan dana keluar dengan 6 tipe:</p>' +
-        '<ul>' +
-        '<li><strong>Campaign</strong> — Pencairan dana kampanye ke penerima manfaat</li>' +
-        '<li><strong>Zakat</strong> — Distribusi zakat ke mustahiq</li>' +
-        '<li><strong>Qurban</strong> — Pembayaran ke vendor/penyedia hewan qurban</li>' +
-        '<li><strong>Operational</strong> — Biaya operasional lembaga</li>' +
-        '<li><strong>Vendor</strong> — Pembayaran ke vendor/supplier</li>' +
-        '<li><strong>Revenue Share</strong> — Pencairan komisi ke influencer/mitra</li>' +
-        '</ul>' +
-        '<img src="/docs/screenshot-disbursements.png" alt="Halaman Disbursements" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />' +
-        '<p><em>Tampilan daftar pencairan pada admin panel.</em></p>',
+      bodyHtml: `
+<p>Semua dana keluar diajukan lewat menu <strong>Disbursements</strong>. Ada 6 tipe pencairan:</p>
+<ul>
+<li><strong>Campaign</strong> — penyaluran dana program ke penerima manfaat.</li>
+<li><strong>Zakat</strong> — penyaluran ke mustahiq (8 asnaf).</li>
+<li><strong>Qurban</strong> — pembelian hewan dan biaya penyembelihan/distribusi.</li>
+<li><strong>Operational</strong> — biaya operasional lembaga.</li>
+<li><strong>Vendor</strong> — pembayaran ke vendor/supplier.</li>
+<li><strong>Revenue Share</strong> — pencairan bagi hasil mitra, influencer, atau developer.</li>
+</ul>
+<img src="/docs/screenshot-disbursements.png" alt="Halaman Disbursements" style="width:100%; border-radius:8px; border:1px solid #e5e7eb; margin:16px 0;" />
+<p>Submenu: <strong>Semua Pencairan</strong>, <strong>Pengajuan</strong>, dan <strong>Disetujui</strong>. Akun mitra hanya melihat pencairan program miliknya.</p>`,
     },
     {
       id: "pengajuan",
-      heading: "1. Tahap Pengajuan (Draft → Submitted)",
-      bodyHtml:
-        '<ol>' +
-        '<li>Buka menu <strong>Disbursements</strong> dan klik tombol <strong>Buat Pencairan</strong>.</li>' +
-        '<li>Pilih <strong>tipe pencairan</strong> dan <strong>kategori</strong> yang sesuai.</li>' +
-        '<li>Isi jumlah dana, tujuan pencairan, serta data penerima (nama, bank, nomor rekening).</li>' +
-        '<li>Pilih <strong>sumber dana</strong> (bank account yang akan mengirim).</li>' +
-        '<li>Klik <strong>Simpan</strong> (status: Draft) lalu <strong>Submit</strong> untuk diproses admin.</li>' +
-        '</ol>' +
-        '<p><em>Mitra juga dapat mengajukan pencairan untuk program miliknya sendiri.</em></p>',
+      heading: "1. Pengajuan (Draft → Submitted)",
+      bodyHtml: `
+<ol>
+<li>Buka <strong>Disbursements</strong> lalu klik <strong>Buat Pencairan</strong>.</li>
+<li>Pilih tipe pencairan, program/periode terkait, dan kategori pengeluaran.</li>
+<li>Isi jumlah, tujuan, dan data penerima (nama, bank, nomor rekening).</li>
+<li>Simpan sebagai <strong>Draft</strong>, lalu <strong>Submit</strong> agar diproses admin.</li>
+</ol>
+<p>Sistem memvalidasi kecukupan dana dan kesesuaian kategori. Lihat <a href="/documentation/kategori-keuangan">Sistem Kategori Keuangan</a>.</p>`,
     },
     {
       id: "approval",
-      heading: "2. Tahap Persetujuan (Submitted → Approved/Rejected)",
-      bodyHtml:
-        '<ul>' +
-        '<li>Admin memeriksa kelengkapan data dan ketersediaan dana.</li>' +
-        '<li>Jika disetujui → status berubah ke <strong>approved</strong>.</li>' +
-        '<li>Jika ditolak → status menjadi <strong>rejected</strong> dengan catatan alasan penolakan.</li>' +
-        '<li>Pencairan yang ditolak bisa diperbaiki dan diajukan ulang.</li>' +
-        '</ul>',
+      heading: "2. Persetujuan (Submitted → Approved / Rejected)",
+      bodyHtml: `
+<p>Admin keuangan memeriksa kelengkapan data dan ketersediaan dana. Jika disetujui statusnya menjadi <code>approved</code>; jika ditolak menjadi <code>rejected</code> beserta catatan alasan, dan pengaju dapat memperbaiki lalu mengajukan ulang.</p>`,
     },
     {
       id: "pembayaran",
-      heading: "3. Tahap Pembayaran (Approved → Paid)",
-      bodyHtml:
-        '<ol>' +
-        '<li>Admin melakukan transfer ke rekening penerima.</li>' +
-        '<li>Upload <strong>bukti transfer</strong> (foto/screenshot).</li>' +
-        '<li>Isi tanggal transfer dan jumlah yang ditransfer.</li>' +
-        '<li>Status berubah ke <strong>paid</strong>.</li>' +
-        '</ol>' +
-        '<p>Semua mutasi pencairan akan:</p>' +
-        '<ul>' +
-        '<li>Tercatat di <strong>Ledger</strong> sebagai journal entry (double-entry)</li>' +
-        '<li>Mempengaruhi laporan <strong>Cash Flow</strong></li>' +
-        '<li>Muncul di histori pencairan dengan bukti transfer</li>' +
-        '</ul>',
+      heading: "3. Pembayaran (Approved → Paid)",
+      bodyHtml: `
+<ol>
+<li>Transfer dana ke rekening penerima.</li>
+<li>Unggah bukti transfer, isi tanggal dan jumlah yang ditransfer.</li>
+<li>Status berubah ke <code>paid</code>.</li>
+</ol>
+<p>Pencairan berstatus <code>paid</code> otomatis tercatat sebagai <strong>uang keluar</strong> di buku kas (menu <strong>Keuangan → Arus Kas</strong>), mengurangi saldo rekening sumber, dan masuk ke laporan keuangan. Pencairan Revenue Share juga mengurangi sisa hak bagi hasil pihak terkait.</p>`,
     },
     {
       id: "status-flow",
-      heading: "Alur Status Lengkap",
-      bodyHtml:
-        '<div style="background:#f9fafb; padding:16px; border-radius:8px; font-family:monospace; text-align:center; margin:16px 0;">' +
-        '<strong>draft</strong> → <strong>submitted</strong> → <strong>approved</strong> → <strong>paid</strong><br/>' +
-        '<span style="color:#888;">↘ rejected (bisa submit ulang)</span>' +
-        '</div>',
+      heading: "Alur Status",
+      bodyHtml: `
+<p><code>draft → submitted → approved → paid</code></p>
+<p>Dari <code>submitted</code> pencairan dapat berakhir <code>rejected</code> dan diajukan ulang. Kesalahan pencatatan setelah <code>paid</code> dikoreksi lewat entri pembalik di buku kas, bukan dengan mengubah data lama.</p>`,
     },
   ],
 };
